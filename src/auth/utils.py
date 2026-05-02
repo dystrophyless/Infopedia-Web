@@ -5,16 +5,16 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
-from database import get_async_session
-from models import User
+from src.config import settings
+from src.database import get_async_session
+from src.users.models import User
+from src.users.repository import get_user_by_id
 
 password_hash = PasswordHash.recommended()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 
 def hash_password(password: str) -> str:
@@ -78,12 +78,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    result = await session.execute(
-        select(User)
-        .where(User.id == user_id_int),
-    )  # fmt: skip
-
-    user: User | None = result.scalar_one_or_none()
+    user: User | None = await get_user_by_id(session, user_id=user_id_int)
 
     if not user:
         raise HTTPException(

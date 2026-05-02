@@ -2,7 +2,7 @@ import sys
 
 logging_config = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
     "formatters": {
         "default": {
             "format": "[{asctime}] #{levelname:8} {filename}:{lineno} - {message}",
@@ -18,21 +18,36 @@ logging_config = {
     },
     "loggers": {
         "__main__": {"level": "DEBUG", "handlers": ["default"], "propagate": False},
-        "connection": {
+        "src.database": {
             "level": "DEBUG",
             "handlers": ["default"],
             "propagate": False,
         },
-        "create_tables": {
+        "src.prepare_app": {
             "level": "DEBUG",
             "handlers": ["default"],
             "propagate": False,
         },
-        "prepare_app": {
+        "src.users.repository": {
             "level": "DEBUG",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "uvicorn": {
+            "level": "INFO",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "level": "INFO",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "uvicorn.access": {
+            "level": "INFO",
             "handlers": ["default"],
             "propagate": False,
         },
     },
-    "root": {"formatter": "default", "handlers": ["default"]},
+    "root": {"level": "INFO", "handlers": ["default"]},
 }

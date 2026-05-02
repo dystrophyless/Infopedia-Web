@@ -1,8 +1,5 @@
 .venv
 .env
-__pycache__/
 .idea
-codeMappings.json
-mappingStructure.json
-newStructure.json
-terms.json
+__pycache__/
+AGENTS.md

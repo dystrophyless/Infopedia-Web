@@ -50,61 +50,67 @@ services:
     networks:
       - app_network
 
-  redis:
-    image: redis:7.4-alpine
-    env_file:
-      - .env
-    command:
-      [
-        "redis-server",
-        "--save",
-        "60",
-        "1",
-        "--loglevel",
-        "warning",
-        "--appendonly",
-        "yes",
-        "--requirepass",
-        "${REDIS_PASSWORD}",
-      ]
-    volumes:
-      - redis_data:/data
-    ports:
-      - "${REDIS_PORT}:6379"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-        compress: "true"
-    networks:
-      - app_network
-
-  rabbitmq:
-    image: rabbitmq:4.2-management-alpine
-    hostname: rabbitmq
+  prepare_app:
+    profiles: ["bootstrap"]
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
       - .env
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+      POSTGRES_HOST: postgres
+    command: ["python", "-u", "-m", "src.prepare_app"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
-      - "5672:5672"
-      - "15672:15672"
-    restart: unless-stopped
+      - "8000:8000"
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 10s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/').read()"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 20s
+    develop:
+      watch:
+        - action: sync+restart
+          path: .
+          target: /app
+          ignore:
+            - .git/
+            - .venv/
+            - venv/
+            - __pycache__/
+            - .mypy_cache/
+            - .pytest_cache/
+            - .idea/
+            - .vscode/
+            - .postgres_data/
+
+        - action: rebuild
+          path: pyproject.toml
+
+        - action: rebuild
+          path: uv.lock
+
+        - action: rebuild
+          path: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     logging:
       driver: json-file
       options:
@@ -117,7 +123,6 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
-  redis_data:
 
 networks:
   app_network:

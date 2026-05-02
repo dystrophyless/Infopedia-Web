@@ -33,12 +33,10 @@ async def add_user(
     )
 
     session.add(new_user)
-    await session.flush()
 
     logger.debug(
         "Пользователь был добавлен в базу данных."
-        "`id`='%d', `email`='%s', `language`='%s', `grade`='%s', `role`='%s', `banned`='%s'",
-        new_user.id,
+        "`email`='%s', `language`='%s', `grade`='%s', `role`='%s', `banned`='%s'",
         email,
         language,
         grade,

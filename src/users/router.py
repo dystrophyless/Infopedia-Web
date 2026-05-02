@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_user as get_authenticated_user
@@ -78,6 +79,15 @@ async def create_user(
         email=user_data.email.lower(),
         password_hash=hash_password(user_data.password),
     )
+
+    try:
+        await session.flush()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким username или email уже существует.",
+        )
 
     await session.commit()
     await session.refresh(new_user)
@@ -161,6 +171,15 @@ async def update_user(
     for field, value in update_data.items():
         normalized_value = value.lower() if field == "email" else value
         setattr(user, field, normalized_value)
+
+    try:
+        await session.flush()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким username или email уже существует.",
+        )
 
     await session.commit()
     await session.refresh(user)

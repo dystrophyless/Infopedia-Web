@@ -12,6 +12,3 @@ dependencies = [
     "pyjwt>=2.12.1",
     "sqlalchemy>=2.0.49",
 ]
-
-[tool.ruff]
-extend = "C:/Users/roman/AppData/Roaming/ruff/ruff.toml"

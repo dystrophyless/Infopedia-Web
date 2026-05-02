@@ -1,7 +1,7 @@
 import logging
 from typing import cast
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -99,7 +99,7 @@ async def get_user_by_email(
 ) -> User | None:  # fmt: skip
     query = (
         select(User)
-        .where(User.email == email)
+        .where(func.lower(User.email) == email.lower())
     )  # fmt: skip
 
     result = await session.execute(query)
@@ -125,7 +125,7 @@ async def check_user_exists_by_username(
 ) -> bool:  # fmt: skip
     query = (
         select(User.id)
-        .where(User.username == username)
+        .where(func.lower(User.username) == username.lower())
     )  # fmt: skip
 
     result = await session.execute(query)
@@ -150,7 +150,7 @@ async def check_user_exists_by_email(
 ) -> bool:  # fmt: skip
     query = (
         select(User.id)
-        .where(User.email == email)
+        .where(func.lower(User.email) == email.lower())
     )  # fmt: skip
 
     result = await session.execute(query)
@@ -180,7 +180,7 @@ async def get_user_banned_status(
 
     result = await session.execute(query)
 
-    banned: bool = result.scalar_one_or_none()
+    banned: bool | None = result.scalar_one_or_none()
 
     if banned is None:
         logger.debug(
@@ -293,7 +293,7 @@ async def get_user_role(
 
     result = await session.execute(query)
 
-    role: UserRole = result.scalar_one_or_none()
+    role: UserRole | None = result.scalar_one_or_none()
 
     if role is None:
         logger.debug(
@@ -351,7 +351,7 @@ async def get_user_grade(
 
     result = await session.execute(query)
 
-    grade: UserGrade = result.scalar_one_or_none()
+    grade: UserGrade | None = result.scalar_one_or_none()
 
     if grade is None:
         logger.debug(

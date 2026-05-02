@@ -85,7 +85,7 @@ async def create_user(
     return new_user
 
 
-@router.get("/me", response_model=UserResponsePublic)
+@router.get("/me", response_model=UserResponsePrivate)
 async def get_current_user(
     current_user: Annotated[User, Depends(get_authenticated_user)],
 ):
@@ -108,7 +108,7 @@ async def get_user(
     return user
 
 
-@router.patch("/{user_id}", response_model=UserResponsePublic)
+@router.patch("/{user_id}", response_model=UserResponsePrivate)
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
@@ -156,14 +156,11 @@ async def update_user(
                 detail="Пользователь с таким email уже существует.",
             )
 
-    update_data = user_data.model_dump(exclude_unset=True)
+    update_data = user_data.model_dump(exclude_unset=True, exclude_none=True)
 
     for field, value in update_data.items():
-        setattr(user, field, value) if field != "email" else setattr(
-            user,
-            field,
-            value.lower(),
-        )
+        normalized_value = value.lower() if field == "email" else value
+        setattr(user, field, normalized_value)
 
     await session.commit()
     await session.refresh(user)

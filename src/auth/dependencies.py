@@ -18,7 +18,7 @@ async def get_current_user(
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Просроченный либо неправильный токен.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -27,7 +27,7 @@ async def get_current_user(
     except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Просроченный либо неправильный токен.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -36,7 +36,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Пользователь не найден.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

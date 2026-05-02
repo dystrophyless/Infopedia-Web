@@ -1,16 +1,10 @@
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.database import get_async_session
-from src.users.models import User
-from src.users.repository import get_user_by_id
 
 password_hash = PasswordHash.recommended()
 

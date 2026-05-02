@@ -13,19 +13,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    max_upload_size_bytes: int = 5 * 1024 * 1024
-
     postgres_db: str
     postgres_host: str
     postgres_port: int
     postgres_user: str
     postgres_password: str
-
-    redis_host: str
-    redis_port: int
-    redis_db: int
-    redis_password: str = ""
-    redis_username: str = ""
 
 
 settings = Settings()

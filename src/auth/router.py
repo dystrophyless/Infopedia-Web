@@ -20,7 +20,7 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    user: User = await get_user_by_email(session, email=form_data.username)
+    user: User | None = await get_user_by_email(session, email=form_data.username)
 
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(

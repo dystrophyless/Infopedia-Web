@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.utils import get_current_user as get_authenticated_user
+from src.auth.dependencies import get_current_user as get_authenticated_user
 from src.auth.utils import hash_password
 from src.database import get_async_session
 from src.users.models import User
@@ -75,7 +75,7 @@ async def create_user(
     new_user: User = await add_user(
         session,
         username=user_data.username,
-        email=user_data.email,
+        email=user_data.email.lower(),
         password_hash=hash_password(user_data.password),
     )
 

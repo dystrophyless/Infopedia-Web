@@ -17,7 +17,11 @@ logging_config = {
         },
     },
     "loggers": {
-        "__main__": {"level": "DEBUG", "handlers": ["default"], "propagate": False},
+        "__main__": {
+            "level": "DEBUG",
+            "handlers": ["default"],
+            "propagate": False
+        },
         "src.database": {
             "level": "DEBUG",
             "handlers": ["default"],
@@ -29,6 +33,21 @@ logging_config = {
             "propagate": False,
         },
         "src.users.repository": {
+            "level": "DEBUG",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "src.terms.repository": {
+            "level": "DEBUG",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "src.terms.service": {
+            "level": "DEBUG",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "src.topics.repository": {
             "level": "DEBUG",
             "handlers": ["default"],
             "propagate": False,

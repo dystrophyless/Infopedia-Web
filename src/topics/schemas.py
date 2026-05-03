@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -29,7 +31,7 @@ class ChapterCreate(ChapterBase):
 
 class ChapterUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    topic_codes: list["TopicCodeDetailedResponse"] | None = Field(default=None)
+    topic_codes: list[TopicCodeDetailedResponse] | None = Field(default=None)
 
 
 class ChapterResponse(ChapterBase):
@@ -39,7 +41,7 @@ class ChapterResponse(ChapterBase):
 
 
 class ChapterDetailedResponse(ChapterResponse):
-    topic_codes: list["TopicCodeDetailedResponse"] = Field(min_length=1)
+    topic_codes: list[TopicCodeDetailedResponse] = Field(min_length=1)
 
 
 class TopicCodeBase(BaseModel):

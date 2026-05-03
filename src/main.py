@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from src.auth.router import router as auth_router
 from src.database import async_engine
+from src.search.router import router as search_router
 from src.terms.router import router as terms_router
 from src.topics.router import router as topics_router
 from src.users.router import router as users_router
@@ -35,6 +36,12 @@ app.include_router(
     terms_router,
     prefix="/api/terms",
     tags=["terms"],
+)
+
+app.include_router(
+    search_router,
+    prefix="/api/search",
+    tags=["search"],
 )
 
 app.include_router(

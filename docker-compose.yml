@@ -50,6 +50,65 @@ services:
     networks:
       - app_network
 
+  redis:
+    image: redis:7.4-alpine
+    env_file:
+      - .env
+    command:
+      [
+        "redis-server",
+        "--save", "60", "1",
+        "--loglevel", "warning",
+        "--appendonly", "yes",
+        "--requirepass", "${REDIS_PASSWORD}"
+      ]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+    networks:
+      - app_network
+
+  rabbitmq:
+    image: rabbitmq:4.2-management-alpine
+    hostname: rabbitmq
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+    networks:
+      - app_network
+
   prepare_app:
     profiles: ["bootstrap"]
     build:
@@ -59,6 +118,11 @@ services:
       - .env
     environment:
       POSTGRES_HOST: postgres
+      HF_HOME: /home/app/.cache/huggingface
+      HF_HUB_CACHE: /home/app/.cache/huggingface/hub
+      TRANSFORMERS_CACHE: /home/app/.cache/huggingface/hub
+    volumes:
+      - hf_cache:/home/app/.cache/huggingface
     command: ["python", "-u", "-m", "src.prepare_app"]
     depends_on:
       postgres:
@@ -74,6 +138,11 @@ services:
       - .env
     environment:
       POSTGRES_HOST: postgres
+      HF_HOME: /home/app/.cache/huggingface
+      HF_HUB_CACHE: /home/app/.cache/huggingface/hub
+      TRANSFORMERS_CACHE: /home/app/.cache/huggingface/hub
+    volumes:
+      - hf_cache:/home/app/.cache/huggingface
     command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
@@ -111,6 +180,65 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+    networks:
+      - app_network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      HF_HOME: /home/app/.cache/huggingface
+      HF_HUB_CACHE: /home/app/.cache/huggingface/hub
+      TRANSFORMERS_CACHE: /home/app/.cache/huggingface/hub
+    volumes:
+      - hf_cache:/home/app/.cache/huggingface
+    command: [ "celery", "-A", "src.celery_app.app", "worker", "--pool=prefork", "--concurrency=2", "--loglevel=DEBUG" ]
+    develop:
+      watch:
+        - action: sync+restart
+          path: .
+          target: /app
+          ignore:
+            - .git/
+            - .venv/
+            - venv/
+            - __pycache__/
+            - .mypy_cache/
+            - .pytest_cache/
+            - .idea/
+            - .vscode/
+            - .postgres_data/
+
+        - action: rebuild
+          path: pyproject.toml
+
+        - action: rebuild
+          path: uv.lock
+
+        - action: rebuild
+          path: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     logging:
       driver: json-file
       options:
@@ -123,6 +251,8 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
+  redis_data:
+  hf_cache:
 
 networks:
   app_network:

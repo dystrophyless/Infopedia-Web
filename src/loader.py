@@ -47,6 +47,9 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
 
             book: Book = result.scalar_one_or_none()
 
+            if not book:
+                raise ValueError(f"Book '{book_name}' не найден в таблице books")
+
             for d in defs:
                 query = (
                     select(Topic)
@@ -71,7 +74,7 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
                 definition: Definition = result.scalar_one_or_none()
 
                 if not definition:
-                    emb = embedder.encode(d["definition"]).tolist()
+                    emb = (await asyncio.to_thread(embedder.encode, d["definition"])).tolist()
 
                     definition: Definition = Definition(
                         text=d["definition"],

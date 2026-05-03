@@ -18,6 +18,7 @@ from src.terms.schemas import (
     TermCreate,
     TermDetailedResponse,
     TermResponse,
+    TermUpdate,
 )
 from src.terms.service import get_embedder
 from src.topics.repository import get_topic_by_name
@@ -44,7 +45,10 @@ async def _build_term_definitions(
                 detail=f"Тема с именем '{definition_data.topic}' не найдена.",
             )
 
-        if definition_data.page < topic.page_start or definition_data.page > topic.page_end:
+        if (
+            definition_data.page < topic.page_start
+            or definition_data.page > topic.page_end
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
@@ -76,7 +80,7 @@ async def get_terms(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
-) -> list[TermResponse]:
+):
     total: int = await count_terms(session)
 
     terms: list[Term] | None = await get_terms_paginated(
@@ -102,7 +106,9 @@ async def get_terms(
     )
 
 
-@router.post("", response_model=TermDetailedResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=TermDetailedResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_term(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     term_data: TermCreate,
@@ -154,7 +160,7 @@ async def get_term(
 async def update_term(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     term_id: int,
-    term_data: TermCreate,
+    term_data: TermUpdate,
 ):
     term: Term | None = await get_term_by_id(session, id=term_id)
 
@@ -252,4 +258,4 @@ async def get_term_books(
             detail="Термин не найден",
         )
 
-    return [definition.topic.book for definition in term.definitions]
+    return list({definition.topic.book.id: definition.topic.book for definition in term.definitions}.values())

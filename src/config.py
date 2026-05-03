@@ -19,5 +19,16 @@ class Settings(BaseSettings):
     postgres_user: str
     postgres_password: str
 
+    redis_host: str
+    redis_port: int
+    redis_db: int
+    redis_password: str = ""
+    redis_username: str = ""
+
+    celery_broker_url: str
+    celery_result_backend: str
+    celery_result_expires_seconds: int = 3600
+    search_task_owner_ttl_seconds: int = 3600
+
 
 settings = Settings()

@@ -1,11 +1,11 @@
 import logging
 from urllib.parse import quote
+
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker
 
 from src.config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,11 @@ def build_pg_conninfo(
     )
     logger.debug(
         "Строка для подключения PostgreSQL была создана (пароль скрыт): "
-        f"postgresql+psycopg://{quote(user, safe='')}@{host}:{port}/{db_name}",
+        "postgresql+psycopg://%s@%s:%s/%s",
+        quote(user, safe=""),
+        host,
+        port,
+        db_name,
     )
     return conninfo
 
@@ -37,7 +41,7 @@ async def log_db_version(engine: AsyncEngine) -> None:
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT version();"))
             db_version = result.scalar_one()
-            logger.debug(f"Версия PostgreSQL: {db_version}")
+            logger.debug("Версия PostgreSQL: %s", db_version)
     except Exception as e:
         logger.exception("Не удалось получить версию PostgreSQL: %s", e)
 
@@ -76,3 +80,24 @@ AsyncSessionMaker = async_sessionmaker(async_engine)
 async def get_async_session():
     async with AsyncSessionMaker() as session:
         yield session
+
+
+async def init_similarity_extension(engine: AsyncEngine) -> None:
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_term_name_trgm ON term USING gin (name gin_trgm_ops);"
+                ),
+            )
+    except Exception as e:
+        logger.exception("Не удалось инициализировать расширение схожести: %s", e)
+
+
+async def init_vector_extension(engine: AsyncEngine) -> None:
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+    except Exception as e:
+        logger.exception("Не удалось инициализировать векторное расширение: %s", e)

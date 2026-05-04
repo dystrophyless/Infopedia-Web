@@ -84,7 +84,7 @@ async def _run_task_async(
             result=None,
             error={
                 "code": "search_execution_failed",
-                "message": "Definition search task failed.",
+                "message": "Не удалось выполнить задачу поиска определения.",
             },
         )
 

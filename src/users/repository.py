@@ -1,12 +1,12 @@
 import logging
 from typing import cast
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.users.enums import UserGrade, UserLanguage, UserRole
-from src.users.models import User
+from src.users.enums import Feature, UserGrade, UserLanguage, UserRole
+from src.users.models import FeatureUsage, User
 
 logger = logging.getLogger(__name__)
 
@@ -393,3 +393,50 @@ async def update_user_grade(
         grade,
         user_id,
     )
+
+
+async def log_feature_usage(
+    session: AsyncSession,
+    *,
+    user_id: int,
+    feature: Feature,
+) -> None:
+    new_usage = FeatureUsage(user_id=user_id, feature_name=feature)
+    session.add(new_usage)
+
+    logger.debug(
+        "Использование функции с `feature_name`='%s' было зафиксировано для пользователя с `user_id`='%d'",
+        feature.name,
+        user_id,
+    )
+
+
+async def get_users_feature_usage_count(
+    session: AsyncSession,
+    *,
+    user_id: int,
+    feature: Feature,
+) -> int | None:
+    month_start = func.date_trunc("month", func.timezone("utc", func.now()))
+    next_month_start = month_start + text("interval '1 month'")
+
+    result = await session.execute(
+        select(func.count(FeatureUsage.id)).where(
+            FeatureUsage.user_id == user_id,
+            FeatureUsage.feature_name == feature,
+            FeatureUsage.created_at >= month_start,
+            FeatureUsage.created_at < next_month_start,
+        ),
+    )
+
+    usage_count: int = result.scalar_one_or_none()
+
+    if usage_count is None:
+        logger.debug(
+            "Не удалось получить количество использований функции с `feature_name`='%s' для пользователя с `user_id`='%d'",
+            feature.name,
+            user_id,
+        )
+        return None
+
+    return usage_count

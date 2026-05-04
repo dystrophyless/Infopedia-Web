@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Annotated
+from uuid import uuid4
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -18,8 +19,8 @@ from src.search.service import (
     assert_task_owner,
     build_sse_message,
     build_task_response,
-    ensure_definition_search_limit,
-    record_definition_search_usage,
+    consume_definition_search_quota,
+    release_search_task_owner,
     reserve_search_task_owner,
 )
 from src.terms.models import Term
@@ -81,24 +82,47 @@ async def create_search_task(
         user_id,
         len(payload.query),
     )
-    await ensure_definition_search_limit(
-        session=session,
-        user_id=user_id,
-    )
-    await record_definition_search_usage(
+    await consume_definition_search_quota(
         session=session,
         user_id=user_id,
     )
 
-    task = process_query.delay(payload.query)
-    await reserve_search_task_owner(task_id=task.id, user_id=user_id)
+    task_id = str(uuid4())
+    task_enqueued = False
+
+    try:
+        await reserve_search_task_owner(task_id=task_id, user_id=user_id)
+        process_query.apply_async(args=[payload.query], task_id=task_id)
+        task_enqueued = True
+        await session.commit()
+    except Exception:
+        await session.rollback()
+
+        if task_enqueued:
+            try:
+                AsyncResult(task_id, app=celery_app).revoke(terminate=False)
+            except Exception:
+                logger.exception(
+                    "Не удалось отозвать поисковую задачу task_id=%s после ошибки",
+                    task_id,
+                )
+
+        try:
+            await release_search_task_owner(task_id=task_id)
+        except Exception:
+            logger.exception(
+                "Не удалось очистить owner-ключ поисковой задачи task_id=%s",
+                task_id,
+            )
+
+        raise
 
     logger.info(
         "Поисковая задача поставлена в очередь task_id=%s для user_id=%s",
-        task.id,
+        task_id,
         user_id,
     )
-    return SearchTaskResponse(task_id=task.id, status="pending")
+    return SearchTaskResponse(task_id=task_id, status="pending")
 
 
 @router.get("/{task_id}", response_model=SearchTaskResponse)

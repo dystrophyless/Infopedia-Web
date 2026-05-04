@@ -3,6 +3,7 @@ import logging
 
 from celery.result import AsyncResult
 from fastapi import HTTPException, status
+from sqlalchemy import select
 
 from src.config import settings
 from src.redis_client import (
@@ -10,6 +11,7 @@ from src.redis_client import (
     get_async_redis_client,
 )
 from src.users.enums import Feature
+from src.users.models import User
 from src.users.repository import get_users_feature_usage_count, log_feature_usage
 
 logger = logging.getLogger(__name__)
@@ -101,7 +103,20 @@ async def reserve_search_task_owner(*, task_id: str, user_id: int) -> None:
         await redis.aclose()
 
 
-async def ensure_definition_search_limit(*, session, user_id: int) -> None:
+async def release_search_task_owner(*, task_id: str) -> None:
+    redis = get_async_redis_client()
+    try:
+        await redis.delete(build_search_task_owner_key(task_id))
+    finally:
+        await redis.aclose()
+
+
+async def consume_definition_search_quota(*, session, user_id: int) -> None:
+    # Serialize monthly quota consumption per user inside the current transaction.
+    await session.execute(
+        select(User.id).where(User.id == user_id).with_for_update(),
+    )
+
     used = await get_users_feature_usage_count(
         session,
         user_id=user_id,
@@ -122,10 +137,8 @@ async def ensure_definition_search_limit(*, session, user_id: int) -> None:
         )
 
 
-async def record_definition_search_usage(*, session, user_id: int) -> None:
     await log_feature_usage(
         session,
         user_id=user_id,
         feature=Feature.DEFINITION_SEARCH,
     )
-    await session.commit()

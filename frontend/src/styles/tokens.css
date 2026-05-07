@@ -1,0 +1,14 @@
+:root {
+  /* Brand palette extracted from Figma node 190:117 */
+  --color-bg: #efebf6;
+  --color-primary: #3a1c6e;
+  --color-accent: #44237d;
+  --color-border: #9683b7;
+  --color-muted: rgba(58, 28, 110, 0.5);
+  --color-highlight: #c89eff;
+  --color-surface: #ffffff;
+  --color-text: #000000;
+  --color-text-body: #404040;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+}

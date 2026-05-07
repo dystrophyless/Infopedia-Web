@@ -6,3 +6,6 @@ AGENTS.md
 scripts/
 data/
 .worktrees/
+.claude/
+.codex/
+openspec/

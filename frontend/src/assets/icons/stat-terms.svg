@@ -1,0 +1,6 @@
+<svg viewBox="0 0 55 80" fill="none" aria-hidden="true" shape-rendering="geometricPrecision" xmlns="http://www.w3.org/2000/svg">
+  <path d="M54.696 17.839c.194.189.304.448.304.718V79c0 .552-.448 1-1 1H1c-.552 0-1-.448-1-1V18.557c0-.27.11-.529.304-.718L18.409.282A1 1 0 0 1 19.105 0h16.79a1 1 0 0 1 .696.282l18.105 17.557ZM27.5 7.467c-3.037 0-5.5 2.387-5.5 5.333 0 2.945 2.462 5.334 5.5 5.334S33 15.745 33 12.8c0-2.946-2.463-5.333-5.5-5.333Z" fill="var(--color-accent, #44237d)"/>
+  <rect x="13.2" y="36.27" width="29.7" height="3.2" rx="1" fill="var(--color-secondary, #623f9f)"/>
+  <rect x="13.2" y="48" width="29.7" height="3.2" rx="1" fill="var(--color-secondary, #623f9f)"/>
+  <rect x="13.2" y="59.73" width="29.7" height="3.2" rx="1" fill="var(--color-secondary, #623f9f)"/>
+</svg>

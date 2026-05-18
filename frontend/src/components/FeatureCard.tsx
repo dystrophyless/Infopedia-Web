@@ -1,25 +1,37 @@
-import { HugeiconsIcon } from '@hugeicons/react';
-import type { IconSvgElement } from '@hugeicons/react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 interface FeatureCardProps {
-  icon: IconSvgElement;
+  icon: ReactNode;
   title: string;
   description: string;
+  to?: string;
 }
 
-export function FeatureCard({ icon, title, description }: FeatureCardProps) {
-  return (
-    <article className="bg-surface rounded-[15px] shadow-feature px-[41px] py-[40px] flex flex-col gap-[30px] w-full max-w-[386px]">
+export function FeatureCard({ icon, title, description, to }: FeatureCardProps) {
+  const content = (
+    <article className="flex h-[216px] flex-col gap-[25px] overflow-hidden rounded-[15px] bg-surface px-[40px] py-[50px] shadow-feature max-md:h-auto">
       <header className="flex items-center gap-4">
-        <HugeiconsIcon
-          icon={icon}
-          size={43}
-          color="var(--color-accent)"
-          strokeWidth={1.5}
-        />
-        <h3 className="font-medium text-[20px] text-text">{title}</h3>
+        <div className="flex size-[45px] shrink-0 items-center justify-center rounded-[10px] bg-bg text-accent">
+          {icon}
+        </div>
+        <h3 className="min-w-0 flex-1 whitespace-normal text-[24px] font-medium leading-[1.15] text-accent max-md:text-[20px]">
+          {title}
+        </h3>
       </header>
-      <p className="text-[14px] text-muted whitespace-pre-line">{description}</p>
+      <p className="text-[16px] leading-[1] text-muted max-md:text-[14px]">
+        {description}
+      </p>
     </article>
+  );
+
+  if (!to) {
+    return <div className="w-full max-w-[422px]">{content}</div>;
+  }
+
+  return (
+    <Link to={to} className="block w-full max-w-[422px]">
+      {content}
+    </Link>
   );
 }

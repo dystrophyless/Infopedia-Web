@@ -1,10 +1,10 @@
 export interface Topic {
   id: number;
-  title?: string;
+  name?: string;
   page_start?: number;
   page_end?: number;
-  book?: { id: number; title: string };
-  chapter?: { id: number; title: string };
+  book?: { id: number; name: string };
+  chapter?: { id: number; name: string };
 }
 
 export interface Definition {
@@ -20,12 +20,18 @@ export interface Term {
   definitions?: Definition[];
 }
 
+export interface FeaturedTerm {
+  term: Term;
+  featured_definition: Definition;
+}
+
 export interface AuthTokens {
   access_token: string;
   token_type: string;
 }
 
 export type UserRole = 'admin' | 'client' | 'user';
+// 'undefined' is the API sentinel string for "grade not set" — matches backend UserGrade enum
 export type UserGrade = '10' | '11' | 'undefined';
 export type UserLanguage = 'ru' | 'kk';
 

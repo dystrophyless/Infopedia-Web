@@ -1,95 +1,172 @@
-import { useRef } from 'react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getFeaturedTerms } from '../api/terms';
+import type { Definition, FeaturedTerm } from '../types';
 
-interface TermSample {
-  name: string;
-  definition: string;
-  source: string;
+function oneLineTermName(name: string): string {
+  if (name.length <= 20) return name;
+  return name.slice(0, 20).trimEnd() + '...';
 }
 
-const SAMPLES: TermSample[] = [
-  {
-    name: 'Алгоритм',
-    definition:
-      'Орындаушыға берілетін тапсырманы шешуге немесе көрсетілген мақсатқа жетуге бағытталған белгілі бір әрекеттер тізбегінің толық және дәл нұсқаулығы',
-    source: 'Арман-ПВ: 8-сынып • Глоссарий • 197',
-  },
-  {
-    name: 'Bigdata',
-    definition:
-      'Көптеген тораптар бойынша үлестіру жағдайында адам қабылдайтын нәтижелерді алу үшін үлкен көлемдегі құрылымдалған және құрылымдалмаған деректерді өңдеу тәсілдерінің, құралдарының және әдістерінің тобы.',
-    source: 'Мектеп: 10-сынып • §31. Bigdata • 100',
-  },
-  {
-    name: 'Blockchain',
-    definition:
-      'Ол деректермен қауіпсіз және қорғалған түрде алмасуды қамтамасыз етеді және орталықтандырылған деректер қорының арқасында барлық қорды бұзу мүмкіндігінен сақтайды.',
-    source: 'Арман-ПВ: 11-сынып • §59-60. Blockchain технологиясы • 228',
-  },
-  {
-    name: 'Виртуализация',
-    definition:
-      'Технология создания виртуального ресурса (например, операционной системы или сервера) на базе физического оборудования, позволяющая эффективнее использовать ресурсы.',
-    source: 'Мектеп: 11-сынып • §12. Облако и виртуализация • 56',
-  },
-  {
-    name: 'Машинное обучение',
-    definition:
-      'Раздел искусственного интеллекта, в котором алгоритмы строят модели на основе примеров данных и делают прогнозы без явного программирования.',
-    source: 'Арман-ПВ: 11-сынып • §40. ИИ и машинное обучение • 168',
-  },
-];
-
-export function TermCardCarousel() {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
-  const scrollBy = (delta: number) => {
-    scrollerRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
+function buildMetadata(definition: Definition | undefined, topicLabel: string, pageLabel: string) {
+  return {
+    book: definition?.topic?.book?.name ?? '',
+    topic:
+      definition?.topic?.name ? `${topicLabel}: ${definition.topic.name}` : '',
+    page:
+      definition?.page !== undefined ? `${pageLabel} ${definition.page}` : '',
   };
+}
+
+function FeaturedTermCard({
+  featuredTerm,
+  clone = false,
+}: {
+  featuredTerm: FeaturedTerm;
+  clone?: boolean;
+}) {
+  const { t } = useTranslation();
+  const { term, featured_definition: definition } = featuredTerm;
+  const metadata = buildMetadata(definition, t('search.topic'), t('search.page'));
 
   return (
-    <div className="relative w-full">
+    <Link
+      to={`/terms/${term.id}`}
+      state={{ backTo: '/', term, selectedDefinitionId: definition.id }}
+      aria-hidden={clone || undefined}
+      tabIndex={clone ? -1 : undefined}
+      className="flex h-[325px] w-[612px] flex-none flex-col overflow-hidden rounded-[15px] border border-border bg-surface p-[50px] shadow-feature transition-shadow hover:shadow-card max-md:h-[280px] max-md:w-[88vw] max-md:p-8"
+    >
+      <div className="flex h-full min-h-0 flex-col">
+        <h3 className="whitespace-nowrap text-[36px] font-medium leading-[1.15] text-text max-md:text-[28px]">
+          {oneLineTermName(term.name)}
+        </h3>
+        <p className="mt-6 line-clamp-3 text-[22px] font-light leading-[1.2] text-text max-md:mt-6 max-md:text-[16px] max-md:leading-[1.2]">
+          {definition?.text ?? ''}
+        </p>
+        <div className="mt-auto pt-6 text-[16px] font-light text-border max-md:pt-6 max-md:text-[13px]">
+          <p className="truncate">{metadata.book}</p>
+          <div className="mt-1 flex items-center gap-3">
+            <p className="min-w-0 flex-1 truncate">{metadata.topic}</p>
+            <span className="shrink-0">{metadata.page}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export function TermCardCarousel() {
+  const [terms, setTerms] = useState<FeaturedTerm[]>([]);
+  const [loading, setLoading] = useState(true);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await getFeaturedTerms();
+        if (!cancelled) setTerms(data);
+      } catch {
+        if (!cancelled) setTerms([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loopedTerms = useMemo(() => {
+    if (terms.length < 2) return terms;
+    return [...terms, ...terms];
+  }, [terms]);
+
+  useEffect(() => {
+    const node = scrollerRef.current;
+    if (!node || terms.length < 2) return;
+
+    let frameId = 0;
+    let lastTime = performance.now();
+
+    const animate = (time: number) => {
+      const elapsed = time - lastTime;
+      lastTime = time;
+
+      if (!pausedRef.current) {
+        const firstTrackWidth = node.scrollWidth / 2;
+        node.scrollLeft += elapsed * 0.06;
+
+        if (node.scrollLeft >= firstTrackWidth) {
+          node.scrollLeft -= firstTrackWidth;
+        }
+      }
+
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [terms]);
+
+  if (loading) {
+    return (
+      <div className="overflow-hidden px-[48px] pb-6 pt-2 max-md:px-4">
+        <div className="flex gap-[45px]">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-[325px] w-[612px] flex-none animate-pulse rounded-[15px] border border-border/40 bg-surface/70 max-md:w-[88vw]"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (terms.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className="relative w-full overflow-hidden pt-2"
+      onMouseEnter={() => {
+        pausedRef.current = true;
+      }}
+      onMouseLeave={() => {
+        pausedRef.current = false;
+      }}
+      onFocusCapture={() => {
+        pausedRef.current = true;
+      }}
+      onBlurCapture={() => {
+        pausedRef.current = false;
+      }}
+    >
       <div
         ref={scrollerRef}
-        className="overflow-x-auto scroll-smooth snap-x snap-mandatory pb-6 px-[60px] max-md:px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+        className="overflow-x-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <ul className="flex gap-[45px] w-max">
-          {SAMPLES.map((sample, idx) => (
+        <ul className="flex w-max gap-[45px] px-[48px] max-md:gap-4 max-md:px-4">
+          {loopedTerms.map((featuredTerm, index) => (
             <li
-              key={idx}
-              className="snap-center w-[612px] h-[325px] bg-surface border border-border rounded-[15px] p-[60px] shadow-card flex flex-col justify-between max-md:w-[88vw] max-md:h-auto max-md:p-8"
+              key={`${featuredTerm.term.id}-${featuredTerm.featured_definition.id}-${index < terms.length ? 'orig' : 'clone'}`}
+              className="flex-none"
             >
-              <h3 className="font-medium text-[38px] text-text max-md:text-[26px]">
-                {sample.name}
-              </h3>
-              <p className="font-light text-[22px] text-text leading-snug max-md:text-[16px]">
-                {sample.definition}
-              </p>
-              <p className="font-light text-[16px] text-border max-md:text-[13px]">
-                {sample.source}
-              </p>
+              <FeaturedTermCard featuredTerm={featuredTerm} clone={index >= terms.length} />
             </li>
           ))}
         </ul>
       </div>
-
-      <button
-        type="button"
-        onClick={() => scrollBy(-660)}
-        aria-label="prev"
-        className="absolute -left-2 top-1/2 -translate-y-1/2 bg-surface border border-border rounded-full w-12 h-12 flex items-center justify-center shadow-feature hover:bg-bg transition-colors max-md:hidden"
-      >
-        <HugeiconsIcon icon={ArrowLeft01Icon} size={20} strokeWidth={1.8} />
-      </button>
-      <button
-        type="button"
-        onClick={() => scrollBy(660)}
-        aria-label="next"
-        className="absolute -right-2 top-1/2 -translate-y-1/2 bg-surface border border-border rounded-full w-12 h-12 flex items-center justify-center shadow-feature hover:bg-bg transition-colors max-md:hidden"
-      >
-        <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={1.8} />
-      </button>
     </div>
   );
 }

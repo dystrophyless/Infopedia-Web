@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { login } from '../api/auth';
 import { getMe } from '../api/users';
@@ -17,9 +18,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) navigate(next, { replace: true });
-  }, [isAuthenticated, navigate, next]);
+  if (isAuthenticated) return <Navigate to={next} replace />;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,8 +38,13 @@ export function Login() {
         /* user fetch failure does not block login */
       }
       navigate(next, { replace: true });
-    } catch {
-      setError(t('auth.invalidCredentials'));
+    } catch (err) {
+      let message = t('auth.invalidCredentials');
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const detail = (err.response.data as { detail?: string }).detail;
+        if (typeof detail === 'string') message = detail;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }

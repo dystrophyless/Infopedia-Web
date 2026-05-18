@@ -1,71 +1,104 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Logout01Icon } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { FigmaProfileIcon } from './FigmaIcons';
+import { SearchChoiceModal } from './SearchChoiceModal';
+
+function authTarget(path: string, isAuthenticated: boolean): string {
+  if (isAuthenticated) return path;
+  return `/login?next=${encodeURIComponent(path)}`;
+}
 
 export function Navbar() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const logout = useAuthStore((s) => s.logout);
+  const isLandingPage = location.pathname === '/';
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `px-5 py-4 text-[16px] transition-colors ${
-      isActive ? 'text-accent font-medium' : 'text-muted hover:text-accent'
+      isActive ? 'font-medium text-accent' : 'text-muted hover:text-accent'
     }`;
 
-  function handleLogout() {
-    logout();
-    navigate('/login');
-  }
+  const marketingLinkClass =
+    'border-0 bg-transparent px-5 py-4 text-[16px] text-muted transition-colors hover:text-accent';
 
   return (
-    <header className="bg-surface h-[80px] flex items-center w-full border-b border-border/30 sticky top-0 z-40">
-      <div className="w-full flex items-center justify-between px-[60px] max-md:px-6">
-        <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Infopedia">
-          <img src="/logo.svg" alt="Infopedia" className="h-[44px] w-auto" />
-        </Link>
+    <>
+      <header className="sticky top-0 z-40 flex h-[80px] w-full items-center border-b border-border/30 bg-surface">
+        <div className="flex w-full items-center justify-between px-[60px] max-md:px-6">
+          <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="Infopedia">
+            <img src="/logo.svg" alt="Infopedia" className="h-[44px] w-auto" />
+          </Link>
 
-        <nav className="hidden md:flex items-center gap-2" aria-label="primary">
-          {isAuthenticated && (
-            <>
-              <NavLink to="/search" className={navLinkClass}>
-                {t('nav.search')}
-              </NavLink>
-              <NavLink to="/semantic-search" className={navLinkClass}>
-                {t('nav.semanticSearch')}
-              </NavLink>
-              <NavLink to="/profile" className={navLinkClass}>
-                {t('nav.profile')}
-              </NavLink>
-            </>
-          )}
-        </nav>
+          <nav className="hidden items-center gap-2 md:flex" aria-label="primary">
+            {isAuthenticated ? (
+              <>
+                <button
+                  type="button"
+                  className={`border-0 bg-transparent px-5 py-4 text-[16px] transition-colors ${
+                    location.pathname === '/search'
+                      ? 'font-medium text-accent'
+                      : 'text-muted hover:text-accent'
+                  }`}
+                  onClick={() => setSearchModalOpen(true)}
+                >
+                  {t('nav.search')}
+                </button>
+                <NavLink to="/semantic-search" className={navLinkClass}>
+                  {t('nav.semanticSearch')}
+                </NavLink>
+              </>
+            ) : (
+              isLandingPage && (
+                <>
+                  <button
+                    type="button"
+                    className={marketingLinkClass}
+                    onClick={() => setSearchModalOpen(true)}
+                  >
+                    {t('nav.search')}
+                  </button>
+                  <a href="#tools" className={marketingLinkClass}>
+                    {t('nav.semanticSearch')}
+                  </a>
+                </>
+              )
+            )}
+          </nav>
 
-        <div className="flex items-center gap-4 h-[64px]">
-          <LanguageSwitcher />
-          <span className="h-10 w-px bg-border/60" aria-hidden />
-          {isAuthenticated ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-accent text-surface rounded-[10px] px-5 py-3 text-[16px] hover:opacity-90 transition-opacity"
-            >
-              <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.8} />
-              <span className="hidden sm:inline">{t('nav.logout')}</span>
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="bg-accent text-surface rounded-[10px] px-5 py-3 text-[16px] hover:opacity-90 transition-opacity"
-            >
-              {t('nav.login')}
-            </Link>
-          )}
+          <div className="flex h-[64px] items-center gap-4">
+            <LanguageSwitcher />
+            <span className="h-10 w-px bg-border/60" aria-hidden />
+            {isAuthenticated ? (
+              <Link
+                to="/profile"
+                aria-label={t('nav.profile')}
+                className="text-accent transition-opacity hover:opacity-90"
+              >
+                <FigmaProfileIcon className="block size-[38px]" />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="rounded-[10px] bg-accent px-5 py-3 text-[16px] text-surface transition-opacity hover:opacity-90"
+              >
+                {t('nav.login')}
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      {searchModalOpen && (
+        <SearchChoiceModal
+          termSearchTo={authTarget('/search', isAuthenticated)}
+          descriptionSearchTo={authTarget('/semantic-search', isAuthenticated)}
+          onClose={() => setSearchModalOpen(false)}
+        />
+      )}
+    </>
   );
 }

@@ -35,10 +35,12 @@ router = APIRouter()
 
 @router.get("/", response_model=list[TermDetailedResponse])
 async def search_terms(
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     query: Annotated[str, Query(min_length=1, max_length=255)],
     limit: Annotated[int, Query(ge=1, le=100)] = 10,
 ):
+    _ = current_user
     terms: list[Term] | None = await search_terms_by_prefix(
         session,
         limit=limit,

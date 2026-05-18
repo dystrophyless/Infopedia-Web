@@ -60,18 +60,23 @@ export function SemanticSearch() {
       </h1>
 
       <form onSubmit={handleSubmit} className="mb-8">
+        <label htmlFor="semantic-query" className="sr-only">
+          {t('semanticSearch.title')}
+        </label>
         <textarea
+          id="semantic-query"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('semanticSearch.placeholder')}
           rows={5}
+          aria-describedby="semantic-query-hint"
           className="w-full bg-surface border border-border rounded-[15px] p-5 text-[16px] text-text outline-none focus:border-accent shadow-feature resize-y min-h-[140px]"
         />
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-[13px] text-muted">
+          <span id="semantic-query-hint" className="text-[13px] text-muted">
             {query.trim().length < MIN_CHARS
               ? t('semanticSearch.minChars')
-              : `${query.trim().length}`}
+              : t('semanticSearch.charCount', { count: query.trim().length })}
           </span>
           <button
             type="submit"

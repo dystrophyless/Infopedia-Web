@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Term } from '../types';
+import type { FeaturedTerm, Term } from '../types';
 
 export async function searchTerms(query: string, limit = 10): Promise<Term[]> {
   const { data } = await apiClient.get<Term[]>('/api/search/', {
@@ -10,6 +10,11 @@ export async function searchTerms(query: string, limit = 10): Promise<Term[]> {
 
 export async function getTerm(id: number | string): Promise<Term> {
   const { data } = await apiClient.get<Term>(`/api/terms/${id}`);
+  return data;
+}
+
+export async function getFeaturedTerms(): Promise<FeaturedTerm[]> {
+  const { data } = await apiClient.get<FeaturedTerm[]>('/api/terms/featured');
   return data;
 }
 

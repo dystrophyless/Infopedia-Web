@@ -4,7 +4,7 @@ import type { Term } from '../types';
 
 function preview(text: string, max = 120): string {
   if (text.length <= max) return text;
-  return text.slice(0, max).trimEnd() + '…';
+  return text.slice(0, max).trimEnd() + '...';
 }
 
 export function TermCard({ term }: { term: Term }) {
@@ -15,19 +15,20 @@ export function TermCard({ term }: { term: Term }) {
   return (
     <Link
       to={`/terms/${term.id}`}
-      className="block bg-surface border border-border rounded-[15px] p-8 shadow-feature hover:shadow-card transition-all hover:-translate-y-0.5"
+      state={{ backTo: '/search', term }}
+      className="block rounded-[15px] border border-border bg-surface p-8 shadow-feature transition-shadow hover:shadow-card"
     >
-      <h3 className="font-medium text-[24px] text-text mb-3">{term.name}</h3>
-      {def && ( 
-        <p className="text-[15px] text-text-body mb-4 leading-relaxed">
+      <h3 className="mb-3 text-[24px] font-medium text-text">{term.name}</h3>
+      {def && (
+        <p className="mb-4 text-[15px] leading-relaxed text-text-body">
           {preview(def.text)}
         </p>
       )}
-      <div className="text-[13px] text-muted flex flex-wrap gap-x-4 gap-y-1">
-        {topic?.book?.title && <span>{topic.book.title}</span>}
-        {topic?.title && (
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
+        {topic?.book?.name && <span>{topic.book.name}</span>}
+        {topic?.name && (
           <span>
-            {t('search.topic')}: {topic.title}
+            {t('search.topic')}: {topic.name}
           </span>
         )}
         {def?.page !== undefined && (

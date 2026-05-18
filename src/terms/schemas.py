@@ -28,6 +28,11 @@ class TermDetailedResponse(TermResponse):
     definitions: list[DefinitionResponse] = Field(min_length=1)
 
 
+class FeaturedTermResponse(BaseModel):
+    term: TermDetailedResponse
+    featured_definition: DefinitionResponse
+
+
 class PaginatedTermsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

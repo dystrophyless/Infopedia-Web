@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     celery_result_backend: str
     celery_result_expires_seconds: int = 3600
     search_task_owner_ttl_seconds: int = 3600
+    featured_definition_ids: list[int] = [10, 4, 27, 31, 47]
 
 
 settings = Settings()

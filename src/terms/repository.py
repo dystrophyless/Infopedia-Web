@@ -112,6 +112,40 @@ async def get_term_by_id(
     return term
 
 
+async def get_definition_by_id(
+    session: AsyncSession,
+    *,
+    id: int,
+) -> Definition | None:  # fmt: skip
+    query = (
+        select(Definition)
+        .where(Definition.id == id)
+        .options(
+            joinedload(Definition.term)
+            .selectinload(Term.definitions)
+            .joinedload(Definition.topic)
+            .joinedload(Topic.book),
+            joinedload(Definition.topic)
+            .joinedload(Topic.book),
+        )
+    )  # fmt: skip
+
+    result = await session.execute(query)
+
+    definition: Definition | None = result.scalar_one_or_none()
+
+    if definition is None:
+        logger.debug(
+            "Не удалось получить определение с `id`='%s' из базы данных",
+            id,
+        )
+        return None
+
+    logger.debug("Получили данные для определения с `id`='%s'", id)
+
+    return definition
+
+
 async def get_terms_paginated(
     session: AsyncSession,
     *,

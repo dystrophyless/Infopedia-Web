@@ -10,8 +10,8 @@ export function SemanticResultCard({ definition }: { definition: Definition }) {
         {definition.text}
       </p>
       <div className="text-[14px] text-muted flex flex-wrap gap-x-4 gap-y-1">
-        {definition.topic?.book?.title && <span>{definition.topic.book.title}</span>}
-        {definition.topic?.title && <span>{definition.topic.title}</span>}
+        {definition.topic?.book?.name && <span>{definition.topic.book.name}</span>}
+        {definition.topic?.name && <span>{definition.topic.name}</span>}
         <span>
           {t('search.page')} {definition.page}
         </span>

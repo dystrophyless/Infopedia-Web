@@ -17,6 +17,10 @@ function Protected({ children }: { children: React.ReactNode }) {
   );
 }
 
+function Public({ children }: { children: React.ReactNode }) {
+  return <Layout>{children}</Layout>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -27,9 +31,9 @@ export default function App() {
         <Route
           path="/"
           element={
-            <Protected>
+            <Public>
               <Landing />
-            </Protected>
+            </Public>
           }
         />
         <Route
@@ -43,9 +47,9 @@ export default function App() {
         <Route
           path="/terms/:id"
           element={
-            <Protected>
+            <Public>
               <TermDetail />
-            </Protected>
+            </Public>
           }
         />
         <Route

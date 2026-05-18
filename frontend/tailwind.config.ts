@@ -8,6 +8,7 @@ export default {
         bg: 'var(--color-bg)',
         primary: 'var(--color-primary)',
         accent: 'var(--color-accent)',
+        secondary: 'var(--color-secondary)',
         border: 'var(--color-border)',
         muted: 'var(--color-muted)',
         highlight: 'var(--color-highlight)',

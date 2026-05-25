@@ -96,7 +96,7 @@ async def reserve_search_task_owner(*, task_id: str, user_id: int) -> None:
     try:
         await redis.setex(
             build_search_task_owner_key(task_id),
-            settings.search_task_owner_ttl_seconds,
+            settings.SEARCH_TASK_OWNER_TTL_SECONDS,
             str(user_id),
         )
     finally:

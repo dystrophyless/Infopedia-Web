@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -19,19 +22,38 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return password_hash.verify(plain_password, hashed_password)
 
 
+def create_verification_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def hash_verification_code(email: str, code: str) -> str:
+    normalized_email = email.strip().lower()
+
+    message = f"{normalized_email}:{code}".encode()
+
+    secret = settings.SECRET_KEY.get_secret_value().encode()
+
+    return hmac.new(secret, message, hashlib.sha256).hexdigest()
+
+
+def is_code_valid(email: str, code: str, code_hash: str) -> bool:
+    expected_hash = hash_verification_code(email, code)
+    return hmac.compare_digest(expected_hash, code_hash)
+
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
 
     expire = datetime.now(UTC) + (
-        expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     to_encode.update({"exp": expire})
 
     encoded_jwt = jwt.encode(
         to_encode,
-        settings.secret_key.get_secret_value(),
-        algorithm=settings.algorithm,
+        settings.SECRET_KEY.get_secret_value(),
+        algorithm=settings.ALGORITHM,
     )
     return encoded_jwt
 
@@ -40,8 +62,8 @@ def verify_access_token(token: str) -> str | None:
     try:
         payload = jwt.decode(
             token,
-            settings.secret_key.get_secret_value(),
-            algorithms=[settings.algorithm],
+            settings.SECRET_KEY.get_secret_value(),
+            algorithms=[settings.ALGORITHM],
             options={"require": ["exp", "sub"]},
         )
     except jwt.InvalidTokenError:

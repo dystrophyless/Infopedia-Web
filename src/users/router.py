@@ -18,7 +18,9 @@ from src.users.repository import (
     get_users as get_all_users,
 )
 from src.users.schemas import (
+    GradeSetupRequest,
     UserCreate,
+    UsernameSetupRequest,
     UserResponsePrivate,
     UserResponsePublic,
     UserUpdate,
@@ -95,6 +97,64 @@ async def create_user(
     return new_user
 
 
+@router.patch("/me/username", response_model=UserResponsePrivate)
+async def set_my_username(
+    username_data: UsernameSetupRequest,
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    username_exists = await check_user_exists_by_username(
+        session,
+        username=username_data.username,
+    )
+
+    if username_exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким username уже существует.",
+        )
+
+    current_user.username = username_data.username
+
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким username уже существует.",
+        )
+
+    await session.refresh(current_user)
+
+    return current_user
+
+
+@router.patch("/me/grade", response_model=UserResponsePrivate)
+async def set_my_grade(
+    grade_data: GradeSetupRequest,
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    if current_user.username is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "onboarding_step_required",
+                "next_step": "username",
+                "message": "Сначала укажите username.",
+            },
+        )
+
+    current_user.grade = grade_data.grade
+    current_user.onboarding_completed = True
+
+    await session.commit()
+    await session.refresh(current_user)
+
+    return current_user
+
+
 @router.get("/me", response_model=UserResponsePrivate)
 async def get_current_user(
     current_user: Annotated[User, Depends(get_authenticated_user)],
@@ -139,20 +199,20 @@ async def update_user(
             detail="Пользователь не найден.",
         )
 
-    if (
-        user_data.username is not None
-        and user_data.username.lower() != user.username.lower()
-    ):
-        username_exists: bool = await check_user_exists_by_username(
-            session,
-            username=user_data.username,
-        )
+    if user_data.username is not None:
+        current_username = user.username.lower() if user.username is not None else None
 
-        if username_exists:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Пользователь с таким username уже существует.",
+        if user_data.username.lower() != current_username:
+            username_exists = await check_user_exists_by_username(
+                session,
+                username=user_data.username,
             )
+
+            if username_exists:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Пользователь с таким username уже существует.",
+                )
 
     if user_data.email is not None and user_data.email.lower() != user.email.lower():
         email_exists: bool = await check_user_exists_by_email(

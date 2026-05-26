@@ -4,7 +4,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
-from src.terms.models import Definition, Term, Topic, TopicCode
+from src.terms.models import Definition, Term
+from src.topics.models import Topic, TopicCode
 
 logger = logging.getLogger(__name__)
 

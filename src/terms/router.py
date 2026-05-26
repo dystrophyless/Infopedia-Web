@@ -21,7 +21,6 @@ from src.terms.schemas import (
     PaginatedTermsResponse,
     TermCreate,
     TermDetailedResponse,
-    TermResponse,
     TermUpdate,
 )
 from src.terms.service import get_embedder
@@ -35,7 +34,7 @@ router = APIRouter()
 async def _get_featured_terms(session: AsyncSession) -> list[FeaturedTermResponse]:
     featured_terms: list[FeaturedTermResponse] = []
 
-    for definition_id in settings.featured_definition_ids:
+    for definition_id in settings.FEATURED_DEFINITION_IDS:
         definition = await get_definition_by_id(session, id=definition_id)
         if definition is None or definition.term is None:
             continue

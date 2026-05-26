@@ -2,8 +2,76 @@ from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.auth.models import PendingUser, RefreshToken
+from src.auth.models import AuthIdentity, PendingUser, RefreshToken
+from src.users.models import User
+
+
+async def add_auth_identity(
+    session: AsyncSession,
+    *,
+    user_id: int,
+    provider: str,
+    provider_subject: str,
+    email: str,
+    password_hash: str | None = None,
+) -> AuthIdentity:
+    auth_identity = AuthIdentity(
+        user_id=user_id,
+        provider=provider,
+        provider_subject=provider_subject,
+        email=email,
+        password_hash=password_hash,
+    )
+
+    session.add(auth_identity)
+
+    return auth_identity
+
+
+async def get_user_by_auth_identity(
+    session: AsyncSession,
+    *,
+    provider: str,
+    provider_subject: str,
+) -> User | None:
+    query = (
+        select(User)
+        .join(AuthIdentity)
+        .where(
+            AuthIdentity.provider == provider,
+            AuthIdentity.provider_subject == provider_subject,
+        )
+    )
+
+    result = await session.execute(query)
+
+    user: User | None = result.scalar_one_or_none()
+
+    return user
+
+
+async def get_auth_identity_by_provider_subject(
+    session: AsyncSession,
+    *,
+    provider: str,
+    provider_subject: str,
+) -> AuthIdentity | None:
+    query = (
+        select(AuthIdentity)
+        .options(selectinload(AuthIdentity.user))
+        .where(
+            AuthIdentity.provider == provider,
+            AuthIdentity.provider_subject == provider_subject,
+        )
+    )
+
+    result = await session.execute(query)
+
+    auth_identity: AuthIdentity | None = result.scalar_one_or_none()
+
+    return auth_identity
 
 
 async def get_pending_user_by_email(

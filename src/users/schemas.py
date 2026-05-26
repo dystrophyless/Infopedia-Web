@@ -71,5 +71,10 @@ class UsernameSetupRequest(BaseModel):
         return validate_username_value(value)
 
 
+class UsernameAvailabilityResponse(BaseModel):
+    username: str
+    available: bool
+
+
 class GradeSetupRequest(BaseModel):
     grade: UserGrade

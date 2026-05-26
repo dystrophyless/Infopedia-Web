@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,7 @@ from src.users.repository import (
 )
 from src.users.schemas import (
     GradeSetupRequest,
+    UsernameAvailabilityResponse,
     UserCreate,
     UsernameSetupRequest,
     UserResponsePrivate,
@@ -96,6 +98,30 @@ async def create_user(
     await session.refresh(new_user)
 
     return new_user
+
+
+@router.get("/username-availability", response_model=UsernameAvailabilityResponse)
+async def check_username_availability(
+    username: Annotated[str, Query(min_length=3, max_length=20)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    try:
+        username_data = UsernameSetupRequest(username=username)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.errors(),
+        ) from exc
+
+    username_exists = await check_user_exists_by_username(
+        session,
+        username=username_data.username,
+    )
+
+    return UsernameAvailabilityResponse(
+        username=username_data.username,
+        available=not username_exists,
+    )
 
 
 @router.patch("/me/username", response_model=UserResponsePrivate)

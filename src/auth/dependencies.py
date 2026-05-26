@@ -41,3 +41,20 @@ async def get_current_user(
         )
 
     return user
+
+
+async def get_onboarded_user(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if current_user.onboarding_completed:
+        return current_user
+
+    next_step = "username" if current_user.username is None else "grade"
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail={
+            "code": "onboarding_required",
+            "next_step": next_step,
+        },
+    )

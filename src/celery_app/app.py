@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 app = Celery(
     "app",
-    broker=settings.celery_broker_url,
-    backend=settings.celery_result_backend,
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.CELERY_RESULT_BACKEND,
     include=[
         "src.celery_app.search_task",
     ],
@@ -24,7 +24,7 @@ app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
-    result_expires=settings.celery_result_expires_seconds,
+    result_expires=settings.CELERY_RESULT_EXPIRES_SECONDS,
     timezone="Asia/Almaty",
     enable_utc=False,
     task_track_started=True,

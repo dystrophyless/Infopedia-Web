@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: SecretStr
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
+    GOOGLE_OAUTH_STATE_TTL_SECONDS: int = 600
 
     VERIFICATION_CODE_EXPIRE_MINUTES: int
     REGISTRATION_RESEND_COOLDOWN_SECONDS: int

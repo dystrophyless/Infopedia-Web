@@ -61,10 +61,10 @@ export function Login() {
     setLoading(true);
     try {
       const tokens = await login(email, password);
-      setAuth(tokens.access_token);
+      setAuth(tokens.access_token, tokens.refresh_token);
       try {
         const me = await getMe();
-        setAuth(tokens.access_token, me);
+        setAuth(tokens.access_token, tokens.refresh_token, me);
       } catch (profileErr) {
         if (isOnboardingRequiredError(profileErr)) {
           navigate('/onboarding', { replace: true });

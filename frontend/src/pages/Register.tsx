@@ -132,7 +132,7 @@ export function Register() {
     setLoading(true);
     try {
       const tokens = await verifyEmail({ email, code: normalizedCode });
-      setAuth(tokens.access_token);
+      setAuth(tokens.access_token, tokens.refresh_token);
       navigate('/onboarding', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, t('auth.verificationFailed')));

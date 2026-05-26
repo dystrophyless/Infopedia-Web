@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
@@ -15,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
 from src.users.enums import Feature, UserGrade, UserLanguage, UserRole
+
+if TYPE_CHECKING:
+    from src.auth.models import RefreshToken
 
 
 class User(Base):
@@ -51,6 +55,11 @@ class User(Base):
     )
 
     feature_usages: Mapped[list["FeatureUsage"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

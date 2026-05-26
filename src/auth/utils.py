@@ -70,3 +70,17 @@ def verify_access_token(token: str) -> str | None:
         return None
     else:
         return payload.get("sub")
+
+
+def create_refresh_token() -> str:
+    return secrets.token_urlsafe(48)
+
+
+def hash_refresh_token(token: str) -> str:
+    secret = settings.SECRET_KEY.get_secret_value().encode()
+
+    return hmac.new(secret, token.encode(), hashlib.sha256).hexdigest()
+
+
+def get_refresh_token_expires_at() -> datetime:
+    return datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)

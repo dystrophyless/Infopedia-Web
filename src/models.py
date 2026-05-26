@@ -1,4 +1,4 @@
-from src.auth.models import PendingUser
+from src.auth.models import PendingUser, RefreshToken
 from src.database import Base
 from src.terms.models import (
     Definition,

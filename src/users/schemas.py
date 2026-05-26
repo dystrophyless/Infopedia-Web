@@ -50,7 +50,7 @@ class UserResponsePublic(BaseModel):
     id: int = Field(ge=1)
     username: str | None = Field(min_length=3, max_length=20)
     role: UserRole
-    grade: UserGrade
+    grade: UserGrade | None
     language: UserLanguage
     banned: bool
 

@@ -18,7 +18,7 @@ async def add_user(
     password_hash: str,
     username: str | None = None,
     language: UserLanguage = UserLanguage.RUSSIAN,
-    grade: UserGrade | None = UserGrade.GRADE_UNDEFINED,
+    grade: UserGrade | None = None,
     role: UserRole = UserRole.USER,
     banned: bool = False,
     onboarding_completed: bool = False,

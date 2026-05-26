@@ -6,14 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.terms.models import (
-    Book,
-    Chapter,
     Definition,
     Term,
-    Topic,
-    TopicCode,
-    TopicMapping,
 )
+from src.topics.models import Book, Chapter, Topic, TopicCode, TopicMapping
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -74,7 +70,9 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
                 definition: Definition = result.scalar_one_or_none()
 
                 if not definition:
-                    emb = (await asyncio.to_thread(embedder.encode, d["definition"])).tolist()
+                    emb = (
+                        await asyncio.to_thread(embedder.encode, d["definition"])
+                    ).tolist()
 
                     definition: Definition = Definition(
                         text=d["definition"],

@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.terms.models import Topic, TopicCode
+from src.topics.models import Topic, TopicCode
 
 logger = logging.getLogger(__name__)
 

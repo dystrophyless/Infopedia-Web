@@ -27,6 +27,7 @@ export interface FeaturedTerm {
 
 export interface AuthTokens {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 
@@ -37,12 +38,13 @@ export type UserLanguage = 'ru' | 'kk';
 
 export interface User {
   id: number;
-  username: string;
+  username: string | null;
   email: string;
   language: UserLanguage;
-  grade: UserGrade;
+  grade: UserGrade | null;
   role: UserRole;
   banned?: boolean;
+  onboarding_completed?: boolean;
   created_at?: string;
 }
 

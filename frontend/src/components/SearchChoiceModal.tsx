@@ -33,7 +33,7 @@ export function SearchChoiceModal({
       <section
         aria-labelledby="search-choice-title"
         aria-modal="true"
-        className="flex h-[434px] max-h-[calc(100vh-32px)] w-[min(672px,calc(100vw-32px))] flex-col items-center justify-between overflow-hidden rounded-[15px] border border-[#595959] bg-surface p-[70px] shadow-[0_4px_2px_rgba(0,0,0,0.25)] max-md:h-auto max-md:min-h-[390px] max-md:p-8"
+        className="flex h-[434px] max-h-[calc(100vh-32px)] w-[min(672px,calc(100vw-32px))] flex-col items-center justify-between overflow-hidden rounded-[15px] border border-[#595959] bg-surface p-[70px] shadow-[0_4px_2px_rgba(89,89,89,0.35)] max-md:h-auto max-md:min-h-[390px] max-md:p-8"
         role="dialog"
         onMouseDown={(event) => event.stopPropagation()}
       >

@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { Onboarding } from './pages/Onboarding';
 import { TermSearch } from './pages/TermSearch';
 import { TermDetail } from './pages/TermDetail';
 import { SemanticSearch } from './pages/SemanticSearch';
@@ -27,6 +28,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/onboarding" element={<Onboarding />} />
 
         <Route
           path="/"

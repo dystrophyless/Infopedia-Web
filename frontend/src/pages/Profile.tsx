@@ -90,7 +90,7 @@ export function Profile() {
     if (!profile) return [];
 
     const detailValues: Record<ProfileDetailFieldKey, string> = {
-      username: profile.username,
+      username: profile.username ?? t('profile.usernameUndefined'),
       email: profile.email,
       grade: getGradeLabel(profile.grade, t),
       languagePref: getLanguageLabel(profile.language, t),
@@ -116,12 +116,12 @@ export function Profile() {
           className="max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]"
           aria-label={t('profile.title')}
         >
-          <section className="rounded-[8px] border border-border bg-surface p-5 shadow-[3px_3px_0_rgba(58,28,110,0.22)]">
+          <section className="rounded-[8px] border border-border bg-surface p-5 shadow-[3px_3px_0_#9683b7]">
             <div className="flex items-center gap-4">
               <FigmaProfileIcon className="block size-[70px] shrink-0 text-accent" />
               <div className="min-w-0">
                 <p className="truncate text-[28px] font-medium leading-tight text-primary max-sm:text-[23px]">
-                  {profile?.username ?? user?.username ?? 'vammidzone'}
+                  {profile?.username ?? user?.username ?? t('profile.usernameUndefined')}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <ProfileChip>{profile ? getGradeLabel(profile.grade, t) : t('profile.fallbackProfileChip')}</ProfileChip>
@@ -142,7 +142,7 @@ export function Profile() {
                   onClick={() => setActiveTab(item.id)}
                   className={`flex h-[54px] w-full items-center gap-3 rounded-[8px] border px-5 text-left text-[18px] text-primary transition-colors ${
                     isActive
-                      ? 'border-border bg-surface shadow-[2px_2px_0_rgba(58,28,110,0.35)]'
+                      ? 'border-border bg-surface shadow-[2px_2px_0_#9683b7]'
                       : 'border-transparent hover:border-border/60 hover:bg-surface/60'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
@@ -155,7 +155,7 @@ export function Profile() {
           </nav>
         </aside>
 
-        <main className="rounded-[8px] border border-border bg-surface shadow-[4px_4px_0_rgba(58,28,110,0.28)] max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]">
+        <main className="rounded-[8px] border border-border bg-surface shadow-[4px_4px_0_#9683b7] max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]">
           {loading && !profile && (
             <div className="p-8">
               <SkeletonCard />
@@ -221,7 +221,7 @@ function ProfileOverview({
             <FigmaProfileIcon className="block size-[86px] shrink-0 text-accent" />
             <div className="min-w-0">
               <h2 className="truncate text-[34px] font-medium leading-tight text-primary max-md:text-[27px]">
-                {profile.username}
+                {profile.username ?? t('profile.usernameUndefined')}
               </h2>
               <p className="mt-2 break-all text-[18px] leading-tight text-text-body">
                 {profile.email}
@@ -355,7 +355,7 @@ function getTabTitle(tab: ProfileTabId, t: (key: string) => string) {
   return t(titleKeys[tab]);
 }
 
-function getGradeLabel(grade: UserGrade, t: (key: string) => string) {
+function getGradeLabel(grade: UserGrade | null, t: (key: string) => string) {
   if (grade === '10') return t('profile.grade10');
   if (grade === '11') return t('profile.grade11');
   return t('profile.gradeUndefined');

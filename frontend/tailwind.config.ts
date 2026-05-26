@@ -22,8 +22,8 @@ export default {
         sans: ['"Mabry Pro"', 'sans-serif'],
       },
       boxShadow: {
-        card: '8px 8px 0px rgba(58,28,110,0.5)',
-        feature: '4px 4px 0px rgba(150,131,183,0.5)',
+        card: '8px 8px 0px #9683b7',
+        feature: '4px 4px 0px #9683b7',
       },
     },
   },

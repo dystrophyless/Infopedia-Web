@@ -17,7 +17,6 @@ from src.terms.schemas import (
     PaginatedTermsResponse,
     TermCreate,
     TermDetailedResponse,
-    TermResponse,
     TermUpdate,
 )
 from src.terms.service import get_embedder

@@ -1,7 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import httpx
+from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,9 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.emailer import EmailDeliveryError, send_verification_code
 from src.auth.models import PendingUser
 from src.auth.repository import (
+    add_auth_identity,
     add_refresh_token,
+    get_auth_identity_by_provider_subject,
     get_pending_user_by_email,
     get_refresh_token_by_hash,
+    get_user_by_auth_identity,
     revoke_refresh_token,
 )
 from src.auth.schemas import (
@@ -24,11 +29,15 @@ from src.auth.utils import (
     create_access_token,
     create_refresh_token,
     create_verification_code,
+    create_google_oauth_state,
+    generate_google_oauth_redirect_uri,
+    GOOGLE_OAUTH_STATE_COOKIE,
     get_refresh_token_expires_at,
     hash_password,
     hash_refresh_token,
     hash_verification_code,
     is_code_valid,
+    verify_google_oauth_state,
     verify_password,
 )
 from src.config import settings
@@ -42,6 +51,13 @@ from src.users.repository import (
 )
 
 router = APIRouter()
+
+GOOGLE_PROVIDER = "google"
+PASSWORD_PROVIDER = "password"
+GOOGLE_AUTH_FAILED_DETAIL = "Не удалось авторизоваться через Google."
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 
 
 async def issue_token_pair(
@@ -67,6 +83,71 @@ async def issue_token_pair(
         refresh_token=refresh_token,
         token_type="bearer",
     )
+
+
+async def exchange_google_authorization_code(code: str) -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(
+            GOOGLE_TOKEN_URL,
+            data={
+                "code": code,
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
+                "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
+            },
+        )
+
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    return response.json()
+
+
+async def fetch_google_token_info(id_token: str) -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(
+            GOOGLE_TOKEN_INFO_URL,
+            params={"id_token": id_token},
+        )
+
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    token_info = response.json()
+
+    if token_info.get("aud") != settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    if token_info.get("iss") not in GOOGLE_ISSUERS:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    email_verified = token_info.get("email_verified")
+    if email_verified not in {True, "true", "True"}:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    if not token_info.get("sub") or not token_info.get("email"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    return token_info
 
 
 @router.post("/register", status_code=status.HTTP_202_ACCEPTED)
@@ -176,6 +257,17 @@ async def verify_email(
             password_hash=pending.password_hash,
             onboarding_completed=False,
         )
+        if user.id is None:
+            await session.flush()
+
+        await add_auth_identity(
+            session,
+            user_id=user.id,
+            provider=PASSWORD_PROVIDER,
+            provider_subject=pending.email.lower(),
+            email=pending.email.lower(),
+            password_hash=pending.password_hash,
+        )
         await session.delete(pending)
 
         token_pair: TokenPair = await issue_token_pair(session, user=user)
@@ -196,9 +288,25 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    user: User | None = await get_user_by_email(session, email=form_data.username)
+    email = form_data.username.lower()
+    auth_identity = await get_auth_identity_by_provider_subject(
+        session,
+        provider=PASSWORD_PROVIDER,
+        provider_subject=email,
+    )
 
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if auth_identity is None:
+        user = await get_user_by_email(session, email=email)
+        password_hash = user.password_hash if user is not None else None
+    else:
+        user = auth_identity.user
+        password_hash = auth_identity.password_hash
+
+    if (
+        not user
+        or password_hash is None
+        or not verify_password(form_data.password, password_hash)
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверное имя пользователя или пароль.",
@@ -248,6 +356,100 @@ async def refresh_access_token(
         )
 
     await revoke_refresh_token(refresh_token=stored_token)
+
+    token_pair: TokenPair = await issue_token_pair(session, user=user)
+
+    await session.commit()
+
+    return token_pair
+
+
+@router.get("/google/url")
+async def get_google_oauth_url():
+    state = create_google_oauth_state()
+    redirect_uri = generate_google_oauth_redirect_uri(state=state)
+
+    response = RedirectResponse(url=redirect_uri, status_code=status.HTTP_302_FOUND)
+    response.set_cookie(
+        key=GOOGLE_OAUTH_STATE_COOKIE,
+        value=state,
+        max_age=settings.GOOGLE_OAUTH_STATE_TTL_SECONDS,
+        httponly=True,
+        secure=settings.FRONTEND_URL.startswith("https://"),
+        samesite="lax",
+    )
+
+    return response
+
+
+@router.get("/google/callback", response_model=TokenPair)
+async def handle_google_oauth_callback(
+    code: str,
+    state: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    google_oauth_state: Annotated[
+        str | None,
+        Cookie(alias=GOOGLE_OAUTH_STATE_COOKIE),
+    ] = None,
+):
+    if (
+        google_oauth_state is None
+        or google_oauth_state != state
+        or not verify_google_oauth_state(state)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    google_tokens = await exchange_google_authorization_code(code)
+    id_token = google_tokens.get("id_token")
+    if id_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    token_info = await fetch_google_token_info(id_token)
+    provider_subject = token_info["sub"]
+    email = token_info["email"].lower()
+
+    user = await get_user_by_auth_identity(
+        session,
+        provider=GOOGLE_PROVIDER,
+        provider_subject=provider_subject,
+    )
+
+    if user is None:
+        user = await get_user_by_email(session, email=email)
+
+        if user is None:
+            user = await add_user(
+                session,
+                username=None,
+                email=email,
+                password_hash=None,
+                onboarding_completed=False,
+            )
+
+        if user.id is None:
+            await session.flush()
+
+        await add_auth_identity(
+            session,
+            user_id=user.id,
+            provider=GOOGLE_PROVIDER,
+            provider_subject=provider_subject,
+            email=email,
+            password_hash=None,
+        )
+
+    if user.banned:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь заблокирован.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     token_pair: TokenPair = await issue_token_pair(session, user=user)
 

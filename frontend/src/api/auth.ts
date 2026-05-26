@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AuthTokens, User } from '../types';
+import type { AuthTokens } from '../types';
 
 export async function login(email: string, password: string): Promise<AuthTokens> {
   const form = new URLSearchParams();
@@ -11,21 +11,29 @@ export async function login(email: string, password: string): Promise<AuthTokens
   return data;
 }
 
-export interface RegisterPayload {
-  username: string;
+export interface StartRegistrationPayload {
   email: string;
   password: string;
-  language?: 'ru' | 'kk';
-  grade?: '10' | '11' | 'undefined';
 }
 
-export async function register(payload: RegisterPayload): Promise<User> {
-  const { data } = await apiClient.post<User>('/api/users', {
-    username: payload.username,
+export async function startRegistration(
+  payload: StartRegistrationPayload
+): Promise<void> {
+  await apiClient.post('/api/auth/register', {
     email: payload.email,
     password: payload.password,
-    language: payload.language ?? 'ru',
-    grade: payload.grade ?? 'undefined',
+  });
+}
+
+export interface VerifyEmailPayload {
+  email: string;
+  code: string;
+}
+
+export async function verifyEmail(payload: VerifyEmailPayload): Promise<AuthTokens> {
+  const { data } = await apiClient.post<AuthTokens>('/api/auth/verify-email', {
+    email: payload.email,
+    code: payload.code,
   });
   return data;
 }

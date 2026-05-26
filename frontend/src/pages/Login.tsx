@@ -5,7 +5,25 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { login } from '../api/auth';
 import { getMe } from '../api/users';
-import { AuthShell, AuthInput, AuthSubmit } from '../components/AuthShell';
+import { AuthEmailInput, AuthPasswordInput, AuthShell, AuthSubmit } from '../components/AuthShell';
+
+type LoginFieldErrors = {
+  email?: string;
+  password?: string;
+};
+
+function isOnboardingRequiredError(err: unknown) {
+  if (!axios.isAxiosError(err)) return false;
+
+  const detail = (err.response?.data as { detail?: unknown } | undefined)?.detail;
+  return (
+    err.response?.status === 403 &&
+    detail !== null &&
+    typeof detail === 'object' &&
+    'code' in detail &&
+    detail.code === 'onboarding_required'
+  );
+}
 
 export function Login() {
   const { t } = useTranslation();
@@ -15,6 +33,8 @@ export function Login() {
   const { setAuth, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -23,10 +43,21 @@ export function Login() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!email || !password) {
-      setError(t('auth.fillAllFields'));
+    setFieldErrors({});
+
+    const nextErrors: LoginFieldErrors = {};
+    if (!email.trim()) {
+      nextErrors.email = t('auth.emailRequired');
+    }
+    if (!password) {
+      nextErrors.password = t('auth.passwordRequired');
+    }
+
+    if (nextErrors.email || nextErrors.password) {
+      setFieldErrors(nextErrors);
       return;
     }
+
     setLoading(true);
     try {
       const tokens = await login(email, password);
@@ -34,7 +65,11 @@ export function Login() {
       try {
         const me = await getMe();
         setAuth(tokens.access_token, me);
-      } catch {
+      } catch (profileErr) {
+        if (isOnboardingRequiredError(profileErr)) {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
         /* user fetch failure does not block login */
       }
       navigate(next, { replace: true });
@@ -45,6 +80,7 @@ export function Login() {
         if (typeof detail === 'string') message = detail;
       }
       setError(message);
+      setFieldErrors({ email: message });
     } finally {
       setLoading(false);
     }
@@ -63,21 +99,34 @@ export function Login() {
       }
     >
       <form onSubmit={handleSubmit} noValidate>
-        <AuthInput
+        <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body">
+          {t('auth.loginHelper')}
+        </p>
+        <AuthEmailInput
           label={t('auth.email')}
-          type="email"
           value={email}
-          onChange={setEmail}
-          autoComplete="email"
+          onChange={(value) => {
+            setEmail(value);
+            setFieldErrors((errors) => ({ ...errors, email: undefined }));
+            setError(null);
+          }}
+          error={fieldErrors.email}
         />
-        <AuthInput
+        <AuthPasswordInput
           label={t('auth.password')}
-          type="password"
           value={password}
-          onChange={setPassword}
+          visible={showPassword}
+          onChange={(value) => {
+            setPassword(value);
+            setFieldErrors((errors) => ({ ...errors, password: undefined }));
+            setError(null);
+          }}
+          onToggle={() => setShowPassword((visible) => !visible)}
+          toggleLabel={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           autoComplete="current-password"
+          error={fieldErrors.password}
         />
-        {error && (
+        {error && !fieldErrors.email && !fieldErrors.password && (
           <p className="text-danger text-[14px] mb-3" role="alert">
             {error}
           </p>

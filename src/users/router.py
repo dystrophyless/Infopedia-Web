@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_user as get_authenticated_user
+from src.auth.dependencies import get_onboarded_user
 from src.auth.utils import hash_password
 from src.database import get_async_session
 from src.users.models import User
@@ -103,6 +104,24 @@ async def set_my_username(
     current_user: Annotated[User, Depends(get_authenticated_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
+    if current_user.onboarding_completed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "onboarding_already_completed",
+                "message": "Onboarding уже завершен.",
+            },
+        )
+
+    if current_user.username is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "username_already_set",
+                "message": "Username уже установлен.",
+            },
+        )
+
     username_exists = await check_user_exists_by_username(
         session,
         username=username_data.username,
@@ -136,6 +155,24 @@ async def set_my_grade(
     current_user: Annotated[User, Depends(get_authenticated_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
+    if current_user.onboarding_completed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "onboarding_already_completed",
+                "message": "Onboarding уже завершен.",
+            },
+        )
+
+    if current_user.grade is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "grade_already_set",
+                "message": "Grade уже установлен.",
+            },
+        )
+
     if current_user.username is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -157,7 +194,7 @@ async def set_my_grade(
 
 @router.get("/me", response_model=UserResponsePrivate)
 async def get_current_user(
-    current_user: Annotated[User, Depends(get_authenticated_user)],
+    current_user: Annotated[User, Depends(get_onboarded_user)],
 ):
     return current_user
 
@@ -182,7 +219,7 @@ async def get_user(
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
-    current_user: Annotated[User, Depends(get_authenticated_user)],
+    current_user: Annotated[User, Depends(get_onboarded_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     if user_id != current_user.id:
@@ -250,7 +287,7 @@ async def update_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
-    current_user: Annotated[User, Depends(get_authenticated_user)],
+    current_user: Annotated[User, Depends(get_onboarded_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     if user_id != current_user.id:

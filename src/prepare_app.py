@@ -2,6 +2,7 @@ import asyncio
 import logging
 import logging.config
 
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.database import (
@@ -30,6 +31,9 @@ async def create_tables() -> None:
 
         async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await conn.execute(
+                text('ALTER TABLE "user" ALTER COLUMN password_hash DROP NOT NULL'),
+            )
 
         logger.debug("Схема базы данных успешно инициализирована.")
     except SQLAlchemyError:

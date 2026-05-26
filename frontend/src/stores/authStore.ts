@@ -4,9 +4,10 @@ import type { User } from '../types';
 
 interface AuthState {
   token: string | null;
+  refreshToken: string | null;
   user: User | null;
   isAuthenticated: boolean;
-  setAuth: (token: string, user?: User | null) => void;
+  setAuth: (token: string, refreshToken: string, user?: User | null) => void;
   setUser: (user: User) => void;
   logout: () => void;
 }
@@ -15,17 +16,20 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
+      refreshToken: null,
       user: null,
       isAuthenticated: false,
-      setAuth: (token, user = null) =>
-        set({ token, user, isAuthenticated: Boolean(token) }),
+      setAuth: (token, refreshToken, user = null) =>
+        set({ token, refreshToken, user, isAuthenticated: Boolean(token) }),
       setUser: (user) => set({ user }),
-      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+      logout: () =>
+        set({ token: null, refreshToken: null, user: null, isAuthenticated: false }),
     }),
     {
       name: 'infopedia_auth',
       partialize: (state) => ({
         token: state.token,
+        refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

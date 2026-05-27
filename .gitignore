@@ -10,3 +10,4 @@ data/
 .codex/
 openspec/
 docs/
+.pycache-verify/

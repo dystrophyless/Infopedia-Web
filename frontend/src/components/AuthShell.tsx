@@ -96,6 +96,51 @@ export function AuthSubmit({
   );
 }
 
+export function AuthDivider({ label }: { label: string }) {
+  return (
+    <div className="my-5 flex items-center gap-3 text-[13px] text-muted">
+      <span className="h-px flex-1 bg-border" />
+      <span>{label}</span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-5 text-accent"
+      fill="currentColor"
+    >
+      <path d="M21.6 12.23c0-.78-.07-1.53-.2-2.23H12v4.22h5.38a4.6 4.6 0 0 1-2 3.02v2.52h3.24c1.9-1.75 2.98-4.32 2.98-7.53Z" />
+      <path d="M12 22c2.7 0 4.97-.9 6.62-2.44l-3.24-2.52c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.76-5.6-4.12H3.05v2.6A10 10 0 0 0 12 22Z" />
+      <path d="M6.4 13.88a6 6 0 0 1 0-3.76v-2.6H3.05a10 10 0 0 0 0 8.96l3.35-2.6Z" />
+      <path d="M12 6c1.47 0 2.78.5 3.82 1.5l2.87-2.88A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.95 5.52l3.35 2.6C7.2 7.76 9.4 6 12 6Z" />
+    </svg>
+  );
+}
+
+export function GoogleAuthButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg"
+    >
+      <GoogleIcon />
+      <span>{children}</span>
+    </button>
+  );
+}
+
 export function AuthEmailInput({
   label,
   value,

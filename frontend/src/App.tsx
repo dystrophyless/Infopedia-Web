@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { GoogleCallback } from './pages/GoogleCallback';
 import { Onboarding } from './pages/Onboarding';
 import { TermSearch } from './pages/TermSearch';
 import { TermDetail } from './pages/TermDetail';
@@ -28,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route path="/onboarding" element={<Onboarding />} />
 
         <Route

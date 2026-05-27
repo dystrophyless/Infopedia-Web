@@ -3,9 +3,16 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
-import { login } from '../api/auth';
+import { login, startGoogleAuth } from '../api/auth';
 import { getMe } from '../api/users';
-import { AuthEmailInput, AuthPasswordInput, AuthShell, AuthSubmit } from '../components/AuthShell';
+import {
+  AuthDivider,
+  AuthEmailInput,
+  AuthPasswordInput,
+  AuthShell,
+  AuthSubmit,
+  GoogleAuthButton,
+} from '../components/AuthShell';
 
 type LoginFieldErrors = {
   email?: string;
@@ -86,6 +93,10 @@ export function Login() {
     }
   }
 
+  function handleGoogleAuth() {
+    startGoogleAuth(next);
+  }
+
   return (
     <AuthShell
       title={t('auth.loginTitle')}
@@ -134,6 +145,10 @@ export function Login() {
         <AuthSubmit loading={loading}>
           {loading ? t('common.loading') : t('auth.loginButton')}
         </AuthSubmit>
+        <AuthDivider label={t('auth.or')} />
+        <GoogleAuthButton onClick={handleGoogleAuth}>
+          {t('auth.continueWithGoogle')}
+        </GoogleAuthButton>
       </form>
     </AuthShell>
   );

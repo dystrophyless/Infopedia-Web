@@ -1,8 +1,9 @@
+import urllib.parse
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
@@ -60,6 +61,39 @@ GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
 
 
+def request_accepts_json(request: Request) -> bool:
+    return "application/json" in request.headers.get("accept", "").lower()
+
+
+def build_google_frontend_callback_url(token_pair: TokenPair) -> str:
+    fragment = urllib.parse.urlencode(
+        {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "token_type": token_pair.token_type,
+        },
+        quote_via=urllib.parse.quote,
+    )
+    return f"{settings.google_frontend_callback_uri}#{fragment}"
+
+
+def build_google_frontend_error_callback_url(error: str | None = None) -> str:
+    fragment = urllib.parse.urlencode(
+        {"error": error or "google_auth_failed"},
+        quote_via=urllib.parse.quote,
+    )
+    return f"{settings.google_frontend_callback_uri}#{fragment}"
+
+
+def redirect_to_google_frontend_error(error: str | None = None) -> RedirectResponse:
+    response = RedirectResponse(
+        url=build_google_frontend_error_callback_url(error),
+        status_code=status.HTTP_302_FOUND,
+    )
+    response.delete_cookie(key=GOOGLE_OAUTH_STATE_COOKIE)
+    return response
+
+
 async def issue_token_pair(
     session: AsyncSession,
     *,
@@ -93,7 +127,7 @@ async def exchange_google_authorization_code(code: str) -> dict:
                 "code": code,
                 "client_id": settings.GOOGLE_CLIENT_ID,
                 "client_secret": settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
-                "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                "redirect_uri": settings.google_redirect_uri,
                 "grant_type": "authorization_code",
             },
         )
@@ -384,19 +418,39 @@ async def get_google_oauth_url():
 
 @router.get("/google/callback", response_model=TokenPair)
 async def handle_google_oauth_callback(
-    code: str,
-    state: str,
+    request: Request,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    state: str,
+    code: str | None = None,
+    error: str | None = None,
     google_oauth_state: Annotated[
         str | None,
         Cookie(alias=GOOGLE_OAUTH_STATE_COOKIE),
     ] = None,
 ):
+    if error is not None:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error(error)
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
     if (
         google_oauth_state is None
         or google_oauth_state != state
         or not verify_google_oauth_state(state)
     ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        )
+
+    if code is None:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error()
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=GOOGLE_AUTH_FAILED_DETAIL,
@@ -454,6 +508,14 @@ async def handle_google_oauth_callback(
     token_pair: TokenPair = await issue_token_pair(session, user=user)
 
     await session.commit()
+
+    if not request_accepts_json(request):
+        response = RedirectResponse(
+            url=build_google_frontend_callback_url(token_pair),
+            status_code=status.HTTP_302_FOUND,
+        )
+        response.delete_cookie(key=GOOGLE_OAUTH_STATE_COOKIE)
+        return response
 
     return token_pair
 

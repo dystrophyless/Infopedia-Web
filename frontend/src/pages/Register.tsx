@@ -3,8 +3,15 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
-import { startRegistration, verifyEmail } from '../api/auth';
-import { AuthEmailInput, AuthPasswordInput, AuthShell, AuthSubmit } from '../components/AuthShell';
+import { startGoogleAuth, startRegistration, verifyEmail } from '../api/auth';
+import {
+  AuthDivider,
+  AuthEmailInput,
+  AuthPasswordInput,
+  AuthShell,
+  AuthSubmit,
+  GoogleAuthButton,
+} from '../components/AuthShell';
 
 type RegisterStep = 'account' | 'code';
 type AccountFieldErrors = {
@@ -166,6 +173,10 @@ export function Register() {
     }
   }
 
+  function handleGoogleAuth() {
+    startGoogleAuth('/onboarding');
+  }
+
   return (
     <AuthShell
       title={step === 'account' ? t('auth.registerTitle') : t('auth.verifyTitle')}
@@ -210,6 +221,10 @@ export function Register() {
           <AuthSubmit loading={loading}>
             {loading ? t('common.loading') : t('auth.sendCodeButton')}
           </AuthSubmit>
+          <AuthDivider label={t('auth.or')} />
+          <GoogleAuthButton onClick={handleGoogleAuth}>
+            {t('auth.continueWithGoogle')}
+          </GoogleAuthButton>
         </form>
       ) : (
         <form onSubmit={handleCodeSubmit} noValidate>

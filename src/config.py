@@ -13,11 +13,12 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    BACKEND_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:5173"
 
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: SecretStr
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
+    GOOGLE_REDIRECT_URI: str | None = None
     GOOGLE_OAUTH_STATE_TTL_SECONDS: int = 600
 
     VERIFICATION_CODE_EXPIRE_MINUTES: int
@@ -46,6 +47,16 @@ class Settings(BaseSettings):
     CELERY_RESULT_EXPIRES_SECONDS: int
     SEARCH_TASK_OWNER_TTL_SECONDS: int
     FEATURED_DEFINITION_IDS: list[int] = [10, 4, 27, 31, 47]
+
+    @property
+    def google_redirect_uri(self) -> str:
+        if self.GOOGLE_REDIRECT_URI:
+            return self.GOOGLE_REDIRECT_URI
+        return f"{self.BACKEND_URL.rstrip('/')}/api/auth/google/callback"
+
+    @property
+    def google_frontend_callback_uri(self) -> str:
+        return f"{self.FRONTEND_URL.rstrip('/')}/auth/google/callback"
 
 
 settings = Settings()

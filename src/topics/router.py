@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_async_session
-from src.terms.models import Topic
+from src.topics.models import Topic
 from src.topics.repository import (
     get_all_topics,
     get_topic_by_id,

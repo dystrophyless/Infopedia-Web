@@ -149,3 +149,11 @@ def generate_google_oauth_redirect_uri(state: str | None = None) -> str:
     query_string = urllib.parse.urlencode(query_params, quote_via=urllib.parse.quote)
 
     return f"{base_url}?{query_string}"
+
+
+def generate_reset_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()

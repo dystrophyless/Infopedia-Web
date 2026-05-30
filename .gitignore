@@ -7,3 +7,4 @@ scripts/
 data/
 .worktrees/
 docs/
+.pycache-verify/

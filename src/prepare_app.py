@@ -32,7 +32,42 @@ async def create_tables() -> None:
         async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             await conn.execute(
-                text('ALTER TABLE "user" ALTER COLUMN password_hash DROP NOT NULL'),
+                text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1
+                            FROM information_schema.columns
+                            WHERE table_schema = current_schema()
+                              AND table_name = 'user'
+                              AND column_name = 'password_hash'
+                        ) THEN
+                            INSERT INTO auth_identity (
+                                user_id,
+                                provider,
+                                provider_subject,
+                                email,
+                                password_hash
+                            )
+                            SELECT
+                                "user".id,
+                                'password',
+                                lower("user".email),
+                                lower("user".email),
+                                "user".password_hash
+                            FROM "user"
+                            WHERE "user".password_hash IS NOT NULL
+                            ON CONFLICT (provider, provider_subject)
+                            DO UPDATE SET
+                                email = EXCLUDED.email,
+                                password_hash = EXCLUDED.password_hash;
+
+                            ALTER TABLE "user" DROP COLUMN password_hash;
+                        END IF;
+                    END $$;
+                    """
+                ),
             )
 
         logger.debug("Схема базы данных успешно инициализирована.")

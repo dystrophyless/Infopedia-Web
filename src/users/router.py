@@ -4,9 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.constants import PASSWORD_PROVIDER
 from src.auth.dependencies import get_current_user as get_authenticated_user
 from src.auth.dependencies import get_onboarded_user
-from src.auth.utils import hash_password
+from src.auth.repository import (
+    add_auth_identity,
+    delete_all_reset_tokens_for_user,
+    get_auth_identity_by_provider_subject,
+)
+from src.auth.utils import hash_password, verify_password
 from src.database import get_async_session
 from src.users.models import User
 from src.users.repository import (
@@ -19,6 +25,7 @@ from src.users.repository import (
     get_users as get_all_users,
 )
 from src.users.schemas import (
+    ChangePasswordRequest,
     GradeSetupRequest,
     UserCreate,
     UsernameSetupRequest,
@@ -80,10 +87,18 @@ async def create_user(
         session,
         username=user_data.username,
         email=user_data.email.lower(),
-        password_hash=hash_password(user_data.password),
     )
 
     try:
+        await session.flush()
+        await add_auth_identity(
+            session,
+            user_id=new_user.id,
+            provider=PASSWORD_PROVIDER,
+            provider_subject=new_user.email.lower(),
+            email=new_user.email.lower(),
+            password_hash=hash_password(user_data.password),
+        )
         await session.flush()
     except IntegrityError:
         await session.rollback()
@@ -192,6 +207,40 @@ async def set_my_grade(
     return current_user
 
 
+@router.patch("/me/password", status_code=status.HTTP_200_OK)
+async def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    auth_identity = await get_auth_identity_by_provider_subject(
+        session,
+        provider=PASSWORD_PROVIDER,
+        provider_subject=current_user.email.lower(),
+    )
+
+    if auth_identity is None or auth_identity.password_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Парольный вход не настроен.",
+        )
+
+    if not verify_password(password_data.current_password, auth_identity.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный текущий пароль.",
+        )
+
+    auth_identity.password_hash = hash_password(password_data.new_password)
+
+    await delete_all_reset_tokens_for_user(session, user_id=current_user.id)
+
+    await session.commit()
+    await session.refresh(current_user)
+
+    return {"message": "Пароль успешно изменен."}
+
+
 @router.get("/me", response_model=UserResponsePrivate)
 async def get_current_user(
     current_user: Annotated[User, Depends(get_onboarded_user)],
@@ -263,11 +312,22 @@ async def update_user(
                 detail="Пользователь с таким email уже существует.",
             )
 
+    previous_email = user.email.lower()
     update_data = user_data.model_dump(exclude_unset=True, exclude_none=True)
 
     for field, value in update_data.items():
         normalized_value = value.lower() if field == "email" else value
         setattr(user, field, normalized_value)
+
+    if user.email.lower() != previous_email:
+        auth_identity = await get_auth_identity_by_provider_subject(
+            session,
+            provider=PASSWORD_PROVIDER,
+            provider_subject=previous_email,
+        )
+        if auth_identity is not None:
+            auth_identity.email = user.email.lower()
+            auth_identity.provider_subject = user.email.lower()
 
     try:
         await session.flush()

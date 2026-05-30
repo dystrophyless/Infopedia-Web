@@ -67,11 +67,11 @@ def get_async_engine(
 
 
 async_engine = get_async_engine(
-    db_name=settings.postgres_db,
-    host=settings.postgres_host,
-    port=settings.postgres_port,
-    user=settings.postgres_user,
-    password=settings.postgres_password,
+    db_name=settings.POSTGRES_DB,
+    host=settings.POSTGRES_HOST,
+    port=settings.POSTGRES_PORT,
+    user=settings.POSTGRES_USER,
+    password=settings.POSTGRES_PASSWORD,
 )
 
 AsyncSessionMaker = async_sessionmaker(async_engine)

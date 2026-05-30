@@ -48,12 +48,31 @@ class UserResponsePublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(ge=1)
-    username: str = Field(min_length=3, max_length=20)
+    username: str | None = Field(min_length=3, max_length=20)
     role: UserRole
-    grade: UserGrade
+    grade: UserGrade | None
     language: UserLanguage
     banned: bool
 
 
 class UserResponsePrivate(UserResponsePublic):
     email: EmailStr = Field(max_length=64)
+    onboarding_completed: bool
+
+
+class UsernameSetupRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=20)
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def validate_username(cls, value: str) -> str:
+        return validate_username_value(value)
+
+
+class GradeSetupRequest(BaseModel):
+    grade: UserGrade
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8)

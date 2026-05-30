@@ -12,13 +12,14 @@ from sqlalchemy import (
     String,
     text,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
 from src.users.enums import Feature, UserGrade, UserLanguage, UserRole
 
 if TYPE_CHECKING:
-    from src.auth.models import AuthIdentity, RefreshToken
+    from src.auth.models import AuthIdentity, PasswordResetToken, RefreshToken
 
 
 class User(Base):
@@ -29,7 +30,6 @@ class User(Base):
         String(32), unique=True, index=True, nullable=True
     )
     email: Mapped[str] = mapped_column(String(64), unique=True, index=True)
-    password_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
     language: Mapped[UserLanguage] = mapped_column(
         Enum(UserLanguage, native_enum=False),
         nullable=False,
@@ -43,10 +43,6 @@ class User(Base):
         nullable=False,
     )
     banned: Mapped[bool] = mapped_column(Boolean, nullable=False)
-
-    onboarding_completed: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -68,6 +64,19 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+    password_reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    @hybrid_property
+    def onboarding_completed(self) -> bool:
+        return self.username is not None and self.grade is not None
+
+    @onboarding_completed.expression
+    def onboarding_completed(cls):
+        return cls.username.is_not(None) & cls.grade.is_not(None)
 
 
 class FeatureUsage(Base):

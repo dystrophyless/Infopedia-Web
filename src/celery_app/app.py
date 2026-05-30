@@ -2,22 +2,17 @@ import logging
 import logging.config
 
 from celery import Celery
-from celery.signals import setup_logging, worker_init
+from celery.signals import setup_logging
 
 from src.config import settings
 from src.logging_settings import logging_config
-from src.terms.service import get_embedder, get_reranker
 
 logging.config.dictConfig(logging_config)
-logger = logging.getLogger(__name__)
 
 app = Celery(
     "app",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=[
-        "src.celery_app.search_task",
-    ],
 )
 
 app.conf.update(
@@ -28,6 +23,10 @@ app.conf.update(
     timezone="Asia/Almaty",
     enable_utc=False,
     task_track_started=True,
+    task_routes={
+        "search_task.process_query": {"queue": "search"},
+        "email_task.send_email": {"queue": "emails"},
+    },
     worker_prefetch_multiplier=1,
     worker_max_memory_per_child=2_000_000,
     task_acks_late=True,
@@ -35,14 +34,6 @@ app.conf.update(
     worker_hijack_root_logger=False,
     worker_redirect_stdouts=False,
 )
-
-
-@worker_init.connect
-def preload_models(**kwargs):
-    logger.info("Прогрев embedder/reranker перед запуском prefork worker pool")
-    get_embedder()
-    get_reranker()
-    logger.info("Модели прогреты")
 
 
 @setup_logging.connect

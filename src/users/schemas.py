@@ -68,6 +68,7 @@ class UsernameSetupRequest(BaseModel):
     def validate_username(cls, value: str) -> str:
         return validate_username_value(value)
 
+
 class GradeSetupRequest(BaseModel):
     grade: UserGrade
 

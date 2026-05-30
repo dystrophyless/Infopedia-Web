@@ -8,33 +8,44 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.emailer import EmailDeliveryError, send_verification_code
-from src.auth.models import PendingUser
+from src.auth.constants import GOOGLE_PROVIDER, PASSWORD_PROVIDER
+from src.auth.emailer import (
+    EmailDeliveryError,
+    send_password_reset_email,
+    send_verification_code,
+)
+from src.auth.models import PasswordResetToken, PendingUser
 from src.auth.repository import (
     add_auth_identity,
     add_refresh_token,
+    delete_all_reset_tokens_for_user,
     get_auth_identity_by_provider_subject,
+    get_password_reset_token_by_hash,
     get_pending_user_by_email,
     get_refresh_token_by_hash,
     get_user_by_auth_identity,
     revoke_refresh_token,
 )
 from src.auth.schemas import (
+    ForgotPasswordRequest,
     RefreshTokenRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenPair,
     VerifyEmailRequest,
 )
 from src.auth.utils import (
+    GOOGLE_OAUTH_STATE_COOKIE,
     create_access_token,
+    create_google_oauth_state,
     create_refresh_token,
     create_verification_code,
-    create_google_oauth_state,
     generate_google_oauth_redirect_uri,
-    GOOGLE_OAUTH_STATE_COOKIE,
+    generate_reset_token,
     get_refresh_token_expires_at,
     hash_password,
     hash_refresh_token,
+    hash_reset_token,
     hash_verification_code,
     is_code_valid,
     verify_google_oauth_state,
@@ -52,8 +63,6 @@ from src.users.repository import (
 
 router = APIRouter()
 
-GOOGLE_PROVIDER = "google"
-PASSWORD_PROVIDER = "password"
 GOOGLE_AUTH_FAILED_DETAIL = "Не удалось авторизоваться через Google."
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo"
@@ -200,12 +209,14 @@ async def register_user(
     await session.commit()
 
     try:
-        await send_verification_code(to_email=email, code=code)
+        send_verification_code(to_email=email, code=code)
     except EmailDeliveryError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Не удалось отправить код подтверждения.",
         )
+
+    return {"message": "Код подтверждения отправлен на ваш email."}
 
 
 @router.post("/verify-email", response_model=TokenPair)
@@ -254,7 +265,6 @@ async def verify_email(
             session,
             username=None,
             email=pending.email,
-            password_hash=pending.password_hash,
             onboarding_completed=False,
         )
         if user.id is None:
@@ -295,12 +305,8 @@ async def login_for_access_token(
         provider_subject=email,
     )
 
-    if auth_identity is None:
-        user = await get_user_by_email(session, email=email)
-        password_hash = user.password_hash if user is not None else None
-    else:
-        user = auth_identity.user
-        password_hash = auth_identity.password_hash
+    user = auth_identity.user if auth_identity is not None else None
+    password_hash = auth_identity.password_hash if auth_identity is not None else None
 
     if (
         not user
@@ -428,7 +434,6 @@ async def handle_google_oauth_callback(
                 session,
                 username=None,
                 email=email,
-                password_hash=None,
                 onboarding_completed=False,
             )
 
@@ -470,3 +475,104 @@ async def logout(
     if stored_token is not None and stored_token.revoked_at is None:
         await revoke_refresh_token(refresh_token=stored_token)
         await session.commit()
+
+
+@router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
+async def forgot_password(
+    request_data: ForgotPasswordRequest,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    user: User | None = await get_user_by_email(
+        session, email=request_data.email.lower()
+    )
+
+    if user:
+        auth_identity_exists: bool = await get_auth_identity_by_provider_subject(
+            session,
+            provider=PASSWORD_PROVIDER,
+            provider_subject=request_data.email.lower(),
+        )
+
+        if auth_identity_exists:
+            token = generate_reset_token()
+            token_hash = hash_reset_token(token)
+            expires_at = datetime.now(UTC) + timedelta(
+                minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
+            )
+
+            try:
+                send_password_reset_email(
+                    to_email=user.email,
+                    username=user.username or user.email,
+                    reset_token=token,
+                )
+            except EmailDeliveryError:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Не удалось отправить письмо для сброса пароля.",
+                )
+
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token_hash=token_hash,
+                expires_at=expires_at,
+            )
+
+            session.add(reset_token)
+            await session.commit()
+
+    return {
+        "message": "Если пользователь с таким email существует, ему было отправлено письмо для сброса пароля."
+    }
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    request_data: ResetPasswordRequest,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    token_hash = hash_reset_token(request_data.token)
+
+    reset_token = await get_password_reset_token_by_hash(session, token_hash=token_hash)
+
+    if not reset_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительный или истекший токен сброса пароля.",
+        )
+
+    if reset_token.expires_at < datetime.now(UTC):
+        await session.delete(reset_token)
+        await session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительный или истекший токен сброса пароля.",
+        )
+
+    user = await get_user_by_id(session, user_id=reset_token.user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительный или истекший токен сброса пароля.",
+        )
+
+    auth_identity = await get_auth_identity_by_provider_subject(
+        session,
+        provider=PASSWORD_PROVIDER,
+        provider_subject=user.email.lower(),
+    )
+    if auth_identity is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительный или истекший токен сброса пароля.",
+        )
+
+    auth_identity.password_hash = hash_password(request_data.new_password)
+
+    await delete_all_reset_tokens_for_user(session, user_id=user.id)
+    await session.commit()
+
+    return {
+        "message": "Пароль успешно сброшен. Теперь вы можете войти с новым паролем."
+    }

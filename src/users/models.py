@@ -18,7 +18,7 @@ from src.database import Base
 from src.users.enums import Feature, UserGrade, UserLanguage, UserRole
 
 if TYPE_CHECKING:
-    from src.auth.models import AuthIdentity, RefreshToken
+    from src.auth.models import AuthIdentity, PasswordResetToken, RefreshToken
 
 
 class User(Base):
@@ -29,7 +29,6 @@ class User(Base):
         String(32), unique=True, index=True, nullable=True
     )
     email: Mapped[str] = mapped_column(String(64), unique=True, index=True)
-    password_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
     language: Mapped[UserLanguage] = mapped_column(
         Enum(UserLanguage, native_enum=False),
         nullable=False,
@@ -65,6 +64,11 @@ class User(Base):
     )
 
     auth_identities: Mapped[list["AuthIdentity"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    password_reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

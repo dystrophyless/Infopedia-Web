@@ -1,4 +1,4 @@
-from src.auth.models import AuthIdentity, PendingUser, RefreshToken
+from src.auth.models import AuthIdentity, PasswordResetToken, PendingUser, RefreshToken
 from src.database import Base
 from src.terms.models import (
     Definition,

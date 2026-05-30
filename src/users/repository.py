@@ -14,18 +14,16 @@ logger = logging.getLogger(__name__)
 async def add_user(
     session: AsyncSession,
     *,
-    username: str,
     email: str,
-    password_hash: str,
+    username: str | None = None,
     language: UserLanguage = UserLanguage.RUSSIAN,
-    grade: UserGrade = UserGrade.GRADE_UNDEFINED,
+    grade: UserGrade | None = None,
     role: UserRole = UserRole.USER,
     banned: bool = False,
 ) -> User:
-    new_user: User = User(
+    new_user = User(
         username=username,
         email=email,
-        password_hash=password_hash,
         language=language,
         grade=grade,
         role=role,

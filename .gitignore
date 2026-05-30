@@ -6,3 +6,5 @@ AGENTS.md
 scripts/
 data/
 .worktrees/
+docs/
+.pycache-verify/

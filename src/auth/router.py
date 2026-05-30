@@ -206,7 +206,20 @@ async def register_user(
         pending.attempts = 0
         pending.last_sent_at = now
 
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        pending = await get_pending_user_by_email(session, email=email)
+        if pending is None:
+            raise
+
+        pending.password_hash = hash_password(user_data.password)
+        pending.code_hash = code_hash
+        pending.expires_at = expires_at
+        pending.attempts = 0
+        pending.last_sent_at = now
+        await session.commit()
 
     try:
         send_verification_code(to_email=email, code=code)
@@ -500,18 +513,6 @@ async def forgot_password(
                 minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
             )
 
-            try:
-                send_password_reset_email(
-                    to_email=user.email,
-                    username=user.username or user.email,
-                    reset_token=token,
-                )
-            except EmailDeliveryError:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Не удалось отправить письмо для сброса пароля.",
-                )
-
             reset_token = PasswordResetToken(
                 user_id=user.id,
                 token_hash=token_hash,
@@ -520,6 +521,20 @@ async def forgot_password(
 
             session.add(reset_token)
             await session.commit()
+
+            try:
+                send_password_reset_email(
+                    to_email=user.email,
+                    username=user.username or user.email,
+                    reset_token=token,
+                )
+            except EmailDeliveryError:
+                await session.delete(reset_token)
+                await session.commit()
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Не удалось отправить письмо для сброса пароля.",
+                )
 
     return {
         "message": "Если пользователь с таким email существует, ему было отправлено письмо для сброса пароля."

@@ -5,6 +5,47 @@ from sqlalchemy.exc import IntegrityError
 
 
 class RegisterUserTests(unittest.IsolatedAsyncioTestCase):
+    async def test_reverts_registration_resend_throttle_when_email_send_fails(self):
+        from datetime import UTC, datetime, timedelta
+
+        from fastapi import HTTPException
+
+        from src.auth.emailer import EmailDeliveryError
+        from src.auth.router import register_user
+        from src.auth.schemas import RegisterRequest
+
+        previous_last_sent_at = datetime.now(UTC) - timedelta(hours=1)
+        existing_pending = Mock(last_sent_at=previous_last_sent_at)
+        session = Mock()
+        session.commit = AsyncMock()
+
+        with (
+            patch(
+                "src.auth.router.check_user_exists_by_email",
+                new=AsyncMock(return_value=False),
+            ),
+            patch(
+                "src.auth.router.get_pending_user_by_email",
+                new=AsyncMock(return_value=existing_pending),
+            ),
+            patch("src.auth.router.create_verification_code", return_value="123456"),
+            patch("src.auth.router.hash_verification_code", return_value="code-hash"),
+            patch("src.auth.router.hash_password", return_value="password-hash"),
+            patch(
+                "src.auth.router.send_verification_code",
+                side_effect=EmailDeliveryError("send failed"),
+            ),
+        ):
+            with self.assertRaises(HTTPException) as raised:
+                await register_user(
+                    RegisterRequest(email="person@example.com", password="secret123"),
+                    session,
+                )
+
+        self.assertEqual(raised.exception.status_code, 503)
+        self.assertEqual(existing_pending.last_sent_at, previous_last_sent_at)
+        self.assertEqual(session.commit.await_count, 2)
+
     async def test_updates_pending_user_when_concurrent_insert_wins_race(self):
         from src.auth.router import register_user
         from src.auth.schemas import RegisterRequest

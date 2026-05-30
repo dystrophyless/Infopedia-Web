@@ -178,6 +178,7 @@ async def register_user(
     expires_at = now + timedelta(minutes=settings.VERIFICATION_CODE_EXPIRE_MINUTES)
 
     pending = await get_pending_user_by_email(session, email=email)
+    previous_last_sent_at = pending.last_sent_at if pending is not None else None
 
     if pending is not None and pending.last_sent_at is not None:
         cooldown_until = pending.last_sent_at + timedelta(
@@ -214,6 +215,7 @@ async def register_user(
         if pending is None:
             raise
 
+        previous_last_sent_at = pending.last_sent_at
         pending.password_hash = hash_password(user_data.password)
         pending.code_hash = code_hash
         pending.expires_at = expires_at
@@ -224,6 +226,8 @@ async def register_user(
     try:
         send_verification_code(to_email=email, code=code)
     except EmailDeliveryError:
+        pending.last_sent_at = previous_last_sent_at
+        await session.commit()
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Не удалось отправить код подтверждения.",

@@ -1,4 +1,4 @@
-from pydantic import EmailStr, SecretStr
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     VERIFICATION_CODE_EXPIRE_MINUTES: int
     REGISTRATION_RESEND_COOLDOWN_SECONDS: int
     REGISTRATION_MAX_ATTEMPTS: int
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int
 
     APP_NAME: str
 

@@ -95,17 +95,23 @@ async def issue_token_pair(
 
 
 async def exchange_google_authorization_code(code: str) -> dict:
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.post(
-            GOOGLE_TOKEN_URL,
-            data={
-                "code": code,
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
-                "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-                "grant_type": "authorization_code",
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                GOOGLE_TOKEN_URL,
+                data={
+                    "code": code,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
+                    "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                    "grant_type": "authorization_code",
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        ) from exc
 
     if response.status_code != status.HTTP_200_OK:
         raise HTTPException(
@@ -117,11 +123,17 @@ async def exchange_google_authorization_code(code: str) -> dict:
 
 
 async def fetch_google_token_info(id_token: str) -> dict:
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(
-            GOOGLE_TOKEN_INFO_URL,
-            params={"id_token": id_token},
-        )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                GOOGLE_TOKEN_INFO_URL,
+                params={"id_token": id_token},
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=GOOGLE_AUTH_FAILED_DETAIL,
+        ) from exc
 
     if response.status_code != status.HTTP_200_OK:
         raise HTTPException(
@@ -504,13 +516,13 @@ async def forgot_password(
     )
 
     if user:
-        auth_identity_exists: bool = await get_auth_identity_by_provider_subject(
+        auth_identity = await get_auth_identity_by_provider_subject(
             session,
             provider=PASSWORD_PROVIDER,
             provider_subject=request_data.email.lower(),
         )
 
-        if auth_identity_exists:
+        if auth_identity is not None:
             token = generate_reset_token()
             token_hash = hash_reset_token(token)
             expires_at = datetime.now(UTC) + timedelta(

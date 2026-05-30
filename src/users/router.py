@@ -199,7 +199,6 @@ async def set_my_grade(
         )
 
     current_user.grade = grade_data.grade
-    current_user.onboarding_completed = True
 
     await session.commit()
     await session.refresh(current_user)

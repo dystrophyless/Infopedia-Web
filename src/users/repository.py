@@ -20,7 +20,6 @@ async def add_user(
     grade: UserGrade | None = None,
     role: UserRole = UserRole.USER,
     banned: bool = False,
-    onboarding_completed: bool = False,
 ) -> User:
     new_user = User(
         username=username,
@@ -29,7 +28,6 @@ async def add_user(
         grade=grade,
         role=role,
         banned=banned,
-        onboarding_completed=onboarding_completed,
     )
 
     session.add(new_user)

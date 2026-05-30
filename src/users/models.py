@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     text,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -43,10 +44,6 @@ class User(Base):
     )
     banned: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    onboarding_completed: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -72,6 +69,14 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+    @hybrid_property
+    def onboarding_completed(self) -> bool:
+        return self.username is not None and self.grade is not None
+
+    @onboarding_completed.expression
+    def onboarding_completed(cls):
+        return cls.username.is_not(None) & cls.grade.is_not(None)
 
 
 class FeatureUsage(Base):

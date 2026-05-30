@@ -294,7 +294,6 @@ async def verify_email(
             session,
             username=None,
             email=pending.email,
-            onboarding_completed=False,
         )
         if user.id is None:
             await session.flush()
@@ -463,7 +462,6 @@ async def handle_google_oauth_callback(
                 session,
                 username=None,
                 email=email,
-                onboarding_completed=False,
             )
 
         if user.id is None:

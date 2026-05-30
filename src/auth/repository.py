@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.auth.models import AuthIdentity, PendingUser, RefreshToken
+from src.auth.models import AuthIdentity, PasswordResetToken, PendingUser, RefreshToken
 from src.users.models import User
 
 
@@ -74,6 +74,24 @@ async def get_auth_identity_by_provider_subject(
     return auth_identity
 
 
+async def check_if_auth_identity_exists(
+    session: AsyncSession,
+    *,
+    provider: str,
+    provider_subject: str,
+) -> bool:
+    query = select(AuthIdentity).where(
+        AuthIdentity.provider == provider,
+        AuthIdentity.provider_subject == provider_subject,
+    )
+
+    result = await session.execute(query)
+
+    auth_identity: AuthIdentity | None = result.scalar_one_or_none()
+
+    return auth_identity is not None
+
+
 async def get_pending_user_by_email(
     session: AsyncSession,
     *,
@@ -125,3 +143,25 @@ async def revoke_refresh_token(
     refresh_token: RefreshToken,
 ):
     refresh_token.revoked_at = datetime.now(UTC)
+
+
+async def get_password_reset_token_by_hash(
+    session: AsyncSession,
+    *,
+    token_hash: str,
+):
+    query = select(PasswordResetToken).where(
+        PasswordResetToken.token_hash == token_hash
+    )
+
+    result = await session.execute(query)
+
+    reset_token: PasswordResetToken | None = result.scalar_one_or_none()
+
+    return reset_token
+
+
+async def delete_all_reset_tokens_for_user(session: AsyncSession, user_id: int):
+    stmt = delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+
+    await session.execute(stmt)

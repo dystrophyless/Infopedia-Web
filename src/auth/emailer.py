@@ -59,7 +59,7 @@ def send_password_reset_email(*, to_email: str, username: str, reset_token: str)
 
     text = (
         f"Привет, {username}!\n\n"
-        f"Вы запросили сброс Вашего пароля. Перейдите по ссылке ниже что бы установить новый пароль:\n{reset_url}\n\n"
+        f"Вы запросили сброс Вашего пароля. Перейдите по ссылке ниже, что бы установить новый пароль:\n{reset_url}\n\n"
         f"Ссылка истекает через {settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES} минут."
     )
 

@@ -15,7 +15,6 @@ async def add_user(
     session: AsyncSession,
     *,
     email: str,
-    password_hash: str | None,
     username: str | None = None,
     language: UserLanguage = UserLanguage.RUSSIAN,
     grade: UserGrade | None = None,
@@ -26,7 +25,6 @@ async def add_user(
     new_user = User(
         username=username,
         email=email,
-        password_hash=password_hash,
         language=language,
         grade=grade,
         role=role,

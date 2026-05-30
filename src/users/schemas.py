@@ -65,11 +65,8 @@ class UsernameSetupRequest(BaseModel):
 
     @field_validator("username", mode="before")
     @classmethod
-    def validate_optional_username(cls, value: str | None) -> str | None:
-        if value is None:
-            return value
+    def validate_username(cls, value: str) -> str:
         return validate_username_value(value)
-
 
 class GradeSetupRequest(BaseModel):
     grade: UserGrade

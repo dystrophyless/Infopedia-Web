@@ -1,3 +1,4 @@
+import logging
 import urllib.parse
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -20,6 +21,7 @@ from src.auth.repository import (
     add_auth_identity,
     add_refresh_token,
     delete_all_reset_tokens_for_user,
+    delete_password_reset_token,
     get_auth_identity_by_provider_subject,
     get_password_reset_token_by_hash,
     get_pending_user_by_email,
@@ -63,6 +65,7 @@ from src.users.repository import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 GOOGLE_AUTH_FAILED_DETAIL = "Не удалось авторизоваться через Google."
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -224,6 +227,11 @@ async def register_user(
     expires_at = now + timedelta(minutes=settings.VERIFICATION_CODE_EXPIRE_MINUTES)
 
     pending = await get_pending_user_by_email(session, email=email)
+    if pending is not None and pending.expires_at < now:
+        await session.delete(pending)
+        await session.flush()
+        pending = None
+
     previous_last_sent_at = pending.last_sent_at if pending is not None else None
 
     if pending is not None and pending.last_sent_at is not None:
@@ -347,9 +355,10 @@ async def verify_email(
         await session.commit()
     except IntegrityError:
         await session.rollback()
+        logger.exception("Failed to complete email verification for %s", email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким email уже существует.",
+            detail="Не удалось завершить регистрацию. Попробуйте запросить новый код.",
         )
 
     return token_pair
@@ -377,7 +386,7 @@ async def login_for_access_token(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверное имя пользователя или пароль.",
+            detail="Неверный e-mail или пароль.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -576,10 +585,13 @@ async def forgot_password(
     )
 
     if user:
+        user_id = user.id
+        user_email = user.email
+        username = user.username or user.email
         auth_identity = await get_auth_identity_by_provider_subject(
             session,
             provider=PASSWORD_PROVIDER,
-            provider_subject=request_data.email.lower(),
+            provider_subject=user_email.lower(),
         )
 
         if auth_identity is not None:
@@ -590,7 +602,7 @@ async def forgot_password(
             )
 
             reset_token = PasswordResetToken(
-                user_id=user.id,
+                user_id=user_id,
                 token_hash=token_hash,
                 expires_at=expires_at,
             )
@@ -600,12 +612,12 @@ async def forgot_password(
 
             try:
                 send_password_reset_email(
-                    to_email=user.email,
-                    username=user.username or user.email,
+                    to_email=user_email,
+                    username=username,
                     reset_token=token,
                 )
             except EmailDeliveryError:
-                await session.delete(reset_token)
+                await delete_password_reset_token(session, token_hash=token_hash)
                 await session.commit()
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

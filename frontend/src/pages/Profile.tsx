@@ -5,16 +5,20 @@ import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
+  ArrowLeft01Icon,
   ArrowRight01Icon,
   ChartColumnIcon,
+  Delete02Icon,
+  LockPasswordIcon,
   Logout01Icon,
+  Mail01Icon,
   Profile02Icon,
   Settings01Icon,
   StarIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
-import { changeMyPassword, getMe } from '../api/users';
-import type { User, UserGrade, UserLanguage } from '../types';
+import { changeMyPassword, deleteMyAccount, getMe } from '../api/users';
+import type { User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { AuthPasswordInput, AuthSubmit } from '../components/AuthShell';
@@ -295,19 +299,155 @@ function PlaceholderPanel({ type }: { type: Exclude<ProfileTabId, 'profile' | 's
   );
 }
 
+type SettingsView = 'menu' | 'password' | 'email' | 'delete';
+
 function SettingsPanel({ profile }: { profile: User }) {
+  const { t } = useTranslation();
+  const [view, setView] = useState<SettingsView>('menu');
+
+  if (view === 'password') {
+    return (
+      <SettingsDetail
+        title={t('profile.changePasswordTitle')}
+        body={t('profile.changePasswordBody')}
+        onBack={() => setView('menu')}
+      >
+        <ChangePasswordFlow />
+      </SettingsDetail>
+    );
+  }
+
+  if (view === 'email') {
+    return (
+      <SettingsDetail
+        title={t('profile.boundEmailTitle')}
+        body={t('profile.boundEmailBody')}
+        onBack={() => setView('menu')}
+      >
+        <ProfileField label={t('profile.boundEmailLabel')} value={profile.email} />
+      </SettingsDetail>
+    );
+  }
+
+  if (view === 'delete') {
+    return (
+      <SettingsDetail
+        title={t('profile.deleteAccountTitle')}
+        body={t('profile.deleteAccountBody')}
+        onBack={() => setView('menu')}
+      >
+        <DeleteAccountPanel userId={profile.id} />
+      </SettingsDetail>
+    );
+  }
+
+  return (
+    <section className="space-y-3 px-7 py-6 max-md:px-5">
+      <SettingsActionButton
+        icon={LockPasswordIcon}
+        title={t('profile.settingsPasswordTitle')}
+        body={t('profile.settingsPasswordBody')}
+        onClick={() => setView('password')}
+      />
+      <SettingsActionButton
+        icon={Mail01Icon}
+        title={t('profile.settingsEmailTitle')}
+        body={t('profile.settingsEmailBody')}
+        onClick={() => setView('email')}
+      />
+      <SettingsActionButton
+        icon={Delete02Icon}
+        title={t('profile.settingsDeleteTitle')}
+        body={t('profile.settingsDeleteBody')}
+        tone="danger"
+        onClick={() => setView('delete')}
+      />
+    </section>
+  );
+}
+
+function SettingsActionButton({
+  icon,
+  title,
+  body,
+  tone = 'default',
+  onClick,
+}: {
+  icon: typeof Profile02Icon;
+  title: string;
+  body: string;
+  tone?: 'default' | 'danger';
+  onClick: () => void;
+}) {
+  const isDanger = tone === 'danger';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-[84px] w-full items-center justify-between gap-5 rounded-[8px] border px-5 py-4 text-left transition-colors ${
+        isDanger
+          ? 'border-danger/35 bg-surface hover:bg-[#fff5f5]'
+          : 'border-border/65 bg-surface hover:bg-bg'
+      }`}
+    >
+      <span className="flex min-w-0 items-center gap-4">
+        <span
+          className={`flex size-11 shrink-0 items-center justify-center rounded-[8px] ${
+            isDanger ? 'bg-danger/10 text-danger' : 'bg-bg text-primary'
+          }`}
+        >
+          <HugeiconsIcon icon={icon} size={23} strokeWidth={1.7} />
+        </span>
+        <span className="min-w-0">
+          <span
+            className={`block text-[18px] font-medium leading-tight ${
+              isDanger ? 'text-danger' : 'text-primary'
+            }`}
+          >
+            {title}
+          </span>
+          <span className="mt-1 block text-[14px] leading-snug text-text-body">{body}</span>
+        </span>
+      </span>
+      <HugeiconsIcon
+        icon={ArrowRight01Icon}
+        size={20}
+        strokeWidth={1.8}
+        className={isDanger ? 'shrink-0 text-danger' : 'shrink-0 text-muted'}
+      />
+    </button>
+  );
+}
+
+function SettingsDetail({
+  title,
+  body,
+  onBack,
+  children,
+}: {
+  title: string;
+  body: string;
+  onBack: () => void;
+  children: React.ReactNode;
+}) {
   const { t } = useTranslation();
 
   return (
-    <section className="space-y-4 px-7 py-6 max-md:px-5">
-      <ProfileField label={t('profile.languagePref')} value={getLanguageLabel(profile.language, t)} />
-      <ProfileField label={t('profile.grade')} value={getGradeLabel(profile.grade, t)} />
-      <ChangePasswordForm />
+    <section className="px-7 py-6 max-md:px-5">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-5 inline-flex h-[40px] items-center gap-2 rounded-[8px] border border-border/65 px-4 text-[15px] text-primary transition-colors hover:bg-bg"
+      >
+        <HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.8} />
+        <span>{t('profile.settingsBackButton')}</span>
+      </button>
+
       <div className="rounded-[8px] border border-border/65 p-5">
-        <p className="text-[18px] font-medium leading-tight text-primary">{t('profile.settingsTitle')}</p>
-        <p className="mt-2 text-[16px] leading-relaxed text-text-body">
-          {t('profile.settingsBody')}
-        </p>
+        <p className="text-[22px] font-medium leading-tight text-primary">{title}</p>
+        <p className="mt-2 text-[16px] leading-relaxed text-text-body">{body}</p>
+        <div className="mt-5">{children}</div>
       </div>
     </section>
   );
@@ -319,8 +459,9 @@ type ChangePasswordFieldErrors = {
   confirmPassword?: string;
 };
 
-function ChangePasswordForm() {
+function ChangePasswordFlow() {
   const { t } = useTranslation();
+  const [step, setStep] = useState<'current' | 'new'>('current');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -332,22 +473,34 @@ function ChangePasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleCurrentPasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
     setNotice(null);
     setError(null);
     setFieldErrors({});
 
-    const nextErrors: ChangePasswordFieldErrors = {};
     if (!currentPassword) {
-      nextErrors.currentPassword = t('auth.passwordRequired');
+      setFieldErrors({ currentPassword: t('auth.passwordRequired') });
+      return;
     }
-    nextErrors.newPassword = getPasswordValidationError(newPassword, t);
+
+    setStep('new');
+  }
+
+  async function handleNewPasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setNotice(null);
+    setError(null);
+    setFieldErrors({});
+
+    const nextErrors: ChangePasswordFieldErrors = {
+      newPassword: getPasswordValidationError(newPassword, t),
+    };
     if (confirmPassword !== newPassword) {
       nextErrors.confirmPassword = t('auth.passwordsDontMatch');
     }
 
-    if (nextErrors.currentPassword || nextErrors.newPassword || nextErrors.confirmPassword) {
+    if (nextErrors.newPassword || nextErrors.confirmPassword) {
       setFieldErrors(nextErrors);
       return;
     }
@@ -359,6 +512,7 @@ function ChangePasswordForm() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setStep('current');
     } catch (err) {
       setError(getApiErrorMessage(err, t('profile.changePasswordFailed')));
     } finally {
@@ -366,15 +520,9 @@ function ChangePasswordForm() {
     }
   }
 
-  return (
-    <form onSubmit={handleSubmit} noValidate className="rounded-[8px] border border-border/65 p-5">
-      <p className="text-[18px] font-medium leading-tight text-primary">
-        {t('profile.changePasswordTitle')}
-      </p>
-      <p className="mt-2 text-[16px] leading-relaxed text-text-body">
-        {t('profile.changePasswordBody')}
-      </p>
-      <div className="mt-5">
+  if (step === 'current') {
+    return (
+      <form onSubmit={handleCurrentPasswordSubmit} noValidate>
         <AuthPasswordInput
           label={t('profile.currentPassword')}
           value={currentPassword}
@@ -390,6 +538,24 @@ function ChangePasswordForm() {
           autoComplete="current-password"
           error={fieldErrors.currentPassword}
         />
+        {notice && (
+          <p className="mb-3 rounded-[8px] bg-success/10 px-3 py-2 text-[14px] text-success" role="status">
+            {notice}
+          </p>
+        )}
+        {error && (
+          <p className="mb-3 text-[14px] text-danger" role="alert">
+            {error}
+          </p>
+        )}
+        <AuthSubmit>{t('profile.changePasswordContinueButton')}</AuthSubmit>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={handleNewPasswordSubmit} noValidate>
+      <div>
         <AuthPasswordInput
           label={t('auth.newPassword')}
           value={newPassword}
@@ -421,20 +587,70 @@ function ChangePasswordForm() {
           error={fieldErrors.confirmPassword}
         />
       </div>
-      {notice && (
-        <p className="mb-3 rounded-[8px] bg-success/10 px-3 py-2 text-[14px] text-success" role="status">
-          {notice}
-        </p>
-      )}
       {error && (
         <p className="mb-3 text-[14px] text-danger" role="alert">
           {error}
         </p>
       )}
+      <button
+        type="button"
+        onClick={() => {
+          setStep('current');
+          setError(null);
+          setNotice(null);
+          setFieldErrors({});
+        }}
+        className="mb-3 inline-flex h-[40px] items-center justify-center rounded-[8px] px-2 text-[15px] text-primary transition-colors hover:bg-bg"
+      >
+        {t('profile.changePasswordEditCurrentButton')}
+      </button>
       <AuthSubmit loading={loading}>
         {loading ? t('common.loading') : t('profile.changePasswordButton')}
       </AuthSubmit>
     </form>
+  );
+}
+
+function DeleteAccountPanel({ userId }: { userId: number }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDeleteAccount() {
+    setError(null);
+    setLoading(true);
+    try {
+      await deleteMyAccount(userId);
+      logout();
+      navigate('/login');
+    } catch (err) {
+      setError(getApiErrorMessage(err, t('profile.deleteAccountFailed')));
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="rounded-[8px] bg-[#fff5f5] px-4 py-3 text-[15px] leading-relaxed text-danger">
+        {t('profile.deleteAccountWarning')}
+      </div>
+      {error && (
+        <p className="mt-3 text-[14px] text-danger" role="alert">
+          {error}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={handleDeleteAccount}
+        disabled={loading}
+        className="mt-5 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[8px] bg-danger px-4 text-[15px] font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-60"
+      >
+        <HugeiconsIcon icon={Delete02Icon} size={18} strokeWidth={1.8} />
+        <span>{loading ? t('common.loading') : t('profile.deleteAccountButton')}</span>
+      </button>
+    </div>
   );
 }
 
@@ -466,15 +682,4 @@ function getTabTitle(tab: ProfileTabId, t: (key: string) => string) {
   };
 
   return t(titleKeys[tab]);
-}
-
-
-function getGradeLabel(grade: UserGrade | null, t: (key: string) => string) {
-  if (grade === '10') return t('profile.grade10');
-  if (grade === '11') return t('profile.grade11');
-  return t('profile.gradeUndefined');
-}
-
-function getLanguageLabel(language: UserLanguage, t: (key: string) => string) {
-  return language === 'kk' ? t('profile.languageKazakh') : t('profile.languageRussian');
 }

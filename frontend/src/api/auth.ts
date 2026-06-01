@@ -46,6 +46,17 @@ export async function verifyEmail(payload: VerifyEmailPayload): Promise<AuthToke
   return data;
 }
 
+export async function forgotPassword(email: string): Promise<void> {
+  await apiClient.post('/api/auth/forgot-password', { email });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await apiClient.post('/api/auth/reset-password', {
+    token,
+    new_password: newPassword,
+  });
+}
+
 export function startGoogleAuth(next?: string) {
   const sanitizedNext = sanitizeNextPath(next);
   window.sessionStorage.setItem(GOOGLE_NEXT_STORAGE_KEY, sanitizedNext);

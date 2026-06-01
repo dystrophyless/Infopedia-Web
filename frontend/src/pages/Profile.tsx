@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
+  ArrowRight01Icon,
   ChartColumnIcon,
   Logout01Icon,
   Profile02Icon,
@@ -19,15 +20,6 @@ import { SkeletonCard } from '../components/SkeletonCard';
 import { AuthPasswordInput, AuthSubmit } from '../components/AuthShell';
 import { getPasswordValidationError } from '../utils/passwordValidation';
 
-export const profileDetailFieldKeys = [
-  'username',
-  'email',
-  'grade',
-  'languagePref',
-  'memberSince',
-] as const;
-
-type ProfileDetailFieldKey = (typeof profileDetailFieldKeys)[number];
 type ProfileTabId = 'profile' | 'progress' | 'weakTopics' | 'favorites' | 'settings';
 
 const profileNavItems: Array<{
@@ -61,7 +53,7 @@ const learningStats = [
 ] as const;
 
 export function Profile() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, setUser, logout } = useAuthStore();
   const [profile, setProfile] = useState<User | null>(user);
@@ -89,24 +81,6 @@ export function Profile() {
     };
   }, [setUser]);
 
-  const profileDetails = useMemo(() => {
-    if (!profile) return [];
-
-    const detailValues: Record<ProfileDetailFieldKey, string> = {
-      username: profile.username ?? t('profile.usernameUndefined'),
-      email: profile.email,
-      grade: getGradeLabel(profile.grade, t),
-      languagePref: getLanguageLabel(profile.language, t),
-      memberSince: formatMemberSince(profile.created_at, i18n.language, t),
-    };
-
-    return profileDetailFieldKeys.map((fieldKey) => ({
-      key: fieldKey,
-      label: t(`profile.${fieldKey}`),
-      value: detailValues[fieldKey],
-    }));
-  }, [i18n.language, profile, t]);
-
   function handleLogout() {
     logout();
     navigate('/login');
@@ -126,10 +100,6 @@ export function Profile() {
                 <p className="truncate text-[28px] font-medium leading-tight text-primary max-sm:text-[23px]">
                   {profile?.username ?? user?.username ?? t('profile.usernameUndefined')}
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <ProfileChip>{profile ? getGradeLabel(profile.grade, t) : t('profile.fallbackProfileChip')}</ProfileChip>
-                  <ProfileChip>{profile ? getLanguageLabel(profile.language, t) : t('profile.languageRussian')}</ProfileChip>
-                </div>
               </div>
             </div>
           </section>
@@ -171,13 +141,13 @@ export function Profile() {
 
           {profile && (
             <>
-              <header className="border-b border-border/55 px-8 py-7 max-md:px-5">
+              <header className="border-b border-border/55 px-7 py-5 max-md:px-5">
                 <div className="flex flex-wrap items-start justify-between gap-5">
                   <div>
                     <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
                       {t('profile.accountArea')}
                     </p>
-                    <h1 className="mt-3 text-[42px] font-medium leading-tight text-text max-md:text-[32px]">
+                    <h1 className="mt-2 text-[38px] font-medium leading-tight text-text max-md:text-[32px]">
                       {getTabTitle(activeTab, t)}
                     </h1>
                   </div>
@@ -192,9 +162,7 @@ export function Profile() {
                 </div>
               </header>
 
-              {activeTab === 'profile' && (
-                <ProfileOverview profile={profile} details={profileDetails} />
-              )}
+              {activeTab === 'profile' && <ProfileOverview profile={profile} />}
               {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
               {activeTab === 'weakTopics' && <PlaceholderPanel type="weakTopics" />}
               {activeTab === 'favorites' && <PlaceholderPanel type="favorites" />}
@@ -209,26 +177,24 @@ export function Profile() {
 
 function ProfileOverview({
   profile,
-  details,
 }: {
   profile: User;
-  details: Array<{ key: ProfileDetailFieldKey; label: string; value: string }>;
 }) {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-8 px-8 py-8 max-md:px-5">
-      <section className="grid grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] gap-6 max-xl:grid-cols-1">
+    <div className="px-8 py-8 max-md:px-5">
+      <section className="grid grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] items-start gap-6 max-xl:grid-cols-1">
         <div className="rounded-[8px] bg-bg p-6">
           <div className="flex flex-wrap items-center gap-4">
             <FigmaProfileIcon className="block size-[86px] shrink-0 text-accent" />
             <div className="min-w-0">
-              <h2 className="truncate text-[34px] font-medium leading-tight text-primary max-md:text-[27px]">
+              <p className="text-[13px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
+                {t('profile.profileSummary')}
+              </p>
+              <h2 className="mt-2 truncate text-[34px] font-medium leading-tight text-primary max-md:text-[27px]">
                 {profile.username ?? t('profile.usernameUndefined')}
               </h2>
-              <p className="mt-2 break-all text-[18px] leading-tight text-text-body">
-                {profile.email}
-              </p>
             </div>
           </div>
           <div className="mt-6 grid grid-cols-3 gap-3 max-sm:grid-cols-1">
@@ -242,25 +208,53 @@ function ProfileOverview({
           </div>
         </div>
 
-        <div className="rounded-[8px] border border-border/65 p-6">
-          <p className="text-[18px] font-medium leading-tight text-primary">{t('profile.academicProfile')}</p>
-          <div className="mt-5 space-y-4">
-            <MetaRow label={t('profile.status')} value={profile.banned ? t('profile.statusBanned') : t('profile.statusActive')} />
-            <MetaRow label={t('profile.role')} value={getRoleLabel(profile.role, t)} />
-            <MetaRow label="ID" value={`#${profile.id}`} />
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-[24px] font-medium leading-tight text-text">{t('profile.accountData')}</h2>
-        <div className="mt-5 grid grid-cols-2 gap-4 max-md:grid-cols-1">
-          {details.map((field) => (
-            <ProfileField key={field.key} label={field.label} value={field.value} />
-          ))}
-        </div>
+        <SubscriptionPromo />
       </section>
     </div>
+  );
+}
+
+function SubscriptionPromo() {
+  const { t } = useTranslation();
+
+  return (
+    <section className="self-start rounded-[8px] border border-border/65 p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
+            {t('profile.subscriptionEyebrow')}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-bg px-3 py-1 text-[13px] font-medium leading-none text-primary">
+          {t('profile.subscriptionBadge')}
+        </span>
+      </div>
+
+      <h2 className="mt-3 text-[24px] font-medium leading-tight text-primary">
+        {t('profile.subscriptionTitle')}
+      </h2>
+
+      <p className="mt-3 text-[14px] leading-snug text-text-body">
+        {t('profile.subscriptionBody')}
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="rounded-full bg-bg px-3 py-1 text-[13px] leading-none text-primary">
+          {t('profile.subscriptionBenefitWeakTopics')}
+        </span>
+        <span className="rounded-full bg-bg px-3 py-1 text-[13px] leading-none text-primary">
+          {t('profile.subscriptionBenefitRecommendations')}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        className="mt-5 inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[8px] bg-accent px-4 text-[15px] font-medium text-surface transition-opacity hover:opacity-90"
+      >
+        <span>{t('profile.subscriptionUpgradeButton')}</span>
+        <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
+      </button>
+    </section>
   );
 }
 
@@ -305,7 +299,7 @@ function SettingsPanel({ profile }: { profile: User }) {
   const { t } = useTranslation();
 
   return (
-    <section className="space-y-5 px-8 py-8 max-md:px-5">
+    <section className="space-y-4 px-7 py-6 max-md:px-5">
       <ProfileField label={t('profile.languagePref')} value={getLanguageLabel(profile.language, t)} />
       <ProfileField label={t('profile.grade')} value={getGradeLabel(profile.grade, t)} />
       <ChangePasswordForm />
@@ -462,23 +456,6 @@ function ProfileField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProfileChip({ children }: { children: string }) {
-  return (
-    <span className="rounded-full border border-border/65 bg-bg px-3 py-1 text-[13px] leading-none text-primary">
-      {children}
-    </span>
-  );
-}
-
-function MetaRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-border/35 pb-3 last:border-b-0 last:pb-0">
-      <span className="text-[15px] text-muted">{label}</span>
-      <span className="text-right text-[16px] font-medium text-primary">{value}</span>
-    </div>
-  );
-}
-
 function getTabTitle(tab: ProfileTabId, t: (key: string) => string) {
   const titleKeys: Record<ProfileTabId, string> = {
     profile: 'profile.navProfile',
@@ -491,6 +468,7 @@ function getTabTitle(tab: ProfileTabId, t: (key: string) => string) {
   return t(titleKeys[tab]);
 }
 
+
 function getGradeLabel(grade: UserGrade | null, t: (key: string) => string) {
   if (grade === '10') return t('profile.grade10');
   if (grade === '11') return t('profile.grade11');
@@ -499,22 +477,4 @@ function getGradeLabel(grade: UserGrade | null, t: (key: string) => string) {
 
 function getLanguageLabel(language: UserLanguage, t: (key: string) => string) {
   return language === 'kk' ? t('profile.languageKazakh') : t('profile.languageRussian');
-}
-
-function getRoleLabel(role: User['role'], t: (key: string) => string) {
-  if (role === 'admin') return t('profile.roleAdmin');
-  return t('profile.roleStudent');
-}
-
-function formatMemberSince(date: string | undefined, locale: string, t: (key: string) => string) {
-  if (!date) return t('profile.memberSinceUndefined');
-
-  const parsedDate = new Date(date);
-  if (Number.isNaN(parsedDate.getTime())) return t('profile.memberSinceUndefined');
-
-  return new Intl.DateTimeFormat(locale === 'kk' ? 'kk-KZ' : 'ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(parsedDate);
 }

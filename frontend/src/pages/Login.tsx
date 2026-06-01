@@ -84,10 +84,12 @@ export function Login() {
       let message = t('auth.invalidCredentials');
       if (axios.isAxiosError(err) && err.response?.data) {
         const detail = (err.response.data as { detail?: string }).detail;
-        if (typeof detail === 'string') message = detail;
+        if (typeof detail === 'string') {
+          message = detail.includes('имя пользователя') ? t('auth.invalidCredentials') : detail;
+        }
       }
       setError(message);
-      setFieldErrors({ email: message });
+      setFieldErrors({ email: message, password: message });
     } finally {
       setLoading(false);
     }
@@ -121,7 +123,8 @@ export function Login() {
             setFieldErrors((errors) => ({ ...errors, email: undefined }));
             setError(null);
           }}
-          error={fieldErrors.email}
+          error={error ? undefined : fieldErrors.email}
+          invalid={Boolean(error && fieldErrors.email)}
         />
         <AuthPasswordInput
           label={t('auth.password')}
@@ -135,12 +138,21 @@ export function Login() {
           onToggle={() => setShowPassword((visible) => !visible)}
           toggleLabel={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           autoComplete="current-password"
-          error={fieldErrors.password}
+          error={error ? undefined : fieldErrors.password}
+          invalid={Boolean(error && fieldErrors.password)}
         />
-        {error && !fieldErrors.email && !fieldErrors.password && (
-          <p className="text-danger text-[14px] mb-3" role="alert">
-            {error}
-          </p>
+        {error && (
+          <div className="-mt-1 mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-[14px]">
+            <p className="min-w-0 leading-snug text-danger" role="alert">
+              {error}
+            </p>
+            <Link
+              to="/forgot-password"
+              className="whitespace-nowrap text-[14px] font-medium leading-snug text-accent hover:underline"
+            >
+              {t('auth.forgotPasswordLink')}
+            </Link>
+          </div>
         )}
         <AuthSubmit loading={loading}>
           {loading ? t('common.loading') : t('auth.loginButton')}

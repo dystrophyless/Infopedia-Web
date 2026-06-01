@@ -146,11 +146,13 @@ export function AuthEmailInput({
   value,
   onChange,
   error,
+  invalid,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  invalid?: boolean;
 }) {
   return (
     <label className="mb-4 flex flex-col gap-1.5">
@@ -167,7 +169,7 @@ export function AuthEmailInput({
           aria-label={label}
           required
           className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted ${
-            error
+            error || invalid
               ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
               : 'border-border bg-surface focus:border-accent'
           }`}
@@ -239,6 +241,7 @@ export function AuthPasswordInput({
   onToggle,
   toggleLabel,
   error,
+  invalid,
   autoComplete = 'current-password',
 }: {
   label: string;
@@ -248,6 +251,7 @@ export function AuthPasswordInput({
   onToggle: () => void;
   toggleLabel: string;
   error?: string;
+  invalid?: boolean;
   autoComplete?: string;
 }) {
   return (
@@ -265,7 +269,7 @@ export function AuthPasswordInput({
           aria-label={label}
           required
           className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted ${
-            error
+            error || invalid
               ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
               : 'border-border bg-surface focus:border-accent'
           }`}

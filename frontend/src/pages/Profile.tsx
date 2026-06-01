@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
@@ -11,10 +12,12 @@ import {
   StarIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
-import { getMe } from '../api/users';
+import { changeMyPassword, getMe } from '../api/users';
 import type { User, UserGrade, UserLanguage } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import { SkeletonCard } from '../components/SkeletonCard';
+import { AuthPasswordInput, AuthSubmit } from '../components/AuthShell';
+import { getPasswordValidationError } from '../utils/passwordValidation';
 
 export const profileDetailFieldKeys = [
   'username',
@@ -305,6 +308,7 @@ function SettingsPanel({ profile }: { profile: User }) {
     <section className="space-y-5 px-8 py-8 max-md:px-5">
       <ProfileField label={t('profile.languagePref')} value={getLanguageLabel(profile.language, t)} />
       <ProfileField label={t('profile.grade')} value={getGradeLabel(profile.grade, t)} />
+      <ChangePasswordForm />
       <div className="rounded-[8px] border border-border/65 p-5">
         <p className="text-[18px] font-medium leading-tight text-primary">{t('profile.settingsTitle')}</p>
         <p className="mt-2 text-[16px] leading-relaxed text-text-body">
@@ -313,6 +317,138 @@ function SettingsPanel({ profile }: { profile: User }) {
       </div>
     </section>
   );
+}
+
+type ChangePasswordFieldErrors = {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+};
+
+function ChangePasswordForm() {
+  const { t } = useTranslation();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<ChangePasswordFieldErrors>({});
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setNotice(null);
+    setError(null);
+    setFieldErrors({});
+
+    const nextErrors: ChangePasswordFieldErrors = {};
+    if (!currentPassword) {
+      nextErrors.currentPassword = t('auth.passwordRequired');
+    }
+    nextErrors.newPassword = getPasswordValidationError(newPassword, t);
+    if (confirmPassword !== newPassword) {
+      nextErrors.confirmPassword = t('auth.passwordsDontMatch');
+    }
+
+    if (nextErrors.currentPassword || nextErrors.newPassword || nextErrors.confirmPassword) {
+      setFieldErrors(nextErrors);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await changeMyPassword(currentPassword, newPassword);
+      setNotice(t('profile.changePasswordSuccess'));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setError(getApiErrorMessage(err, t('profile.changePasswordFailed')));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="rounded-[8px] border border-border/65 p-5">
+      <p className="text-[18px] font-medium leading-tight text-primary">
+        {t('profile.changePasswordTitle')}
+      </p>
+      <p className="mt-2 text-[16px] leading-relaxed text-text-body">
+        {t('profile.changePasswordBody')}
+      </p>
+      <div className="mt-5">
+        <AuthPasswordInput
+          label={t('profile.currentPassword')}
+          value={currentPassword}
+          visible={showCurrentPassword}
+          onChange={(value) => {
+            setCurrentPassword(value);
+            setFieldErrors((errors) => ({ ...errors, currentPassword: undefined }));
+            setError(null);
+            setNotice(null);
+          }}
+          onToggle={() => setShowCurrentPassword((visible) => !visible)}
+          toggleLabel={showCurrentPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+          autoComplete="current-password"
+          error={fieldErrors.currentPassword}
+        />
+        <AuthPasswordInput
+          label={t('auth.newPassword')}
+          value={newPassword}
+          visible={showNewPassword}
+          onChange={(value) => {
+            setNewPassword(value);
+            setFieldErrors((errors) => ({ ...errors, newPassword: undefined }));
+            setError(null);
+            setNotice(null);
+          }}
+          onToggle={() => setShowNewPassword((visible) => !visible)}
+          toggleLabel={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+          autoComplete="new-password"
+          error={fieldErrors.newPassword}
+        />
+        <AuthPasswordInput
+          label={t('auth.confirmPassword')}
+          value={confirmPassword}
+          visible={showConfirmPassword}
+          onChange={(value) => {
+            setConfirmPassword(value);
+            setFieldErrors((errors) => ({ ...errors, confirmPassword: undefined }));
+            setError(null);
+            setNotice(null);
+          }}
+          onToggle={() => setShowConfirmPassword((visible) => !visible)}
+          toggleLabel={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+          autoComplete="new-password"
+          error={fieldErrors.confirmPassword}
+        />
+      </div>
+      {notice && (
+        <p className="mb-3 rounded-[8px] bg-success/10 px-3 py-2 text-[14px] text-success" role="status">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p className="mb-3 text-[14px] text-danger" role="alert">
+          {error}
+        </p>
+      )}
+      <AuthSubmit loading={loading}>
+        {loading ? t('common.loading') : t('profile.changePasswordButton')}
+      </AuthSubmit>
+    </form>
+  );
+}
+
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (!axios.isAxiosError(err) || !err.response?.data) return fallback;
+
+  const detail = (err.response.data as { detail?: unknown }).detail;
+  return typeof detail === 'string' ? detail : fallback;
 }
 
 function ProfileField({ label, value }: { label: string; value: string }) {

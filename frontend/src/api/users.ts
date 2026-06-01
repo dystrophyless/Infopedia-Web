@@ -31,3 +31,13 @@ export async function setMyGrade(grade: UserGrade): Promise<User> {
   });
   return data;
 }
+
+export async function changeMyPassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  await apiClient.patch('/api/users/me/password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+}

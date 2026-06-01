@@ -12,6 +12,7 @@ import {
   AuthSubmit,
   GoogleAuthButton,
 } from '../components/AuthShell';
+import { getPasswordValidationError } from '../utils/passwordValidation';
 
 type RegisterStep = 'account' | 'code';
 type AccountFieldErrors = {
@@ -92,11 +93,7 @@ export function Register() {
     if (!normalizedEmail) {
       nextErrors.email = t('auth.emailRequired');
     }
-    if (!password) {
-      nextErrors.password = t('auth.passwordRequired');
-    } else if (password.length < 8) {
-      nextErrors.password = t('auth.passwordTooShort');
-    }
+    nextErrors.password = getPasswordValidationError(password, t);
 
     if (nextErrors.email || nextErrors.password) {
       setAccountFieldErrors(nextErrors);

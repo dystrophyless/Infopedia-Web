@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from src.auth.validators import validate_password_value
 from src.users.enums import UserGrade, UserLanguage, UserRole
 from src.users.validators import validate_email_value, validate_username_value
 
@@ -21,6 +22,11 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=256)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return validate_password_value(value)
 
 
 class UserUpdate(BaseModel):
@@ -80,4 +86,9 @@ class GradeSetupRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=8)
-    new_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password_value(value)

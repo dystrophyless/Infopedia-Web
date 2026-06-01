@@ -95,6 +95,33 @@ async def init_similarity_extension(engine: AsyncEngine) -> None:
         logger.exception("Не удалось инициализировать расширение схожести: %s", e)
 
 
+async def ensure_user_schema_compatibility(engine: AsyncEngine) -> None:
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1
+                            FROM information_schema.columns
+                            WHERE table_schema = 'public'
+                              AND table_name = 'user'
+                              AND column_name = 'onboarding_completed'
+                        ) THEN
+                            ALTER TABLE "user"
+                            ALTER COLUMN onboarding_completed SET DEFAULT FALSE;
+                        END IF;
+                    END $$;
+                    """
+                )
+            )
+    except Exception as e:
+        logger.exception("Could not update user schema compatibility: %s", e)
+        raise
+
+
 async def init_vector_extension(engine: AsyncEngine) -> None:
     try:
         async with engine.begin() as conn:

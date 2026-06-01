@@ -161,7 +161,19 @@ async def get_password_reset_token_by_hash(
     return reset_token
 
 
-async def delete_all_reset_tokens_for_user(session: AsyncSession, user_id: int):
+async def delete_password_reset_token(
+    session: AsyncSession,
+    *,
+    token_hash: str,
+) -> None:
+    stmt = delete(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+
+    await session.execute(stmt)
+
+
+async def delete_all_reset_tokens_for_user(
+    session: AsyncSession, *, user_id: int
+) -> None:
     stmt = delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
 
     await session.execute(stmt)

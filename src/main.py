@@ -77,6 +77,16 @@ app.include_router(
 )
 
 
+@app.middleware("http")
+async def add_private_api_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet, noai, noimageai"
+    return response
+
+
 @app.get("/")
 async def root():
     return {"message": "Hello World"}

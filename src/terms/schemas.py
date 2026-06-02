@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
+from src.security.public_refs import encode_public_ref
 from src.topics.schemas import TopicResponse
 
 
@@ -21,7 +22,12 @@ class TermUpdate(BaseModel):
 class TermResponse(TermBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(ge=1)
+    id: int = Field(ge=1, exclude=True)
+
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("term", self.id)
 
 
 class TermDetailedResponse(TermResponse):
@@ -64,7 +70,12 @@ class DefinitionUpdate(BaseModel):
 class DefinitionResponse(DefinitionBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(ge=1)
+    id: int = Field(ge=1, exclude=True)
+
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("definition", self.id)
 
 
 class DefinitionSemanticResponse(DefinitionResponse):

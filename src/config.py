@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     CELERY_RESULT_EXPIRES_SECONDS: int
     SEARCH_TASK_OWNER_TTL_SECONDS: int
     FEATURED_DEFINITION_IDS: list[int] = [10, 4, 27, 31, 47]
+    ANTI_SCRAPE_ENABLED: bool = True
+    ANTI_SCRAPE_BLOCK_AUTOMATION_USER_AGENTS: bool = True
+    ANTI_SCRAPE_WINDOW_SECONDS: int = 60
+    ANTI_SCRAPE_AUTHENTICATED_LIMIT: int = 90
+    ANTI_SCRAPE_PUBLIC_LIMIT: int = 30
+    ANTI_SCRAPE_SEARCH_LIMIT: int = 45
+    ANTI_SCRAPE_DETAIL_LIMIT: int = 60
+    ANTI_SCRAPE_MAX_SEARCH_RESULTS: int = 20
+    ANTI_SCRAPE_MAX_TERMS_PAGE_SIZE: int = 20
 
     @property
     def google_redirect_uri(self) -> str:

@@ -9,6 +9,7 @@ import torch
 from sentence_transformers import CrossEncoder, SentenceTransformer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.security.public_refs import encode_public_ref
 from src.terms.models import Definition
 from src.terms.repository import get_definition_candidates
 
@@ -264,7 +265,7 @@ class DefinitionService:
             "text": escape(definition.text),
             "topic": escape(definition.topic.name),
             "page": definition.page,
-            "definition_id": definition.id,
+            "definition_public_id": encode_public_ref("definition", definition.id),
         }
 
         return info

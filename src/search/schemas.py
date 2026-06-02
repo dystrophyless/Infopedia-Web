@@ -25,7 +25,7 @@ class SearchTaskResult(BaseModel):
     text: str
     topic: str
     page: int = Field(ge=1)
-    definition_id: int = Field(ge=1)
+    definition_public_id: str
 
 
 class SearchTaskResponse(BaseModel):

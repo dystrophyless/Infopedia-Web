@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
+
+from src.security.public_refs import encode_public_ref
 
 
 class BookBase(BaseModel):
@@ -18,7 +20,12 @@ class BookUpdate(BaseModel):
 class BookResponse(BookBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(ge=1)
+    id: int = Field(ge=1, exclude=True)
+
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("book", self.id)
 
 
 class ChapterBase(BaseModel):
@@ -37,7 +44,12 @@ class ChapterUpdate(BaseModel):
 class ChapterResponse(ChapterBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(ge=1)
+    id: int = Field(ge=1, exclude=True)
+
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("chapter", self.id)
 
 
 class ChapterDetailedResponse(ChapterResponse):
@@ -60,7 +72,12 @@ class TopicCodeUpdate(BaseModel):
 class TopicCodeResponse(TopicCodeBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(ge=1)
+    id: int = Field(ge=1, exclude=True)
+
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("topic_code", self.id)
 
 
 class TopicCodeDetailedResponse(TopicCodeResponse):
@@ -89,8 +106,13 @@ class TopicUpdate(BaseModel):
 class TopicResponse(TopicBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(ge=1)
+    id: int = Field(ge=1, exclude=True)
     book: BookResponse
+
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("topic", self.id)
 
 
 class TopicDetailedResponse(TopicResponse):

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.dependencies import get_current_user
 from src.celery_app.app import app as celery_app
 from src.celery_app.search_task import process_query
+from src.config import settings
 from src.database import get_async_session
 from src.redis_client import build_search_task_channel, get_async_redis_client
 from src.search.schemas import SearchTaskCreateRequest, SearchTaskResponse
@@ -23,6 +24,7 @@ from src.search.service import (
     release_search_task_owner,
     reserve_search_task_owner,
 )
+from src.security.anti_scrape import enforce_anti_scrape
 from src.terms.models import Term
 from src.terms.repository import search_terms_by_prefix, search_terms_by_similarity
 from src.terms.schemas import TermDetailedResponse
@@ -35,12 +37,18 @@ router = APIRouter()
 
 @router.get("/", response_model=list[TermDetailedResponse])
 async def search_terms(
+    request: Request,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     query: Annotated[str, Query(min_length=1, max_length=255)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    limit: Annotated[int, Query(ge=1, le=settings.ANTI_SCRAPE_MAX_SEARCH_RESULTS)] = 10,
 ):
-    _ = current_user
+    await enforce_anti_scrape(
+        request,
+        scope="search:terms",
+        user_id=current_user.id,
+        limit=settings.ANTI_SCRAPE_SEARCH_LIMIT,
+    )
     terms: list[Term] | None = await search_terms_by_prefix(
         session,
         limit=limit,
@@ -74,11 +82,18 @@ async def search_terms(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def create_search_task(
+    request: Request,
     payload: SearchTaskCreateRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     user_id = current_user.id
+    await enforce_anti_scrape(
+        request,
+        scope="search:semantic:create",
+        user_id=user_id,
+        limit=settings.ANTI_SCRAPE_SEARCH_LIMIT,
+    )
     logger.info(
         "Получен запрос на поисковую задачу от user_id=%s с длиной запроса=%s",
         user_id,

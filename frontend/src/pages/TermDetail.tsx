@@ -13,31 +13,31 @@ import { DefinitionMetadata } from '../components/DefinitionMetadata';
 interface TermDetailState {
   backTo?: string;
   term?: Term;
-  selectedDefinitionId?: number;
+  selectedDefinitionPublicId?: string;
 }
 
 export function TermDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { termRef } = useParams<{ termRef: string }>();
   const location = useLocation();
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const state = (location.state as TermDetailState | null) ?? null;
   const term = state?.term ?? null;
   const definitions = term?.definitions ?? [];
-  const selectedDefinitionId = state?.selectedDefinitionId;
+  const selectedDefinitionPublicId = state?.selectedDefinitionPublicId;
   const [index, setIndex] = useState(() => {
-    if (selectedDefinitionId === undefined) {
+    if (selectedDefinitionPublicId === undefined) {
       return 0;
     }
 
     const selectedIndex = definitions.findIndex(
-      (definition) => definition.id === selectedDefinitionId,
+      (definition) => definition.public_id === selectedDefinitionPublicId,
     );
 
     return selectedIndex >= 0 ? selectedIndex : 0;
   });
 
-  if (!term || String(term.id) !== id) {
+  if (!term || term.public_id !== termRef) {
     return <Navigate to={isAuthenticated ? '/search' : '/'} replace />;
   }
 

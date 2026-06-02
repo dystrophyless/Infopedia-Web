@@ -80,7 +80,7 @@ export function TermSearch() {
       {!isLoading && results.length > 0 && (
         <div className="flex flex-col gap-4">
           {results.map((term) => (
-            <TermCard key={term.id} term={term} />
+            <TermCard key={term.public_id} term={term} />
           ))}
         </div>
       )}

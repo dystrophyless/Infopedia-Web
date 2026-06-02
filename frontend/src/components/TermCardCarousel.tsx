@@ -1,22 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { getFeaturedTerms } from '../api/terms';
-import type { Definition, FeaturedTerm } from '../types';
+import type { FeaturedTerm } from '../types';
+import { DefinitionMetadata } from './DefinitionMetadata';
 
 function oneLineTermName(name: string): string {
   if (name.length <= 20) return name;
   return name.slice(0, 20).trimEnd() + '...';
 }
 
-function buildMetadata(definition: Definition | undefined, topicLabel: string, pageLabel: string) {
-  return {
-    book: definition?.topic?.book?.name ?? '',
-    topic:
-      definition?.topic?.name ? `${topicLabel}: ${definition.topic.name}` : '',
-    page:
-      definition?.page !== undefined ? `${pageLabel} ${definition.page}` : '',
-  };
+function previewText(text: string): string {
+  return text.trim().replace(/\n{2,}/g, '\n');
 }
 
 function FeaturedTermCard({
@@ -26,9 +20,7 @@ function FeaturedTermCard({
   featuredTerm: FeaturedTerm;
   clone?: boolean;
 }) {
-  const { t } = useTranslation();
   const { term, featured_definition: definition } = featuredTerm;
-  const metadata = buildMetadata(definition, t('search.topic'), t('search.page'));
 
   return (
     <Link
@@ -36,21 +28,23 @@ function FeaturedTermCard({
       state={{ backTo: '/', term, selectedDefinitionId: definition.id }}
       aria-hidden={clone || undefined}
       tabIndex={clone ? -1 : undefined}
-      className="flex h-[325px] w-[612px] flex-none flex-col overflow-hidden rounded-[15px] border border-border bg-surface p-[50px] shadow-feature transition-shadow hover:shadow-card max-md:h-[280px] max-md:w-[88vw] max-md:p-8"
+      className="flex h-[325px] w-[min(612px,calc(100vw_-_96px))] min-w-0 flex-none flex-col overflow-hidden rounded-[15px] border border-border bg-surface p-[50px] shadow-feature transition-shadow hover:shadow-card max-md:h-[280px] max-md:w-[88vw] max-md:p-8"
     >
-      <div className="flex h-full min-h-0 flex-col">
-        <h3 className="whitespace-nowrap text-[36px] font-medium leading-[1.15] text-text max-md:text-[28px]">
+      <div className="flex h-full min-h-0 min-w-0 flex-col">
+        <h3 className="min-w-0 truncate text-[36px] font-medium leading-[1.15] text-text max-md:text-[28px]">
           {oneLineTermName(term.name)}
         </h3>
-        <p className="mt-6 line-clamp-3 text-[22px] font-light leading-[1.2] text-text max-md:mt-6 max-md:text-[16px] max-md:leading-[1.2]">
-          {definition?.text ?? ''}
+        <p className="mt-6 min-w-0 line-clamp-3 whitespace-pre-line text-[22px] font-light leading-[1.2] text-text max-md:mt-6 max-md:text-[16px] max-md:leading-[1.2]">
+          {definition?.text ? previewText(definition.text) : ''}
         </p>
-        <div className="mt-auto pt-6 text-[16px] font-light text-border max-md:pt-6 max-md:text-[13px]">
-          <p className="truncate">{metadata.book}</p>
-          <div className="mt-1 flex items-center gap-3">
-            <p className="min-w-0 flex-1 truncate">{metadata.topic}</p>
-            <span className="shrink-0">{metadata.page}</span>
-          </div>
+        <div className="mt-auto min-w-0">
+          <DefinitionMetadata
+            definition={definition}
+            variant="compact"
+            showPage={false}
+            topicValueClassName="max-w-[180px] max-md:max-w-[130px]"
+            className="min-w-0 max-w-full max-md:gap-1.5 [&_dd]:max-md:text-[12px] [&_dt]:max-md:text-[12px]"
+          />
         </div>
       </div>
     </Link>
@@ -124,7 +118,7 @@ export function TermCardCarousel() {
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={index}
-              className="h-[325px] w-[612px] flex-none animate-pulse rounded-[15px] border border-border/40 bg-surface/70 max-md:w-[88vw]"
+              className="h-[325px] w-[min(612px,calc(100vw_-_96px))] flex-none animate-pulse rounded-[15px] border border-border/40 bg-surface/70 max-md:w-[88vw]"
             />
           ))}
         </div>

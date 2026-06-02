@@ -8,8 +8,8 @@ export async function searchTerms(query: string, limit = 10): Promise<Term[]> {
   return data;
 }
 
-export async function getTerm(id: number | string): Promise<Term> {
-  const { data } = await apiClient.get<Term>(`/api/terms/${id}`);
+export async function getTerm(publicId: string): Promise<Term> {
+  const { data } = await apiClient.get<Term>(`/api/terms/${publicId}`);
   return data;
 }
 
@@ -18,7 +18,7 @@ export async function getFeaturedTerms(): Promise<FeaturedTerm[]> {
   return data;
 }
 
-export async function getTermBooks(id: number | string): Promise<string[]> {
-  const { data } = await apiClient.get<string[]>(`/api/terms/${id}/books_list`);
+export async function getTermBooks(publicId: string): Promise<Array<{ public_id?: string; name: string }>> {
+  const { data } = await apiClient.get<Array<{ public_id?: string; name: string }>>(`/api/terms/${publicId}/books_list`);
   return data;
 }

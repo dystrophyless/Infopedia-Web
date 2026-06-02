@@ -24,8 +24,8 @@ function FeaturedTermCard({
 
   return (
     <Link
-      to={`/terms/${term.id}`}
-      state={{ backTo: '/', term, selectedDefinitionId: definition.id }}
+      to={`/terms/${term.public_id}`}
+      state={{ backTo: '/', term, selectedDefinitionPublicId: definition.public_id }}
       aria-hidden={clone || undefined}
       tabIndex={clone ? -1 : undefined}
       className="flex h-[325px] w-[min(612px,calc(100vw_-_96px))] min-w-0 flex-none flex-col overflow-hidden rounded-[15px] border border-border bg-surface p-[50px] shadow-feature transition-shadow hover:shadow-card max-md:h-[280px] max-md:w-[88vw] max-md:p-8"
@@ -153,7 +153,7 @@ export function TermCardCarousel() {
         <ul className="flex w-max gap-[45px] px-[48px] max-md:gap-4 max-md:px-4">
           {loopedTerms.map((featuredTerm, index) => (
             <li
-              key={`${featuredTerm.term.id}-${featuredTerm.featured_definition.id}-${index < terms.length ? 'orig' : 'clone'}`}
+              key={`${featuredTerm.term.public_id}-${featuredTerm.featured_definition.public_id}-${index < terms.length ? 'orig' : 'clone'}`}
               className="flex-none"
             >
               <FeaturedTermCard featuredTerm={featuredTerm} clone={index >= terms.length} />

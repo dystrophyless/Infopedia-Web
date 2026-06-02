@@ -1,21 +1,21 @@
 export interface Topic {
-  id: number;
+  public_id?: string;
   name?: string;
   page_start?: number;
   page_end?: number;
-  book?: { id: number; name: string };
-  chapter?: { id: number; name: string };
+  book?: { public_id?: string; name: string };
+  chapter?: { public_id?: string; name: string };
 }
 
 export interface Definition {
-  id?: number;
+  public_id?: string;
   text: string;
   page: number;
   topic?: Topic;
 }
 
 export interface Term {
-  id: number;
+  public_id: string;
   name: string;
   definitions?: Definition[];
 }
@@ -50,10 +50,24 @@ export interface User {
 
 export type SearchTaskStatus = 'pending' | 'success' | 'failure' | string;
 
+export interface SearchTaskResult {
+  term: string;
+  book: string;
+  text: string;
+  topic: string;
+  page: number;
+  definition_public_id?: string;
+}
+
+export interface SearchTaskError {
+  code?: string;
+  message?: string;
+}
+
 export interface SearchTask {
   task_id: string;
   status: SearchTaskStatus;
-  result?: Definition | null;
-  error?: string | null;
+  result?: SearchTaskResult | null;
+  error?: SearchTaskError | string | null;
   step?: string | null;
 }

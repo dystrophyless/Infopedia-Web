@@ -7,6 +7,7 @@ import { createSearchTask, buildSseUrl } from '../api/search';
 import { useSSE } from '../hooks/useSSE';
 import { LoadingPanel } from '../components/LoadingPanel';
 import { SemanticResultCard } from '../components/SemanticResultCard';
+import type { Definition, SearchTaskError } from '../types';
 
 const MIN_CHARS = 10;
 
@@ -47,10 +48,27 @@ export function SemanticSearch() {
     setSubmitError(null);
   }
 
+  function formatSearchTaskError(value: SearchTaskError | string | null | undefined): string | null {
+    if (!value) return null;
+    if (typeof value === 'string') return value;
+    return value.message ?? value.code ?? null;
+  }
+
   const submitDisabled = query.trim().length < MIN_CHARS || submitting || isLoading;
-  const successResult = result?.status === 'success' ? result.result : null;
+  const successResult: Definition | null =
+    result?.status === 'success' && result.result
+      ? {
+          public_id: result.result.definition_public_id,
+          text: result.result.text,
+          page: result.result.page,
+          topic: {
+            name: result.result.topic,
+            book: { name: result.result.book },
+          },
+        }
+      : null;
   const failureMessage =
-    submitError ?? (result?.status === 'failure' ? result.error ?? error : error);
+    submitError ?? (result?.status === 'failure' ? formatSearchTaskError(result.error) ?? error : error);
 
   return (
     <div className="mx-auto max-w-[900px] px-6 py-12">

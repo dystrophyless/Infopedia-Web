@@ -13,7 +13,7 @@ export function TermCard({ term }: { term: Term }) {
 
   return (
     <Link
-      to={`/terms/${term.id}`}
+      to={`/terms/${term.public_id}`}
       state={{ backTo: '/search', term }}
       className="group block rounded-[15px] border border-border bg-surface p-8 shadow-feature transition-shadow hover:shadow-card max-md:p-6"
     >

@@ -53,7 +53,7 @@ export default function App() {
           }
         />
         <Route
-          path="/terms/:id"
+          path="/terms/:termRef"
           element={
             <Public>
               <TermDetail />

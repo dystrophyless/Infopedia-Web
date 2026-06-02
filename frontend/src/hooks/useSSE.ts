@@ -78,7 +78,11 @@ export function useSSE(url: string | null): UseSSEResult {
                 setResult(parsed);
                 setIsLoading(false);
                 if (parsed.status === 'failure') {
-                  setError(parsed.error ?? 'failure');
+                  setError(
+                    typeof parsed.error === 'string'
+                      ? parsed.error
+                      : parsed.error?.message ?? parsed.error?.code ?? 'failure',
+                  );
                 }
                 return;
               }

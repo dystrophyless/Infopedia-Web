@@ -132,8 +132,11 @@ async def get_topics_by_chapter_id(
 
 async def get_all_topics(
     session: AsyncSession,
+    *,
+    skip: int = 0,
+    limit: int = 20,
 ) -> list[Topic] | None:
-    query = select(Topic)
+    query = select(Topic).offset(skip).limit(limit)
 
     result = await session.execute(query)
 

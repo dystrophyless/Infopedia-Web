@@ -1,11 +1,14 @@
 import asyncio
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_user
+from src.config import settings
 from src.database import get_async_session
+from src.security.anti_scrape import enforce_anti_scrape
+from src.security.public_refs import InvalidPublicRef, decode_public_ref
 from src.users.models import User
 from src.terms.models import Definition, Term
 from src.terms.repository import (
@@ -26,9 +29,20 @@ from src.terms.schemas import (
 from src.terms.service import get_embedder
 from src.topics.repository import get_topic_by_name
 from src.topics.schemas import BookResponse
-from src.config import settings
 
 router = APIRouter()
+
+
+async def _get_term_by_public_ref(
+    session: AsyncSession,
+    term_ref: str,
+) -> Term | None:
+    try:
+        term_id = decode_public_ref("term", term_ref)
+    except InvalidPublicRef:
+        return None
+
+    return await get_term_by_id(session, id=term_id)
 
 
 async def _get_featured_terms(session: AsyncSession) -> list[FeaturedTermResponse]:
@@ -99,12 +113,17 @@ async def _build_term_definitions(
 
 @router.get("", response_model=PaginatedTermsResponse)
 async def get_terms(
+    request: Request,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    limit: Annotated[int, Query(ge=1, le=settings.ANTI_SCRAPE_MAX_TERMS_PAGE_SIZE)] = 10,
 ):
-    _ = current_user
+    await enforce_anti_scrape(
+        request,
+        scope="terms:list",
+        user_id=current_user.id,
+    )
     total: int = await count_terms(session)
 
     terms: list[Term] | None = await get_terms_paginated(
@@ -132,8 +151,14 @@ async def get_terms(
 
 @router.get("/featured", response_model=list[FeaturedTermResponse])
 async def get_featured_terms(
+    request: Request,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
+    await enforce_anti_scrape(
+        request,
+        scope="terms:featured",
+        limit=settings.ANTI_SCRAPE_PUBLIC_LIMIT,
+    )
     return await _get_featured_terms(session)
 
 
@@ -141,11 +166,16 @@ async def get_featured_terms(
     "", response_model=TermDetailedResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_term(
+    request: Request,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     term_data: TermCreate,
 ):
-    _ = current_user
+    await enforce_anti_scrape(
+        request,
+        scope="terms:write",
+        user_id=current_user.id,
+    )
     term_exists: bool = await check_if_term_exists(session, name=term_data.name)
 
     if term_exists:
@@ -167,44 +197,55 @@ async def create_term(
     if not term:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Созданный термин с ID '{new_term.id}' не найден.",
+            detail="Созданный термин не найден.",
         )
 
     return term
 
 
-@router.get("/{term_id}", response_model=TermDetailedResponse)
+@router.get("/{term_ref}", response_model=TermDetailedResponse)
 async def get_term(
-    term_id: int,
+    request: Request,
+    term_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    _ = current_user
-    term: Term | None = await get_term_by_id(session, id=term_id)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:detail",
+        user_id=current_user.id,
+        limit=settings.ANTI_SCRAPE_DETAIL_LIMIT,
+    )
+    term = await _get_term_by_public_ref(session, term_ref)
 
     if not term:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Термин с ID '{term_id}' не найден.",
+            detail="Термин не найден.",
         )
 
     return term
 
 
-@router.patch("/{term_id}", response_model=TermDetailedResponse)
+@router.patch("/{term_ref}", response_model=TermDetailedResponse)
 async def update_term(
-    term_id: int,
+    request: Request,
+    term_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     term_data: TermUpdate,
 ):
-    _ = current_user
-    term: Term | None = await get_term_by_id(session, id=term_id)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:write",
+        user_id=current_user.id,
+    )
+    term = await _get_term_by_public_ref(session, term_ref)
 
     if not term:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Термин с ID '{term_id}' не найден.",
+            detail="Термин не найден.",
         )
 
     term_exists: bool = await check_if_term_exists(session, name=term_data.name)
@@ -225,33 +266,43 @@ async def update_term(
     return term
 
 
-@router.delete("/{term_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{term_ref}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_term(
-    term_id: int,
+    request: Request,
+    term_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    _ = current_user
-    term: Term | None = await get_term_by_id(session, id=term_id)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:write",
+        user_id=current_user.id,
+    )
+    term = await _get_term_by_public_ref(session, term_ref)
 
     if not term:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Термин с ID '{term_id}' не найден.",
+            detail="Термин не найден.",
         )
 
     await session.delete(term)
     await session.commit()
 
 
-@router.get("/{term_id}/definitions", response_model=list[DefinitionResponse])
+@router.get("/{term_ref}/definitions", response_model=list[DefinitionResponse])
 async def get_term_definitions(
-    term_id: int,
+    request: Request,
+    term_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    _ = current_user
-    term: Term | None = await get_term_by_id(session, id=term_id)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:definitions",
+        user_id=current_user.id,
+    )
+    term = await _get_term_by_public_ref(session, term_ref)
 
     if not term:
         raise HTTPException(
@@ -262,15 +313,20 @@ async def get_term_definitions(
     return term.definitions
 
 
-@router.get("/{term_id}/definitions/{index}", response_model=DefinitionResponse)
+@router.get("/{term_ref}/definitions/{index}", response_model=DefinitionResponse)
 async def get_term_definition(
-    term_id: int,
+    request: Request,
+    term_ref: str,
     index: int,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    _ = current_user
-    term: Term | None = await get_term_by_id(session, id=term_id)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:definition",
+        user_id=current_user.id,
+    )
+    term = await _get_term_by_public_ref(session, term_ref)
 
     if not term:
         raise HTTPException(
@@ -288,14 +344,19 @@ async def get_term_definition(
     return definitions[index]
 
 
-@router.get("/{term_id}/books_list", response_model=list[BookResponse])
+@router.get("/{term_ref}/books_list", response_model=list[BookResponse])
 async def get_term_books(
-    term_id: int,
+    request: Request,
+    term_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    _ = current_user
-    term: Term | None = await get_term_by_id(session, id=term_id)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:books",
+        user_id=current_user.id,
+    )
+    term = await _get_term_by_public_ref(session, term_ref)
 
     if not term:
         raise HTTPException(

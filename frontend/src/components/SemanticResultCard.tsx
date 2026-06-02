@@ -1,21 +1,13 @@
-import { useTranslation } from 'react-i18next';
 import type { Definition } from '../types';
+import { DefinitionMetadata } from './DefinitionMetadata';
 
 export function SemanticResultCard({ definition }: { definition: Definition }) {
-  const { t } = useTranslation();
-
   return (
-    <article className="bg-surface border border-border rounded-[15px] p-10 shadow-card max-md:p-6">
-      <p className="text-[20px] text-text leading-relaxed mb-6 max-md:text-[16px]">
+    <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature max-md:p-6">
+      <p className="max-w-[760px] whitespace-pre-line text-[20px] leading-relaxed text-text max-md:text-[16px]">
         {definition.text}
       </p>
-      <div className="text-[14px] text-muted flex flex-wrap gap-x-4 gap-y-1">
-        {definition.topic?.book?.name && <span>{definition.topic.book.name}</span>}
-        {definition.topic?.name && <span>{definition.topic.name}</span>}
-        <span>
-          {t('search.page')} {definition.page}
-        </span>
-      </div>
+      <DefinitionMetadata definition={definition} variant="detail" />
     </article>
   );
 }

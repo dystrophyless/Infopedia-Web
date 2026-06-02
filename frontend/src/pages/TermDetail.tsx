@@ -8,6 +8,7 @@ import {
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import type { Term } from '../types';
+import { DefinitionMetadata } from '../components/DefinitionMetadata';
 
 interface TermDetailState {
   backTo?: string;
@@ -45,39 +46,35 @@ export function TermDetail() {
   const backTo = state?.backTo ?? (isAuthenticated ? '/search' : '/');
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-12">
+    <div className="mx-auto max-w-[860px] px-6 py-12">
       <Link
         to={backTo}
-        className="mb-6 inline-flex items-center gap-2 text-[14px] text-muted hover:text-accent"
+        className="mb-6 inline-flex items-center gap-2 text-[14px] font-medium text-primary/70 hover:text-accent"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.7} />
         {t('termDetail.back')}
       </Link>
 
-      <h1 className="mb-8 text-[44px] font-medium text-text max-md:text-[30px]">
-        {term.name}
-      </h1>
-
       {total === 0 && (
-        <p className="py-8 text-center text-muted">
-          {t('termDetail.noDefinitions')}
-        </p>
+        <>
+          <h1 className="mb-8 text-[44px] font-medium text-text max-md:text-[30px]">
+            {term.name}
+          </h1>
+          <p className="py-8 text-center text-muted">
+            {t('termDetail.noDefinitions')}
+          </p>
+        </>
       )}
 
       {current && (
-        <article className="rounded-[15px] border border-border bg-surface p-10 shadow-card max-md:p-6">
-          <p className="mb-6 text-[20px] leading-relaxed text-text max-md:text-[16px]">
+        <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature max-md:p-6">
+          <h1 className="mb-4 text-[30px] font-medium leading-tight text-text max-md:text-[24px]">
+            {term.name}
+          </h1>
+          <p className="max-w-[760px] whitespace-pre-line text-[18px] leading-relaxed text-text-body max-md:text-[16px]">
             {current.text}
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[14px] text-muted">
-            {current.topic?.book?.name && (
-              <span>{current.topic.book.name}</span>
-            )}
-            {current.topic?.name && <span>{current.topic.name}</span>}
-            <span>
-              {t('search.page')} {current.page}
-            </span>
-          </div>
+          <DefinitionMetadata definition={current} variant="detail" showIcons />
         </article>
       )}
 

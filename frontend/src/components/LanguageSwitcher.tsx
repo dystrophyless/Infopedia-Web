@@ -72,7 +72,7 @@ export function LanguageSwitcher() {
         <ul
           id="lang-menu"
           role="menu"
-          className="absolute right-0 mt-1 w-40 rounded-[10px] border border-border bg-surface shadow-feature z-50 overflow-hidden"
+          className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-border bg-surface shadow-feature"
         >
           {LANGS.map((l, i) => (
             <li key={l}>
@@ -81,12 +81,19 @@ export function LanguageSwitcher() {
                 type="button"
                 onClick={() => selectLang(l)}
                 onKeyDown={(e) => handleOptionKeyDown(e, i)}
-                className={`w-full text-left px-4 py-2 text-[15px] hover:bg-bg focus:bg-bg focus:outline-none ${
-                  lang === l ? 'text-accent font-medium' : 'text-text-body'
+                className={`flex w-full items-center gap-3 px-4 py-2 text-left text-[15px] hover:bg-bg focus:outline-none focus-visible:bg-bg ${
+                  lang === l ? 'font-medium text-accent' : 'text-text-body'
                 }`}
                 role="menuitem"
+                aria-current={lang === l ? 'true' : undefined}
               >
-                {labelFor(l)}
+                <span>{labelFor(l)}</span>
+                <span
+                  aria-hidden="true"
+                  className={`ml-auto h-1.5 w-1.5 rounded-full bg-accent transition-opacity ${
+                    lang === l ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
               </button>
             </li>
           ))}

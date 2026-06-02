@@ -117,15 +117,22 @@ export function Profile() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex h-[54px] w-full items-center gap-3 rounded-[8px] border px-5 text-left text-[18px] text-primary transition-colors ${
+                  className={`group flex h-[54px] w-full items-center gap-3 rounded-[8px] border px-5 text-left text-[18px] text-primary transition-all duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-0 ${
                     isActive
-                      ? 'border-border bg-surface shadow-[2px_2px_0_#9683b7]'
-                      : 'border-transparent hover:border-border/60 hover:bg-surface/60'
+                      ? 'border-border bg-surface shadow-[2px_2px_0_#9683b7] hover:shadow-[3px_3px_0_#9683b7]'
+                      : 'border-transparent hover:border-border hover:bg-surface hover:shadow-[2px_2px_0_#9683b7]'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.7} />
-                  <span className="truncate">{t(item.labelKey)}</span>
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={22}
+                    strokeWidth={1.7}
+                    className="shrink-0 transition-transform duration-200 ease-out group-hover:scale-110"
+                  />
+                  <span className="truncate transition-transform duration-200 ease-out group-hover:translate-x-0.5">
+                    {t(item.labelKey)}
+                  </span>
                 </button>
               );
             })}
@@ -187,8 +194,8 @@ function ProfileOverview({
   const { t } = useTranslation();
 
   return (
-    <div className="px-8 py-8 max-md:px-5">
-      <section className="grid grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] items-start gap-6 max-xl:grid-cols-1">
+    <div className="px-8 py-12 max-md:px-5">
+      <section className="grid min-h-[320px] grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] items-start gap-6 max-xl:grid-cols-1">
         <div className="rounded-[8px] bg-bg p-6">
           <div className="flex flex-wrap items-center gap-4">
             <FigmaProfileIcon className="block size-[86px] shrink-0 text-accent" />
@@ -342,26 +349,28 @@ function SettingsPanel({ profile }: { profile: User }) {
   }
 
   return (
-    <section className="space-y-3 px-7 py-6 max-md:px-5">
-      <SettingsActionButton
-        icon={LockPasswordIcon}
-        title={t('profile.settingsPasswordTitle')}
-        body={t('profile.settingsPasswordBody')}
-        onClick={() => setView('password')}
-      />
-      <SettingsActionButton
-        icon={Mail01Icon}
-        title={t('profile.settingsEmailTitle')}
-        body={t('profile.settingsEmailBody')}
-        onClick={() => setView('email')}
-      />
-      <SettingsActionButton
-        icon={Delete02Icon}
-        title={t('profile.settingsDeleteTitle')}
-        body={t('profile.settingsDeleteBody')}
-        tone="danger"
-        onClick={() => setView('delete')}
-      />
+    <section className="px-8 py-12 max-md:px-5">
+      <div className="min-h-[320px] space-y-3">
+        <SettingsActionButton
+          icon={LockPasswordIcon}
+          title={t('profile.settingsPasswordTitle')}
+          body={t('profile.settingsPasswordBody')}
+          onClick={() => setView('password')}
+        />
+        <SettingsActionButton
+          icon={Mail01Icon}
+          title={t('profile.settingsEmailTitle')}
+          body={t('profile.settingsEmailBody')}
+          onClick={() => setView('email')}
+        />
+        <SettingsActionButton
+          icon={Delete02Icon}
+          title={t('profile.settingsDeleteTitle')}
+          body={t('profile.settingsDeleteBody')}
+          tone="danger"
+          onClick={() => setView('delete')}
+        />
+      </div>
     </section>
   );
 }
@@ -434,7 +443,7 @@ function SettingsDetail({
   const { t } = useTranslation();
 
   return (
-    <section className="px-7 py-6 max-md:px-5">
+    <section className="px-8 py-12 max-md:px-5">
       <button
         type="button"
         onClick={onBack}

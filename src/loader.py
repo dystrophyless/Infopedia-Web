@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from pathlib import Path
 
 from sqlalchemy import select
@@ -38,7 +39,13 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
             await session.flush()
 
         for book_name, defs in books.items():
-            query = select(Book).where(Book.name == book_name)
+            book_publisher, book_grade_str = book_name.split(": ")
+            match = re.match(r"(\d+)", book_grade_str)
+            book_grade = int(match.group(1)) if match else None
+            query = select(Book).where(
+                Book.publisher == book_publisher,
+                Book.grade == book_grade,
+            )
             result = await session.execute(query)
 
             book: Book = result.scalar_one_or_none()
@@ -151,13 +158,19 @@ async def load_books_topics_and_mappings(
 
     try:
         for book_name, book_data in data.items():
-            query = select(Book).where(Book.name == book_name)
+            book_publisher, book_grade_str = book_name.split(": ")
+            match = re.match(r"(\d+)", book_grade_str)
+            book_grade = int(match.group(1)) if match else None
+            query = select(Book).where(
+                Book.publisher == book_publisher,
+                Book.grade == book_grade,
+            )
             result = await session.execute(query)
 
             book: Book = result.scalar_one_or_none()
 
             if not book:
-                book: Book = Book(name=book_name)
+                book: Book = Book(publisher=book_publisher, grade=book_grade)
                 session.add(book)
                 await session.flush()
 

@@ -11,9 +11,14 @@ if TYPE_CHECKING:
 
 class Book(Base):
     __tablename__ = "book"
+    __table_args__ = (
+        UniqueConstraint("publisher", "grade", name="uq_book_publisher_grade"),
+        Index("ix_book_grade", "grade"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    publisher: Mapped[str] = mapped_column(String(255), nullable=False)
+    grade: Mapped[int] = mapped_column(Integer, nullable=False)
 
     topics: Mapped[list["Topic"]] = relationship(
         back_populates="book",

@@ -4,7 +4,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class BookBase(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    publisher: str = Field(min_length=1, max_length=255)
+    grade: int = Field(ge=7, le=11)
 
 
 class BookCreate(BookBase):
@@ -12,7 +13,8 @@ class BookCreate(BookBase):
 
 
 class BookUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    publisher: str | None = Field(default=None, min_length=1, max_length=255)
+    grade: int | None = Field(default=None, ge=7, le=11)
 
 
 class BookResponse(BookBase):

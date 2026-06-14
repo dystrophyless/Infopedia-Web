@@ -1,9 +1,9 @@
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.topics.models import Topic, TopicCode
+from src.topics.models import Book, Topic, TopicCode
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ async def get_topics_by_book_id(
         select(Topic)
         .where(Topic.book_id == book_id)
     )  # fmt: skip
-    
+
     result = await session.execute(query)
 
     topics: list[Topic] = result.scalars().all()
@@ -148,3 +148,61 @@ async def get_all_topics(
     logger.debug("Успешно получены все темы из базы данных. Кол-во: %d", len(topics))
 
     return topics
+
+
+async def get_books_coverage_by_chapter(
+    session: AsyncSession,
+    *,
+    chapter_id: int,
+) -> list[dict] | None:
+    matching_topics = (
+        select(
+            Topic.id.label("topic_id"),
+            Topic.book_id.label("book_id"),
+        )
+        .join(Topic.topic_codes)
+        .where(TopicCode.chapter_id == chapter_id)
+        .distinct()
+        .subquery()
+    )
+
+    topic_count = func.count(matching_topics.c.topic_id)
+    query = (
+        select(
+            Book,
+            topic_count.label("topic_count"),
+        )
+        .join(matching_topics, matching_topics.c.book_id == Book.id)
+        .group_by(Book.id, Book.publisher, Book.grade)
+        .order_by(topic_count.desc(), Book.publisher.asc(), Book.grade.asc())
+    )  # fmt: skip
+
+    result = await session.execute(query)
+    rows = [(book, int(count)) for book, count in result.all()]
+    total_topic_count = sum(topic_count for _, topic_count in rows)
+
+    if total_topic_count == 0:
+        logger.debug(
+            "Не удалось получить покрытие книг для главы с `chapter_id`='%s' из базы данных",
+            chapter_id,
+        )
+        return None
+
+    stats = [
+        {
+            "book_id": book.id,
+            "publisher": book.publisher,
+            "grade": book.grade,
+            "topic_count": topic_count,
+            "percentage": round((topic_count / total_topic_count) * 100),
+        }
+        for book, topic_count in rows
+    ]
+
+    logger.debug(
+        "Успешно получено покрытие книг для главы с `chapter_id`='%s'. Кол-во книг: %d",
+        chapter_id,
+        len(stats),
+    )
+
+    return stats

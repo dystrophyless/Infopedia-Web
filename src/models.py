@@ -1,3 +1,4 @@
+from src.analyze.models import AnalyzeResult, AnalyzeResultItem
 from src.auth.models import AuthIdentity, PasswordResetToken, PendingUser, RefreshToken
 from src.database import Base
 from src.terms.models import (

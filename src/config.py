@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int
     FRONTEND_URL: str = "http://localhost:5173"
 
+    LLMWHISPERER_API_KEY: SecretStr
+    MAX_UPLOAD_SIZE_BYTES: int = 2 * 1024 * 1024  # 2 MB
+    ANALYZE_TASK_OWNER_TTL_SECONDS: int = 3600
+
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: SecretStr
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"

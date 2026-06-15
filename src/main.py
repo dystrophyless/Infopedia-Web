@@ -4,6 +4,7 @@ from urllib.parse import urlsplit, urlunsplit
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.analyze.router import router as analyze_router
 from src.auth.router import router as auth_router
 from src.config import settings
 from src.database import async_engine, ensure_user_schema_compatibility
@@ -74,6 +75,12 @@ app.include_router(
     topics_router,
     prefix="/api/topics",
     tags=["topics"],
+)
+
+app.include_router(
+    analyze_router,
+    prefix="/api/analyze",
+    tags=["analyze"],
 )
 
 

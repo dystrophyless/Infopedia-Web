@@ -1,14 +1,29 @@
 import re
 
+from src.analyze.exceptions import UnsupportedAnalyzeDocumentError
+
+EXPECTED_TABLE_MARKERS = (
+    "| Информатика",
+)
+EXPECTED_MIN_CELL_COUNT = 5
+
 
 def clean_from_table(text: str) -> str:
     lines = text.splitlines()
 
     cleaned_lines = [line for line in lines if line.lstrip().startswith("|")]
 
+    if not cleaned_lines:
+        raise UnsupportedAnalyzeDocumentError()
+
     for index, line in enumerate(cleaned_lines):
-        if line.strip().startswith("| Информатика"):
+        if any(
+            line.strip().startswith(marker)
+            for marker in EXPECTED_TABLE_MARKERS
+        ):
             return "\n".join(cleaned_lines[index:])
+
+    raise UnsupportedAnalyzeDocumentError()
 
 
 def split_table_cells(line: str) -> list[str]:
@@ -23,7 +38,7 @@ def split_table_cells(line: str) -> list[str]:
 def is_table_header(line: str) -> bool:
     cells = split_table_cells(line)
 
-    if len(cells) < 5:
+    if len(cells) < EXPECTED_MIN_CELL_COUNT:
         return False
 
     columns_text = " ".join(cells[1:]).lower()
@@ -82,6 +97,24 @@ def clean_topic(topic: str) -> str:
     return topic.replace("[X]", "").strip()
 
 
+def is_empty_table_row(cells: list[str]) -> bool:
+    return not any(cell.strip() for cell in cells)
+
+
+def validate_parsed_row(row: dict) -> None:
+    if not row["topic"]:
+        raise UnsupportedAnalyzeDocumentError()
+
+    if not row_is_complete(row):
+        raise UnsupportedAnalyzeDocumentError()
+
+    if row["score"] > row["max_score"]:
+        raise UnsupportedAnalyzeDocumentError()
+
+    if not 0 <= row["percentage"] <= 100:
+        raise UnsupportedAnalyzeDocumentError()
+
+
 def parse_table(text: str) -> list[dict]:
     cleaned_text = clean_from_table(text)
     parsed_data = []
@@ -91,6 +124,9 @@ def parse_table(text: str) -> list[dict]:
         cells = split_table_cells(line)
 
         if is_table_header(line):
+            continue
+
+        if len(cells) < EXPECTED_MIN_CELL_COUNT or is_empty_table_row(cells):
             continue
 
         row_data = {
@@ -114,5 +150,11 @@ def parse_table(text: str) -> list[dict]:
 
     if pending_row is not None:
         parsed_data.append(pending_row)
+
+    if not parsed_data:
+        raise UnsupportedAnalyzeDocumentError()
+
+    for row in parsed_data:
+        validate_parsed_row(row)
 
     return parsed_data

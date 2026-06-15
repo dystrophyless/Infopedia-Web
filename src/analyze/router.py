@@ -8,7 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, stat
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.analyze.exceptions import InvalidAnalyzeDocumentError
 from src.analyze.schemas import AnalyzeTaskResponse
+from src.analyze.serialization import encode_file_content
 from src.analyze.utils import (
     TERMINAL_TASK_STATUSES,
     assert_task_owner,
@@ -17,6 +19,7 @@ from src.analyze.utils import (
     release_analyze_task_owner,
     reserve_analyze_task_owner,
 )
+from src.analyze.validation import validate_pdf_upload
 from src.auth.dependencies import get_current_user
 from src.celery_app.analyze_task import process_document
 from src.celery_app.app import app as celery_app
@@ -53,13 +56,24 @@ async def create_analyze_task(
             detail=f"Размер файла превышает допустимый лимит {settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} МБ.",
         )
 
+    try:
+        validate_pdf_upload(content, content_type=file.content_type)
+    except InvalidAnalyzeDocumentError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.to_payload(),
+        ) from exc
+
     task_id = str(uuid4())
     task_enqueued = False
 
     try:
         await reserve_analyze_task_owner(task_id=task_id, user_id=user_id)
         process_document.apply_async(
-            kwargs={"user_id": user_id, "file_content": content},
+            kwargs={
+                "user_id": user_id,
+                "file_content_b64": encode_file_content(content),
+            },
             task_id=task_id,
         )
         task_enqueued = True

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from unstract.llmwhisperer.client_v2 import LLMWhispererClientException
 
 from src.analyze.client import get_llmwhisperer_client
+from src.analyze.exceptions import AnalyzeError, AnalyzeExtractionError
 from src.analyze.parser import parse_table
 from src.analyze.repository import create_analyze_result
 from src.analyze.schemas import AnalyzeChapterResult
@@ -23,12 +24,18 @@ class AnalyzeService:
 
     async def define_pages(self, file_content: bytes) -> str:
         file_like_object = io.BytesIO(file_content)
-        with pdfplumber.open(file_like_object) as pdf:
-            num_pages = len(pdf.pages)
+        try:
+            with pdfplumber.open(file_like_object) as pdf:
+                num_pages = len(pdf.pages)
+        except Exception as exc:
+            raise AnalyzeExtractionError() from exc
 
-            start_page = max(1, num_pages - 1)
+        if num_pages == 0:
+            raise AnalyzeExtractionError()
 
-            return f"{start_page}-"
+        start_page = max(1, num_pages - 1)
+
+        return f"{start_page}-"
 
     async def wait_for_extraction(
         self,
@@ -46,7 +53,7 @@ class AnalyzeService:
                 whisper_hash=whisper_hash,
             )
             if status_result.get("status_code") != 200:
-                raise ValueError("Не смогли обработать документ")
+                raise AnalyzeExtractionError()
 
             status_value = str(status_result.get("status") or "")
             if emit_progress is not None and status_value != last_status:
@@ -69,7 +76,7 @@ class AnalyzeService:
                     whisper_hash=whisper_hash,
                 )
                 if retrieve_result.get("status_code") != 200:
-                    raise ValueError("Не смогли обработать документ")
+                    raise AnalyzeExtractionError()
 
                 return {
                     "status_code": 200,
@@ -79,11 +86,11 @@ class AnalyzeService:
                 }
 
             if status_value == "error" or "error" in status_value:
-                raise ValueError("Не смогли обработать документ")
+                raise AnalyzeExtractionError()
 
-            raise ValueError("Не смогли обработать документ")
+            raise AnalyzeExtractionError()
 
-        raise ValueError("Не смогли обработать документ")
+        raise AnalyzeExtractionError()
 
     async def extract_text(
         self,
@@ -109,22 +116,24 @@ class AnalyzeService:
             if result.get("status_code") == 202:
                 whisper_hash = result.get("whisper_hash")
                 if not whisper_hash:
-                    raise ValueError("Не смогли обработать документ")
+                    raise AnalyzeExtractionError()
 
                 result = await self.wait_for_extraction(
                     whisper_hash,
                     emit_progress=emit_progress,
                 )
-        except LLMWhispererClientException as e:
-            raise ValueError("Не смогли обработать документ")
+        except AnalyzeError:
+            raise
+        except LLMWhispererClientException as exc:
+            raise AnalyzeExtractionError() from exc
 
-        except Exception as e:
-            raise ValueError("Не смогли обработать документ")
+        except Exception as exc:
+            raise AnalyzeExtractionError() from exc
 
         extraction: dict = result.get("extraction", "")
 
         if not extraction:
-            raise ValueError("Не смогли обработать документ")
+            raise AnalyzeExtractionError()
 
         text: str = extraction.get("result_text", "")
 
@@ -208,7 +217,7 @@ async def get_analyze_result(
     user_id: int,
     file_content: bytes,
     emit_progress: ProgressEmitter | None = None,
-) -> dict | None:
+) -> list[dict]:
     llmwhisperer_client = get_llmwhisperer_client()
 
     analyze_service = AnalyzeService(llmwhisperer_client)

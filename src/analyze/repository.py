@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from src.analyze.enums import CHAPTER_ALIASES, resolve_chapter
 from src.analyze.enums import Chapter as AnalyzeChapter
 from src.analyze.enums import normalize_chapter
+from src.analyze.exceptions import UnsupportedAnalyzeDocumentError
 from src.analyze.models import AnalyzeResult, AnalyzeResultItem
 from src.topics.models import Chapter as ChapterModel
 
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 CHAPTER_LINK_MATCH_THRESHOLD = 0.92
 CHAPTER_NAME_EXTENSION_SEPARATORS = (".", ":", ";", ",", "(", "-", "—")
+CHAPTER_MODELS_CACHE_KEY = "_analyze_chapter_models_cache"
 
 
 def get_chapter_name_candidates(chapter: AnalyzeChapter) -> set[str]:
@@ -69,8 +71,11 @@ async def get_chapter_model_by_analyze_chapter(
         for alias in get_chapter_name_candidates(chapter)
     ]
 
-    result = await session.execute(select(ChapterModel))
-    chapters = result.scalars().all()
+    chapters = session.info.get(CHAPTER_MODELS_CACHE_KEY)
+    if chapters is None:
+        result = await session.execute(select(ChapterModel))
+        chapters = result.scalars().all()
+        session.info[CHAPTER_MODELS_CACHE_KEY] = chapters
 
     best_match: tuple[int, float, ChapterModel | None, str | None] = (0, 0.0, None, None)
     for chapter_model in chapters:
@@ -109,7 +114,11 @@ async def create_analyze_result(
 
     for row in parsed_data:
         raw_chapter = row["topic"]
-        analyze_chapter = resolve_chapter(raw_chapter)
+        try:
+            analyze_chapter = resolve_chapter(raw_chapter)
+        except ValueError as exc:
+            raise UnsupportedAnalyzeDocumentError() from exc
+
         chapter_model = await get_chapter_model_by_analyze_chapter(
             session,
             chapter=analyze_chapter,

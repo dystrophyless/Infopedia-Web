@@ -3,6 +3,8 @@ import logging
 
 from asgiref.sync import async_to_sync
 
+from src.analyze.exceptions import AnalyzeError
+from src.analyze.serialization import decode_file_content
 from src.analyze.service import get_analyze_result
 from src.celery_app.app import app
 from src.database import AsyncSessionMaker
@@ -49,8 +51,14 @@ async def publish_analyze_task_progress(task_id: str, stage: str) -> None:
     )
 
 
-async def run_analyze_task(*, task_id: str, user_id: int, file_content: bytes) -> dict:
+async def run_analyze_task(
+    *,
+    task_id: str,
+    user_id: int,
+    file_content_b64: str,
+) -> dict:
     try:
+        file_content = decode_file_content(file_content_b64)
         logger.info("Начата обработка задачи анализа документа task_id=%s", task_id)
         await publish_analyze_task_progress(task_id, "started")
 
@@ -76,6 +84,18 @@ async def run_analyze_task(*, task_id: str, user_id: int, file_content: bytes) -
             stage="completed",
             result=result,
         )
+    except AnalyzeError as exc:
+        logger.info(
+            "Задача анализа завершилась ожидаемой ошибкой task_id=%s code=%s",
+            task_id,
+            exc.code,
+        )
+        payload = build_analyze_task_payload(
+            task_id,
+            status="failure",
+            stage=exc.stage,
+            error=exc.to_payload(),
+        )
     except Exception:
         logger.exception("Ошибка при выполнении задачи анализа документа")
         payload = build_analyze_task_payload(
@@ -96,8 +116,10 @@ async def run_analyze_task(*, task_id: str, user_id: int, file_content: bytes) -
     bind=True,
     name="analyze_task.process_document",
 )
-def process_document(self, user_id: int, file_content: bytes) -> dict:
+def process_document(self, user_id: int, file_content_b64: str) -> dict:
     logger.info("Celery принял задачу task_id=%s", self.request.id)
     return async_to_sync(run_analyze_task)(
-        task_id=self.request.id, user_id=user_id, file_content=file_content
+        task_id=self.request.id,
+        user_id=user_id,
+        file_content_b64=file_content_b64,
     )

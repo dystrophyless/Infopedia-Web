@@ -8,7 +8,7 @@ from src.terms.schemas import TermDetailedResponse
 class PublicReadSchemasTest(unittest.TestCase):
     def test_public_read_schemas_emit_public_ids_and_hide_internal_ids(self):
         os.environ["SECRET_KEY"] = "schema-test-secret"
-        book = SimpleNamespace(id=4, name="Book")
+        book = SimpleNamespace(id=4, publisher="Publisher", grade=7)
         topic = SimpleNamespace(
             id=3,
             name="Topic",

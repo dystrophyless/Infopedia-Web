@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.analyze.router import router as analyze_router
 from src.auth.router import router as auth_router
 from src.database import async_engine
 from src.search.router import router as search_router
@@ -48,6 +49,12 @@ app.include_router(
     topics_router,
     prefix="/api/topics",
     tags=["topics"],
+)
+
+app.include_router(
+    analyze_router,
+    prefix="/api/analyze",
+    tags=["analyze"],
 )
 
 

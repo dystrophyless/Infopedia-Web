@@ -26,6 +26,7 @@ app.conf.update(
     task_routes={
         "search_task.process_query": {"queue": "search"},
         "email_task.send_email": {"queue": "emails"},
+        "analyze_task.process_document": {"queue": "analyze"},
     },
     worker_prefetch_multiplier=1,
     worker_max_memory_per_child=2_000_000,

@@ -19,6 +19,7 @@ from src.loader import (
 from src.logging_settings import logging_config
 from src.models import Base
 from src.terms.service import get_embedder
+from src.topics.migrations import migrate_book_table_schema
 
 logger = logging.getLogger(__name__)
 logging.config.dictConfig(logging_config)
@@ -29,6 +30,7 @@ async def create_tables() -> None:
         await init_vector_extension(async_engine)
 
         async with async_engine.begin() as conn:
+            await migrate_book_table_schema(conn)
             await conn.run_sync(Base.metadata.create_all)
 
         logger.debug("Схема базы данных успешно инициализирована.")

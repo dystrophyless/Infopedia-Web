@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from pathlib import Path
 
 from sqlalchemy import select
@@ -12,6 +13,23 @@ from src.terms.models import (
 from src.topics.models import Book, Chapter, Topic, TopicCode, TopicMapping
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
+
+
+def parse_book_key(book_name: str) -> tuple[str, int]:
+    try:
+        book_publisher, book_grade_str = book_name.split(": ", 1)
+    except ValueError as exc:
+        raise ValueError(f"Неверный формат имени книги: {book_name!r}") from exc
+
+    book_publisher = book_publisher.strip()
+    if not book_publisher:
+        raise ValueError(f"Неверный формат имени книги: {book_name!r}")
+
+    match = re.search(r"\d+", book_grade_str)
+    if not match:
+        raise ValueError(f"Не удалось извлечь класс из имени книги: {book_name!r}")
+
+    return book_publisher, int(match.group(0))
 
 
 def get_data_file_path(file_name: str) -> Path:
@@ -38,7 +56,11 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
             await session.flush()
 
         for book_name, defs in books.items():
-            query = select(Book).where(Book.name == book_name)
+            book_publisher, book_grade = parse_book_key(book_name)
+            query = select(Book).where(
+                Book.publisher == book_publisher,
+                Book.grade == book_grade,
+            )
             result = await session.execute(query)
 
             book: Book = result.scalar_one_or_none()
@@ -151,13 +173,17 @@ async def load_books_topics_and_mappings(
 
     try:
         for book_name, book_data in data.items():
-            query = select(Book).where(Book.name == book_name)
+            book_publisher, book_grade = parse_book_key(book_name)
+            query = select(Book).where(
+                Book.publisher == book_publisher,
+                Book.grade == book_grade,
+            )
             result = await session.execute(query)
 
             book: Book = result.scalar_one_or_none()
 
             if not book:
-                book: Book = Book(name=book_name)
+                book: Book = Book(publisher=book_publisher, grade=book_grade)
                 session.add(book)
                 await session.flush()
 

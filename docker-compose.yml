@@ -298,6 +298,56 @@ services:
     networks:
       - app_network
 
+  analyze_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+    command: [ "celery", "-A", "src.celery_app.analyze_worker", "worker", "-Q", "analyze", "--pool=prefork", "--concurrency=2", "--loglevel=INFO" ]
+    develop:
+      watch:
+        - action: sync+restart
+          path: .
+          target: /app
+          ignore:
+            - .git/
+            - .venv/
+            - venv/
+            - __pycache__/
+            - .mypy_cache/
+            - .pytest_cache/
+            - .idea/
+            - .vscode/
+            - .postgres_data/
+
+        - action: rebuild
+          path: pyproject.toml
+
+        - action: rebuild
+          path: uv.lock
+
+        - action: rebuild
+          path: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        compress: "true"
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
   pgadmin_data:

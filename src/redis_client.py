@@ -23,3 +23,11 @@ def build_search_task_channel(task_id: str) -> str:
 
 def build_search_task_owner_key(task_id: str) -> str:
     return f"search-task-owner:{task_id}"
+
+
+def build_analyze_task_channel(task_id: str) -> str:
+    return f"analyze-task:{task_id}"
+
+
+def build_analyze_task_owner_key(task_id: str) -> str:
+    return f"analyze-task-owner:{task_id}"

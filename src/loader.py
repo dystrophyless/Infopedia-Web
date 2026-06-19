@@ -1,35 +1,91 @@
 import asyncio
+from collections import defaultdict
+from collections.abc import Iterable
 import json
 import re
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.terms.models import (
     Definition,
     Term,
 )
-from src.topics.models import Book, Chapter, Topic, TopicCode, TopicMapping
+from src.topics.models import (
+    Book,
+    BookChapterCoverage,
+    Chapter,
+    Topic,
+    TopicCode,
+    TopicMapping,
+)
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
+TOPIC_CODE_RE = re.compile(r"^\s*(\d+(?:\.\d+)+)")
 
 
-def parse_book_key(book_name: str) -> tuple[str, int]:
+def parse_book_key(book_key: str) -> tuple[str, int]:
     try:
-        book_publisher, book_grade_str = book_name.split(": ", 1)
+        book_publisher, book_grade_str = book_key.split(": ", 1)
     except ValueError as exc:
-        raise ValueError(f"Неверный формат имени книги: {book_name!r}") from exc
+        raise ValueError(f"Неверный формат ключа книги: {book_key!r}") from exc
 
     book_publisher = book_publisher.strip()
     if not book_publisher:
-        raise ValueError(f"Неверный формат имени книги: {book_name!r}")
+        raise ValueError(f"Неверный формат ключа книги: {book_key!r}")
 
     match = re.search(r"\d+", book_grade_str)
     if not match:
-        raise ValueError(f"Не удалось извлечь класс из имени книги: {book_name!r}")
+        raise ValueError(f"Не удалось извлечь класс из ключа книги: {book_key!r}")
 
     return book_publisher, int(match.group(0))
+
+
+def normalize_topic_code_name(topic_code_name: str | None) -> str:
+    topic_code_name = (topic_code_name or "").strip()
+    match = TOPIC_CODE_RE.match(topic_code_name)
+
+    if match:
+        return match.group(1)
+
+    return topic_code_name
+
+
+def calculate_book_chapter_coverage_rows(
+    rows: Iterable[tuple[int, int, int]],
+) -> list[dict[str, int]]:
+    normalized_rows: list[tuple[int, int, int]] = []
+    total_topic_count_by_chapter: dict[int, int] = defaultdict(int)
+
+    for chapter_id, book_id, topic_count in rows:
+        normalized_topic_count = int(topic_count)
+        if normalized_topic_count <= 0:
+            continue
+
+        normalized_chapter_id = int(chapter_id)
+        normalized_book_id = int(book_id)
+        normalized_rows.append(
+            (normalized_chapter_id, normalized_book_id, normalized_topic_count),
+        )
+        total_topic_count_by_chapter[normalized_chapter_id] += normalized_topic_count
+
+    coverage_rows: list[dict[str, int]] = []
+    for chapter_id, book_id, topic_count in normalized_rows:
+        total_topic_count = total_topic_count_by_chapter[chapter_id]
+        if total_topic_count <= 0:
+            continue
+
+        coverage_rows.append(
+            {
+                "chapter_id": chapter_id,
+                "book_id": book_id,
+                "topic_count": topic_count,
+                "percentage": round((topic_count / total_topic_count) * 100),
+            },
+        )
+
+    return coverage_rows
 
 
 def get_data_file_path(file_name: str) -> Path:
@@ -55,8 +111,8 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
             session.add(term)
             await session.flush()
 
-        for book_name, defs in books.items():
-            book_publisher, book_grade = parse_book_key(book_name)
+        for book_key, defs in books.items():
+            book_publisher, book_grade = parse_book_key(book_key)
             query = select(Book).where(
                 Book.publisher == book_publisher,
                 Book.grade == book_grade,
@@ -66,7 +122,7 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
             book: Book = result.scalar_one_or_none()
 
             if not book:
-                raise ValueError(f"Book '{book_name}' не найден в таблице books")
+                raise ValueError(f"Book '{book_key}' не найден в таблице books")
 
             for d in defs:
                 query = (
@@ -133,7 +189,7 @@ async def load_chapters_and_topic_codes(
                     await session.flush()
 
                 for lesson_goal in item.get("lessonGoals", []):
-                    topic_code_name: str = (lesson_goal or "").strip()
+                    topic_code_name = normalize_topic_code_name(lesson_goal)
 
                     if not topic_code_name:
                         continue
@@ -151,7 +207,9 @@ async def load_chapters_and_topic_codes(
                         session.add(topic_code)
                         await session.flush()
                     else:
-                        if topic_code.chapter_id != chapter.id:
+                        if topic_code.chapter_id is None:
+                            topic_code.chapter_id = chapter.id
+                        elif topic_code.chapter_id != chapter.id:
                             raise ValueError(
                                 f"TopicCode '{topic_code_name}' уже связан с другим chapter_id="
                                 f"{topic_code.chapter_id}, но в JSON встретился в chapter "
@@ -172,8 +230,8 @@ async def load_books_topics_and_mappings(
     data = await asyncio.to_thread(_load_json_file, json_path)
 
     try:
-        for book_name, book_data in data.items():
-            book_publisher, book_grade = parse_book_key(book_name)
+        for book_key, book_data in data.items():
+            book_publisher, book_grade = parse_book_key(book_key)
             query = select(Book).where(
                 Book.publisher == book_publisher,
                 Book.grade == book_grade,
@@ -218,7 +276,7 @@ async def load_books_topics_and_mappings(
                     code_names_raw = [code_names_raw]
 
                 for topic_code_name_raw in code_names_raw:
-                    topic_code_name = (topic_code_name_raw or "").strip()
+                    topic_code_name = normalize_topic_code_name(topic_code_name_raw)
                     if not topic_code_name:
                         continue
 
@@ -250,6 +308,54 @@ async def load_books_topics_and_mappings(
                             ),
                         )
 
+        await session.commit()
+
+    except Exception:
+        await session.rollback()
+        raise
+
+
+async def refresh_book_chapter_coverage(session: AsyncSession) -> None:
+    matching_topics = (
+        select(
+            TopicCode.chapter_id.label("chapter_id"),
+            Topic.id.label("topic_id"),
+            Topic.book_id.label("book_id"),
+        )
+        .select_from(Topic)
+        .join(TopicMapping, TopicMapping.topic_id == Topic.id)
+        .join(TopicCode, TopicCode.id == TopicMapping.topic_code_id)
+        .where(TopicCode.chapter_id.is_not(None))
+        .distinct()
+        .subquery()
+    )
+
+    coverage_query = (
+        select(
+            matching_topics.c.chapter_id,
+            matching_topics.c.book_id,
+            func.count(matching_topics.c.topic_id).label("topic_count"),
+        )
+        .group_by(matching_topics.c.chapter_id, matching_topics.c.book_id)
+        .order_by(
+            matching_topics.c.chapter_id.asc(),
+            func.count(matching_topics.c.topic_id).desc(),
+            matching_topics.c.book_id.asc(),
+        )
+    )
+
+    try:
+        result = await session.execute(coverage_query)
+        coverage_rows = calculate_book_chapter_coverage_rows(
+            (chapter_id, book_id, topic_count)
+            for chapter_id, book_id, topic_count in result.all()
+        )
+
+        await session.execute(delete(BookChapterCoverage))
+        session.add_all(
+            BookChapterCoverage(**coverage_row)
+            for coverage_row in coverage_rows
+        )
         await session.commit()
 
     except Exception:

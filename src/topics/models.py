@@ -24,6 +24,10 @@ class Book(Base):
         back_populates="book",
         cascade="all, delete-orphan",
     )
+    chapter_coverages: Mapped[list["BookChapterCoverage"]] = relationship(
+        back_populates="book",
+        cascade="all, delete-orphan",
+    )
 
 
 class Chapter(Base):
@@ -35,10 +39,17 @@ class Chapter(Base):
     topic_codes: Mapped[list["TopicCode"]] = relationship(
         back_populates="chapter",
     )
+    book_coverages: Mapped[list["BookChapterCoverage"]] = relationship(
+        back_populates="chapter",
+        cascade="all, delete-orphan",
+    )
 
 
 class TopicCode(Base):
     __tablename__ = "topic_code"
+    __table_args__ = (
+        Index("ix_topic_code_chapter_id", "chapter_id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(512), unique=True, nullable=False)
@@ -59,6 +70,9 @@ class TopicCode(Base):
 
 class TopicMapping(Base):
     __tablename__ = "topic_mapping"
+    __table_args__ = (
+        Index("ix_topic_mapping_topic_id", "topic_id"),
+    )
 
     topic_code_id: Mapped[int] = mapped_column(
         Integer,
@@ -70,6 +84,35 @@ class TopicMapping(Base):
         ForeignKey("topic.id"),
         primary_key=True,
     )
+
+
+class BookChapterCoverage(Base):
+    __tablename__ = "book_chapter_coverage"
+    __table_args__ = (
+        UniqueConstraint(
+            "chapter_id",
+            "book_id",
+            name="uq_book_chapter_coverage_chapter_book",
+        ),
+        Index("ix_book_chapter_coverage_book_id", "book_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chapter_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("chapter.id"),
+        nullable=False,
+    )
+    book_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("book.id"),
+        nullable=False,
+    )
+    topic_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    percentage: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    chapter: Mapped["Chapter"] = relationship(back_populates="book_coverages")
+    book: Mapped["Book"] = relationship(back_populates="chapter_coverages")
 
 
 class Topic(Base):

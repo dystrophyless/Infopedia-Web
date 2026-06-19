@@ -261,7 +261,8 @@ class DefinitionService:
 
         info: dict = {
             "term": escape(definition.term.name),
-            "book": escape(definition.topic.book.name),
+            "book_publisher": escape(definition.topic.book.publisher),
+            "book_grade": definition.topic.book.grade,
             "text": escape(definition.text),
             "topic": escape(definition.topic.name),
             "page": definition.page,

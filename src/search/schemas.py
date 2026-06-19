@@ -21,7 +21,8 @@ class SearchTaskError(BaseModel):
 
 class SearchTaskResult(BaseModel):
     term: str
-    book: str
+    book_publisher: str
+    book_grade: int = Field(ge=7, le=11)
     text: str
     topic: str
     page: int = Field(ge=1)

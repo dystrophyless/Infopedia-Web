@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -9,6 +9,7 @@ import {
   ArrowRight01Icon,
   ChartColumnIcon,
   Delete02Icon,
+  HelpCircleIcon,
   LockPasswordIcon,
   Logout01Icon,
   Mail01Icon,
@@ -17,14 +18,21 @@ import {
   StarIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
+import { getLatestAnalyzeResult } from '../api/analyze';
 import { changeMyPassword, deleteMyAccount, getMe } from '../api/users';
-import type { User } from '../types';
+import type { AnalyzeBookCoverage, AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { AuthPasswordInput, AuthSubmit } from '../components/AuthShell';
 import { getPasswordValidationError } from '../utils/passwordValidation';
+import { shouldShowProfileLogout, type ProfileTabId } from '../utils/profileTabs';
+import { clampScorePercent, getScoreStatus, type ScoreStatus } from '../utils/scoreStatus';
+import {
+  buildWeakTopicInsights,
+  type WeakTopicInsight,
+} from '../utils/weakTopics';
 
-type ProfileTabId = 'profile' | 'progress' | 'weakTopics' | 'favorites' | 'settings';
+const INITIAL_VISIBLE_BOOKS_LIMIT = 3;
 
 const profileNavItems: Array<{
   id: ProfileTabId;
@@ -70,6 +78,11 @@ export function Profile() {
     getMe()
       .then((data) => {
         if (!cancelled) {
+          if (data.onboarding_completed !== true) {
+            setUser(data);
+            navigate('/onboarding', { replace: true });
+            return;
+          }
           setProfile(data);
           setUser(data);
         }
@@ -83,7 +96,7 @@ export function Profile() {
     return () => {
       cancelled = true;
     };
-  }, [setUser]);
+  }, [navigate, setUser]);
 
   function handleLogout() {
     logout();
@@ -92,23 +105,23 @@ export function Profile() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:px-4 max-md:pt-8">
-      <div className="mx-auto grid max-w-[1280px] grid-cols-[360px_minmax(0,1fr)] gap-8 max-lg:grid-cols-1">
+      <div className="mx-auto grid max-w-[1260px] grid-cols-[300px_minmax(0,1fr)] gap-7 max-lg:grid-cols-1">
         <aside
           className="max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]"
           aria-label={t('profile.title')}
         >
-          <section className="rounded-[8px] border border-border bg-surface p-5 shadow-[3px_3px_0_#9683b7]">
-            <div className="flex items-center gap-4">
-              <FigmaProfileIcon className="block size-[70px] shrink-0 text-accent" />
+          <section className="rounded-[8px] border border-border/45 bg-surface p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <FigmaProfileIcon className="block size-[56px] shrink-0 text-accent" />
               <div className="min-w-0">
-                <p className="truncate text-[28px] font-medium leading-tight text-primary max-sm:text-[23px]">
+                <p className="truncate text-[24px] font-medium leading-tight text-primary max-sm:text-[22px]">
                   {profile?.username ?? user?.username ?? t('profile.usernameUndefined')}
                 </p>
               </div>
             </div>
           </section>
 
-          <nav className="mt-5 flex flex-col gap-3 max-lg:grid max-lg:grid-cols-2 max-sm:grid-cols-1">
+          <nav className="mt-4 flex flex-col gap-2 max-lg:grid max-lg:grid-cols-2 max-sm:grid-cols-1">
             {profileNavItems.map((item) => {
               const isActive = activeTab === item.id;
 
@@ -117,10 +130,10 @@ export function Profile() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`group flex h-[54px] w-full items-center gap-3 rounded-[8px] border px-5 text-left text-[18px] text-primary transition-all duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-0 ${
+                  className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                     isActive
-                      ? 'border-border bg-surface shadow-[2px_2px_0_#9683b7] hover:shadow-[3px_3px_0_#9683b7]'
-                      : 'border-transparent hover:border-border hover:bg-surface hover:shadow-[2px_2px_0_#9683b7]'
+                      ? 'border-transparent bg-surface shadow-sm'
+                      : 'border-transparent text-primary/80 hover:bg-surface/70 hover:text-primary'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -139,7 +152,7 @@ export function Profile() {
           </nav>
         </aside>
 
-        <main className="rounded-[8px] border border-border bg-surface shadow-[4px_4px_0_#9683b7] max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]">
+        <main className="rounded-[8px] border border-border/45 bg-surface shadow-[0_18px_45px_rgba(58,28,110,0.08)] max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]">
           {loading && !profile && (
             <div className="p-8">
               <SkeletonCard />
@@ -156,26 +169,28 @@ export function Profile() {
                 <div className="flex flex-wrap items-start justify-between gap-5">
                   <div>
                     <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
-                      {t('profile.accountArea')}
+                      {activeTab === 'weakTopics' ? t('profile.weakTopicsEyebrow') : t('profile.accountArea')}
                     </p>
                     <h1 className="mt-2 text-[38px] font-medium leading-tight text-text max-md:text-[32px]">
                       {getTabTitle(activeTab, t)}
                     </h1>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] bg-accent px-5 text-[17px] text-surface transition-opacity hover:opacity-90 max-sm:w-full"
-                  >
-                    <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
-                    {t('profile.logout')}
-                  </button>
+                  {shouldShowProfileLogout(activeTab) && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] bg-accent px-5 text-[17px] text-surface transition-opacity hover:opacity-90 max-sm:w-full"
+                    >
+                      <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
+                      {t('profile.logout')}
+                    </button>
+                  )}
                 </div>
               </header>
 
               {activeTab === 'profile' && <ProfileOverview profile={profile} />}
               {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
-              {activeTab === 'weakTopics' && <PlaceholderPanel type="weakTopics" />}
+              {activeTab === 'weakTopics' && <WeakTopicsPanel />}
               {activeTab === 'favorites' && <PlaceholderPanel type="favorites" />}
               {activeTab === 'settings' && <SettingsPanel profile={profile} />}
             </>
@@ -281,6 +296,8 @@ function PlaceholderPanel({ type }: { type: Exclude<ProfileTabId, 'profile' | 's
       icon: AlertCircleIcon,
       titleKey: 'profile.weakTopicsEmptyTitle',
       bodyKey: 'profile.weakTopicsEmptyBody',
+      actionTo: '/analyze',
+      actionLabelKey: 'profile.weakTopicsAnalyzeButton',
     },
     favorites: {
       icon: StarIcon,
@@ -301,9 +318,516 @@ function PlaceholderPanel({ type }: { type: Exclude<ProfileTabId, 'profile' | 's
         <p className="mt-3 max-w-[520px] text-[17px] leading-relaxed text-text-body">
           {t(content.bodyKey)}
         </p>
+        {'actionTo' in content && content.actionTo && (
+          <Link
+            to={content.actionTo}
+            className="mt-6 inline-flex h-[44px] items-center justify-center rounded-[8px] bg-primary px-5 text-[15px] font-medium text-surface transition-opacity hover:opacity-90"
+          >
+            {t(content.actionLabelKey)}
+          </Link>
+        )}
       </div>
     </section>
   );
+}
+
+function WeakTopicsPanel() {
+  const { t } = useTranslation();
+  const [results, setResults] = useState<AnalyzeChapterResult[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    setError(null);
+
+    getLatestAnalyzeResult()
+      .then((data) => {
+        if (!cancelled) setResults(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(getApiErrorMessage(err, t('common.error')));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  const weakTopics = useMemo(
+    () => buildWeakTopicInsights(results ?? []),
+    [results],
+  );
+
+  // TODO backend: expose a stable chapter id and optional weight_note when the API supports them.
+  useEffect(() => {
+    if (weakTopics.length === 0) {
+      setSelectedChapter(null);
+      return;
+    }
+
+    if (!selectedChapter || !weakTopics.some((topic) => topic.chapter === selectedChapter)) {
+      setSelectedChapter(weakTopics[0].chapter);
+    }
+  }, [selectedChapter, weakTopics]);
+
+  if (loading) {
+    return <WeakTopicsLoadingState />;
+  }
+
+  if (error) {
+    return (
+      <section className="px-8 py-12 max-md:px-5">
+        <div className="rounded-[8px] border border-danger/35 bg-[#fff5f5] p-5">
+          <p className="text-[22px] font-medium leading-tight text-danger">
+            {t('profile.weakTopicsErrorTitle')}
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-danger">{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!results || weakTopics.length === 0) {
+    return <PlaceholderPanel type="weakTopics" />;
+  }
+
+  return (
+    <section className="px-8 py-12 max-md:px-5">
+      <WeakTopicsMasterDetail
+        selectedChapter={selectedChapter}
+        weakTopics={weakTopics}
+        onSelectChapter={setSelectedChapter}
+      />
+    </section>
+  );
+}
+
+function WeakTopicsLoadingState() {
+  const { t } = useTranslation();
+
+  return (
+    <section
+      className="px-8 py-12 max-md:px-5"
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">{t('common.loading')}</span>
+      <div aria-hidden="true" className="grid animate-pulse gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="rounded-[8px] border border-border/30 bg-bg/55 p-3">
+          <div className="h-4 w-28 rounded-full bg-primary/12" />
+          <div className="mt-2 h-3 w-40 rounded-full bg-border/40" />
+          <div className="mt-4 grid gap-2 max-md:flex max-md:overflow-hidden">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="h-[62px] rounded-[8px] bg-surface shadow-sm max-md:min-w-[200px]" />
+            ))}
+          </div>
+        </div>
+
+        <article className="rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="h-7 w-[420px] max-w-full rounded-[8px] bg-primary/12" />
+              <div className="mt-3 h-4 w-[520px] max-w-full rounded-full bg-border/35" />
+            </div>
+            <div className="h-10 w-24 rounded-[8px] bg-primary/12" />
+          </div>
+          <div className="mt-4 h-9 w-48 rounded-[8px] bg-primary/12" />
+          <div className="mt-4 rounded-[8px] bg-bg/70 p-3">
+            <div className="h-4 w-52 rounded-full bg-primary/12" />
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[0, 1, 2].map((book) => (
+                <div key={book} className="h-[86px] rounded-[8px] bg-surface shadow-sm" />
+              ))}
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function WeakTopicsMasterDetail({
+  weakTopics,
+  selectedChapter,
+  onSelectChapter,
+}: {
+  weakTopics: WeakTopicInsight[];
+  selectedChapter: string | null;
+  onSelectChapter: (chapter: string) => void;
+}) {
+  const selectedTopic =
+    weakTopics.find((topic) => topic.chapter === selectedChapter) ?? weakTopics[0];
+
+  return (
+    <div className="grid gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]">
+      <WeakTopicList
+        selectedChapter={selectedTopic.chapter}
+        weakTopics={weakTopics}
+        onSelectChapter={onSelectChapter}
+      />
+      <WeakTopicDetail key={selectedTopic.chapter} topic={selectedTopic} />
+    </div>
+  );
+}
+
+function WeakTopicList({
+  weakTopics,
+  selectedChapter,
+  onSelectChapter,
+}: {
+  weakTopics: WeakTopicInsight[];
+  selectedChapter: string;
+  onSelectChapter: (chapter: string) => void;
+}) {
+  const { t } = useTranslation();
+  const lostPoints = weakTopics.reduce((sum, topic) => sum + topic.lostPoints, 0);
+
+  return (
+    <aside className="flex h-full min-h-0 flex-col rounded-[8px] border border-border/30 bg-bg/55 p-3">
+      <div>
+        <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
+          {t('profile.weakTopicsListEyebrow')}
+        </p>
+        <h2 className="mt-1.5 text-[17px] font-medium leading-tight text-text">
+          {t('profile.weakTopicsListTitle')}
+        </h2>
+        <p className="mt-1.5 text-[12px] leading-4 text-muted">
+          {t('profile.weakTopicsLostPointsInline', {
+            count: lostPoints,
+          })}
+        </p>
+      </div>
+
+      <div
+        className="weak-topic-list-scroll mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2"
+        role="listbox"
+        aria-label={t('profile.weakTopicsListAriaLabel')}
+      >
+        {weakTopics.map((topic) => {
+          const status = getScoreStatus(topic.percentage);
+          const chapterLabel = getAnalyzeChapterLabel(topic.chapter, t);
+          const isSelected = selectedChapter === topic.chapter;
+
+          return (
+            <button
+              key={topic.chapter}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              onClick={() => onSelectChapter(topic.chapter)}
+              className={`group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[8px] border px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                isSelected
+                  ? 'border-primary/35 bg-surface shadow-sm'
+                  : 'border-transparent bg-surface/70 hover:border-border/55 hover:bg-surface'
+              }`}
+              aria-label={t('profile.weakTopicsListItemLabel', {
+                chapter: chapterLabel,
+                percent: topic.percentage,
+              })}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block min-w-0 break-words text-[14px] font-medium leading-[1.16] text-text">
+                  {chapterLabel}
+                </span>
+                <span className="mt-1 block truncate text-[12px] leading-none text-muted">
+                  {t('profile.weakTopicsLostPointsInline', {
+                    count: topic.lostPoints,
+                  })}
+                </span>
+              </span>
+              <span
+                className="mt-0.5 inline-flex min-w-[46px] shrink-0 justify-center rounded-[8px] bg-bg px-1.5 py-1 text-[14px] font-medium leading-none tabular-nums"
+                style={{ color: status.textColor }}
+              >
+                {topic.percentage}%
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
+  const { t } = useTranslation();
+  const status = getScoreStatus(topic.percentage);
+  const progress = clampScorePercent(topic.percentage);
+  const chapterLabel = getAnalyzeChapterLabel(topic.chapter, t);
+
+  return (
+    <article
+      className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)]"
+      aria-live="polite"
+      aria-label={t('profile.weakTopicsDetailLabel', { chapter: chapterLabel })}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
+            {t('profile.weakTopicsSelectedLabel')}
+          </p>
+          <h3 className="mt-1 break-words text-[25px] font-medium leading-tight text-text max-md:text-[22px]">
+            {chapterLabel}
+          </h3>
+          <WeakTopicStatsRow topic={topic} />
+        </div>
+        <WeakTopicResultIndicator
+          percentage={topic.percentage}
+          progress={progress}
+          status={status}
+        />
+      </div>
+
+      <div className="mt-3 border-t border-border/30 pt-3">
+        <WeakTopicBookList books={topic.books} />
+      </div>
+    </article>
+  );
+}
+
+function WeakTopicResultIndicator({
+  percentage,
+  progress,
+  status,
+}: {
+  percentage: number;
+  progress: number;
+  status: ScoreStatus;
+}) {
+  return (
+    <div className="min-w-[104px] text-right max-sm:w-full max-sm:text-left">
+      <span
+        className="text-[30px] font-medium leading-none"
+        style={{ color: status.textColor }}
+      >
+        {percentage}%
+      </span>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg" aria-hidden>
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${progress}%`, backgroundColor: status.progressColor }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function WeakTopicStatsRow({ topic }: { topic: WeakTopicInsight }) {
+  const { t } = useTranslation();
+  const weightedQuestionCount = Math.max(0, topic.max_score - topic.question_count);
+
+  return (
+    <div className="mt-2.5 flex flex-wrap items-center gap-2">
+      <span className="inline-flex h-7 items-center rounded-full bg-bg px-2.5 text-[12px] font-medium leading-none text-primary">
+        {t('profile.weakTopicsScoreInline', {
+          score: topic.score,
+          maxScore: topic.max_score,
+        })}
+      </span>
+      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-bg px-2.5 text-[12px] font-medium leading-none text-primary">
+        {t('profile.weakTopicsQuestionCount', {
+          count: topic.question_count,
+        })}
+      </span>
+      {weightedQuestionCount > 0 && (
+        <WeakTopicInfoTooltip
+          label={t('profile.weakTopicsWeightedScoreLabel', {
+            count: weightedQuestionCount,
+          })}
+          text={t('profile.weakTopicsWeightedScoreTooltip', {
+            count: weightedQuestionCount,
+          })}
+        />
+      )}
+    </div>
+  );
+}
+
+function WeakTopicBookList({
+  books,
+}: {
+  books: AnalyzeBookCoverage[];
+}) {
+  const { t } = useTranslation();
+  const [bookWindowStart, setBookWindowStart] = useState(0);
+  const maxWindowStart = Math.max(0, books.length - INITIAL_VISIBLE_BOOKS_LIMIT);
+  const normalizedWindowStart = Math.min(bookWindowStart, maxWindowStart);
+  const visibleBooks = books.slice(
+    normalizedWindowStart,
+    normalizedWindowStart + INITIAL_VISIBLE_BOOKS_LIMIT,
+  );
+  const hasBookNavigation = books.length > INITIAL_VISIBLE_BOOKS_LIMIT;
+  const canShowPreviousBooks = normalizedWindowStart > 0;
+  const canShowNextBooks =
+    normalizedWindowStart + INITIAL_VISIBLE_BOOKS_LIMIT < books.length;
+  const remainingBookCount = Math.max(
+    0,
+    books.length - normalizedWindowStart - INITIAL_VISIBLE_BOOKS_LIMIT,
+  );
+
+  useEffect(() => {
+    setBookWindowStart(0);
+  }, [books]);
+
+  function showPreviousBooks() {
+    setBookWindowStart((value) => Math.max(0, value - INITIAL_VISIBLE_BOOKS_LIMIT));
+  }
+
+  function showNextBooks() {
+    setBookWindowStart((value) =>
+      Math.min(maxWindowStart, value + INITIAL_VISIBLE_BOOKS_LIMIT),
+    );
+  }
+
+  if (books.length === 0) {
+    return (
+      <p className="rounded-[8px] bg-bg px-4 py-3 text-[14px] leading-6 text-muted">
+        {t('profile.weakTopicsNoBooks')}
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-[8px] bg-bg/70 p-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <p className="truncate text-[15px] font-medium leading-tight text-primary">
+            {t('profile.weakTopicsBooksTitle')}
+          </p>
+          <WeakTopicInfoTooltip text={t('profile.weakTopicsBooksInfoTooltip')} />
+        </span>
+
+        {hasBookNavigation && (
+          <div className="ml-auto inline-flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={showPreviousBooks}
+              disabled={!canShowPreviousBooks}
+              aria-label={t('profile.weakTopicsPreviousBooks')}
+              className="inline-flex size-8 items-center justify-center rounded-[8px] border border-border/55 bg-surface text-primary transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:text-muted/45 disabled:opacity-55"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.8} />
+            </button>
+            <button
+              type="button"
+              onClick={showNextBooks}
+              disabled={!canShowNextBooks}
+              aria-label={t('profile.weakTopicsNextBooks')}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-border/55 bg-surface px-2.5 text-[12px] font-medium leading-none text-primary transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:text-muted/45 disabled:opacity-55"
+            >
+              <span className="max-sm:sr-only">
+                {remainingBookCount > 0
+                  ? t('profile.weakTopicsShowMoreBooks', { count: remainingBookCount })
+                  : t('profile.weakTopicsNextBooks')}
+              </span>
+              <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.8} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <ol
+        className="mt-2 grid grid-cols-3 gap-2 max-md:grid-cols-2 max-sm:grid-cols-1"
+        aria-label={t('profile.weakTopicsSecondaryBooksLabel')}
+      >
+        {visibleBooks.map((book) => (
+          <li key={book.public_id} className="min-w-0">
+            <WeakTopicBookRow book={book} />
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function WeakTopicBookRow({
+  book,
+}: {
+  book: AnalyzeBookCoverage;
+}) {
+  const { t } = useTranslation();
+  const coverage = clampScorePercent(book.percentage);
+
+  return (
+    <div className="flex min-h-[82px] w-full min-w-0 flex-col justify-between rounded-[8px] border border-border/25 bg-surface px-3 py-2 shadow-sm">
+      <span className="min-w-0">
+        <span className="line-clamp-2 block min-w-0 break-words text-[14px] font-medium leading-tight text-text">
+          {book.publisher}
+        </span>
+        <span className="mt-1 inline-flex rounded-full bg-bg px-2 py-0.5 text-[11px] font-medium leading-none text-muted">
+          {t('analyze.bookGradeSuperscript', { grade: book.grade })}
+        </span>
+      </span>
+
+      <span className="mt-2 min-w-0">
+        <span
+          className="flex items-center justify-between gap-3 text-[12px] font-medium leading-none text-primary"
+          aria-label={t('profile.weakTopicsBookCoverageTooltip', {
+            percent: book.percentage,
+          })}
+        >
+          <span>{t('profile.weakTopicsBookCoverageLabel')}</span>
+          <span>{book.percentage}%</span>
+        </span>
+        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-bg" aria-hidden>
+          <span
+            className="block h-full rounded-full bg-primary"
+            style={{ width: `${coverage}%` }}
+          />
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function WeakTopicInfoTooltip({
+  text,
+  label,
+}: {
+  text: string;
+  label?: string;
+}) {
+  const tooltipId = useId();
+
+  return (
+    <span className="relative inline-flex shrink-0 items-center">
+      <button
+        type="button"
+        aria-describedby={tooltipId}
+        aria-label={text}
+        className={`group inline-flex items-center justify-center gap-1.5 text-[12px] font-medium leading-none text-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+          label
+            ? 'h-7 rounded-full bg-bg px-2.5 hover:bg-primary/5'
+            : 'h-5 w-5 rounded-none bg-transparent p-0 hover:bg-transparent'
+        }`}
+      >
+        {label && <span>{label}</span>}
+        <HugeiconsIcon icon={HelpCircleIcon} size={14} strokeWidth={1.8} />
+        <span
+          id={tooltipId}
+          role="tooltip"
+          className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[8px] bg-surface px-3 py-2.5 text-left text-[12px] font-normal leading-5 text-text-body opacity-0 shadow-[0_14px_34px_rgba(58,28,110,0.16)] transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
+        >
+          <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-surface" />
+          {text}
+        </span>
+      </button>
+    </span>
+  );
+}
+
+function getAnalyzeChapterLabel(chapter: string, t: (key: string, values?: Record<string, unknown>) => string) {
+  const key = `analyze.chapters.${chapter}`;
+  const translated = t(key);
+  return translated === key ? chapter : translated;
 }
 
 type SettingsView = 'menu' | 'password' | 'email' | 'delete';

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Search01Icon, HelpCircleIcon } from '@hugeicons/core-free-icons';
 import { useDebounce } from '../hooks/useDebounce';
@@ -10,10 +11,16 @@ import { SkeletonCard } from '../components/SkeletonCard';
 
 export function TermSearch() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const { query, results, isLoading, setQuery, setResults, setLoading } =
     useSearchStore();
   const [hasSearched, setHasSearched] = useState(false);
   const debounced = useDebounce(query, 400);
+  const initialQuery = searchParams.get('query') ?? '';
+
+  useEffect(() => {
+    if (initialQuery.trim()) setQuery(initialQuery);
+  }, [initialQuery, setQuery]);
 
   useEffect(() => {
     if (!debounced.trim()) {

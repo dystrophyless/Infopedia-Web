@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { FeaturedTerm, Term } from '../types';
+import type { FeaturedTerm, Term, Topic } from '../types';
 
 export async function searchTerms(query: string, limit = 10): Promise<Term[]> {
   const { data } = await apiClient.get<Term[]>('/api/search/', {
@@ -18,7 +18,9 @@ export async function getFeaturedTerms(): Promise<FeaturedTerm[]> {
   return data;
 }
 
-export async function getTermBooks(publicId: string): Promise<Array<{ public_id?: string; name: string }>> {
-  const { data } = await apiClient.get<Array<{ public_id?: string; name: string }>>(`/api/terms/${publicId}/books_list`);
+export type TermBook = NonNullable<Topic['book']>;
+
+export async function getTermBooks(publicId: string): Promise<TermBook[]> {
+  const { data } = await apiClient.get<TermBook[]>(`/api/terms/${publicId}/books_list`);
   return data;
 }

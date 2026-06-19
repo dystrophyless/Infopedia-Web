@@ -4,12 +4,13 @@ from typing import Annotated
 from uuid import uuid4
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.analyze.exceptions import InvalidAnalyzeDocumentError
-from src.analyze.schemas import AnalyzeTaskResponse
+from src.analyze.repository import get_analyze_result_by_user_id
+from src.analyze.schemas import AnalyzeChapterResult, AnalyzeTaskResponse
 from src.analyze.serialization import encode_file_content
 from src.analyze.utils import (
     TERMINAL_TASK_STATUSES,
@@ -26,6 +27,7 @@ from src.celery_app.app import app as celery_app
 from src.config import settings
 from src.database import get_async_session
 from src.redis_client import build_analyze_task_channel, get_async_redis_client
+from src.topics.repository import get_books_coverage_by_chapter_ids
 from src.users.models import User
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ router = APIRouter()
     "", response_model=AnalyzeTaskResponse, status_code=status.HTTP_202_ACCEPTED
 )
 async def create_analyze_task(
-    file: UploadFile,
+    file: Annotated[UploadFile, File(...)],
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
@@ -106,6 +108,36 @@ async def create_analyze_task(
         user_id,
     )
     return AnalyzeTaskResponse(task_id=task_id, status="pending")
+
+
+@router.get("/latest", response_model=list[AnalyzeChapterResult])
+async def get_latest_analyze_result(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    analyze_result = await get_analyze_result_by_user_id(
+        session,
+        user_id=current_user.id,
+    )
+    if analyze_result is None:
+        return []
+
+    coverage_by_chapter = await get_books_coverage_by_chapter_ids(
+        session,
+        chapter_ids=[item.chapter_id for item in analyze_result.items],
+    )
+
+    return [
+        AnalyzeChapterResult(
+            chapter=item.analyze_chapter.value,
+            question_count=item.question_count,
+            max_score=item.max_score,
+            score=item.score,
+            percentage=item.percentage,
+            books=coverage_by_chapter.get(item.chapter_id, []),
+        )
+        for item in analyze_result.items
+    ]
 
 
 @router.get("/{task_id}", response_model=AnalyzeTaskResponse)

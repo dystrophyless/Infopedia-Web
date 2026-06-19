@@ -15,11 +15,11 @@ from src.loader import (
     load_books_topics_and_mappings,
     load_chapters_and_topic_codes,
     load_terms_from_json,
+    refresh_book_chapter_coverage,
 )
 from src.logging_settings import logging_config
 from src.models import Base
 from src.terms.service import get_embedder
-from src.topics.migrations import migrate_book_table_schema
 
 logger = logging.getLogger(__name__)
 logging.config.dictConfig(logging_config)
@@ -30,7 +30,6 @@ async def create_tables() -> None:
         await init_vector_extension(async_engine)
 
         async with async_engine.begin() as conn:
-            await migrate_book_table_schema(conn)
             await conn.run_sync(Base.metadata.create_all)
 
         logger.debug("Схема базы данных успешно инициализирована.")
@@ -60,6 +59,9 @@ async def main() -> None:
                 get_data_file_path("newStructure.json"),
             )
             logger.debug("Книги, темы и их связи успешно загружены в БД")
+
+            await refresh_book_chapter_coverage(session)
+            logger.debug("Book coverage by chapter recalculated")
 
             await load_terms_from_json(
                 session,

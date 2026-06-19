@@ -1,9 +1,10 @@
 import logging
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.topics.models import Book, Topic, TopicCode
+from src.security.public_refs import encode_public_ref
+from src.topics.models import Book, BookChapterCoverage, Topic, TopicCode
 
 logger = logging.getLogger(__name__)
 
@@ -158,49 +159,19 @@ async def get_books_coverage_by_chapter(
     *,
     chapter_id: int,
 ) -> list[dict] | None:
-    matching_topics = (
-        select(
-            Topic.id.label("topic_id"),
-            Topic.book_id.label("book_id"),
-        )
-        .join(Topic.topic_codes)
-        .where(TopicCode.chapter_id == chapter_id)
-        .distinct()
-        .subquery()
+    coverage_by_chapter = await get_books_coverage_by_chapter_ids(
+        session,
+        chapter_ids=[chapter_id],
     )
 
-    topic_count = func.count(matching_topics.c.topic_id)
-    query = (
-        select(
-            Book,
-            topic_count.label("topic_count"),
-        )
-        .join(matching_topics, matching_topics.c.book_id == Book.id)
-        .group_by(Book.id, Book.publisher, Book.grade)
-        .order_by(topic_count.desc(), Book.publisher.asc(), Book.grade.asc())
-    )  # fmt: skip
+    stats = coverage_by_chapter.get(chapter_id, [])
 
-    result = await session.execute(query)
-    rows = [(book, int(count)) for book, count in result.all()]
-    total_topic_count = sum(topic_count for _, topic_count in rows)
-
-    if total_topic_count == 0:
+    if not stats:
         logger.debug(
             "Не удалось получить покрытие книг для главы с `chapter_id`='%s' из базы данных",
             chapter_id,
         )
         return None
-
-    stats = [
-        {
-            "book_id": book.id,
-            "publisher": book.publisher,
-            "grade": book.grade,
-            "topic_count": topic_count,
-            "percentage": round((topic_count / total_topic_count) * 100),
-        }
-        for book, topic_count in rows
-    ]
 
     logger.debug(
         "Успешно получено покрытие книг для главы с `chapter_id`='%s'. Кол-во книг: %d",
@@ -209,3 +180,41 @@ async def get_books_coverage_by_chapter(
     )
 
     return stats
+
+
+async def get_books_coverage_by_chapter_ids(
+    session: AsyncSession,
+    *,
+    chapter_ids: list[int],
+) -> dict[int, list[dict]]:
+    unique_chapter_ids = list(dict.fromkeys(chapter_ids))
+    if not unique_chapter_ids:
+        return {}
+
+    query = (
+        select(BookChapterCoverage, Book)
+        .join(Book, Book.id == BookChapterCoverage.book_id)
+        .where(BookChapterCoverage.chapter_id.in_(unique_chapter_ids))
+        .order_by(
+            BookChapterCoverage.chapter_id.asc(),
+            BookChapterCoverage.topic_count.desc(),
+            Book.publisher.asc(),
+            Book.grade.asc(),
+        )
+    )  # fmt: skip
+
+    result = await session.execute(query)
+    coverage_by_chapter = {chapter_id: [] for chapter_id in unique_chapter_ids}
+
+    for coverage, book in result.all():
+        coverage_by_chapter.setdefault(coverage.chapter_id, []).append(
+            {
+                "public_id": encode_public_ref("book", book.id),
+                "publisher": book.publisher,
+                "grade": book.grade,
+                "topic_count": coverage.topic_count,
+                "percentage": coverage.percentage,
+            },
+        )
+
+    return coverage_by_chapter

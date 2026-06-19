@@ -1,4 +1,5 @@
-import { API_URL, apiClient } from './client';
+import axios from 'axios';
+import { GOOGLE_AUTH_API_URL, apiClient } from './client';
 import type { AuthTokens } from '../types';
 
 const GOOGLE_NEXT_STORAGE_KEY = 'infopedia_google_auth_next';
@@ -60,7 +61,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
 export function startGoogleAuth(next?: string) {
   const sanitizedNext = sanitizeNextPath(next);
   window.sessionStorage.setItem(GOOGLE_NEXT_STORAGE_KEY, sanitizedNext);
-  window.location.assign(`${API_URL}/api/auth/google/url`);
+  window.location.assign(`${GOOGLE_AUTH_API_URL}/api/auth/google/url`);
 }
 
 export function consumeGoogleAuthNext(): string {
@@ -106,7 +107,7 @@ export async function completeGoogleAuth(
   code: string,
   state: string
 ): Promise<AuthTokens> {
-  const { data } = await apiClient.get<AuthTokens>('/api/auth/google/callback', {
+  const { data } = await axios.get<AuthTokens>(`${GOOGLE_AUTH_API_URL}/api/auth/google/callback`, {
     params: { code, state },
     withCredentials: true,
   });

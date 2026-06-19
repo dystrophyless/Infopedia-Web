@@ -3,7 +3,12 @@ import { useAuthStore } from '../stores/authStore';
 import type { AuthTokens } from '../types';
 
 export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
+  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://127.0.0.1:8000';
+
+export const GOOGLE_AUTH_API_URL =
+  (import.meta.env.VITE_GOOGLE_AUTH_API_URL as string | undefined) ??
+  (import.meta.env.VITE_API_URL as string | undefined) ??
+  'http://localhost:8000';
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -57,6 +62,10 @@ async function refreshAccessToken() {
 }
 
 apiClient.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  }
+
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

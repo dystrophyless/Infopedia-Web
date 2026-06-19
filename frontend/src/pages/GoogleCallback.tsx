@@ -48,6 +48,10 @@ export function GoogleCallback() {
       try {
         const me = await getMe();
         setAuth(tokens.access_token, tokens.refresh_token, me);
+        if (me.onboarding_completed !== true) {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
       } catch (profileErr) {
         if (isOnboardingRequiredError(profileErr)) {
           navigate('/onboarding', { replace: true });

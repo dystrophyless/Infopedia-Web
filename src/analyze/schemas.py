@@ -9,7 +9,7 @@ class AnalyzeTaskError(BaseModel):
 
 
 class AnalyzeBookCoverage(BaseModel):
-    book_id: int = Field(ge=1)
+    public_id: str = Field(min_length=1)
     publisher: str = Field(min_length=1, max_length=255)
     grade: int = Field(ge=7, le=11)
     topic_count: int = Field(ge=0)

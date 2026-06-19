@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { useLangStore, type Language } from '../stores/langStore';
 
 const LANGS: Language[] = ['ru', 'kk'];
@@ -90,10 +90,12 @@ export function LanguageSwitcher() {
                 <span>{labelFor(l)}</span>
                 <span
                   aria-hidden="true"
-                  className={`ml-auto h-1.5 w-1.5 rounded-full bg-accent transition-opacity ${
+                  className={`ml-auto flex size-4 items-center justify-center text-accent transition-opacity ${
                     lang === l ? 'opacity-100' : 'opacity-0'
                   }`}
-                />
+                >
+                  <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2.2} />
+                </span>
               </button>
             </li>
           ))}

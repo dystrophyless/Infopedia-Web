@@ -61,7 +61,7 @@ export function Landing() {
             icon={<FigmaFeatureAnalyticsIcon className="block h-[21px] w-[24px]" />}
             title={t('landing.feature3Title')}
             description={t('landing.feature3Desc')}
-            to={authTarget('/semantic-search', isAuthenticated)}
+            to={authTarget('/analyze', isAuthenticated)}
           />
         </div>
       </section>

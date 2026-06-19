@@ -268,7 +268,7 @@ async def change_password(
 
 @router.get("/me", response_model=UserResponsePrivate)
 async def get_current_user(
-    current_user: Annotated[User, Depends(get_onboarded_user)],
+    current_user: Annotated[User, Depends(get_authenticated_user)],
 ):
     return current_user
 

@@ -33,12 +33,19 @@ export function DefinitionMetadata({
     return null;
   }
 
+  const book = definition.topic?.book;
+  const bookValue = book?.publisher
+    ? book.grade
+      ? t('metadata.bookWithGrade', { publisher: book.publisher, grade: book.grade })
+      : book.publisher
+    : undefined;
+
   const items = [
     {
       key: 'book',
       icon: BookOpen02Icon,
       label: t('metadata.book'),
-      value: definition.topic?.book?.name,
+      value: bookValue,
     },
     {
       key: 'topic',
@@ -66,8 +73,8 @@ export function DefinitionMetadata({
       : 'mt-5 flex flex-wrap gap-2 border-t border-border/20 pt-4';
   const chipClass =
     variant === 'detail'
-      ? 'inline-flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-border/25 bg-bg/45 px-3 py-1.5 text-[13px] leading-none'
-      : 'inline-flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-border/25 bg-bg/45 px-3 py-1.5 text-[13px] leading-none';
+      ? 'inline-flex min-h-[34px] min-w-0 max-w-full items-center gap-1.5 rounded-full border border-border/25 bg-bg/45 px-3 py-2 text-[13px] leading-[1.35]'
+      : 'inline-flex min-h-[34px] min-w-0 max-w-full items-center gap-1.5 rounded-full border border-border/25 bg-bg/45 px-3 py-2 text-[13px] leading-[1.35]';
   const valueClass = variant === 'detail' ? 'break-words' : 'truncate';
 
   return (
@@ -90,10 +97,10 @@ export function DefinitionMetadata({
               aria-hidden="true"
             />
           )}
-          <dt className="shrink-0 text-muted">{item.label}:</dt>
+          <dt className="shrink-0 leading-[1.35] text-muted">{item.label}:</dt>
           <dd
             className={[
-              'min-w-0 font-medium text-text-body',
+              'min-w-0 font-medium leading-[1.35] text-text-body',
               item.key === 'page' ? 'whitespace-nowrap' : valueClass,
               item.key === 'topic' ? topicValueClassName : '',
             ]

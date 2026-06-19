@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Brain01Icon } from '@hugeicons/core-free-icons';
-import axios from 'axios';
 import { createSearchTask, buildSseUrl } from '../api/search';
 import { useSSE } from '../hooks/useSSE';
 import { LoadingPanel } from '../components/LoadingPanel';
 import { SemanticResultCard } from '../components/SemanticResultCard';
-import type { Definition, SearchTaskError } from '../types';
+import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
+import type { Definition, SearchTask, SearchTaskError } from '../types';
 
 const MIN_CHARS = 10;
 
@@ -19,7 +19,7 @@ export function SemanticSearch() {
   const [submitting, setSubmitting] = useState(false);
 
   const sseUrl = taskId ? buildSseUrl(taskId) : null;
-  const { messages, result, isLoading, error } = useSSE(sseUrl);
+  const { messages, result, isLoading, error } = useSSE<SearchTask>(sseUrl);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,12 +31,7 @@ export function SemanticSearch() {
       const task = await createSearchTask(query.trim());
       setTaskId(task.task_id);
     } catch (err) {
-      let message = t('common.error');
-      if (axios.isAxiosError(err) && err.response?.data) {
-        const detail = (err.response.data as { detail?: string }).detail;
-        if (typeof detail === 'string') message = detail;
-      }
-      setSubmitError(message);
+      setSubmitError(getApiErrorMessage(err, t('common.error')));
     } finally {
       setSubmitting(false);
     }
@@ -49,9 +44,7 @@ export function SemanticSearch() {
   }
 
   function formatSearchTaskError(value: SearchTaskError | string | null | undefined): string | null {
-    if (!value) return null;
-    if (typeof value === 'string') return value;
-    return value.message ?? value.code ?? null;
+    return getTaskErrorMessage(value);
   }
 
   const submitDisabled = query.trim().length < MIN_CHARS || submitting || isLoading;
@@ -63,7 +56,10 @@ export function SemanticSearch() {
           page: result.result.page,
           topic: {
             name: result.result.topic,
-            book: { name: result.result.book },
+            book: {
+              publisher: result.result.book_publisher,
+              grade: result.result.book_grade,
+            },
           },
         }
       : null;

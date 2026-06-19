@@ -3,7 +3,11 @@ export interface Topic {
   name?: string;
   page_start?: number;
   page_end?: number;
-  book?: { public_id?: string; name: string };
+  book?: {
+    public_id?: string;
+    publisher?: string;
+    grade?: number;
+  };
   chapter?: { public_id?: string; name: string };
 }
 
@@ -52,7 +56,8 @@ export type SearchTaskStatus = 'pending' | 'success' | 'failure' | string;
 
 export interface SearchTaskResult {
   term: string;
-  book: string;
+  book_publisher: string;
+  book_grade: number;
   text: string;
   topic: string;
   page: number;
@@ -70,4 +75,36 @@ export interface SearchTask {
   result?: SearchTaskResult | null;
   error?: SearchTaskError | string | null;
   step?: string | null;
+}
+
+export type AnalyzeTaskStatus = 'pending' | 'started' | 'success' | 'failure';
+
+export interface AnalyzeTaskError {
+  code?: string;
+  message?: string;
+}
+
+export interface AnalyzeBookCoverage {
+  public_id: string;
+  publisher: string;
+  grade: number;
+  topic_count: number;
+  percentage: number;
+}
+
+export interface AnalyzeChapterResult {
+  chapter: string;
+  question_count: number;
+  max_score: number;
+  score: number;
+  percentage: number;
+  books: AnalyzeBookCoverage[];
+}
+
+export interface AnalyzeTask {
+  task_id: string;
+  status: AnalyzeTaskStatus;
+  stage?: string | null;
+  result?: AnalyzeChapterResult[] | null;
+  error?: AnalyzeTaskError | string | null;
 }

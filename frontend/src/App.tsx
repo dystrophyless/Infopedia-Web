@@ -11,6 +11,7 @@ import { ResetPassword } from './pages/ResetPassword';
 import { TermSearch } from './pages/TermSearch';
 import { TermDetail } from './pages/TermDetail';
 import { SemanticSearch } from './pages/SemanticSearch';
+import { Analyze } from './pages/Analyze';
 import { Profile } from './pages/Profile';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -65,6 +66,14 @@ export default function App() {
           element={
             <Protected>
               <SemanticSearch />
+            </Protected>
+          }
+        />
+        <Route
+          path="/analyze"
+          element={
+            <Protected>
+              <Analyze />
             </Protected>
           }
         />

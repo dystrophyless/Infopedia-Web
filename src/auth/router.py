@@ -106,6 +106,19 @@ def redirect_to_google_frontend_error(error: str | None = None) -> RedirectRespo
     return response
 
 
+def google_oauth_error_response(
+    request: Request,
+    *,
+    status_code: int = status.HTTP_400_BAD_REQUEST,
+    detail: str = GOOGLE_AUTH_FAILED_DETAIL,
+    error: str | None = None,
+) -> RedirectResponse:
+    if not request_accepts_json(request):
+        return redirect_to_google_frontend_error(error)
+
+    raise HTTPException(status_code=status_code, detail=detail)
+
+
 async def issue_token_pair(
     session: AsyncSession,
     *,
@@ -485,29 +498,31 @@ async def handle_google_oauth_callback(
         or google_oauth_state != state
         or not verify_google_oauth_state(state)
     ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=GOOGLE_AUTH_FAILED_DETAIL,
-        )
+        return google_oauth_error_response(request)
 
     if code is None:
+        return google_oauth_error_response(request)
+
+    try:
+        google_tokens = await exchange_google_authorization_code(code)
+    except HTTPException:
         if not request_accepts_json(request):
             return redirect_to_google_frontend_error()
+        raise
 
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=GOOGLE_AUTH_FAILED_DETAIL,
-        )
-
-    google_tokens = await exchange_google_authorization_code(code)
     id_token = google_tokens.get("id_token")
     if id_token is None:
-        raise HTTPException(
+        return google_oauth_error_response(
+            request,
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=GOOGLE_AUTH_FAILED_DETAIL,
         )
 
-    token_info = await fetch_google_token_info(id_token)
+    try:
+        token_info = await fetch_google_token_info(id_token)
+    except HTTPException:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error()
+        raise
     provider_subject = token_info["sub"]
     email = token_info["email"].lower()
 
@@ -540,6 +555,9 @@ async def handle_google_oauth_callback(
         )
 
     if user.banned:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error()
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Пользователь заблокирован.",

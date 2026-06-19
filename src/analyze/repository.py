@@ -148,6 +148,8 @@ async def get_analyze_result_by_user_id(
     query = (
         select(AnalyzeResult)
         .where(AnalyzeResult.user_id == user_id)
+        .order_by(AnalyzeResult.created_at.desc())
+        .limit(1)
         .options(selectinload(AnalyzeResult.items))
     )  # fmt: skip
 

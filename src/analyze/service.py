@@ -11,11 +11,20 @@ from src.analyze.exceptions import AnalyzeError, AnalyzeExtractionError
 from src.analyze.parser import parse_table
 from src.analyze.repository import create_analyze_result
 from src.analyze.schemas import AnalyzeChapterResult
-from src.topics.repository import get_books_coverage_by_chapter
+from src.topics.repository import get_books_coverage_by_chapter_ids
 
 ProgressEmitter = Callable[[str], Awaitable[None]]
 LLMWHISPERER_WAIT_TIMEOUT_SECONDS = 30
 LLMWHISPERER_POLL_INTERVAL_SECONDS = 5
+EXTRACTION_STAGE_BY_STATUS = {
+    "accepted": "extraction_accepted",
+    "processing": "extraction_processing",
+    "processed": "extraction_completed",
+}
+
+
+def get_public_extraction_stage(status_value: str) -> str:
+    return EXTRACTION_STAGE_BY_STATUS.get(status_value, "extracting")
 
 
 class AnalyzeService:
@@ -57,7 +66,7 @@ class AnalyzeService:
 
             status_value = str(status_result.get("status") or "")
             if emit_progress is not None and status_value != last_status:
-                await emit_progress(f"llmwhisperer_{status_value or 'unknown'}")
+                await emit_progress(get_public_extraction_stage(status_value))
                 last_status = status_value
 
             if status_value in {"accepted", "processing"}:
@@ -189,13 +198,14 @@ class AnalyzeService:
         if emit_progress is not None:
             await emit_progress("matching_books")
 
+        coverage_by_chapter = await get_books_coverage_by_chapter_ids(
+            session,
+            chapter_ids=[item.chapter_id for item in result.items],
+        )
         results = []
 
         for item in result.items:
-            books = await get_books_coverage_by_chapter(
-                session,
-                chapter_id=item.chapter_id,
-            )
+            books = coverage_by_chapter.get(item.chapter_id, [])
 
             chapter_result = AnalyzeChapterResult(
                 chapter=item.analyze_chapter.value,
@@ -203,7 +213,7 @@ class AnalyzeService:
                 max_score=item.max_score,
                 score=item.score,
                 percentage=item.percentage,
-                books=books or [],
+                books=books,
             )
 
             results.append(chapter_result.model_dump())

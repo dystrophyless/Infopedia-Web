@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import type { SearchTask } from '../types';
+import { getTaskErrorMessage } from '../utils/apiError';
 
-interface UseSSEResult {
-  messages: SearchTask[];
-  result: SearchTask | null;
+interface UseSSEResult<T> {
+  messages: T[];
+  result: T | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -15,15 +15,25 @@ const TERMINAL: ReadonlyArray<string> = ['success', 'failure'];
  * EventSource-style hook implemented with fetch + ReadableStream so we can
  * send the JWT in an Authorization header (the backend SSE endpoint requires it).
  */
-export function useSSE(url: string | null): UseSSEResult {
-  const [messages, setMessages] = useState<SearchTask[]>([]);
-  const [result, setResult] = useState<SearchTask | null>(null);
+export function useSSE<T extends { status?: string; error?: unknown }>(
+  url: string | null,
+): UseSSEResult<T> {
+  const [messages, setMessages] = useState<T[]>([]);
+  const [result, setResult] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setMessages([]);
+      setResult(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
 
     setMessages([]);
     setResult(null);
@@ -72,17 +82,13 @@ export function useSSE(url: string | null): UseSSEResult {
 
             const dataStr = dataLines.join('\n');
             try {
-              const parsed = JSON.parse(dataStr) as SearchTask;
+              const parsed = JSON.parse(dataStr) as T;
               setMessages((prev) => [...prev, parsed]);
               if (parsed.status && TERMINAL.includes(parsed.status)) {
                 setResult(parsed);
                 setIsLoading(false);
                 if (parsed.status === 'failure') {
-                  setError(
-                    typeof parsed.error === 'string'
-                      ? parsed.error
-                      : parsed.error?.message ?? parsed.error?.code ?? 'failure',
-                  );
+                  setError(getTaskErrorMessage(parsed.error) ?? 'failure');
                 }
                 return;
               }

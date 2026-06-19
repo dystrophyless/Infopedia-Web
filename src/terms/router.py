@@ -158,6 +158,7 @@ async def get_featured_terms(
         request,
         scope="terms:featured",
         limit=settings.ANTI_SCRAPE_PUBLIC_LIMIT,
+        block_automation_user_agents=False,
     )
     return await _get_featured_terms(session)
 

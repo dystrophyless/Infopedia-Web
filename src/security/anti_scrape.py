@@ -94,12 +94,18 @@ async def enforce_anti_scrape(
     scope: str,
     user_id: int | None = None,
     limit: int | None = None,
+    block_automation_user_agents: bool | None = None,
 ) -> None:
     if not settings.ANTI_SCRAPE_ENABLED:
         return
 
     user_agent = request.headers.get("user-agent")
-    if settings.ANTI_SCRAPE_BLOCK_AUTOMATION_USER_AGENTS:
+    should_block_automation = (
+        settings.ANTI_SCRAPE_BLOCK_AUTOMATION_USER_AGENTS
+        if block_automation_user_agents is None
+        else block_automation_user_agents
+    )
+    if should_block_automation:
         reason = classify_user_agent(user_agent)
         if reason is not None:
             raise HTTPException(

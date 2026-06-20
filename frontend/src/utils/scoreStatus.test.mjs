@@ -35,9 +35,13 @@ assert.equal(getScoreStatus(100).id, 'excellent');
 assert.equal(getScoreStatus(-10).id, 'low');
 assert.equal(getScoreStatus(140).id, 'excellent');
 assert.notEqual(getScoreStatus(60).progressColor, getScoreStatus(71).progressColor);
-assert.equal(getScoreStatus(50).backgroundColor, '#fff8df');
-assert.equal(getScoreStatus(50).progressColor, '#d4a90f');
-assert.equal(getScoreStatus(50).borderColor, '#f0d985');
+assert.equal(getScoreStatus(50).backgroundColor, '#fef3c7');
+assert.equal(getScoreStatus(50).progressColor, '#eab308');
+assert.equal(getScoreStatus(50).borderColor, '#facc15');
+assert.equal(getScoreStatus(80).textColor, '#166534');
+assert.equal(getScoreStatus(80).progressColor, '#22c55e');
+assert.equal(getScoreStatus(90).textColor, '#047857');
+assert.equal(getScoreStatus(90).progressColor, '#059669');
 
 const topics = [
   createTopic('DATABASES', 88, 5, 6, 6),

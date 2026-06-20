@@ -15,7 +15,7 @@ export function Hero() {
 
   return (
     <>
-      <section className="w-full bg-bg px-6 pb-[72px] pt-[136px]">
+      <section className="w-full bg-bg px-6 pb-[72px] pt-14">
         <div className="mx-auto flex max-w-[970px] flex-col items-center gap-7 text-center">
           <h1 className="text-[40px] font-medium leading-tight text-text max-md:text-[32px]">
             {t('landing.heroTitle')}

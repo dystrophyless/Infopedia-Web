@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Brain01Icon } from '@hugeicons/core-free-icons';
 import { createSearchTask, buildSseUrl } from '../api/search';
 import { useSSE } from '../hooks/useSSE';
 import { LoadingPanel } from '../components/LoadingPanel';
@@ -67,11 +65,18 @@ export function SemanticSearch() {
     submitError ?? (result?.status === 'failure' ? formatSearchTaskError(result.error) ?? error : error);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-12">
-      <h1 className="font-medium text-[36px] text-text mb-8 text-center max-md:text-[26px] flex items-center justify-center gap-3">
-        <HugeiconsIcon icon={Brain01Icon} size={36} strokeWidth={1.5} />
-        {t('semanticSearch.title')}
-      </h1>
+    <div className="mx-auto max-w-[900px] px-6 py-14">
+      <header className="mb-8 text-left">
+        <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
+          {t('semanticSearch.eyebrow')}
+        </p>
+        <h1 className="mt-2 text-[36px] font-medium leading-tight text-text max-md:text-[26px]">
+          {t('search.title')}
+        </h1>
+        <p className="mt-3 max-w-[720px] text-[16px] leading-6 text-text-body">
+          {t('semanticSearch.description')}
+        </p>
+      </header>
 
       <form onSubmit={handleSubmit} className="mb-8">
         <label htmlFor="semantic-query" className="sr-only">

@@ -6,6 +6,8 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { FigmaProfileIcon } from './FigmaIcons';
 import { SearchChoiceModal } from './SearchChoiceModal';
 
+const SEARCH_NAV_PATHS = new Set(['/search', '/semantic-search']);
+
 function authTarget(path: string, isAuthenticated: boolean): string {
   if (isAuthenticated) return path;
   return `/login?next=${encodeURIComponent(path)}`;
@@ -16,6 +18,7 @@ export function Navbar() {
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLandingPage = location.pathname === '/';
+  const searchNavIsActive = SEARCH_NAV_PATHS.has(location.pathname);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -40,7 +43,7 @@ export function Navbar() {
                 <button
                   type="button"
                   className={`border-0 bg-transparent px-5 py-4 text-[16px] transition-colors ${
-                    location.pathname === '/search'
+                    searchNavIsActive
                       ? 'font-medium text-accent'
                       : 'text-muted hover:text-accent'
                   }`}

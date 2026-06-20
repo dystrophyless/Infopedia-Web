@@ -46,7 +46,7 @@ export function TermDetail() {
   const backTo = state?.backTo ?? (isAuthenticated ? '/search' : '/');
 
   return (
-    <div className="mx-auto max-w-[860px] px-6 py-12">
+    <div className="mx-auto max-w-[860px] px-6 py-14">
       <Link
         to={backTo}
         className="mb-6 inline-flex items-center gap-2 text-[14px] font-medium text-primary/70 hover:text-accent"

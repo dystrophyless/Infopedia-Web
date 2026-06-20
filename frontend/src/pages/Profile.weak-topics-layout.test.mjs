@@ -20,6 +20,16 @@ const weakTopicListSource = sliceBetween(
   'function WeakTopicList(',
   'function WeakTopicDetail(',
 );
+const weakTopicDetailSource = sliceBetween(
+  profileSource,
+  'function WeakTopicDetail(',
+  'function WeakTopicResultIndicator(',
+);
+const weakTopicBookRowSource = sliceBetween(
+  profileSource,
+  'function WeakTopicBookRow(',
+  'function WeakTopicInfoTooltip(',
+);
 
 assert.doesNotMatch(
   profileSource,
@@ -208,9 +218,27 @@ assert.match(
 );
 
 assert.match(
-  profileSource,
-  /min-h-\[82px\] w-full min-w-0[\s\S]*flex-col justify-between/,
-  'Book cards should use compact no-overflow dimensions',
+  weakTopicDetailSource,
+  /mt-4 border-t border-border\/30 pt-3/,
+  'Selected topic detail should give the score pills more room before the divider',
+);
+
+assert.match(
+  weakTopicBookRowSource,
+  /min-h-\[96px\] w-full min-w-0[\s\S]*flex-col gap-1\.5[\s\S]*px-3 py-3/,
+  'Book cards should be slightly taller with more top padding for the title and grade',
+);
+
+assert.match(
+  weakTopicBookRowSource,
+  /<span className="mt-3 min-w-0">[\s\S]*weakTopicsBookCoverageLabel/,
+  'Book coverage should sit slightly lower inside each book card',
+);
+
+assert.doesNotMatch(
+  weakTopicBookRowSource,
+  /flex-col justify-between/,
+  'Book cards should not push coverage to the bottom with justify-between',
 );
 
 assert.match(

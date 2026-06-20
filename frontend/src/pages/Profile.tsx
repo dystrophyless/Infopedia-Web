@@ -33,6 +33,8 @@ import {
 } from '../utils/weakTopics';
 
 const INITIAL_VISIBLE_BOOKS_LIMIT = 3;
+const WEAK_TOPICS_PANEL_SECTION_CLASS = 'px-8 py-12 max-md:px-5';
+const WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS = 'grid gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]';
 
 const profileNavItems: Array<{
   id: ProfileTabId;
@@ -104,7 +106,7 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:px-4 max-md:pt-8">
+    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:px-4">
       <div className="mx-auto grid max-w-[1260px] grid-cols-[300px_minmax(0,1fr)] gap-7 max-lg:grid-cols-1">
         <aside
           className="max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]"
@@ -179,7 +181,7 @@ export function Profile() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] bg-accent px-5 text-[17px] text-surface transition-opacity hover:opacity-90 max-sm:w-full"
+                      className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] border border-border/55 bg-surface px-5 text-[17px] text-text-body transition-colors hover:bg-bg hover:text-primary max-sm:w-full"
                     >
                       <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
                       {t('profile.logout')}
@@ -211,7 +213,7 @@ function ProfileOverview({
   return (
     <div className="px-8 py-12 max-md:px-5">
       <section className="grid min-h-[320px] grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)] items-start gap-6 max-xl:grid-cols-1">
-        <div className="rounded-[8px] bg-bg p-6">
+        <div className="h-[320px] overflow-hidden rounded-[8px] bg-bg p-6 max-sm:h-auto max-sm:min-h-[320px]">
           <div className="flex flex-wrap items-center gap-4">
             <FigmaProfileIcon className="block size-[86px] shrink-0 text-accent" />
             <div className="min-w-0">
@@ -241,41 +243,61 @@ function ProfileOverview({
 }
 
 function SubscriptionPromo() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const isKazakh = i18n.resolvedLanguage?.startsWith('kk') ?? i18n.language.startsWith('kk');
+  const priceText = isKazakh ? 'айына 1 490 тг-ден' : 'от 1 490 тг/мес';
+  const progressBenefitText = isKazakh
+    ? 'Кеңейтілген прогресс динамикасы'
+    : 'Расширенная динамика прогресса';
+  const benefits = [
+    {
+      icon: AlertCircleIcon,
+      label: t('profile.subscriptionBenefitWeakTopics'),
+    },
+    {
+      icon: StarIcon,
+      label: t('profile.subscriptionBenefitRecommendations'),
+    },
+    {
+      icon: ChartColumnIcon,
+      label: progressBenefitText,
+    },
+  ] as const;
 
   return (
-    <section className="self-start rounded-[8px] border border-border/65 p-5">
-      <div className="flex items-center justify-between gap-4">
+    <section className="flex h-[320px] flex-col overflow-hidden rounded-[8px] border border-border/65 bg-surface p-5 max-sm:h-auto max-sm:min-h-[320px]">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
-            {t('profile.subscriptionEyebrow')}
-          </p>
+          <h2 className="text-[22px] font-medium leading-tight text-primary">
+            {t('profile.subscriptionTitle')}
+          </h2>
+          <span className="mt-2 block text-[13px] font-medium leading-none text-primary">
+            {priceText}
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-bg px-3 py-1 text-[13px] font-medium leading-none text-primary">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[13px] font-medium leading-none text-surface">
+          <HugeiconsIcon icon={StarIcon} size={14} strokeWidth={2} />
           {t('profile.subscriptionBadge')}
         </span>
       </div>
 
-      <h2 className="mt-3 text-[24px] font-medium leading-tight text-primary">
-        {t('profile.subscriptionTitle')}
-      </h2>
-
-      <p className="mt-3 text-[14px] leading-snug text-text-body">
-        {t('profile.subscriptionBody')}
-      </p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-full bg-bg px-3 py-1 text-[13px] leading-none text-primary">
-          {t('profile.subscriptionBenefitWeakTopics')}
-        </span>
-        <span className="rounded-full bg-bg px-3 py-1 text-[13px] leading-none text-primary">
-          {t('profile.subscriptionBenefitRecommendations')}
-        </span>
+      <div className="my-auto grid gap-1.5">
+        {benefits.map((benefit) => (
+          <span
+            key={benefit.label}
+            className="inline-flex min-h-8 w-full items-center gap-2 border-b border-border/25 px-3 py-1.5 text-[12px] font-medium leading-tight text-primary"
+          >
+            <span className="flex size-5 shrink-0 items-center justify-center text-primary">
+              <HugeiconsIcon icon={benefit.icon} size={13} strokeWidth={1.8} />
+            </span>
+            <span>{benefit.label}</span>
+          </span>
+        ))}
       </div>
 
       <button
         type="button"
-        className="mt-5 inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[8px] bg-accent px-4 text-[15px] font-medium text-surface transition-opacity hover:opacity-90"
+        className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[8px] bg-primary px-4 text-[15px] font-medium text-surface transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <span>{t('profile.subscriptionUpgradeButton')}</span>
         <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
@@ -399,7 +421,7 @@ function WeakTopicsPanel() {
   }
 
   return (
-    <section className="px-8 py-12 max-md:px-5">
+    <section className={WEAK_TOPICS_PANEL_SECTION_CLASS}>
       <WeakTopicsMasterDetail
         selectedChapter={selectedChapter}
         weakTopics={weakTopics}
@@ -414,38 +436,86 @@ function WeakTopicsLoadingState() {
 
   return (
     <section
-      className="px-8 py-12 max-md:px-5"
+      className={WEAK_TOPICS_PANEL_SECTION_CLASS}
       role="status"
       aria-busy="true"
       aria-live="polite"
     >
       <span className="sr-only">{t('common.loading')}</span>
-      <div aria-hidden="true" className="grid animate-pulse gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]">
-        <div className="rounded-[8px] border border-border/30 bg-bg/55 p-3">
-          <div className="h-4 w-28 rounded-full bg-primary/12" />
-          <div className="mt-2 h-3 w-40 rounded-full bg-border/40" />
-          <div className="mt-4 grid gap-2 max-md:flex max-md:overflow-hidden">
-            {[0, 1, 2, 3].map((item) => (
-              <div key={item} className="h-[62px] rounded-[8px] bg-surface shadow-sm max-md:min-w-[200px]" />
+      <div aria-hidden="true" className={`${WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS} animate-pulse`}>
+        <div className="flex h-full min-h-0 flex-col rounded-[8px] border border-border/30 bg-bg/55 p-3">
+          <div>
+            <div className="h-3 w-28 rounded-full bg-primary/12" />
+            <div className="mt-1.5 h-5 w-16 rounded-[6px] bg-primary/12" />
+            <div className="mt-1.5 h-3 w-32 rounded-full bg-border/40" />
+          </div>
+          <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pr-2">
+            {Array.from({ length: 3 }).map((_, item) => (
+              <div
+                key={item}
+                className="grid grid-cols-[minmax(0,1fr)_46px] items-start gap-2 rounded-[8px] border border-transparent bg-surface/70 px-3 py-2.5 shadow-sm"
+              >
+                <span className="min-w-0">
+                  <span className="block h-4 w-full max-w-[150px] rounded-[6px] bg-primary/12" />
+                  {item === 0 && (
+                    <span className="mt-1.5 block h-4 w-[118px] rounded-[6px] bg-primary/12" />
+                  )}
+                  <span className="mt-2 block h-3 w-24 rounded-full bg-border/40" />
+                </span>
+                <span className="mt-0.5 h-[22px] w-[46px] rounded-[8px] bg-bg" />
+              </div>
             ))}
           </div>
         </div>
 
-        <article className="rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)]">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <article className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <div className="h-7 w-[420px] max-w-full rounded-[8px] bg-primary/12" />
-              <div className="mt-3 h-4 w-[520px] max-w-full rounded-full bg-border/35" />
+              <div className="h-3 w-36 rounded-full bg-primary/12" />
+              <div className="mt-1 h-8 w-[420px] max-w-full rounded-[8px] bg-primary/12" />
+              <div className="mt-1.5 h-8 w-[300px] max-w-[72%] rounded-[8px] bg-primary/12" />
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <div className="h-7 w-24 rounded-full bg-bg" />
+                <div className="h-7 w-20 rounded-full bg-bg" />
+              </div>
             </div>
-            <div className="h-10 w-24 rounded-[8px] bg-primary/12" />
+            <div className="min-w-[104px] text-right max-sm:w-full max-sm:text-left">
+              <div className="ml-auto h-[30px] w-16 rounded-[8px] bg-primary/12 max-sm:ml-0" />
+              <div className="mt-1.5 h-1.5 rounded-full bg-bg" />
+            </div>
           </div>
-          <div className="mt-4 h-9 w-48 rounded-[8px] bg-primary/12" />
-          <div className="mt-4 rounded-[8px] bg-bg/70 p-3">
-            <div className="h-4 w-52 rounded-full bg-primary/12" />
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {[0, 1, 2].map((book) => (
-                <div key={book} className="h-[86px] rounded-[8px] bg-surface shadow-sm" />
-              ))}
+
+          <div className="mt-4 border-t border-border/30 pt-3">
+            <div className="rounded-[8px] bg-bg/70 p-2">
+              <div className="flex min-h-8 flex-wrap items-center gap-2">
+                <div className="h-5 w-52 max-w-full rounded-full bg-primary/12" />
+                <div className="size-5 rounded-full bg-primary/12" />
+                <div className="ml-auto flex items-center gap-1.5">
+                  <div className="size-8 rounded-[8px] border border-border/55 bg-surface" />
+                  <div className="h-8 w-36 rounded-[8px] border border-border/55 bg-surface" />
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2 max-md:grid-cols-2 max-sm:grid-cols-1">
+                {Array.from({ length: 3 }).map((_, book) => (
+                  <div
+                    key={book}
+                    className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm"
+                  >
+                    <span className="flex min-w-0 items-start justify-between gap-2">
+                      <span className="block h-4 w-28 rounded-[6px] bg-primary/12" />
+                      <span className="h-[18px] w-16 shrink-0 rounded-full bg-bg" />
+                    </span>
+                    <span className="mt-3 min-w-0">
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="h-3 w-16 rounded-full bg-primary/12" />
+                        <span className="h-3 w-8 rounded-full bg-primary/12" />
+                      </span>
+                      <span className="mt-1.5 block h-1.5 rounded-full bg-bg" />
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </article>
@@ -467,7 +537,7 @@ function WeakTopicsMasterDetail({
     weakTopics.find((topic) => topic.chapter === selectedChapter) ?? weakTopics[0];
 
   return (
-    <div className="grid gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className={WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS}>
       <WeakTopicList
         selectedChapter={selectedTopic.chapter}
         weakTopics={weakTopics}
@@ -574,7 +644,7 @@ function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
           <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
             {t('profile.weakTopicsSelectedLabel')}
           </p>
-          <h3 className="mt-1 break-words text-[25px] font-medium leading-tight text-text max-md:text-[22px]">
+          <h3 className="mt-1 break-words text-[22px] font-medium leading-snug text-text max-md:text-[20px]">
             {chapterLabel}
           </h3>
           <WeakTopicStatsRow topic={topic} />
@@ -586,7 +656,7 @@ function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
         />
       </div>
 
-      <div className="mt-3 border-t border-border/30 pt-3">
+      <div className="mt-4 border-t border-border/30 pt-3">
         <WeakTopicBookList books={topic.books} />
       </div>
     </article>
@@ -697,8 +767,8 @@ function WeakTopicBookList({
 
   return (
     <div className="rounded-[8px] bg-bg/70 p-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex min-w-0 items-center gap-2">
+      <div className="flex min-h-8 flex-wrap items-center gap-2">
+        <span className="inline-flex min-w-0 items-center gap-1">
           <p className="truncate text-[15px] font-medium leading-tight text-primary">
             {t('profile.weakTopicsBooksTitle')}
           </p>
@@ -735,7 +805,7 @@ function WeakTopicBookList({
       </div>
 
       <ol
-        className="mt-2 grid grid-cols-3 gap-2 max-md:grid-cols-2 max-sm:grid-cols-1"
+        className="mt-4 grid grid-cols-3 gap-2 max-md:grid-cols-2 max-sm:grid-cols-1"
         aria-label={t('profile.weakTopicsSecondaryBooksLabel')}
       >
         {visibleBooks.map((book) => (
@@ -757,17 +827,17 @@ function WeakTopicBookRow({
   const coverage = clampScorePercent(book.percentage);
 
   return (
-    <div className="flex min-h-[82px] w-full min-w-0 flex-col justify-between rounded-[8px] border border-border/25 bg-surface px-3 py-2 shadow-sm">
-      <span className="min-w-0">
+    <div className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm">
+      <span className="flex min-w-0 items-start justify-between gap-2">
         <span className="line-clamp-2 block min-w-0 break-words text-[14px] font-medium leading-tight text-text">
           {book.publisher}
         </span>
-        <span className="mt-1 inline-flex rounded-full bg-bg px-2 py-0.5 text-[11px] font-medium leading-none text-muted">
+        <span className="shrink-0 rounded-full bg-bg px-2 py-0.5 text-[11px] font-medium leading-none text-muted">
           {t('analyze.bookGradeSuperscript', { grade: book.grade })}
         </span>
       </span>
 
-      <span className="mt-2 min-w-0">
+      <span className="mt-3 min-w-0">
         <span
           className="flex items-center justify-between gap-3 text-[12px] font-medium leading-none text-primary"
           aria-label={t('profile.weakTopicsBookCoverageTooltip', {
@@ -803,7 +873,7 @@ function WeakTopicInfoTooltip({
         type="button"
         aria-describedby={tooltipId}
         aria-label={text}
-        className={`group inline-flex items-center justify-center gap-1.5 text-[12px] font-medium leading-none text-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        className={`group inline-flex items-center justify-center gap-1 text-[12px] font-medium leading-none text-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           label
             ? 'h-7 rounded-full bg-bg px-2.5 hover:bg-primary/5'
             : 'h-5 w-5 rounded-none bg-transparent p-0 hover:bg-transparent'

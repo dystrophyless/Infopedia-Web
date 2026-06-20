@@ -25,6 +25,10 @@ const ANALYZE_STAGE_ALIASES: Record<string, string> = {
   llmwhisperer_processing: 'extraction_processing',
   llmwhisperer_processed: 'extraction_completed',
 };
+const ANALYZE_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:px-4';
+const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:px-4';
+const ANALYZE_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5';
+const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4';
 
 type AnalyzeSortDirection = 'weakFirst' | 'strongFirst';
 
@@ -152,18 +156,20 @@ export function Analyze() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-12 max-md:px-4">
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-5">
+    <div className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : ANALYZE_PAGE_CLASS}>
+      <header className={showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : ANALYZE_HEADER_CLASS}>
         <div>
           <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
             {t('analyze.eyebrow')}
           </p>
-          <h1 className="mt-3 text-[38px] font-medium leading-tight text-text max-md:text-[30px]">
+          <h1 className="mt-2 text-[36px] font-medium leading-tight text-text max-md:text-[30px]">
             {t('analyze.title')}
           </h1>
-          <p className="mt-3 max-w-[720px] text-[16px] leading-7 text-text-body">
-            {t('analyze.description')}
-          </p>
+          {!showUploadForm && (
+            <p className="mt-2 max-w-[720px] text-[16px] leading-6 text-text-body">
+              {t('analyze.description')}
+            </p>
+          )}
         </div>
         {isTerminal && (
           <button
@@ -177,19 +183,19 @@ export function Analyze() {
       </header>
 
       {showUploadForm && (
-        <form onSubmit={handleSubmit} className="rounded-[8px] border border-border bg-surface p-6 shadow-feature">
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 max-lg:grid-cols-1">
-            <div className="flex min-w-0 flex-col justify-between rounded-[8px] bg-bg px-5 py-5">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-[8px] border border-border bg-surface p-5 shadow-feature max-lg:flex-none">
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1">
+            <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4">
               <div>
-                <h2 className="text-[22px] font-medium leading-tight text-primary">
+                <h2 className="text-[21px] font-medium leading-tight text-primary">
                   {t('analyze.uploadInstructionTitle')}
                 </h2>
-                <p className="mt-2 text-[14px] leading-6 text-text-body">
-                  {t('analyze.uploadInstructionBody')}
+                <p className="mt-1.5 text-[14px] leading-5 text-text-body">
+                  {t('analyze.description')}
                 </p>
               </div>
 
-              <ol className="mt-6 grid gap-4">
+              <ol className="mt-5 grid gap-3">
                 <InstructionStep
                   number="1"
                   title={t('analyze.uploadStep1Title')}
@@ -197,7 +203,7 @@ export function Analyze() {
                 />
                 <InstructionStep
                   number="2"
-                  title={t('analyze.uploadStep2Title', { size: formatBytes(MAX_ANALYZE_UPLOAD_BYTES) })}
+                  title={t('analyze.uploadStep2Title')}
                   body={t('analyze.uploadStep2Body')}
                 />
                 <InstructionStep
@@ -210,7 +216,7 @@ export function Analyze() {
 
             <label
               htmlFor="analyze-file"
-              className="group flex min-h-[320px] cursor-pointer flex-col items-center justify-center rounded-[8px] border border-dashed border-border bg-bg px-6 py-10 text-center transition-colors hover:border-accent hover:bg-surface focus-within:border-accent"
+              className="group flex h-full min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-[8px] border border-dashed border-border bg-bg px-6 py-8 text-center transition-colors hover:border-accent hover:bg-surface focus-within:border-accent"
             >
               <input
                 id="analyze-file"
@@ -220,18 +226,18 @@ export function Analyze() {
                 disabled={submitting || Boolean(taskId)}
                 onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
               />
-              <span className="flex size-16 items-center justify-center rounded-[8px] bg-surface text-primary transition-colors group-hover:bg-bg">
-                <HugeiconsIcon icon={FileUploadIcon} size={34} strokeWidth={1.6} />
+              <span className="flex size-14 items-center justify-center rounded-[8px] bg-surface text-primary transition-colors group-hover:bg-bg">
+                <HugeiconsIcon icon={FileUploadIcon} size={30} strokeWidth={1.6} />
               </span>
-              <span className="mt-5 text-[26px] font-medium leading-tight text-primary max-md:text-[22px]">
+              <span className="mt-4 text-[24px] font-medium leading-tight text-primary max-md:text-[22px]">
                 {file ? file.name : t('analyze.uploadTitle')}
               </span>
-              <span className="mt-2 text-[15px] leading-6 text-text-body">
+              <span className="mt-1.5 text-[15px] leading-6 text-text-body">
                 {file
                   ? t('analyze.fileMeta', { size: formatBytes(file.size) })
-                  : t('analyze.uploadHint', { size: formatBytes(MAX_ANALYZE_UPLOAD_BYTES) })}
+                  : t('analyze.uploadHint')}
               </span>
-              <span className="mt-3 max-w-[420px] text-[14px] leading-6 text-muted">
+              <span className="mt-2 max-w-[420px] text-[14px] leading-5 text-muted">
                 {t('analyze.uploadDropHint')}
               </span>
             </label>
@@ -257,7 +263,7 @@ export function Analyze() {
             </p>
           )}
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
             <p className="max-w-[580px] text-[14px] leading-6 text-muted">
               {t('analyze.privacyNote')}
             </p>
@@ -647,7 +653,7 @@ function validateAnalyzeFile(file: File | null, t: (key: string, values?: Record
   if (!file) return t('analyze.errors.fileRequired');
   if (file.size === 0) return t('analyze.errors.emptyFile');
   if (file.size > MAX_ANALYZE_UPLOAD_BYTES) {
-    return t('analyze.errors.fileTooLarge', { size: formatBytes(MAX_ANALYZE_UPLOAD_BYTES) });
+    return t('analyze.errors.fileTooLarge');
   }
 
   const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');

@@ -47,10 +47,18 @@ export function TermSearch() {
   }, [debounced, setLoading, setResults]);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-12">
-      <h1 className="font-medium text-[36px] text-text mb-8 text-center max-md:text-[26px]">
-        {t('search.title')}
-      </h1>
+    <div className="mx-auto max-w-[900px] px-6 py-14">
+      <header className="mb-8 text-left">
+        <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
+          {t('search.eyebrow')}
+        </p>
+        <h1 className="mt-2 text-[36px] font-medium leading-tight text-text max-md:text-[26px]">
+          {t('search.title')}
+        </h1>
+        <p className="mt-3 max-w-[680px] text-[16px] leading-6 text-text-body">
+          {t('search.description')}
+        </p>
+      </header>
 
       <div className="relative mb-8">
         <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted">

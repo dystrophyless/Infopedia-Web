@@ -47,7 +47,7 @@ export function TermSearch() {
   }, [debounced, setLoading, setResults]);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-14">
+    <div className="mx-auto max-w-[900px] px-6 py-14 max-md:px-4">
       <header className="mb-8 text-left">
         <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
           {t('search.eyebrow')}
@@ -69,7 +69,7 @@ export function TermSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('search.placeholder')}
-          className="w-full bg-surface border border-border rounded-[15px] pl-14 pr-5 py-4 text-[18px] text-text outline-none focus:border-accent shadow-feature transition-colors"
+          className="w-full bg-surface border border-border rounded-[15px] pl-14 pr-5 py-4 text-[18px] text-text outline-none focus:border-accent shadow-feature transition-colors max-md:shadow-none"
         />
       </div>
 

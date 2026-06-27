@@ -8,7 +8,6 @@ import {
   ViewIcon,
   ViewOffIcon,
 } from '@hugeicons/core-free-icons';
-import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function AuthShell({
   title,
@@ -21,15 +20,14 @@ export function AuthShell({
 }) {
   return (
     <div className="min-h-screen w-full bg-bg flex flex-col">
-      <header className="w-full px-[60px] max-md:px-6 py-6 flex items-center justify-between">
+      <header className="w-full px-[60px] max-md:hidden py-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="Infopedia" className="h-[40px] w-auto" />
         </Link>
-        <LanguageSwitcher />
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-4 pb-12">
-        <div className="w-full max-w-[440px] bg-surface border border-border rounded-[15px] shadow-feature p-10">
+      <div className="flex-1 flex items-center justify-center px-4 pb-12 max-md:items-start max-md:px-4 max-md:pb-8 max-md:pt-[calc(22px+env(safe-area-inset-top))]">
+        <div className="w-full max-w-[440px] bg-surface border border-border rounded-[15px] shadow-feature p-10 max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
           <h1 className="mb-3 text-left text-[26px] font-medium text-text">{title}</h1>
           {children}
           {footer && <div className="mt-4 text-center text-[14px] text-muted">{footer}</div>}

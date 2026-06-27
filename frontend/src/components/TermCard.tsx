@@ -15,7 +15,7 @@ export function TermCard({ term }: { term: Term }) {
     <Link
       to={`/terms/${term.public_id}`}
       state={{ backTo: '/search', term }}
-      className="group block rounded-[15px] border border-border bg-surface p-8 shadow-feature transition-shadow hover:shadow-card max-md:p-6"
+      className="group block rounded-[15px] border border-border bg-surface p-8 shadow-feature transition-shadow hover:shadow-card max-md:p-6 max-md:shadow-none max-md:hover:shadow-none"
     >
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">

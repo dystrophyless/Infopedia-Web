@@ -46,7 +46,7 @@ export function TermDetail() {
   const backTo = state?.backTo ?? (isAuthenticated ? '/search' : '/');
 
   return (
-    <div className="mx-auto max-w-[860px] px-6 py-14">
+    <div className="mx-auto max-w-[860px] px-6 py-14 max-md:px-4">
       <Link
         to={backTo}
         className="mb-6 inline-flex items-center gap-2 text-[14px] font-medium text-primary/70 hover:text-accent"
@@ -67,7 +67,7 @@ export function TermDetail() {
       )}
 
       {current && (
-        <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature max-md:p-6">
+        <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature max-md:rounded-[12px] max-md:p-6 max-md:shadow-none">
           <h1 className="mb-4 text-[30px] font-medium leading-tight text-text max-md:text-[24px]">
             {term.name}
           </h1>

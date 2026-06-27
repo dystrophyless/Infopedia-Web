@@ -10,7 +10,7 @@ interface FeatureCardProps {
 
 export function FeatureCard({ icon, title, description, to }: FeatureCardProps) {
   const content = (
-    <article className="flex h-[216px] flex-col gap-[25px] overflow-hidden rounded-[15px] bg-surface px-[40px] py-[50px] shadow-feature transition-all duration-200 ease-out group-hover:-translate-y-2 group-hover:shadow-[8px_8px_0_#9683b7] group-focus-visible:-translate-y-2 group-focus-visible:shadow-[8px_8px_0_#9683b7] max-md:h-auto">
+    <article className="flex h-[216px] flex-col gap-[25px] overflow-hidden rounded-[15px] bg-surface px-[40px] py-[50px] shadow-feature transition-all duration-200 ease-out group-hover:-translate-y-2 group-hover:shadow-[8px_8px_0_#9683b7] group-focus-visible:-translate-y-2 group-focus-visible:shadow-[8px_8px_0_#9683b7] max-md:h-auto max-md:shadow-none max-md:group-hover:translate-y-0 max-md:group-hover:shadow-none max-md:group-focus-visible:translate-y-0 max-md:group-focus-visible:shadow-none">
       <header className="flex items-center gap-4">
         <div className="flex size-[45px] shrink-0 items-center justify-center rounded-[10px] bg-bg text-accent transition-all duration-200 ease-out group-hover:scale-110 group-hover:bg-accent group-hover:text-surface group-focus-visible:scale-110 group-focus-visible:bg-accent group-focus-visible:text-surface">
           {icon}

@@ -27,7 +27,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-\[8px\] border border-border bg-surface p-5 shadow-feature max-lg:flex-none">/,
+  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-\[8px\] border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:shadow-none">/,
   'Analyze upload form should fill the remaining viewport height without forcing page scroll',
 );
 

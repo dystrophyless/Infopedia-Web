@@ -87,6 +87,16 @@ select:focus-visible {
   outline: none;
 }
 
+@media (max-width: 767px) {
+  [class*='shadow-'] {
+    box-shadow: none !important;
+  }
+
+  [class*='border'] {
+    border-color: transparent !important;
+  }
+}
+
 @keyframes analyze-scan {
   0% {
     transform: translateX(-120%);

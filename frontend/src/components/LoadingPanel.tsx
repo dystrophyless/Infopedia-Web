@@ -7,7 +7,7 @@ export function LoadingPanel({ messages }: { messages: SearchTask[] }) {
   const { t } = useTranslation();
 
   return (
-    <div className="bg-surface border border-border rounded-[15px] p-8 shadow-feature flex flex-col items-center gap-4">
+    <div className="bg-surface border border-border rounded-[15px] p-8 shadow-feature flex flex-col items-center gap-4 max-md:shadow-none">
       <div className="text-accent animate-pulse">
         <HugeiconsIcon icon={Brain01Icon} size={48} strokeWidth={1.5} />
       </div>

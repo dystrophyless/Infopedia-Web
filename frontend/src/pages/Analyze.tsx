@@ -183,7 +183,7 @@ export function Analyze() {
       </header>
 
       {showUploadForm && (
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-[8px] border border-border bg-surface p-5 shadow-feature max-lg:flex-none">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-[8px] border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:shadow-none">
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1">
             <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4">
               <div>
@@ -336,7 +336,7 @@ function AnalyzeProgress({
   const progressPercent = useSmoothAnalyzeProgress();
 
   return (
-    <section className="mt-6 overflow-hidden rounded-[8px] border border-border bg-surface shadow-feature">
+    <section className="mt-6 overflow-hidden rounded-[8px] border border-border bg-surface shadow-feature max-md:shadow-none">
       <div className="h-1 bg-bg" aria-hidden>
         <div className="h-full w-1/3 animate-[analyze-scan_1.8s_ease-in-out_infinite] bg-accent" />
       </div>
@@ -388,7 +388,7 @@ function AnalyzeFailure({
   const { t } = useTranslation();
 
   return (
-    <section className="mt-6 rounded-[8px] border border-danger/40 bg-surface p-8 text-center shadow-feature">
+    <section className="mt-6 rounded-[8px] border border-danger/40 bg-surface p-8 text-center shadow-feature max-md:shadow-none">
       <span className="mx-auto flex size-14 items-center justify-center rounded-[8px] bg-danger/10 text-danger">
         <HugeiconsIcon icon={AlertCircleIcon} size={30} strokeWidth={1.6} />
       </span>
@@ -423,7 +423,7 @@ function AnalyzeResults({
 
   if (results.length === 0) {
     return (
-      <p className="mt-8 rounded-[8px] border border-border bg-surface p-8 text-center text-muted shadow-feature">
+      <p className="mt-8 rounded-[8px] border border-border bg-surface p-8 text-center text-muted shadow-feature max-md:shadow-none">
         {t('analyze.noResults')}
       </p>
     );
@@ -448,7 +448,7 @@ function AnalyzeResults({
             type="button"
             onClick={() => onSortDirectionChange('weakFirst')}
             aria-pressed={sortDirection === 'weakFirst'}
-            className={`h-9 rounded-[7px] px-4 text-[14px] font-medium transition-colors ${
+            className={`h-9 rounded-[7px] px-4 text-[14px] font-medium transition-colors max-md:shadow-none ${
               sortDirection === 'weakFirst'
                 ? 'bg-surface text-primary shadow-sm'
                 : 'text-muted hover:bg-surface/70 hover:text-primary'
@@ -460,7 +460,7 @@ function AnalyzeResults({
             type="button"
             onClick={() => onSortDirectionChange('strongFirst')}
             aria-pressed={sortDirection === 'strongFirst'}
-            className={`h-9 rounded-[7px] px-4 text-[14px] font-medium transition-colors ${
+            className={`h-9 rounded-[7px] px-4 text-[14px] font-medium transition-colors max-md:shadow-none ${
               sortDirection === 'strongFirst'
                 ? 'bg-surface text-primary shadow-sm'
                 : 'text-muted hover:bg-surface/70 hover:text-primary'
@@ -490,7 +490,7 @@ function SummaryStat({
   status?: ReturnType<typeof getScoreStatus>;
 }) {
   return (
-    <article className="rounded-[8px] border border-border bg-surface p-5 shadow-feature">
+    <article className="rounded-[8px] border border-border bg-surface p-5 shadow-feature max-md:shadow-none">
       <p
         className="text-[32px] font-medium leading-none text-primary"
         style={status ? { color: status.textColor } : undefined}
@@ -513,7 +513,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
   const hiddenBooksCount = Math.max(0, chapter.books.length - BOOKS_COLLAPSED_LIMIT);
 
   return (
-    <article className="rounded-[8px] border border-border bg-surface p-6 shadow-feature">
+    <article className="rounded-[8px] border border-border bg-surface p-6 shadow-feature max-md:shadow-none">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="min-w-0">
           <h2 className="text-[24px] font-medium leading-tight text-primary max-md:text-[20px]">
@@ -576,7 +576,8 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
         </div>
         {chapter.books.length > 0 ? (
           <>
-            <div className="overflow-x-auto rounded-[8px] border border-border/60">
+            <MobileBookCoverageList books={visibleBooks} />
+            <div className="overflow-x-auto rounded-[8px] border border-border/60 max-md:hidden">
               <table className="w-full min-w-[560px] border-collapse">
                 <thead className="bg-bg text-left text-[12px] font-medium uppercase tracking-[0.08em] text-muted">
                   <tr>
@@ -639,6 +640,41 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
         )}
       </div>
     </article>
+  );
+}
+
+function MobileBookCoverageList({ books }: { books: AnalyzeBookCoverage[] }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="hidden gap-2 max-md:grid" aria-label={t('analyze.booksTitle')}>
+      {books.map((book) => (
+        <article
+          key={`${book.public_id}-${book.publisher}-${book.grade}-mobile`}
+          className="rounded-[8px] border border-border/45 bg-bg px-3.5 py-3"
+        >
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <p className="min-w-0 break-words text-[15px] font-medium leading-tight text-text">
+              {book.publisher}
+              <sup
+                className="ml-1 whitespace-nowrap align-super text-[10px] font-medium leading-none text-muted"
+                title={t('analyze.bookGrade', { grade: book.grade })}
+                aria-label={t('analyze.bookGrade', { grade: book.grade })}
+              >
+                {t('analyze.bookGradeSuperscript', { grade: book.grade })}
+              </sup>
+            </p>
+            <span className="shrink-0 rounded-full bg-surface px-2 py-1 text-[12px] font-medium leading-none text-primary">
+              {book.percentage}%
+            </span>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-text-body">
+            <span>{t('analyze.bookTopicsValue', { count: book.topic_count })}</span>
+            <span>{t('analyze.bookCoverageHeader')}</span>
+          </div>
+        </article>
+      ))}
+    </div>
   );
 }
 

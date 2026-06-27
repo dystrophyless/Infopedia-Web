@@ -11,3 +11,5 @@ data/
 openspec/
 docs/
 .pycache-verify/
+.codex-tmp/
+.tmp/

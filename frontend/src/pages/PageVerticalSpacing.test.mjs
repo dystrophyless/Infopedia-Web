@@ -59,7 +59,7 @@ assert.match(
 
 assert.match(
   profileSource,
-  /min-h-\[calc\(100vh-80px\)\] bg-bg px-6 pb-16 pt-14 max-md:px-4/,
+  /min-h-\[calc\(100vh-80px\)\] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-4/,
   'Profile should match term search top spacing',
 );
 

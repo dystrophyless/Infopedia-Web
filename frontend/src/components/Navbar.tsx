@@ -31,7 +31,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-[80px] w-full items-center border-b border-border/30 bg-surface">
+      <header className="sticky top-0 z-40 flex h-[80px] w-full items-center border-b border-border/30 bg-surface max-md:hidden">
         <div className="flex w-full min-w-0 items-center justify-between px-[60px] max-lg:px-8 max-md:px-6">
           <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="Infopedia">
             <img src="/logo.svg" alt="Infopedia" className="h-[44px] w-auto" />

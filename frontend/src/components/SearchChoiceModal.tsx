@@ -53,7 +53,7 @@ export function SearchChoiceModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12091f]/65 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12091f]/65 p-4 backdrop-blur-[2px] max-md:items-end max-md:p-0 max-md:backdrop-blur-none"
       role="presentation"
       onMouseDown={onClose}
     >
@@ -62,11 +62,15 @@ export function SearchChoiceModal({
         aria-describedby="search-choice-description"
         aria-labelledby="search-choice-title"
         aria-modal="true"
-        className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] overflow-y-auto rounded-[10px] border border-border/70 bg-surface shadow-[0_18px_54px_rgba(18,9,31,0.22)] outline-none"
+        className="max-h-[calc(100dvh-32px)] w-full max-w-[560px] overflow-y-auto rounded-[10px] border border-border/70 bg-surface shadow-[0_18px_54px_rgba(18,9,31,0.22)] outline-none max-md:max-h-[82dvh] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[22px] max-md:border-x-0 max-md:border-b-0 max-md:shadow-none"
         role="dialog"
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
+        <span
+          aria-label={t('searchChoice.sheetHandle')}
+          className="mx-auto mt-3 hidden h-1.5 w-[72px] rounded-full bg-border/25 max-md:block"
+        />
         <div className="flex items-start justify-between gap-5 px-6 pb-5 pt-6 max-sm:px-5">
           <div className="min-w-0">
             <h2

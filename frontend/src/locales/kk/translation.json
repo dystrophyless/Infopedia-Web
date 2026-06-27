@@ -1,9 +1,13 @@
 {
   "nav": {
+    "home": "Басты",
+    "mobilePrimary": "Төменгі навигация",
     "search": "Іздеу",
     "semanticSearch": "Сипаттама бойынша іздеу",
     "analyze": "ҰБТ талдауы",
+    "mobileAnalyze": "Талдау",
     "profile": "Жеке кабинет",
+    "mobileProfile": "Профиль",
     "logout": "Шығу",
     "login": "Кіру",
     "register": "Тіркелу",
@@ -35,6 +39,19 @@
     "ctaTerm": "терминді",
     "ctaOr": "немесе",
     "ctaDefinition": "анықтаманы",
+    "mobileHeroScoreValue": "50",
+    "mobileHeroScoreLabel": "информатикадан балл",
+    "mobileHeroEyebrow": "Информатикадан ҰБТ",
+    "mobileHeroTitle": "Информатикадан ҰБТ-ға болжамсыз дайындал",
+    "mobileHeroSubtitle": "Сұрақтар мен әлсіз тақырыптар — бір жерде",
+    "mobileHeroPrimaryCta": "Дайындықты бастау →",
+    "mobileHeroSecondaryCta": "Бұл қалай жұмыс істейді?",
+    "mobileHeroPreviewSearch": "Термин бойынша іздеу",
+    "mobileHeroPreviewTerm": "Информатика",
+    "mobileHeroPreviewDefinition": "Ақпарат, алгоритмдер және деректерді өңдеу тәсілдері туралы ғылым.",
+    "mobileHeroPreviewSource": "Дереккөз: Атамұра 9 сынып · тақырып 1.1",
+    "mobileHeroPreviewAnalyzeTitle": "Әлсіз тақырыптарды талдау",
+    "mobileHeroPreviewAnalyzeBody": "ҰБТ статистикасын жүктегеннен кейін қай тақырыптарды кітап бойынша қайталау керегін көрсетеміз.",
     "termExamples": "ТЕРМИН МЫСАЛДАРЫ",
     "books": "кітап",
     "topics": "тақырып",
@@ -51,7 +68,36 @@
     "booksChipBook": "Кітап",
     "booksChipPage": "Бет",
     "booksChipTopic": "Тақырып",
-    "booksChipDefinition": "Анықтама"
+    "booksChipDefinition": "Анықтама",
+    "mobileHowEyebrow": "ҚАЛАЙ ЖҰМЫС ІСТЕЙДІ",
+    "mobileHowTitle": "Infopedia дайындықты түсінікті маршрутқа айналдырады",
+    "mobileHowIntro": "Алдымен нақты анықтаманы табасыз, содан кейін дереккөзді тексеріп, ҰБТ нәтижесіндегі әлсіз тақырыптарды жабасыз.",
+    "mobileHowSearchTitle": "Терминді немесе сипаттаманы табу",
+    "mobileHowSearchDesc": "Атау бойынша іздеңіз немесе ұғымды өз сөзіңізбен сипаттаңыз — Infopedia базадан сәйкес терминді көрсетеді.",
+    "mobileHowAnalyzeTitle": "Әлсіз тақырыптарды түсіну",
+    "mobileHowAnalyzeDesc": "ҰБТ статистикасын жүктеп, қай тараулар мен тақырыптарда балл жоғалатынын көріңіз.",
+    "mobileHowSourceTitle": "Дереккөз бойынша оқу",
+    "mobileHowSourceDesc": "Әр анықтама кітаппен, бетпен және тақырыппен байланысады, сондықтан бастапқы дереккөзге тез ораласыз.",
+    "mobileSourceGuess": "Мұғалімдер болжайды.",
+    "mobileSourceCite": "Біз дәйексөз береміз.",
+    "mobileSourceBody": "Біз әрдайым нақты дереккөзді — кітапты, тақырыпты және бетті көрсетеміз.",
+    "mobileToolsTitle": "Дайындыққа керектің бәрі бір жерде",
+    "mobileToolsSubtitle": "15 кітаптың орнын басатын 4 құрал",
+    "mobileToolWeakTopicsTitle": "Тақырыптағы олқылықтарың",
+    "mobileToolWeakTopicsDesc": "ҰБТ статистикасын жүктейсің — қай тақырыптарды кітап бойынша қайталау керегін көресің",
+    "mobileToolWeakTopicsCta": "Әлсіз тақырыптарды табу →",
+    "mobileToolTestsTitle": "ҰБТ сияқты жаттық",
+    "mobileToolTestsDesc": "Тақырыптық тест сұрақтары, талдау және жауап дереккөзімен.",
+    "mobileToolTestsCta": "Тест шешу →",
+    "mobileToolTermTitle": "Терминді тап",
+    "mobileToolTermDesc": "Атауын енгізесің — дереккөзі бар нақты анықтаманы аласың",
+    "mobileToolTermCta": "Термин табу →",
+    "mobileToolSemanticTitle": "Өз сөзіңмен сұра",
+    "mobileToolSemanticDesc": "Термин есіңде жоқ па? Сипатта — біз сәйкес анықтаманы табамыз",
+    "mobileToolSemanticCta": "Сипаттама бойынша табу →",
+    "mobileFinalCtaTitle": "Алғашқы іздеуден бастаңыз",
+    "mobileFinalCtaBody": "Аккаунт ашып, дайындықты сақтаңыз және терминдер, тақырыптар мен ҰБТ талдауы бойынша прогресті жинаңыз.",
+    "mobileFinalCtaButton": "Аккаунт құру"
   },
   "searchChoice": {
     "title": "Іздеу әдісін таңдаңыз",
@@ -60,7 +106,8 @@
     "termTitle": "Термин атауы бойынша",
     "termDescription": "Нақты сөзді немесе тақырыпты білсеңіз, жылдам іздеу.",
     "descriptionTitle": "Сипаттама бойынша",
-    "descriptionDescription": "Мағынасын өз сөзіңізбен сипаттаңыз, Infopedia сәйкес терминді табады."
+    "descriptionDescription": "Мағынасын өз сөзіңізбен сипаттаңыз, Infopedia сәйкес терминді табады.",
+    "sheetHandle": "Жабу үшін төмен тартыңыз"
   },
   "auth": {
     "loginTitle": "Аккаунтқа кіру",
@@ -363,6 +410,11 @@
     "weakTopicsScoreInline": "Жиналды {{score}}/{{maxScore}}",
     "weakTopicsQuestionCount_other": "{{count}} сұрақ",
     "weakTopicsWeightedScoreLabel_other": "{{count}} сұрақ 2 баллдан",
-    "weakTopicsWeightedScoreTooltip_other": "Сізге сәйкестендіру тапсырмасынан немесе бірнеше жауап нұсқасы бар тапсырмадан {{count}} сұрақ кездесті. Мұндай сұрақ 2 баллға бағаланады."
+    "weakTopicsWeightedScoreTooltip_other": "Сізге сәйкестендіру тапсырмасынан немесе бірнеше жауап нұсқасы бар тапсырмадан {{count}} сұрақ кездесті. Мұндай сұрақ 2 баллға бағаланады.",
+    "settingsLanguageTitle": "Интерфейс тілі",
+    "settingsLanguageBody": "Қолданба тілін таңдаңыз."
+  },
+  "mobile": {
+    "splashLoading": "Infopedia жүктелуде"
   }
 }

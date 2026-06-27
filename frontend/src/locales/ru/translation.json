@@ -1,9 +1,13 @@
 {
   "nav": {
+    "home": "Главная",
+    "mobilePrimary": "Нижняя навигация",
     "search": "Поиск",
     "semanticSearch": "Поиск по описанию",
     "analyze": "Анализ ЕНТ",
+    "mobileAnalyze": "Анализ",
     "profile": "Личный кабинет",
+    "mobileProfile": "Профиль",
     "logout": "Выйти",
     "login": "Войти",
     "register": "Регистрация",
@@ -35,6 +39,19 @@
     "ctaTerm": "термин",
     "ctaOr": "или",
     "ctaDefinition": "определение",
+    "mobileHeroScoreValue": "50",
+    "mobileHeroScoreLabel": "баллов по информатике",
+    "mobileHeroEyebrow": "ЕНТ по информатике",
+    "mobileHeroTitle": "Готовься к ЕНТ по информатике без догадок",
+    "mobileHeroSubtitle": "Вопросы, слабые темы — в одном месте",
+    "mobileHeroPrimaryCta": "Начать подготовку →",
+    "mobileHeroSecondaryCta": "Как это работает?",
+    "mobileHeroPreviewSearch": "Поиск по термину",
+    "mobileHeroPreviewTerm": "Информатика",
+    "mobileHeroPreviewDefinition": "Наука об информации, алгоритмах и способах обработки данных.",
+    "mobileHeroPreviewSource": "Источник: Атамұра 9 класс · тема 1.1",
+    "mobileHeroPreviewAnalyzeTitle": "Анализ слабых тем",
+    "mobileHeroPreviewAnalyzeBody": "После загрузки статистики ЕНТ покажем темы, которые стоит повторить по книгам.",
     "termExamples": "ПРИМЕРЫ ТЕРМИНОВ",
     "books": "книг",
     "topics": "тем",
@@ -51,7 +68,36 @@
     "booksChipBook": "Книга",
     "booksChipPage": "Страница",
     "booksChipTopic": "Тема",
-    "booksChipDefinition": "Определение"
+    "booksChipDefinition": "Определение",
+    "mobileHowEyebrow": "КАК ЭТО РАБОТАЕТ",
+    "mobileHowTitle": "Infopedia превращает подготовку в понятный маршрут",
+    "mobileHowIntro": "Сначала находите точное определение, затем сверяете источник и закрываете слабые темы по результатам ЕНТ.",
+    "mobileHowSearchTitle": "Найти термин или описание",
+    "mobileHowSearchDesc": "Ищите по названию или описывайте понятие своими словами — Infopedia покажет подходящий термин из базы.",
+    "mobileHowAnalyzeTitle": "Понять слабые темы",
+    "mobileHowAnalyzeDesc": "Загрузите статистику ЕНТ, чтобы увидеть главы и темы, где теряются баллы.",
+    "mobileHowSourceTitle": "Учить по источникам",
+    "mobileHowSourceDesc": "Каждое определение связано с книгой, страницей и темой, чтобы быстро вернуться к первоисточнику.",
+    "mobileSourceGuess": "Учителя угадывают.",
+    "mobileSourceCite": "Мы цитируем.",
+    "mobileSourceBody": "Мы всегда указываем точный источник — книгу, тему и страницу.",
+    "mobileToolsTitle": "Всё, что нужно для подготовки в одном месте",
+    "mobileToolsSubtitle": "4 инструмента, которые заменят 15 книг",
+    "mobileToolWeakTopicsTitle": "Твои пробелы в темах",
+    "mobileToolWeakTopicsDesc": "Загружаешь статистику ЕНТ — видишь, какие темы по книге нужно подтянуть",
+    "mobileToolWeakTopicsCta": "Найти слабые темы →",
+    "mobileToolTestsTitle": "Тренируйся как на ЕНТ",
+    "mobileToolTestsDesc": "Тестовые вопросы по темам с разбором и указанием источника ответа.",
+    "mobileToolTestsCta": "Решать тесты →",
+    "mobileToolTermTitle": "Найди термин",
+    "mobileToolTermDesc": "Вводишь название — получаешь точное определение с источником",
+    "mobileToolTermCta": "Найти термин →",
+    "mobileToolSemanticTitle": "Спроси своими словами",
+    "mobileToolSemanticDesc": "Не помнишь термин? Опиши его — мы найдём подходящее определение",
+    "mobileToolSemanticCta": "Найти по описанию →",
+    "mobileFinalCtaTitle": "Начните с первого поиска",
+    "mobileFinalCtaBody": "Создайте аккаунт, сохраните подготовку и собирайте прогресс по терминам, темам и анализу ЕНТ.",
+    "mobileFinalCtaButton": "Создать аккаунт"
   },
   "searchChoice": {
     "title": "Выберите способ поиска",
@@ -60,7 +106,8 @@
     "termTitle": "По названию термина",
     "termDescription": "Быстрый поиск, если вы уже знаете точное слово или тему.",
     "descriptionTitle": "По описанию",
-    "descriptionDescription": "Опишите смысл своими словами, а Infopedia найдёт подходящий термин."
+    "descriptionDescription": "Опишите смысл своими словами, а Infopedia найдёт подходящий термин.",
+    "sheetHandle": "Потяните вниз, чтобы закрыть"
   },
   "auth": {
     "loginTitle": "Войти в аккаунт",
@@ -375,6 +422,11 @@
     "weakTopicsWeightedScoreTooltip_one": "Попался {{count}} вопрос из задания по соответствию либо вопрос с множественным вариантом ответов. Он весит 2 балла.",
     "weakTopicsWeightedScoreTooltip_few": "Попалось {{count}} вопроса из заданий по соответствию либо вопросов с множественным вариантом ответов. Они весят по 2 балла.",
     "weakTopicsWeightedScoreTooltip_many": "Попалось {{count}} вопросов из заданий по соответствию либо вопросов с множественным вариантом ответов. Они весят по 2 балла.",
-    "weakTopicsWeightedScoreTooltip_other": "Попалось {{count}} вопроса из заданий по соответствию либо вопросов с множественным вариантом ответов. Они весят по 2 балла."
+    "weakTopicsWeightedScoreTooltip_other": "Попалось {{count}} вопроса из заданий по соответствию либо вопросов с множественным вариантом ответов. Они весят по 2 балла.",
+    "settingsLanguageTitle": "Язык интерфейса",
+    "settingsLanguageBody": "Выберите язык приложения."
+  },
+  "mobile": {
+    "splashLoading": "Загрузка Infopedia"
   }
 }

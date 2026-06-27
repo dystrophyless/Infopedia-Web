@@ -72,7 +72,7 @@ export function LanguageSwitcher() {
         <ul
           id="lang-menu"
           role="menu"
-          className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-border bg-surface shadow-feature"
+          className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-border bg-surface shadow-feature max-md:shadow-none"
         >
           {LANGS.map((l, i) => (
             <li key={l}>

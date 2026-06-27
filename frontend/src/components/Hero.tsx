@@ -17,10 +17,10 @@ export function Hero() {
     <>
       <section className="w-full bg-bg px-6 pb-[72px] pt-14">
         <div className="mx-auto flex max-w-[970px] flex-col items-center gap-7 text-center">
-          <h1 className="text-[40px] font-medium leading-tight text-text max-md:text-[32px]">
+          <h1 className="text-[40px] font-medium leading-[1.06] text-text max-md:text-[32px]">
             {t('landing.heroTitle')}
           </h1>
-          <p className="max-w-[860px] text-[20px] text-text-body max-md:text-[16px]">
+          <p className="max-w-[860px] text-[20px] leading-[1.25] text-text-body max-md:text-[16px]">
             {t('landing.heroSubtitle')}
           </p>
           <button

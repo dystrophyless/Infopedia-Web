@@ -65,7 +65,7 @@ export function SemanticSearch() {
     submitError ?? (result?.status === 'failure' ? formatSearchTaskError(result.error) ?? error : error);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-14">
+    <div className="mx-auto max-w-[900px] px-6 py-14 max-md:px-4">
       <header className="mb-8 text-left">
         <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
           {t('semanticSearch.eyebrow')}
@@ -89,7 +89,7 @@ export function SemanticSearch() {
           placeholder={t('semanticSearch.placeholder')}
           rows={5}
           aria-describedby="semantic-query-hint"
-          className="w-full bg-surface border border-border rounded-[15px] p-5 text-[16px] text-text outline-none focus:border-accent shadow-feature resize-y min-h-[140px]"
+          className="w-full bg-surface border border-border rounded-[15px] p-5 text-[16px] text-text outline-none focus:border-accent shadow-feature resize-y min-h-[140px] max-md:shadow-none"
         />
         <div className="mt-3 flex items-center justify-between">
           <span id="semantic-query-hint" className="text-[13px] text-muted">

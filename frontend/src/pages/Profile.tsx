@@ -16,8 +16,10 @@ import {
   Profile02Icon,
   Settings01Icon,
   StarIcon,
+  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
+import { useLangStore, type Language } from '../stores/langStore';
 import { getLatestAnalyzeResult } from '../api/analyze';
 import { changeMyPassword, deleteMyAccount, getMe } from '../api/users';
 import type { AnalyzeBookCoverage, AnalyzeChapterResult, User } from '../types';
@@ -106,13 +108,32 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:px-4">
-      <div className="mx-auto grid max-w-[1260px] grid-cols-[300px_minmax(0,1fr)] gap-7 max-lg:grid-cols-1">
+    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-4 max-md:pt-[calc(18px+env(safe-area-inset-top))]">
+      <div className="mx-auto max-w-[640px] md:hidden">
+        {loading && !profile && <SkeletonCard />}
+
+        {!loading && !profile && fetchError && (
+          <p className="rounded-[10px] border border-danger/35 bg-surface p-4 text-[15px] text-danger">
+            {t('common.error')}
+          </p>
+        )}
+
+        {profile && (
+          <MobileProfileDashboard
+            activeTab={activeTab}
+            onLogout={handleLogout}
+            onSelectTab={setActiveTab}
+            profile={profile}
+          />
+        )}
+      </div>
+
+      <div className="mx-auto grid max-w-[1260px] grid-cols-[300px_minmax(0,1fr)] gap-7 max-lg:grid-cols-1 max-md:hidden">
         <aside
           className="max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]"
           aria-label={t('profile.title')}
         >
-          <section className="rounded-[8px] border border-border/45 bg-surface p-4 shadow-sm">
+          <section className="rounded-[8px] border border-border/45 bg-surface p-4 shadow-sm max-md:shadow-none">
             <div className="flex items-center gap-3">
               <FigmaProfileIcon className="block size-[56px] shrink-0 text-accent" />
               <div className="min-w-0">
@@ -132,7 +153,7 @@ export function Profile() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:shadow-none ${
                     isActive
                       ? 'border-transparent bg-surface shadow-sm'
                       : 'border-transparent text-primary/80 hover:bg-surface/70 hover:text-primary'
@@ -154,7 +175,7 @@ export function Profile() {
           </nav>
         </aside>
 
-        <main className="rounded-[8px] border border-border/45 bg-surface shadow-[0_18px_45px_rgba(58,28,110,0.08)] max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]">
+        <main className="rounded-[8px] border border-border/45 bg-surface shadow-[0_18px_45px_rgba(58,28,110,0.08)] max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px] max-md:shadow-none">
           {loading && !profile && (
             <div className="p-8">
               <SkeletonCard />
@@ -199,6 +220,90 @@ export function Profile() {
           )}
         </main>
       </div>
+    </div>
+  );
+}
+
+function MobileProfileDashboard({
+  activeTab,
+  onLogout,
+  onSelectTab,
+  profile,
+}: {
+  activeTab: ProfileTabId;
+  onLogout: () => void;
+  onSelectTab: (tab: ProfileTabId) => void;
+  profile: User;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div>
+      <section className="rounded-[12px] border border-border/45 bg-surface p-4">
+        <div className="flex items-center gap-3">
+          <FigmaProfileIcon className="block size-[58px] shrink-0 text-accent" />
+          <div className="min-w-0">
+            <p className="truncate text-[24px] font-medium leading-tight text-primary">
+              {profile.username ?? t('profile.usernameUndefined')}
+            </p>
+            <p className="mt-1 text-[13px] leading-none text-muted">
+              {t('profile.profileSummary')}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <nav className="mt-3 grid gap-2" aria-label={t('profile.title')}>
+        {profileNavItems.map((item) => {
+          const isActive = activeTab === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSelectTab(item.id)}
+              className={`grid min-h-[56px] grid-cols-[32px_minmax(0,1fr)_18px] items-center gap-3 rounded-[12px] border px-4 text-left transition-colors ${
+                isActive
+                  ? 'border-primary/45 bg-surface text-primary'
+                  : 'border-border/40 bg-surface/65 text-primary/80'
+              }`}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.7} />
+              <span className="truncate text-[16px] font-medium">{t(item.labelKey)}</span>
+              <HugeiconsIcon icon={ArrowRight01Icon} size={17} strokeWidth={1.8} className="text-muted" />
+            </button>
+          );
+        })}
+      </nav>
+
+      {shouldShowProfileLogout(activeTab) && (
+        <button
+          type="button"
+          onClick={onLogout}
+          className="mt-3 flex h-[48px] w-full items-center justify-center gap-2 rounded-[12px] border border-border/45 bg-surface text-[15px] font-medium text-primary"
+        >
+          <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
+          {t('profile.logout')}
+        </button>
+      )}
+
+      <section className="mt-4 rounded-[12px] border border-border/45 bg-surface">
+        <header className="border-b border-border/45 px-4 py-4">
+          <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
+            {activeTab === 'weakTopics' ? t('profile.weakTopicsEyebrow') : t('profile.accountArea')}
+          </p>
+          <h1 className="mt-2 text-[26px] font-medium leading-tight text-text">
+            {getTabTitle(activeTab, t)}
+          </h1>
+        </header>
+
+        {activeTab === 'profile' && <ProfileOverview profile={profile} />}
+        {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
+        {activeTab === 'weakTopics' && <WeakTopicsPanel />}
+        {activeTab === 'favorites' && <PlaceholderPanel type="favorites" />}
+        {activeTab === 'settings' && <SettingsPanel profile={profile} />}
+      </section>
     </div>
   );
 }
@@ -453,7 +558,7 @@ function WeakTopicsLoadingState() {
             {Array.from({ length: 3 }).map((_, item) => (
               <div
                 key={item}
-                className="grid grid-cols-[minmax(0,1fr)_46px] items-start gap-2 rounded-[8px] border border-transparent bg-surface/70 px-3 py-2.5 shadow-sm"
+                className="grid grid-cols-[minmax(0,1fr)_46px] items-start gap-2 rounded-[8px] border border-transparent bg-surface/70 px-3 py-2.5 shadow-sm max-md:shadow-none"
               >
                 <span className="min-w-0">
                   <span className="block h-4 w-full max-w-[150px] rounded-[6px] bg-primary/12" />
@@ -468,7 +573,7 @@ function WeakTopicsLoadingState() {
           </div>
         </div>
 
-        <article className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)]">
+        <article className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)] max-md:shadow-none">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="h-3 w-36 rounded-full bg-primary/12" />
@@ -500,7 +605,7 @@ function WeakTopicsLoadingState() {
                 {Array.from({ length: 3 }).map((_, book) => (
                   <div
                     key={book}
-                    className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm"
+                    className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm max-md:shadow-none"
                   >
                     <span className="flex min-w-0 items-start justify-between gap-2">
                       <span className="block h-4 w-28 rounded-[6px] bg-primary/12" />
@@ -593,7 +698,7 @@ function WeakTopicList({
               role="option"
               aria-selected={isSelected}
               onClick={() => onSelectChapter(topic.chapter)}
-              className={`group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[8px] border px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              className={`group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[8px] border px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:shadow-none ${
                 isSelected
                   ? 'border-primary/35 bg-surface shadow-sm'
                   : 'border-transparent bg-surface/70 hover:border-border/55 hover:bg-surface'
@@ -635,7 +740,7 @@ function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
 
   return (
     <article
-      className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)]"
+      className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4 shadow-[0_14px_34px_rgba(58,28,110,0.08)] max-md:shadow-none"
       aria-live="polite"
       aria-label={t('profile.weakTopicsDetailLabel', { chapter: chapterLabel })}
     >
@@ -827,7 +932,7 @@ function WeakTopicBookRow({
   const coverage = clampScorePercent(book.percentage);
 
   return (
-    <div className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm">
+    <div className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm max-md:shadow-none">
       <span className="flex min-w-0 items-start justify-between gap-2">
         <span className="line-clamp-2 block min-w-0 break-words text-[14px] font-medium leading-tight text-text">
           {book.publisher}
@@ -884,7 +989,7 @@ function WeakTopicInfoTooltip({
         <span
           id={tooltipId}
           role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[8px] bg-surface px-3 py-2.5 text-left text-[12px] font-normal leading-5 text-text-body opacity-0 shadow-[0_14px_34px_rgba(58,28,110,0.16)] transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
+          className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[8px] bg-surface px-3 py-2.5 text-left text-[12px] font-normal leading-5 text-text-body opacity-0 shadow-[0_14px_34px_rgba(58,28,110,0.16)] transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 max-md:shadow-none"
         >
           <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-surface" />
           {text}
@@ -900,7 +1005,7 @@ function getAnalyzeChapterLabel(chapter: string, t: (key: string, values?: Recor
   return translated === key ? chapter : translated;
 }
 
-type SettingsView = 'menu' | 'password' | 'email' | 'delete';
+type SettingsView = 'menu' | 'password' | 'email' | 'language' | 'delete';
 
 function SettingsPanel({ profile }: { profile: User }) {
   const { t } = useTranslation();
@@ -926,6 +1031,18 @@ function SettingsPanel({ profile }: { profile: User }) {
         onBack={() => setView('menu')}
       >
         <ProfileField label={t('profile.boundEmailLabel')} value={profile.email} />
+      </SettingsDetail>
+    );
+  }
+
+  if (view === 'language') {
+    return (
+      <SettingsDetail
+        title={t('profile.languagePref')}
+        body={t('profile.settingsLanguageBody')}
+        onBack={() => setView('menu')}
+      >
+        <LanguageSettingsPanel />
       </SettingsDetail>
     );
   }
@@ -958,6 +1075,12 @@ function SettingsPanel({ profile }: { profile: User }) {
           onClick={() => setView('email')}
         />
         <SettingsActionButton
+          icon={Settings01Icon}
+          title={t('profile.settingsLanguageTitle')}
+          body={t('profile.settingsLanguageBody')}
+          onClick={() => setView('language')}
+        />
+        <SettingsActionButton
           icon={Delete02Icon}
           title={t('profile.settingsDeleteTitle')}
           body={t('profile.settingsDeleteBody')}
@@ -966,6 +1089,43 @@ function SettingsPanel({ profile }: { profile: User }) {
         />
       </div>
     </section>
+  );
+}
+
+function LanguageSettingsPanel() {
+  const { t } = useTranslation();
+  const lang = useLangStore((state) => state.lang);
+  const setLang = useLangStore((state) => state.setLang);
+  const options: Array<{ value: Language; label: string }> = [
+    { value: 'ru', label: t('profile.languageRussian') },
+    { value: 'kk', label: t('profile.languageKazakh') },
+  ];
+
+  return (
+    <div className="grid gap-2">
+      {options.map((option) => {
+        const selected = lang === option.value;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setLang(option.value)}
+            className={`flex min-h-[52px] items-center justify-between gap-3 rounded-[8px] border px-4 text-left text-[16px] font-medium transition-colors ${
+              selected
+                ? 'border-primary/45 bg-bg text-primary'
+                : 'border-border/65 bg-surface text-text-body hover:bg-bg'
+            }`}
+            aria-pressed={selected}
+          >
+            <span>{option.label}</span>
+            {selected && (
+              <HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2} className="text-accent" />
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

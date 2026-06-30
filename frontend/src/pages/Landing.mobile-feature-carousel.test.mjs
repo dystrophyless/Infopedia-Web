@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { inflateSync } from 'node:zlib';
 
 const pagesDir = import.meta.dirname;
 const srcDir = path.resolve(pagesDir, '..');
@@ -13,6 +14,8 @@ const carouselPath = path.resolve(componentsDir, 'MobileFeatureCarousel.tsx');
 assert.ok(existsSync(carouselPath), 'Mobile feature carousel component should exist');
 
 const carouselSource = readFileSync(carouselPath, 'utf8');
+const desktopFeatureCardSource =
+  carouselSource.match(/if \(isDesktop\) \{[\s\S]*?\n  \}\n\n  return \(/)?.[0] ?? '';
 const ruLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
 );
@@ -22,6 +25,104 @@ const kkLocale = JSON.parse(
 
 const mobileToolsFeatureSource =
   landingSource.match(/function MobileToolsFeature[\s\S]*?\n\}\n\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
+const desktopToolsFeatureSource =
+  landingSource.match(/function DesktopToolsFeature[\s\S]*?\n\}\n\nfunction MobileHome/)?.[0] ?? '';
+
+function decodePngRgba(filePath) {
+  const png = readFileSync(filePath);
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idatChunks = [];
+
+  while (offset < png.length) {
+    const length = png.readUInt32BE(offset);
+    offset += 4;
+    const type = png.toString('ascii', offset, offset + 4);
+    offset += 4;
+    const data = png.subarray(offset, offset + length);
+    offset += length + 4;
+
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+    } else if (type === 'IDAT') {
+      idatChunks.push(data);
+    } else if (type === 'IEND') {
+      break;
+    }
+  }
+
+  assert.equal(bitDepth, 8, `${path.basename(filePath)} should use 8-bit PNG color`);
+  assert.equal(colorType, 6, `${path.basename(filePath)} should be an RGBA PNG`);
+
+  const raw = inflateSync(Buffer.concat(idatChunks));
+  const bytesPerPixel = 4;
+  const stride = width * bytesPerPixel;
+  const rgba = Buffer.alloc(width * height * bytesPerPixel);
+  let readOffset = 0;
+  let previousRow = Buffer.alloc(stride);
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[readOffset];
+    readOffset += 1;
+    const row = Buffer.from(raw.subarray(readOffset, readOffset + stride));
+    readOffset += stride;
+
+    for (let x = 0; x < stride; x += 1) {
+      const left = x >= bytesPerPixel ? row[x - bytesPerPixel] : 0;
+      const up = previousRow[x];
+      const upLeft = x >= bytesPerPixel ? previousRow[x - bytesPerPixel] : 0;
+      let value = row[x];
+
+      if (filter === 1) value = (value + left) & 255;
+      else if (filter === 2) value = (value + up) & 255;
+      else if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 255;
+      else if (filter === 4) {
+        const leftDistance = Math.abs(up - upLeft);
+        const upDistance = Math.abs(left - upLeft);
+        const diagonalDistance = Math.abs(left + up - 2 * upLeft);
+        const predictor =
+          leftDistance <= upDistance && leftDistance <= diagonalDistance
+            ? left
+            : upDistance <= diagonalDistance
+              ? up
+              : upLeft;
+        value = (value + predictor) & 255;
+      }
+
+      row[x] = value;
+    }
+
+    row.copy(rgba, y * stride);
+    previousRow = row;
+  }
+
+  return { width, height, rgba };
+}
+
+function countRedMarkerPixels(filePath) {
+  const { width, height, rgba } = decodePngRgba(filePath);
+  let count = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      const red = rgba[index];
+      const green = rgba[index + 1];
+      const blue = rgba[index + 2];
+      const alpha = rgba[index + 3];
+
+      if (alpha > 8 && red > 200 && green < 80 && blue < 80) count += 1;
+    }
+  }
+
+  return count;
+}
 
 assert.match(
   landingSource,
@@ -35,6 +136,60 @@ assert.match(
   'Mobile tools section should render the feature carousel with auth-aware routes',
 );
 
+assert.match(
+  desktopToolsFeatureSource,
+  /<MobileFeatureCarousel isAuthenticated=\{isAuthenticated\} variant="desktop" \/>/,
+  'Desktop tools section should render the same feature carousel in desktop mode',
+);
+
+assert.match(
+  desktopToolsFeatureSource,
+  /pb-24[\s\S]*pt-16[\s\S]*max-w-\[980px\][\s\S]*flex-col[\s\S]*items-center[\s\S]*gap-12/,
+  'Desktop tools section should center the heading and stack the carousel below the copy',
+);
+
+assert.doesNotMatch(
+  desktopToolsFeatureSource,
+  /grid-cols-\[minmax\(0,440px\)_minmax\(0,1fr\)\]|items-start/,
+  'Desktop tools section should not keep the old side-by-side or left-aligned layout',
+);
+
+assert.match(
+  carouselSource,
+  /variant\?: 'mobile' \| 'desktop'/,
+  'Feature carousel should expose a desktop variant while preserving mobile as the default',
+);
+
+assert.match(
+  carouselSource,
+  /variant = 'mobile'/,
+  'Feature carousel should default to the mobile layout',
+);
+
+assert.match(
+  carouselSource,
+  /const isDesktop = variant === 'desktop';/,
+  'Feature carousel should branch sizing from a desktop variant flag',
+);
+
+assert.match(
+  carouselSource,
+  /isDesktop[\s\S]*\? 'relative w-\[min\(880px,calc\(100vw_-_96px\)\)\] self-center overflow-hidden'/,
+  'Desktop feature carousel viewport should match the wide centered reference card',
+);
+
+assert.doesNotMatch(
+  carouselSource,
+  /max-w-\[540px\]|self-start|w-\[min\((720|780|920|1100)px,calc\(100vw_-_96px\)\)\]/,
+  'Desktop feature carousel should not keep a previous wrong-width or left-aligned viewport',
+);
+
+assert.match(
+  carouselSource,
+  /transitionDuration: `\$\{!isDesktop && isTransitioning && !isDragging \? TRACK_TRANSITION_MS : 0\}ms`/,
+  'Desktop feature carousel should switch without sliding neighboring cards through the viewport',
+);
+
 assert.doesNotMatch(
   mobileToolsFeatureSource,
   /mobile-weak-topics-illustration\.png|mobileToolWeakTopicsTitle[\s\S]*mobileToolWeakTopicsDesc[\s\S]*mobileToolWeakTopicsCta/,
@@ -43,8 +198,8 @@ assert.doesNotMatch(
 
 assert.match(
   carouselSource,
-  /const AUTO_ADVANCE_MS = 2000;/,
-  'Feature carousel should auto-advance every 2 seconds',
+  /const AUTO_ADVANCE_MS = 5000;/,
+  'Feature carousel should auto-advance every 5 seconds on desktop and mobile',
 );
 
 assert.match(
@@ -95,7 +250,7 @@ assert.match(
 assert.doesNotMatch(
   carouselSource,
   /transitionDuration: `\$\{AUTO_ADVANCE_MS\}ms`/,
-  'Inactive indicator fills should not inherit the 2s duration and visually drain backward',
+  'Inactive indicator fills should not inherit the 5s duration and visually drain backward',
 );
 
 assert.match(
@@ -122,6 +277,84 @@ assert.match(
   'Track transition end handler should ignore bubbled child transitions',
 );
 
+assert.match(
+  carouselSource,
+  /if \(isDesktop\) \{[\s\S]*relative block h-\[372px\][\s\S]*absolute inset-x-0 bottom-0 h-\[280px\][\s\S]*bg-\[#f8f5fc\]/,
+  'Desktop feature card should use a taller stage with the white panel anchored to the bottom',
+);
+
+assert.match(
+  carouselSource,
+  /absolute left-0 top-\[92px\][\s\S]*h-\[280px\][\s\S]*w-\[480px\][\s\S]*p-\[48px\][\s\S]*card\.title[\s\S]*card\.description[\s\S]*h-\[48px\][\s\S]*card\.cta/,
+  'Desktop feature card should keep the copy and CTA on the left side of the panel',
+);
+
+assert.match(
+  carouselSource,
+  /right-0 top-0[\s\S]*h-\[324px\] w-\[448px\][\s\S]*card\.imageSrc[\s\S]*h-full w-full object-contain[\s\S]*card\.desktopImageClassName/,
+  'Desktop feature card should contain the now-tight illustration assets in the right-side art window',
+);
+
+assert.match(
+  carouselSource,
+  /desktopImageClassName: 'object-center'/,
+  'Desktop feature images should be centered without per-asset crop compensation',
+);
+
+assert.doesNotMatch(
+  carouselSource,
+  /desktopImageClassName: 'h-\[\d+px\]|desktopImageClassName: '[^']*(left-|top-\[)/,
+  'Desktop feature images should not keep old crop offsets after the PNGs were trimmed',
+);
+
+assert.match(
+  carouselSource,
+  /imageFrameClassName: 'h-\[292px\] left-6 right-6 top-\[24px\]'[\s\S]*imageClassName: 'object-center'/,
+  'Mobile feature images should use a consistent centered frame for tight PNG assets',
+);
+
+assert.match(
+  carouselSource,
+  /h-full w-full object-contain[\s\S]*card\.imageClassName/,
+  'Mobile feature images should fit inside their frame without manual percentage cropping',
+);
+
+assert.doesNotMatch(
+  carouselSource,
+  /imageClassName: 'h-\[\d+(\.\d+)?%\]|imageClassName: '[^']*(left-|top-\[|w-\[\d+)/,
+  'Mobile feature images should not keep old percentage crop classes after the PNGs were trimmed',
+);
+
+assert.doesNotMatch(
+  desktopFeatureCardSource,
+  /absolute max-w-none|card\.imageClassName/,
+  'Desktop feature card should not use absolute oversized images or mobile image crop classes',
+);
+
+assert.match(
+  carouselSource,
+  /pointer-events-none absolute right-0 top-0[\s\S]*<img[\s\S]*desktopImageClassName/,
+  'Desktop feature card should place the illustration on the right side',
+);
+
+assert.match(
+  carouselSource,
+  /absolute left-0 top-\[92px\][\s\S]*card\.title[\s\S]*card\.description[\s\S]*card\.cta/,
+  'Desktop feature card should keep title, description, and CTA on the left',
+);
+
+assert.match(
+  desktopFeatureCardSource,
+  /<h3 className="w-full \[text-wrap:balance\] text-\[32px\]/,
+  'Desktop feature card titles should use the full text column and balance line breaks',
+);
+
+assert.doesNotMatch(
+  desktopFeatureCardSource,
+  /w-\[344px\]|card\.imageClassName/,
+  'Desktop feature card should not use the narrow Figma-only title width or mobile image crop classes',
+);
+
 const featureKeyGroups = [
   ['mobileToolWeakTopicsTitle', 'mobileToolWeakTopicsDesc', 'mobileToolWeakTopicsCta'],
   ['mobileToolTestsTitle', 'mobileToolTestsDesc', 'mobileToolTestsCta'],
@@ -146,3 +379,9 @@ for (const asset of [
   assert.match(carouselSource, new RegExp(`/${asset}`), `Carousel should reference ${asset}`);
   assert.ok(existsSync(path.resolve(publicDir, asset)), `${asset} should be stored in public assets`);
 }
+
+assert.equal(
+  countRedMarkerPixels(path.resolve(publicDir, 'mobile-feature-semantic.png')),
+  0,
+  'Semantic feature illustration should not include the accidental red marker pixel',
+);

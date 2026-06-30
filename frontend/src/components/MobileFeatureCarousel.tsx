@@ -10,7 +10,7 @@ import type { CSSProperties, MouseEvent, PointerEvent, TransitionEvent } from 'r
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-const AUTO_ADVANCE_MS = 2000;
+const AUTO_ADVANCE_MS = 5000;
 const DRAG_THRESHOLD_PX = 48;
 const TRACK_TRANSITION_MS = 420;
 
@@ -24,6 +24,7 @@ interface MobileFeatureDefinition {
   imageSrc: string;
   imageFrameClassName: string;
   imageClassName: string;
+  desktopImageClassName: string;
   to: string;
 }
 
@@ -32,6 +33,11 @@ interface MobileFeatureCard extends MobileFeatureDefinition {
   description: string;
   cta: string;
   href: string;
+}
+
+interface MobileFeatureCarouselProps {
+  isAuthenticated: boolean;
+  variant?: 'mobile' | 'desktop';
 }
 
 interface DragState {
@@ -47,8 +53,9 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolWeakTopicsDesc',
     ctaKey: 'landing.mobileToolWeakTopicsCta',
     imageSrc: '/mobile-feature-weak-topics.png',
-    imageFrameClassName: 'h-[250px] left-0 top-[43px] w-full',
-    imageClassName: 'h-[176%] left-[-10.11%] top-[-34.4%] w-[120.22%]',
+    imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
+    imageClassName: 'object-center',
+    desktopImageClassName: 'object-center',
     to: '/analyze',
   },
   {
@@ -57,8 +64,9 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolTestsDesc',
     ctaKey: 'landing.mobileToolTestsCta',
     imageSrc: '/mobile-feature-tests.png',
-    imageFrameClassName: 'h-[272px] left-0 top-[25px] w-full',
-    imageClassName: 'h-[161.76%] left-[-10.11%] top-[-32.35%] w-[120.22%]',
+    imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
+    imageClassName: 'object-center',
+    desktopImageClassName: 'object-center',
     to: '/analyze',
   },
   {
@@ -67,8 +75,9 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolTermDesc',
     ctaKey: 'landing.mobileToolTermCta',
     imageSrc: '/mobile-feature-term.png',
-    imageFrameClassName: 'aspect-[336/268] left-[4.1%] right-[4.1%] top-[25px]',
-    imageClassName: 'h-[125.37%] left-0 top-[-10.82%] w-full',
+    imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
+    imageClassName: 'object-center',
+    desktopImageClassName: 'object-center',
     to: '/search',
   },
   {
@@ -77,8 +86,9 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolSemanticDesc',
     ctaKey: 'landing.mobileToolSemanticCta',
     imageSrc: '/mobile-feature-semantic.png',
-    imageFrameClassName: 'aspect-[366/215] left-0 right-0 top-[78px]',
-    imageClassName: 'h-[223.26%] left-[-15.57%] top-[-46.05%] w-[131.15%]',
+    imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
+    imageClassName: 'object-center',
+    desktopImageClassName: 'object-center',
     to: '/semantic-search',
   },
 ];
@@ -116,9 +126,13 @@ function scheduleTransitionRestore(setIsTransitioning: (value: boolean) => void)
   });
 }
 
-export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function MobileFeatureCarousel({
+  isAuthenticated,
+  variant = 'mobile',
+}: MobileFeatureCarouselProps) {
   const { t } = useTranslation();
   const prefersReducedMotion = usePrefersReducedMotion();
+  const isDesktop = variant === 'desktop';
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLUListElement>(null);
   const slideRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -325,19 +339,25 @@ export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: bo
   }, []);
 
   const trackStyle = {
-    '--feature-card-width': 'min(366px, calc(100vw - 48px))',
+    '--feature-card-width': isDesktop
+      ? 'min(880px, calc(100vw - 96px))'
+      : 'min(366px, calc(100vw - 48px))',
     transform: `translate3d(${-trackOffsetPx + dragOffsetPx}px, 0, 0)`,
-    transitionDuration: `${isTransitioning && !isDragging ? TRACK_TRANSITION_MS : 0}ms`,
+    transitionDuration: `${!isDesktop && isTransitioning && !isDragging ? TRACK_TRANSITION_MS : 0}ms`,
   } as CSSProperties;
 
   return (
     <div
-      className="relative w-screen max-w-[430px] self-center overflow-hidden"
-      style={{ marginInline: 'calc((100% - 100vw) / 2)' }}
+      className={
+        isDesktop
+          ? 'relative w-[min(880px,calc(100vw_-_96px))] self-center overflow-hidden'
+          : 'relative w-screen max-w-[430px] self-center overflow-hidden'
+      }
+      style={isDesktop ? undefined : { marginInline: 'calc((100% - 100vw) / 2)' }}
     >
       <div
         ref={viewportRef}
-        className="h-[509px] touch-pan-y select-none overflow-hidden"
+        className={`${isDesktop ? 'h-[372px]' : 'h-[509px]'} touch-pan-y select-none overflow-hidden`}
         aria-roledescription="carousel"
         aria-label={t('landing.mobileToolsTitle')}
         onPointerDown={handlePointerDown}
@@ -347,7 +367,7 @@ export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: bo
       >
         <ul
           ref={trackRef}
-          className="flex h-[493px] gap-8 px-[calc((100%_-_var(--feature-card-width))_/_2)] transition-transform ease-out will-change-transform"
+          className={`${isDesktop ? 'h-[372px]' : 'h-[493px]'} flex gap-8 px-[calc((100%_-_var(--feature-card-width))_/_2)] transition-transform ease-out will-change-transform`}
           style={trackStyle}
           onTransitionEnd={handleTrackTransitionEnd}
         >
@@ -367,6 +387,7 @@ export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: bo
                 <FeatureSlideCard
                   card={card}
                   clone={isClone}
+                  variant={variant}
                   onClick={handleCardClick}
                 />
               </li>
@@ -375,7 +396,7 @@ export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: bo
         </ul>
       </div>
 
-      <div className="mt-4 flex items-center justify-center gap-1" aria-hidden="true">
+      <div className="mt-3 flex items-center justify-center gap-1" aria-hidden="true">
         {featureCards.map((card, index) => (
           <span
             key={card.id}
@@ -384,7 +405,7 @@ export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: bo
             }`}
           >
             <span
-              className="block h-full origin-left rounded-[8px] bg-accent transition-transform ease-linear motion-reduce:transition-none"
+              className="block h-full origin-left rounded-[8px] bg-[#6a37c3] transition-transform ease-linear motion-reduce:transition-none"
               style={{
                 transform: `scaleX(${activeProgressIndex === index ? 1 : 0})`,
                 transitionDuration: activeProgressIndex === index ? `${AUTO_ADVANCE_MS}ms` : '0ms',
@@ -400,16 +421,61 @@ export function MobileFeatureCarousel({ isAuthenticated }: { isAuthenticated: bo
 function FeatureSlideCard({
   card,
   clone,
+  variant,
   onClick,
 }: {
   card: MobileFeatureCard;
   clone: boolean;
+  variant: 'mobile' | 'desktop';
   onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
+  const isDesktop = variant === 'desktop';
+
+  if (isDesktop) {
+    return (
+      <Link
+        to={card.href}
+        className="relative block h-[372px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
+        aria-hidden={clone || undefined}
+        tabIndex={clone ? -1 : undefined}
+        draggable={false}
+        onClick={onClick}
+      >
+        <div className="absolute inset-x-0 bottom-0 h-[280px] rounded-[16px] bg-[#f8f5fc]" />
+
+        <div className="absolute left-0 top-[92px] flex h-[280px] w-[480px] p-[48px]">
+          <div className="flex min-h-0 w-full flex-col justify-between">
+            <div className="flex w-full flex-col gap-6">
+              <h3 className="w-full [text-wrap:balance] text-[32px] font-medium leading-[32px] text-[#6a37c3]">
+                {card.title}
+              </h3>
+              <p className="w-full [text-wrap:pretty] text-[20px] leading-[20px] text-[#6e6779]">
+                {card.description}
+              </p>
+            </div>
+            <span className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white">
+              {card.cta}
+            </span>
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute right-0 top-0 flex h-[324px] w-[448px] items-center justify-center overflow-hidden">
+          <img
+            src={card.imageSrc}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className={`h-full w-full object-contain ${card.desktopImageClassName}`}
+          />
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link
       to={card.href}
-      className="relative block h-[493px] overflow-hidden rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      className="relative block h-[493px] overflow-hidden rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
       aria-hidden={clone || undefined}
       tabIndex={clone ? -1 : undefined}
       draggable={false}
@@ -417,24 +483,24 @@ function FeatureSlideCard({
     >
       <div className="absolute inset-x-0 bottom-0 top-[93px] rounded-[16px] bg-surface" />
       <div className={`pointer-events-none absolute ${card.imageFrameClassName}`}>
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <img
             src={card.imageSrc}
             alt=""
             aria-hidden="true"
             draggable={false}
-            className={`absolute max-w-none ${card.imageClassName}`}
+            className={`h-full w-full object-contain ${card.imageClassName}`}
           />
         </div>
       </div>
 
-      <h3 className="absolute left-8 right-8 top-[333px] text-[20px] font-medium leading-none text-accent">
+      <h3 className="absolute left-8 right-8 top-[333px] text-[20px] font-medium leading-none text-[#6a37c3]">
         {card.title}
       </h3>
       <p className="absolute left-8 right-8 top-[365px] line-clamp-2 min-h-[32px] text-[16px] leading-none text-[#6e6779]">
         {card.description}
       </p>
-      <span className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-accent px-4 text-center text-[16px] font-medium leading-none text-surface">
+      <span className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[16px] font-medium leading-none text-white">
         {card.cta}
       </span>
     </Link>

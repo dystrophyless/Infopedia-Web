@@ -17,6 +17,42 @@ const featuredCardSource = carouselSource.slice(featuredCardStart, carouselStart
 const carouselFunctionSource = carouselSource.slice(carouselStart);
 
 assert.match(
+  carouselSource,
+  /const FEATURED_TERMS_LIMIT = 10;/,
+  'Featured carousel should use exactly ten backend terms as the original loop set',
+);
+
+assert.match(
+  carouselFunctionSource,
+  /getFeaturedTerms\(FEATURED_TERMS_LIMIT\)/,
+  'Featured carousel should request the ten-term carousel set from the backend',
+);
+
+assert.doesNotMatch(
+  carouselSource,
+  /GUEST_FALLBACK_TERMS|informatika-fallback|public_id: 'informatika'|public_id: 'alfavit'|public_id: 'etiket'/,
+  'Featured carousel should not render static slug fallback links instead of real backend public IDs',
+);
+
+assert.match(
+  carouselFunctionSource,
+  /const carouselTerms = useMemo\(\(\) => terms\.slice\(0, FEATURED_TERMS_LIMIT\), \[terms\]\);/,
+  'Featured carousel should cap the original cycle to ten terms before cloning',
+);
+
+assert.match(
+  featuredCardSource,
+  /formatDefinitionSource\(definition, t\)/,
+  'Featured term card should derive the visible source line from definition metadata',
+);
+
+assert.match(
+  featuredCardSource,
+  /text-\[rgba\(106,55,195,0\.5\)\]/,
+  'Guest Figma-sized cards should render the muted purple source line from the design',
+);
+
+assert.match(
   featuredCardSource,
   /text-\[23px\][\s\S]*text-\[30px\]/,
   'Featured term card title should use compact detail-page typography',
@@ -78,8 +114,50 @@ assert.doesNotMatch(
 
 assert.match(
   featuredCardSource,
-  /setVisibleDefinitionText\(fitTextToAvailableSpace\(node, fullDefinitionText\)\)/,
+  /setVisibleDefinition\(fitTextToAvailableSpace\(node, fullDefinitionText\)\)/,
   'Featured term card should derive the visible definition text from real available space',
+);
+
+assert.match(
+  carouselSource,
+  /type FittedDefinitionText = \{\s*text: string;\s*overflowing: boolean;\s*\};/,
+  'Featured term card fitting should return whether the original definition overflowed',
+);
+
+assert.match(
+  carouselSource,
+  /function fitTextToAvailableSpace\(node: HTMLElement, text: string\): FittedDefinitionText/,
+  'Featured term card should expose overflow state from the measured text fitting helper',
+);
+
+assert.match(
+  carouselSource,
+  /return \{\s*text: bestFitText,\s*overflowing: true,?\s*\};/,
+  'Featured term card should mark the definition as overflowing only when it had to truncate',
+);
+
+assert.match(
+  featuredCardSource,
+  /isDefinitionOverflowing/,
+  'Featured term card should track when the measured definition does not fit the card',
+);
+
+assert.match(
+  featuredCardSource,
+  /const definitionFadeClass = isGuestLikeVariant[\s\S]*from-\[#fbfbfb\][\s\S]*getMobileCardFadeTone[\s\S]*from-surface/,
+  'Definition overflow fade should match the active card background color',
+);
+
+assert.match(
+  featuredCardSource,
+  /isDefinitionOverflowing \? \([\s\S]*pointer-events-none absolute inset-x-0 bottom-0 h-\[1\.75em\] bg-gradient-to-t \$\{definitionFadeClass\} to-transparent/,
+  'Overflowing definitions should render a bottom-to-top fade over the final visible line',
+);
+
+assert.match(
+  featuredCardSource,
+  /relative[\s\S]*\{definitionFade\}/,
+  'Definition fade should be positioned inside the definition preview area without changing card size',
 );
 
 assert.match(
@@ -89,20 +167,62 @@ assert.match(
 );
 
 assert.match(
-  carouselFunctionSource,
-  /const shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest';/,
-  'Desktop and guest carousels should auto-scroll with duplicated loop items',
+  carouselSource,
+  /variant\?: 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/,
+  'TermCardCarousel should expose a larger desktop guest variant',
+);
+
+assert.match(
+  featuredCardSource,
+  /guestCardShellClass[\s\S]*h-\[168px\] w-\[216px\][\s\S]*p-6/,
+  'Mobile guest term cards should be tall enough to show a useful definition preview',
+);
+
+assert.doesNotMatch(
+  featuredCardSource,
+  /guestCardShellClass[\s\S]*h-\[128px\]/,
+  'Mobile guest term cards should not keep the cramped 128px height',
 );
 
 assert.match(
   carouselFunctionSource,
-  /const displayTerms = shouldAutoScroll \? loopedTerms : terms;/,
+  /variant === 'guest'[\s\S]*\? 'h-\[168px\] w-\[216px\] rounded-\[16px\] border-0 bg-\[#fbfbfb\]'/,
+  'Guest loading cards should reserve the same taller footprint as loaded term cards',
+);
+
+assert.match(
+  featuredCardSource,
+  /guestDesktopCardShellClass[\s\S]*h-\[220px\] w-\[320px\][\s\S]*p-8/,
+  'Desktop guest term cards should be larger than the mobile guest cards',
+);
+
+assert.match(
+  featuredCardSource,
+  /isGuestLikeVariant[\s\S]*text-\[20px\][\s\S]*text-\[16px\]/,
+  'Desktop guest term card typography should scale up from the mobile guest card',
+);
+
+assert.match(
+  carouselFunctionSource,
+  /const shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop';/,
+  'Desktop, guest, and desktop guest carousels should auto-scroll with duplicated loop items',
+);
+
+assert.match(
+  carouselFunctionSource,
+  /const displayTerms = shouldAutoScroll \? loopedTerms : carouselTerms;/,
   'Finite mobile and home carousels should keep native scrolling while auto-scroll variants duplicate items',
 );
 
 assert.match(
   carouselFunctionSource,
-  /if \(!shouldAutoScroll \|\| !node \|\| terms\.length < 2\) return;/,
+  /onMouseEnter=\{\(\) => \{[\s\S]*pausedRef\.current = true;[\s\S]*onMouseLeave=\{\(\) => \{[\s\S]*pausedRef\.current = false;/,
+  'Auto-scrolling carousels should pause while the user hovers a card area and resume after leaving',
+);
+
+assert.match(
+  carouselFunctionSource,
+  /if \(!shouldAutoScroll \|\| !node \|\| carouselTerms\.length < 2\) return;/,
   'Mobile and home carousels should not run the fixed-speed auto-scroll animation',
 );
 
@@ -150,7 +270,7 @@ assert.match(
 
 assert.doesNotMatch(
   featuredCardSource,
-  /absolute right-5 top-5|bottom-0 right-0|isDefinitionOverflowing|WebkitLineClamp|definitionLineClamp/,
+  /absolute right-5 top-5|bottom-0 right-0|WebkitLineClamp|definitionLineClamp/,
   'Featured term card should not use a detached overlay arrow or CSS line-clamp clipping',
 );
 

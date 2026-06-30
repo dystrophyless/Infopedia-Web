@@ -13,8 +13,10 @@ export async function getTerm(publicId: string): Promise<Term> {
   return data;
 }
 
-export async function getFeaturedTerms(): Promise<FeaturedTerm[]> {
-  const { data } = await apiClient.get<FeaturedTerm[]>('/api/terms/featured');
+export async function getFeaturedTerms(limit = 10): Promise<FeaturedTerm[]> {
+  const { data } = await apiClient.get<FeaturedTerm[]>('/api/terms/featured', {
+    params: { limit },
+  });
   return data;
 }
 

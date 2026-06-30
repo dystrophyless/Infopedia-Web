@@ -14,7 +14,7 @@ from src.terms.models import Definition, Term
 from src.terms.repository import (
     check_if_term_exists,
     count_terms,
-    get_definition_by_id,
+    get_random_terms,
     get_term_by_id,
     get_terms_paginated,
 )
@@ -31,6 +31,7 @@ from src.topics.repository import get_topic_by_name
 from src.topics.schemas import BookResponse
 
 router = APIRouter()
+FEATURED_TERMS_LIMIT = 10
 
 
 async def _get_term_by_public_ref(
@@ -45,17 +46,25 @@ async def _get_term_by_public_ref(
     return await get_term_by_id(session, id=term_id)
 
 
-async def _get_featured_terms(session: AsyncSession) -> list[FeaturedTermResponse]:
+async def _get_featured_terms(
+    session: AsyncSession,
+    *,
+    limit: int = FEATURED_TERMS_LIMIT,
+) -> list[FeaturedTermResponse]:
     featured_terms: list[FeaturedTermResponse] = []
+    terms = await get_random_terms(session, quantity=limit)
 
-    for definition_id in settings.FEATURED_DEFINITION_IDS:
-        definition = await get_definition_by_id(session, id=definition_id)
-        if definition is None or definition.term is None:
+    if not terms:
+        return featured_terms
+
+    for term in terms[:limit]:
+        definition = next(iter(term.definitions), None)
+        if definition is None:
             continue
 
         featured_terms.append(
             FeaturedTermResponse(
-                term=TermDetailedResponse.model_validate(definition.term),
+                term=TermDetailedResponse.model_validate(term),
                 featured_definition=DefinitionResponse.model_validate(definition),
             ),
         )
@@ -153,6 +162,7 @@ async def get_terms(
 async def get_featured_terms(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    limit: Annotated[int, Query(ge=1, le=FEATURED_TERMS_LIMIT)] = FEATURED_TERMS_LIMIT,
 ):
     await enforce_anti_scrape(
         request,
@@ -160,7 +170,7 @@ async def get_featured_terms(
         limit=settings.ANTI_SCRAPE_PUBLIC_LIMIT,
         block_automation_user_agents=False,
     )
-    return await _get_featured_terms(session)
+    return await _get_featured_terms(session, limit=limit)
 
 
 @router.post(

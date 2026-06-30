@@ -325,6 +325,7 @@ async def get_random_terms(
 ) -> list[Term] | None:  # fmt: skip
     query = (
         select(Term)
+        .where(Term.definitions.any())
         .order_by(func.random())
         .limit(quantity)
         .options(

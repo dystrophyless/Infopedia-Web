@@ -40,8 +40,20 @@ assert.match(
 
 assert.match(
   landingSource,
-  /hidden md:block[\s\S]*<Hero \/>/,
-  'Landing should keep the current desktop landing branch for md and wider viewports',
+  /hidden md:block[\s\S]*isAuthenticated \? <DesktopAuthenticatedLanding \/> : <DesktopGuestLanding \/>/,
+  'Landing should split desktop authenticated users from the guest conversion landing',
+);
+
+assert.match(
+  landingSource,
+  /function DesktopAuthenticatedLanding\(\)[\s\S]*<Hero \/>/,
+  'Landing should keep the current desktop landing branch for authenticated md and wider users',
+);
+
+assert.match(
+  landingSource,
+  /function DesktopGuestLanding\(\)[\s\S]*<DesktopGuestHero \/>/,
+  'Landing should render the Figma-inspired guest conversion landing for desktop guests',
 );
 
 assert.match(

@@ -10,12 +10,14 @@ from src.security.anti_scrape import enforce_anti_scrape
 from src.security.public_refs import InvalidPublicRef, decode_public_ref
 from src.topics.models import Topic
 from src.topics.repository import (
+    get_all_books,
+    get_all_chapters,
     get_all_topics,
     get_topic_by_id,
     get_topics_by_book_id,
     get_topics_by_chapter_id,
 )
-from src.topics.schemas import TopicDetailedResponse, TopicResponse
+from src.topics.schemas import BookResponse, ChapterResponse, TopicDetailedResponse, TopicResponse
 from src.users.models import User
 
 router = APIRouter()
@@ -57,6 +59,36 @@ async def get_topics(
         )
 
     return topics
+
+
+@router.get("/books", response_model=list[BookResponse])
+async def get_book_catalog(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    await enforce_anti_scrape(
+        request,
+        scope="topics:books",
+        user_id=current_user.id,
+    )
+
+    return await get_all_books(session)
+
+
+@router.get("/chapters", response_model=list[ChapterResponse])
+async def get_chapter_catalog(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    await enforce_anti_scrape(
+        request,
+        scope="topics:chapters",
+        user_id=current_user.id,
+    )
+
+    return await get_all_chapters(session)
 
 
 @router.get("/book/{book_ref}", response_model=list[TopicResponse])

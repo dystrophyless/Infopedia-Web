@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.security.public_refs import encode_public_ref
-from src.topics.models import Book, BookChapterCoverage, Topic, TopicCode
+from src.topics.models import Book, BookChapterCoverage, Chapter, Topic, TopicCode
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +152,28 @@ async def get_all_topics(
     logger.debug("Успешно получены все темы из базы данных. Кол-во: %d", len(topics))
 
     return topics
+
+
+async def get_all_books(session: AsyncSession) -> list[Book]:
+    query = select(Book).order_by(Book.publisher.asc(), Book.grade.asc())
+
+    result = await session.execute(query)
+    books: list[Book] = result.scalars().all()
+
+    logger.debug("Получены книги для каталога фильтров. Кол-во: %d", len(books))
+
+    return books
+
+
+async def get_all_chapters(session: AsyncSession) -> list[Chapter]:
+    query = select(Chapter).order_by(Chapter.id.asc())
+
+    result = await session.execute(query)
+    chapters: list[Chapter] = result.scalars().all()
+
+    logger.debug("Получены разделы для каталога фильтров. Кол-во: %d", len(chapters))
+
+    return chapters
 
 
 async def get_books_coverage_by_chapter(

@@ -29,6 +29,17 @@ export interface FeaturedTerm {
   featured_definition: Definition;
 }
 
+export interface BookCatalogItem {
+  public_id: string;
+  publisher: string;
+  grade: number;
+}
+
+export interface ChapterCatalogItem {
+  public_id: string;
+  name: string;
+}
+
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;

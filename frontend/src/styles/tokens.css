@@ -12,4 +12,19 @@
   --color-text-body: #404040;
   --color-success: #16a34a;
   --color-danger: #dc2626;
+
+  /* Semantic UI primitives */
+  --radius-control: 8px;
+  --radius-surface: 12px;
+  --radius-card: 15px;
+  --control-height-sm: 40px;
+  --control-height-md: 44px;
+  --control-height-lg: 48px;
+  --space-mobile-rail: 24px;
+  --type-screen-title-size: 30px;
+  --type-section-title-size: 22px;
+  --type-card-title-size: 20px;
+  --type-body-size: 16px;
+  --type-helper-size: 14px;
+  --type-caption-size: 12px;
 }

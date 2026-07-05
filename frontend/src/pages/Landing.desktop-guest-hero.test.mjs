@@ -118,8 +118,8 @@ assert.equal(
 
 assert.match(
   desktopHeroSource,
-  /to="\/register"[\s\S]*href="#tools"/,
-  'Desktop guest hero should send the primary CTA to registration and the secondary CTA to tools',
+  /to=\{ONBOARDING_TARGET\}[\s\S]*href="#tools"/,
+  'Desktop guest hero should send the primary CTA to onboarding and the secondary CTA to tools',
 );
 
 assert.match(
@@ -172,13 +172,13 @@ assert.match(
 
 assert.match(
   desktopSourceProofSource,
-  /<\/div>\s*<Link[\s\S]*to="\/register"[\s\S]*h-14[\s\S]*min-w-\[240px\][\s\S]*rounded-\[16px\][\s\S]*text-\[16px\][\s\S]*landing\.mobileHeroPrimaryCta/,
+  /<\/div>\s*<Link[\s\S]*to=\{ONBOARDING_TARGET\}[\s\S]*h-14[\s\S]*min-w-\[240px\][\s\S]*rounded-\[16px\][\s\S]*text-\[16px\][\s\S]*landing\.mobileHeroPrimaryCta/,
   'Desktop source proof CTA should sit below the plaque and align to the left edge',
 );
 
 assert.doesNotMatch(
   desktopSourceProofSource,
-  /h-\[163px\]|rounded-\[54px\]|text-\[68px\]|text-\[42px\]|max-w-\[1120px\]|min-h-\[248px\]|grid-cols-\[minmax\(0,1fr\)_12px_minmax\(280px,320px\)\]|to="\/register"[\s\S]*<\/Link>[\s\S]*<\/div>[\s\S]*<\/div>[\s\S]*<\/section>/,
+  /h-\[163px\]|rounded-\[54px\]|text-\[68px\]|text-\[42px\]|max-w-\[1120px\]|min-h-\[248px\]|grid-cols-\[minmax\(0,1fr\)_12px_minmax\(280px,320px\)\]|to=\{ONBOARDING_TARGET\}[\s\S]*<\/Link>[\s\S]*<\/div>[\s\S]*<\/div>[\s\S]*<\/section>/,
   'Desktop source proof should not keep the previous large plaque or place the CTA inside the metadata panel',
 );
 

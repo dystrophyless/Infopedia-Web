@@ -75,7 +75,7 @@ assert.match(
 
 assert.match(
   mobileGuestHeroSource,
-  /to="\/register"[\s\S]*href="#mobile-tools"/,
+  /to=\{ONBOARDING_TARGET\}[\s\S]*href="#mobile-tools"/,
   'Guest mobile secondary CTA should scroll to the tools section',
 );
 

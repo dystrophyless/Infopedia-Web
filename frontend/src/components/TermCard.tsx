@@ -8,13 +8,19 @@ function previewText(text: string): string {
   return text.trim().replace(/\n{2,}/g, '\n');
 }
 
-export function TermCard({ term }: { term: Term }) {
+export function TermCard({
+  term,
+  relatedTerms = [],
+}: {
+  term: Term;
+  relatedTerms?: Pick<Term, 'public_id' | 'name'>[];
+}) {
   const def = term.definitions?.[0];
 
   return (
     <Link
       to={`/terms/${term.public_id}`}
-      state={{ backTo: '/search', term }}
+      state={{ backTo: '/search', term, relatedTerms }}
       className="group block rounded-[15px] border border-border bg-surface p-8 shadow-feature transition-shadow hover:shadow-card max-md:p-6 max-md:shadow-none max-md:hover:shadow-none"
     >
       <div className="flex items-start gap-4">

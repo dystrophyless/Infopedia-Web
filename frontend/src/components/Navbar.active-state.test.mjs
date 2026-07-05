@@ -21,8 +21,8 @@ assert.match(
 
 assert.match(
   navbarSource,
-  /searchNavIsActive\s*\?\s*'font-medium text-accent'/,
-  'Authenticated search nav button should use the shared active state',
+  /isAuthenticated \? \(\s*<>\s*<Link\s+to="\/search"[\s\S]*searchNavIsActive\s*\?\s*'font-medium text-accent'[\s\S]*<NavLink to="\/analyze"/,
+  'Authenticated search nav item should route directly to search while using the shared active state',
 );
 
 assert.doesNotMatch(

@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 const AUTO_ADVANCE_MS = 5000;
 const DRAG_THRESHOLD_PX = 48;
 const TRACK_TRANSITION_MS = 420;
+const ONBOARDING_TARGET = '/onboarding';
 
 type MobileFeatureId = 'weak-topics' | 'tests' | 'term' | 'semantic';
 
@@ -67,7 +68,7 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
     imageClassName: 'object-center',
     desktopImageClassName: 'object-center',
-    to: '/analyze',
+    to: '/tests',
   },
   {
     id: 'term',
@@ -94,8 +95,7 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
 ];
 
 function authTarget(path: string, isAuthenticated: boolean): string {
-  if (isAuthenticated) return path;
-  return `/login?next=${encodeURIComponent(path)}`;
+  return isAuthenticated ? path : ONBOARDING_TARGET;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -338,6 +338,11 @@ export function MobileFeatureCarousel({
     wasDraggedRef.current = false;
   }, []);
 
+  const handleCtaPointerDown = useCallback((event: PointerEvent<HTMLAnchorElement>) => {
+    event.stopPropagation();
+    wasDraggedRef.current = false;
+  }, []);
+
   const trackStyle = {
     '--feature-card-width': isDesktop
       ? 'min(880px, calc(100vw - 96px))'
@@ -388,6 +393,7 @@ export function MobileFeatureCarousel({
                   card={card}
                   clone={isClone}
                   variant={variant}
+                  onPointerDown={handleCtaPointerDown}
                   onClick={handleCardClick}
                 />
               </li>
@@ -423,24 +429,19 @@ function FeatureSlideCard({
   clone,
   variant,
   onClick,
+  onPointerDown,
 }: {
   card: MobileFeatureCard;
   clone: boolean;
   variant: 'mobile' | 'desktop';
   onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
+  onPointerDown: (event: PointerEvent<HTMLAnchorElement>) => void;
 }) {
   const isDesktop = variant === 'desktop';
 
   if (isDesktop) {
     return (
-      <Link
-        to={card.href}
-        className="relative block h-[372px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
-        aria-hidden={clone || undefined}
-        tabIndex={clone ? -1 : undefined}
-        draggable={false}
-        onClick={onClick}
-      >
+      <div className="relative h-[372px]">
         <div className="absolute inset-x-0 bottom-0 h-[280px] rounded-[16px] bg-[#f8f5fc]" />
 
         <div className="absolute left-0 top-[92px] flex h-[280px] w-[480px] p-[48px]">
@@ -453,9 +454,16 @@ function FeatureSlideCard({
                 {card.description}
               </p>
             </div>
-            <span className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white">
+            <Link
+              to={card.href}
+              className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
+              tabIndex={clone ? -1 : undefined}
+              draggable={false}
+              onPointerDown={onPointerDown}
+              onClick={onClick}
+            >
               {card.cta}
-            </span>
+            </Link>
           </div>
         </div>
 
@@ -468,19 +476,12 @@ function FeatureSlideCard({
             className={`h-full w-full object-contain ${card.desktopImageClassName}`}
           />
         </div>
-      </Link>
+      </div>
     );
   }
 
   return (
-    <Link
-      to={card.href}
-      className="relative block h-[493px] overflow-hidden rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
-      aria-hidden={clone || undefined}
-      tabIndex={clone ? -1 : undefined}
-      draggable={false}
-      onClick={onClick}
-    >
+    <div className="relative h-[493px] overflow-hidden rounded-[16px]">
       <div className="absolute inset-x-0 bottom-0 top-[93px] rounded-[16px] bg-surface" />
       <div className={`pointer-events-none absolute ${card.imageFrameClassName}`}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -500,9 +501,16 @@ function FeatureSlideCard({
       <p className="absolute left-8 right-8 top-[365px] line-clamp-2 min-h-[32px] text-[16px] leading-none text-[#6e6779]">
         {card.description}
       </p>
-      <span className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[16px] font-medium leading-none text-white">
+      <Link
+        to={card.href}
+        className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[16px] font-medium leading-none text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
+        tabIndex={clone ? -1 : undefined}
+        draggable={false}
+        onPointerDown={onPointerDown}
+        onClick={onClick}
+      >
         {card.cta}
-      </span>
-    </Link>
+      </Link>
+    </div>
   );
 }

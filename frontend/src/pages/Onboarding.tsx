@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { checkUsernameAvailability, setMyGrade, setMyUsername } from '../api/users';
 import { AuthShell, AuthSubmit, AuthUsernameInput } from '../components/AuthShell';
+import { Button, Text } from '../ui';
 import {
   applyPendingOnboardingDraft,
   clearPendingOnboardingDraft,
@@ -414,18 +415,20 @@ function GradeOptionButton({
   const icon = grade === '10' ? Backpack02Icon : grade === '11' ? GraduationCapIcon : AnonymousIcon;
 
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-12 w-full items-center gap-4 rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 ${
+      variant="surface"
+      fullWidth
+      className={`flex h-12 w-full items-center gap-4 rounded-[8px] bg-white px-6 justify-start text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 ${
         selected ? 'text-[#44237d]' : 'text-[#161519] hover:text-[#44237d]'
       }`}
       aria-pressed={selected}
     >
       <HugeiconsIcon icon={icon} size={16} strokeWidth={1.8} className="shrink-0 text-[#44237d]" />
       <span className="min-w-0 flex-1">{label}</span>
-    </button>
+    </Button>
   );
 }
 
@@ -433,8 +436,8 @@ function FormError({ error }: { error: string | null }) {
   if (!error) return null;
 
   return (
-    <p className="mt-3 text-[14px] text-danger" role="alert">
+    <Text className="mt-3" tone="danger" size="helper" role="alert">
       {error}
-    </p>
+    </Text>
   );
 }

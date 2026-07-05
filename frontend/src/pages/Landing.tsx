@@ -26,6 +26,8 @@ import {
   FigmaFeatureSearchIcon,
 } from '../components/FigmaIcons';
 
+const ONBOARDING_TARGET = '/onboarding';
+
 function authTarget(path: string, isAuthenticated: boolean): string {
   if (isAuthenticated) return path;
   return `/login?next=${encodeURIComponent(path)}`;
@@ -166,7 +168,7 @@ function DesktopGuestHero() {
 
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
-            to="/register"
+            to={ONBOARDING_TARGET}
             className="flex min-h-[56px] min-w-[240px] items-center justify-center rounded-[18px] bg-[#6a37c3] px-8 text-[18px] font-medium leading-tight text-white transition-opacity hover:opacity-90"
           >
             {t('landing.mobileHeroPrimaryCta')}
@@ -264,7 +266,7 @@ function DesktopSourceProof() {
         </div>
 
         <Link
-          to="/register"
+          to={ONBOARDING_TARGET}
           className="flex h-14 min-w-[240px] items-center justify-center rounded-[16px] bg-[#6a37c3] px-6 text-[16px] font-medium leading-tight text-white transition-opacity hover:opacity-90"
         >
           {t('landing.mobileHeroPrimaryCta')}
@@ -343,7 +345,7 @@ function MobileConversionHeroHome() {
 
           <div className="grid w-full gap-2">
             <Link
-              to="/register"
+              to={ONBOARDING_TARGET}
               className="flex min-h-12 items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-tight text-white"
             >
               {t('landing.mobileHeroPrimaryCta')}
@@ -567,7 +569,7 @@ function MobileSourceProof() {
           </div>
         </div>
         <Link
-          to="/register"
+          to={ONBOARDING_TARGET}
           className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-tight text-white"
         >
           {t('landing.mobileHeroPrimaryCta')}

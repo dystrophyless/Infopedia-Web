@@ -50,7 +50,6 @@ export function Register() {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [accountFieldErrors, setAccountFieldErrors] = useState<AccountFieldErrors>({});
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const lastAutoSubmittedCode = useRef('');
 
@@ -84,7 +83,6 @@ export function Register() {
   async function handleAccountSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setNotice(null);
     setAccountFieldErrors({});
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -107,7 +105,6 @@ export function Register() {
       setStep('code');
       setCode('');
       setResendSeconds(RESEND_COOLDOWN_SECONDS);
-      setNotice(t('auth.codeSent'));
     } catch (err) {
       setAccountFieldErrors({
         email: getErrorMessage(err, t('auth.registrationFailed')),
@@ -120,7 +117,6 @@ export function Register() {
   async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setNotice(null);
 
     const normalizedCode = code.trim();
     if (!/^\d{6}$/.test(normalizedCode)) {
@@ -155,14 +151,12 @@ export function Register() {
 
   async function handleResendCode() {
     setError(null);
-    setNotice(null);
     if (!email || !password || resendSeconds > 0) return;
 
     setLoading(true);
     try {
       await startRegistration({ email, password });
       setResendSeconds(RESEND_COOLDOWN_SECONDS);
-      setNotice(t('auth.codeResent'));
     } catch (err) {
       setError(getErrorMessage(err, t('auth.resendFailed')));
     } finally {
@@ -190,7 +184,7 @@ export function Register() {
     >
       {step === 'account' ? (
         <form onSubmit={handleAccountSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body">
+          <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body max-lg:text-[16px] max-lg:leading-[1.25] max-lg:text-[#8c8698]">
             {t('auth.registerHelper')}
           </p>
           <AuthEmailInput
@@ -225,15 +219,15 @@ export function Register() {
         </form>
       ) : (
         <form onSubmit={handleCodeSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body">
-            {t('auth.verifyHelper', { email })}
+          <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body max-lg:text-[16px] max-lg:leading-[1.25] max-lg:text-[#8c8698]">
+            {t('auth.verifyHelperShort')}
           </p>
           <VerificationCodeInput
             label={t('auth.verificationCode')}
             value={code}
             onChange={handleCodeChange}
           />
-          <FormMessage error={error} notice={notice} />
+          <FormMessage error={error} />
           <AuthSubmit loading={loading}>
             {loading ? t('common.loading') : t('auth.verifyButton')}
           </AuthSubmit>
@@ -242,7 +236,7 @@ export function Register() {
               type="button"
               onClick={handleResendCode}
               disabled={loading || resendSeconds > 0}
-              className="text-accent hover:underline disabled:text-muted disabled:no-underline"
+              className="text-accent hover:underline disabled:text-muted disabled:no-underline max-lg:text-[#c5b1e7]"
             >
               {resendSeconds > 0
                 ? t('auth.resendIn', { seconds: resendSeconds })
@@ -316,9 +310,9 @@ function VerificationCodeInput({
   }
 
   return (
-    <label className="mb-4 block text-[14px] font-medium text-text-body">
+    <label className="mb-4 block text-[14px] font-medium text-text-body max-lg:mb-0">
       <span className="sr-only">{label}</span>
-      <span className="grid grid-cols-6 gap-2 max-sm:gap-1.5">
+      <span className="grid grid-cols-6 gap-2 max-lg:flex max-lg:gap-[8px]">
         {cells.map((digit, index) => (
           <input
             key={index}
@@ -334,7 +328,7 @@ function VerificationCodeInput({
             pattern="[0-9]*"
             autoComplete={index === 0 ? 'one-time-code' : 'off'}
             aria-label={`${label}: ${index + 1}`}
-            className="auth-code-field aspect-[0.88] min-h-[64px] rounded-[12px] border border-border bg-surface text-center text-[28px] font-medium text-primary caret-transparent outline-none ring-0 transition-colors focus:border-accent focus:outline-none focus:ring-0 max-sm:min-h-[54px] max-sm:text-[24px]"
+            className="auth-code-field aspect-[0.88] min-h-[64px] rounded-[12px] border border-border bg-surface text-center text-[28px] font-medium text-primary caret-transparent outline-none ring-0 transition-colors focus:border-accent focus:outline-none focus:ring-0 max-lg:h-[60px] max-lg:w-[54.297px] max-lg:min-h-0 max-lg:flex-none max-lg:rounded-[16px] max-lg:border-0 max-lg:bg-white max-lg:text-[24px]"
           />
         ))}
       </span>
@@ -344,23 +338,13 @@ function VerificationCodeInput({
 
 function FormMessage({
   error,
-  notice,
 }: {
   error: string | null;
-  notice: string | null;
 }) {
   if (error) {
     return (
       <p className="mb-3 text-[14px] text-danger" role="alert">
         {error}
-      </p>
-    );
-  }
-
-  if (notice) {
-    return (
-      <p className="mb-3 text-[14px] text-accent" role="status">
-        {notice}
       </p>
     );
   }

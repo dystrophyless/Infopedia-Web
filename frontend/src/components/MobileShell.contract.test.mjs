@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const componentDir = import.meta.dirname;
+const indexSource = readFileSync(path.resolve(componentDir, '../../index.html'), 'utf8');
+const indexCssSource = readFileSync(path.resolve(componentDir, '../index.css'), 'utf8');
 const layoutSource = readFileSync(path.resolve(componentDir, 'Layout.tsx'), 'utf8');
 const navbarSource = readFileSync(path.resolve(componentDir, 'Navbar.tsx'), 'utf8');
 const searchChoiceSource = readFileSync(
@@ -15,7 +17,7 @@ const splashPath = path.resolve(componentDir, 'MobileRouteSplash.tsx');
 
 assert.ok(
   existsSync(bottomNavPath),
-  'Mobile authenticated shell should provide a dedicated MobileBottomNav component',
+  'Mobile authenticated shell should provide the Figma bottom navigation component',
 );
 
 assert.ok(
@@ -25,6 +27,7 @@ assert.ok(
 
 const bottomNavSource = readFileSync(bottomNavPath, 'utf8');
 const splashSource = readFileSync(splashPath, 'utf8');
+const bottomNavCssBlock = indexCssSource.match(/\.bottom-nav\s*\{[^}]*\}/)?.[0] ?? '';
 
 assert.match(
   layoutSource,
@@ -40,8 +43,26 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /<main[^>]+max-md:pb-\[calc\(86px\+env\(safe-area-inset-bottom\)\)\]/,
-  'Layout should reserve global mobile scroll space above the fixed bottom nav',
+  /max-md:pb-\[calc\(88px\+env\(safe-area-inset-bottom,0px\)\)\]/,
+  'Layout should reserve the Figma 88px bottom-navigation height plus safe-area fallback on mobile',
+);
+
+assert.match(
+  indexSource,
+  /<meta\s+name="viewport"\s+content="[^"]*\bviewport-fit=cover\b[^"]*"/,
+  'Document viewport should allow the mobile bottom nav to cover the iOS safe-area edge',
+);
+
+assert.match(
+  indexCssSource,
+  /html,\s*body,\s*#root\s*\{[\s\S]*margin:\s*0;[\s\S]*padding:\s*0;[\s\S]*min-height:\s*100%;[\s\S]*width:\s*100%;[\s\S]*\}/,
+  'Global document shell should remove browser spacing around the mobile viewport',
+);
+
+assert.match(
+  indexCssSource,
+  /\*,\s*\*::before,\s*\*::after\s*\{[\s\S]*box-sizing:\s*border-box;[\s\S]*\}/,
+  'Global CSS should explicitly use border-box sizing for shell and nav layout',
 );
 
 assert.match(
@@ -50,11 +71,68 @@ assert.match(
   'Desktop top navbar should be hidden completely on mobile',
 );
 
-for (const key of ['nav.home', 'nav.search', 'nav.mobileAnalyze', 'nav.mobileProfile']) {
+assert.match(
+  bottomNavSource,
+  /data-figma-node="14:1564"/,
+  'Mobile bottom navigation should carry the implemented Figma node id',
+);
+
+assert.match(
+  bottomNavSource,
+  /className="bottom-nav[^"]*md:hidden"/,
+  'Mobile bottom navigation should use the global bottom-nav shell class',
+);
+
+assert.match(
+  bottomNavCssBlock,
+  /\.bottom-nav\s*\{[\s\S]*position:\s*fixed;[\s\S]*left:\s*0;[\s\S]*right:\s*0;[\s\S]*bottom:\s*0;[\s\S]*width:\s*100%;[\s\S]*height:\s*calc\(88px \+ env\(safe-area-inset-bottom, 0px\)\);[\s\S]*padding-bottom:\s*env\(safe-area-inset-bottom, 0px\);[\s\S]*background:\s*#f8f5fc;[\s\S]*\}/,
+  'Mobile bottom navigation shell should pin to the viewport edge and absorb safe-area inset internally',
+);
+
+assert.match(
+  indexCssSource,
+  /\.bottom-nav-inner\s*\{[\s\S]*height:\s*88px;[\s\S]*\}/,
+  'Mobile bottom navigation content should keep the ordinary Figma 88px height inside the safe-area shell',
+);
+
+assert.doesNotMatch(
+  bottomNavCssBlock,
+  /(?:^|\n)\s*bottom:\s*env\(safe-area-inset-bottom/,
+  'Mobile bottom navigation should never use safe-area as its bottom offset',
+);
+
+assert.match(
+  bottomNavSource,
+  /bottom-nav-inner[^"]*max-w-\[430px\][^"]*grid-cols-4[^"]*px-\[7px\][^"]*pt-3/,
+  'Mobile bottom navigation should preserve the 430px frame, four columns, 7px side inset, and 12px top inset',
+);
+
+for (const iconName of [
+  'Search01Icon',
+  'CheckmarkSquare02Icon',
+  'ChartAnalysisIcon',
+  'UserIcon',
+]) {
   assert.match(
     bottomNavSource,
-    new RegExp(key.replace('.', '\\.')),
-    `Mobile bottom navigation should include ${key}`,
+    new RegExp(iconName),
+    `Mobile bottom navigation should use the Figma ${iconName} glyph`,
+  );
+}
+
+for (const labelKey of ['nav.search', 'nav.tests', 'nav.analyze', 'profile.navProfile']) {
+  assert.match(
+    bottomNavSource,
+    new RegExp(labelKey.replace('.', '\\.')),
+    `Mobile bottom navigation should include ${labelKey}`,
+  );
+}
+
+for (const route of ["'/tests'", "'/analyze'", "'/profile'"]) {
+  assert.match(
+    bottomNavSource,
+    new RegExp(route),
+    `Mobile bottom navigation should link to ${route}`,
   );
 }
 
@@ -66,20 +144,55 @@ assert.match(
 
 assert.match(
   bottomNavSource,
-  /className="fixed[^"]+bg-surface[^"]+border-0[^"]+shadow-none/,
-  'Mobile bottom navigation should be opaque and flat, without a visible border or shadow',
-);
-
-assert.doesNotMatch(
-  bottomNavSource,
-  /bg-surface\/|backdrop-blur|border-t/,
-  'Mobile bottom navigation should not use transparency, blur, or a top divider',
+  /text-\[10px\][^"]*leading-\[10px\][^"]*text-\[#524d5b\]/,
+  'Mobile bottom navigation labels should match the Figma 10px muted text treatment',
 );
 
 assert.match(
   bottomNavSource,
-  /authTarget\('\/search', isAuthenticated\)/,
-  'Mobile search sheet should preserve authenticated search routing',
+  /activeItemClass\s*=\s*'text-\[#4c268c\]'/,
+  'Mobile bottom navigation should accent the active tab icon and label with the updated Figma purple text color',
+);
+
+assert.doesNotMatch(
+  bottomNavSource,
+  /activeItemClass\s*=\s*'[^']*bg-\[#6a37c3\]/,
+  'Mobile bottom navigation active state should not add a purple background fill',
+);
+
+assert.match(
+  bottomNavSource,
+  /getItemClass\(searchIsActive\)/,
+  'Mobile bottom navigation should apply the active visual state to the search tab route group',
+);
+
+assert.match(
+  bottomNavSource,
+  /const testsIsActive = location\.pathname\.startsWith\('\/tests'\);/,
+  'Mobile bottom navigation should keep the tests tab active for nested test-question routes',
+);
+
+assert.match(
+  bottomNavSource,
+  /getItemClass\(testsIsActive\)/,
+  'Mobile bottom navigation should apply the active visual state to the tests route group',
+);
+
+for (const [routeName, routePattern] of [
+  ['analyze', "location.pathname === '/analyze'"],
+  ['profile', "location.pathname === '/profile'"],
+]) {
+  assert.match(
+    bottomNavSource,
+    new RegExp(`getItemClass\\(${routePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`),
+    `Mobile bottom navigation should apply the active visual state to the ${routeName} route`,
+  );
+}
+
+assert.doesNotMatch(
+  bottomNavSource,
+  /Home01Icon|ChartColumnIcon|Profile02Icon|border-t|shadow|backdrop-blur|bg-surface/,
+  'Mobile bottom navigation should not keep the old home-based or chrome-heavy styling',
 );
 
 assert.match(

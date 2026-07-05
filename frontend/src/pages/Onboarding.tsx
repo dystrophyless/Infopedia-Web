@@ -4,22 +4,27 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  GraduateMaleIcon,
-  SchoolIcon,
-  Tick02Icon,
-  UserIcon,
+  Backpack02Icon,
+  GraduationCapIcon,
+  AnonymousIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { checkUsernameAvailability, setMyGrade, setMyUsername } from '../api/users';
 import { AuthShell, AuthSubmit, AuthUsernameInput } from '../components/AuthShell';
-import type { UserGrade } from '../types';
+import {
+  applyPendingOnboardingDraft,
+  clearPendingOnboardingDraft,
+  getOnboardingErrorCode,
+  readPendingOnboardingDraft,
+  savePendingOnboardingDraft,
+} from '../utils/onboardingDraft';
+import type { User, UserGrade } from '../types';
 
-type OnboardingStep = 'username' | 'grade';
+type OnboardingStep = 'grade' | 'username';
 type SelectableGrade = UserGrade;
 type UsernameAvailabilityStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 
 const gradeOptions: SelectableGrade[] = ['10', '11', 'undefined'];
-const ONBOARDING_STEP_KEY = 'infopedia_onboarding_step';
 const USERNAME_CHECK_DELAY_MS = 450;
 const USERNAME_ALLOWED_PATTERN = /^[a-zA-Z0-9_.]+$/;
 
@@ -39,28 +44,18 @@ function getErrorMessage(err: unknown, fallback: string) {
   return fallback;
 }
 
-function getOnboardingErrorCode(err: unknown) {
-  if (!axios.isAxiosError(err)) return null;
-
-  const detail = (err.response?.data as { detail?: unknown } | undefined)?.detail;
-  if (
-    detail &&
-    typeof detail === 'object' &&
-    'code' in detail &&
-    typeof detail.code === 'string'
-  ) {
-    return detail.code;
-  }
-
-  return null;
+function getInitialStep(user: User | null): OnboardingStep {
+  if (user?.grade && !user.username) return 'username';
+  if (!user && readPendingOnboardingDraft()) return 'username';
+  return 'grade';
 }
 
-function getInitialStep(hasUsername: boolean): OnboardingStep {
-  if (hasUsername) return 'grade';
-  if (typeof window === 'undefined') return 'username';
-  return window.localStorage.getItem(ONBOARDING_STEP_KEY) === 'grade'
-    ? 'grade'
-    : 'username';
+function getInitialGrade(user: User | null): SelectableGrade | null {
+  return user?.grade ?? readPendingOnboardingDraft()?.grade ?? null;
+}
+
+function getInitialUsername(user: User | null): string {
+  return user?.username ?? readPendingOnboardingDraft()?.username ?? '';
 }
 
 function getUsernameValidationError(
@@ -91,19 +86,25 @@ function getUsernameValidationError(
   return null;
 }
 
+function isIgnorableSetupConflict(err: unknown, codes: string[]) {
+  const code = getOnboardingErrorCode(err);
+  return code !== null && codes.includes(code);
+}
+
 export function Onboarding() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { token, user, setUser } = useAuthStore();
-  const [step, setStep] = useState<OnboardingStep>(() => getInitialStep(Boolean(user?.username)));
-  const [username, setUsername] = useState('');
+  const [step, setStep] = useState<OnboardingStep>(() => getInitialStep(user));
+  const [username, setUsername] = useState(() => getInitialUsername(user));
   const [usernameAvailability, setUsernameAvailability] =
     useState<UsernameAvailabilityStatus>('idle');
   const [checkedUsername, setCheckedUsername] = useState('');
   const [usernameTouched, setUsernameTouched] = useState(false);
-  const [grade, setGrade] = useState<SelectableGrade | null>(null);
+  const [grade, setGrade] = useState<SelectableGrade | null>(() => getInitialGrade(user));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [applyingDraft, setApplyingDraft] = useState(false);
   const normalizedUsername = username.trim();
   const usernameFormatError = getUsernameValidationError(normalizedUsername, t, {
     required: false,
@@ -138,10 +139,45 @@ export function Onboarding() {
     checkedUsername === normalizedUsername;
 
   useEffect(() => {
-    if (!user?.username || step === 'grade') return;
-    setStep('grade');
-    window.localStorage.setItem(ONBOARDING_STEP_KEY, 'grade');
-  }, [step, user?.username]);
+    if (user?.grade) setGrade(user.grade);
+    if (user?.username) setUsername(user.username);
+  }, [user?.grade, user?.username]);
+
+  useEffect(() => {
+    if (user?.onboarding_completed === true) {
+      clearPendingOnboardingDraft();
+    }
+  }, [user?.onboarding_completed]);
+
+  useEffect(() => {
+    if (!token || user?.onboarding_completed === true) return;
+
+    const draft = readPendingOnboardingDraft();
+    if (!draft) return;
+
+    let cancelled = false;
+    setApplyingDraft(true);
+    setError(null);
+    setGrade(draft.grade);
+    setUsername(draft.username);
+
+    void applyPendingOnboardingDraft()
+      .then((nextUser) => {
+        if (cancelled) return;
+        if (nextUser) setUser(nextUser);
+        navigate('/profile', { replace: true });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setApplyingDraft(false);
+        setStep('username');
+        setError(getErrorMessage(err, t('onboarding.usernameFailed')));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, setUser, t, token, user?.onboarding_completed]);
 
   useEffect(() => {
     setUsernameAvailability('idle');
@@ -173,18 +209,58 @@ export function Onboarding() {
     };
   }, [normalizedUsername, step, usernameFormatError]);
 
-  if (!token) return <Navigate to="/login?next=/onboarding" replace />;
   if (user?.onboarding_completed === true) return <Navigate to="/profile" replace />;
 
-  function moveToGradeStep() {
-    setStep('grade');
+  function moveToUsernameStep(nextGrade: SelectableGrade) {
+    setGrade(nextGrade);
+    setStep('username');
     setError(null);
-    window.localStorage.setItem(ONBOARDING_STEP_KEY, 'grade');
+  }
+
+  function handleGradeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!grade) {
+      setError(t('onboarding.gradeRequired'));
+      return;
+    }
+
+    moveToUsernameStep(grade);
+  }
+
+  async function ensureUsernameForAuthenticatedUser() {
+    if (user?.username) return user;
+
+    try {
+      return await setMyUsername(normalizedUsername);
+    } catch (err) {
+      if (isIgnorableSetupConflict(err, ['username_already_set'])) return user;
+      throw err;
+    }
+  }
+
+  async function ensureGradeForAuthenticatedUser(nextGrade: SelectableGrade) {
+    if (user?.grade) return user;
+
+    try {
+      return await setMyGrade(nextGrade);
+    } catch (err) {
+      if (isIgnorableSetupConflict(err, ['grade_already_set', 'onboarding_already_completed'])) {
+        return user;
+      }
+      throw err;
+    }
   }
 
   async function handleUsernameSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const nextGrade = grade;
+    if (!nextGrade) {
+      setStep('grade');
+      setError(t('onboarding.gradeRequired'));
+      return;
+    }
 
     const validationError = getUsernameValidationError(normalizedUsername, t, {
       required: true,
@@ -213,46 +289,73 @@ export function Onboarding() {
       }
     }
 
+    if (!token) {
+      savePendingOnboardingDraft({
+        grade: nextGrade,
+        username: normalizedUsername,
+      });
+      navigate('/register', { replace: false });
+      return;
+    }
+
     setLoading(true);
     try {
-      const user = await setMyUsername(normalizedUsername);
-      setUser(user);
-      moveToGradeStep();
+      const userWithUsername = await ensureUsernameForAuthenticatedUser();
+      if (userWithUsername) setUser(userWithUsername);
+
+      const userWithGrade = await ensureGradeForAuthenticatedUser(nextGrade);
+      if (userWithGrade) setUser(userWithGrade);
+
+      clearPendingOnboardingDraft();
+      navigate('/profile', { replace: true });
     } catch (err) {
-      if (getOnboardingErrorCode(err) === 'username_already_set') {
-        moveToGradeStep();
-        return;
-      }
       setError(getErrorMessage(err, t('onboarding.usernameFailed')));
     } finally {
       setLoading(false);
     }
   }
 
-  async function completeWithGrade(nextGrade: SelectableGrade) {
-    if (loading) return;
-
-    setError(null);
-    setGrade(nextGrade);
-    setLoading(true);
-    try {
-      const user = await setMyGrade(nextGrade);
-      setUser(user);
-      window.localStorage.removeItem(ONBOARDING_STEP_KEY);
-      navigate('/profile', { replace: true });
-    } catch (err) {
-      setError(getErrorMessage(err, t('onboarding.gradeFailed')));
-    } finally {
-      setLoading(false);
-    }
+  if (applyingDraft) {
+    return (
+      <AuthShell title={t('onboarding.title')}>
+        <p className="text-[15px] leading-snug text-text-body max-md:text-[16px] max-md:leading-[1.25] max-md:text-[#8c8698]" role="status">
+          {t('onboarding.applyingDraft')}
+        </p>
+      </AuthShell>
+    );
   }
 
   return (
-    <AuthShell title={t('onboarding.title')}>
-      {step === 'username' ? (
+    <AuthShell title={step === 'grade' ? t('onboarding.gradeQuestionTitle') : t('onboarding.usernameQuestionTitle')}>
+      {step === 'grade' ? (
+        <form onSubmit={handleGradeSubmit} noValidate>
+          <p className="mb-6 text-[15px] leading-snug text-text-body max-md:mb-5 max-md:text-[16px] max-md:leading-[1.25] max-md:text-[#8c8698]">
+            {t('onboarding.gradeQuestionHelper')}
+          </p>
+          <div className="space-y-2">
+            {gradeOptions.map((option) => (
+              <GradeOptionButton
+                key={option}
+                grade={option}
+                label={getGradeOptionTitle(option, t)}
+                selected={grade === option}
+                disabled={loading}
+                onClick={() => {
+                  setGrade(option);
+                  setError(null);
+                }}
+              />
+            ))}
+          </div>
+          <FormError error={error} />
+          <AuthSubmit loading={loading} disabled={!grade}>
+            {loading ? t('common.loading') : t('common.continue')}
+          </AuthSubmit>
+        </form>
+      ) : (
         <form onSubmit={handleUsernameSubmit} noValidate>
-          <p className="mb-5 text-[15px] leading-snug text-text-body">
-            {t('onboarding.usernameHelper')}
+          <p className="mb-8 text-[15px] leading-snug text-text-body max-md:mb-8 max-md:text-[16px] max-md:leading-[1.25] max-md:text-[#8c8698]">
+            {t('onboarding.usernameQuestionHelper')}
           </p>
           <AuthUsernameInput
             label={t('auth.username')}
@@ -266,29 +369,24 @@ export function Onboarding() {
             helperText={usernameHelperText}
             helperTone={usernameHelperTone}
           />
+          <button
+            type="button"
+            onClick={() => {
+              setStep('grade');
+              setError(null);
+            }}
+            className="mb-2 text-[14px] font-medium text-accent hover:underline max-md:hidden"
+          >
+            {t('common.previous')}
+          </button>
           <AuthSubmit loading={loading} disabled={!usernameCanSubmit}>
-            {loading ? t('common.loading') : t('common.next')}
+            {loading
+              ? t('common.loading')
+              : token
+                ? t('onboarding.finishButton')
+                : t('common.continue')}
           </AuthSubmit>
         </form>
-      ) : (
-        <div>
-          <p className="mb-5 text-[15px] leading-snug text-text-body">
-            {t('onboarding.gradeHelper')}
-          </p>
-          <div className="space-y-3">
-            {gradeOptions.map((option) => (
-              <GradeOptionButton
-                key={option}
-                grade={option}
-                label={getGradeOptionTitle(option, t)}
-                selected={grade === option}
-                disabled={loading}
-                onClick={() => completeWithGrade(option)}
-              />
-            ))}
-          </div>
-          <FormError error={error} />
-        </div>
       )}
     </AuthShell>
   );
@@ -313,30 +411,20 @@ function GradeOptionButton({
   disabled: boolean;
   onClick: () => void;
 }) {
-  const icon = grade === '10' ? SchoolIcon : grade === '11' ? GraduateMaleIcon : UserIcon;
+  const icon = grade === '10' ? Backpack02Icon : grade === '11' ? GraduationCapIcon : AnonymousIcon;
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-[64px] w-full items-center gap-4 rounded-[12px] border px-4 text-left text-[17px] font-medium transition-colors disabled:cursor-wait disabled:opacity-70 ${
-        selected
-          ? 'border-accent bg-bg text-primary'
-          : 'border-border bg-surface text-text hover:border-accent'
+      className={`flex h-12 w-full items-center gap-4 rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 ${
+        selected ? 'text-[#44237d]' : 'text-[#161519] hover:text-[#44237d]'
       }`}
       aria-pressed={selected}
     >
-      <HugeiconsIcon icon={icon} size={24} strokeWidth={1.8} className="shrink-0 text-accent" />
+      <HugeiconsIcon icon={icon} size={16} strokeWidth={1.8} className="shrink-0 text-[#44237d]" />
       <span className="min-w-0 flex-1">{label}</span>
-      {selected && (
-        <HugeiconsIcon
-          icon={Tick02Icon}
-          size={22}
-          strokeWidth={2}
-          className="shrink-0 text-accent"
-        />
-      )}
     </button>
   );
 }

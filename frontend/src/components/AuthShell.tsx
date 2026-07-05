@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
+  Globe02Icon,
   LockPasswordIcon,
   Mail01Icon,
   UserIcon,
   ViewIcon,
   ViewOffIcon,
 } from '@hugeicons/core-free-icons';
+import { useLangStore, type Language } from '../stores/langStore';
 
 export function AuthShell({
   title,
@@ -19,21 +22,82 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen w-full bg-bg flex flex-col">
-      <header className="w-full px-[60px] max-md:hidden py-6 flex items-center justify-between">
+    <div className="min-h-screen w-full bg-bg flex flex-col max-lg:mx-auto max-lg:min-h-[932px] max-lg:max-w-[430px] max-lg:bg-[#efebf6]">
+      <header className="w-full px-[60px] max-lg:hidden py-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="Infopedia" className="h-[40px] w-auto" />
         </Link>
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-4 pb-12 max-md:items-start max-md:px-4 max-md:pb-8 max-md:pt-[calc(22px+env(safe-area-inset-top))]">
-        <div className="w-full max-w-[440px] bg-surface border border-border rounded-[15px] shadow-feature p-10 max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
-          <h1 className="mb-3 text-left text-[26px] font-medium text-text">{title}</h1>
+      <header className="relative flex h-[112px] w-full justify-center px-8 lg:hidden">
+        <AuthMobileStatusBar />
+        <Link to="/" className="absolute top-16 left-1/2 -translate-x-1/2">
+          <img src="/logo.svg" alt="Infopedia" className="h-8 w-auto" />
+        </Link>
+        <div className="absolute right-8 top-16">
+          <AuthMobileLanguageToggle />
+        </div>
+        <div className="absolute bottom-0 left-0 h-px w-full bg-[#eae9ec]" />
+      </header>
+
+      <div className="flex-1 flex items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:pt-[65px] max-md:px-8">
+        <div className="w-full max-w-[440px] bg-surface border border-border rounded-[15px] shadow-feature p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:border-0 max-lg:bg-transparent max-lg:p-0 max-lg:shadow-none max-md:max-w-[366px] max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
+          <h1 className="mb-3 text-left text-[26px] font-medium text-text max-lg:mb-3 max-lg:text-[24px] max-lg:leading-[normal] max-lg:text-[#161519]">{title}</h1>
           {children}
-          {footer && <div className="mt-4 text-center text-[14px] text-muted">{footer}</div>}
+          {footer && (
+            <div className="mt-4 text-center text-[14px] text-muted max-lg:mt-6 max-lg:text-[#c5b1e7]">
+              {footer}
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+function AuthMobileStatusBar() {
+  return (
+    <div className="absolute left-0 top-0 h-12 w-full text-[#161519]" aria-hidden="true">
+      <span className="absolute left-[57px] top-[25px] text-[16px] font-medium leading-none">
+        20:31
+      </span>
+      <div className="absolute right-[43px] top-[22px] flex h-4 items-center gap-[6px]">
+        <span className="flex h-[12px] w-[18px] items-end gap-[2px]">
+          <span className="h-[4px] w-[3px] rounded-sm bg-[#161519]" />
+          <span className="h-[6px] w-[3px] rounded-sm bg-[#161519]" />
+          <span className="h-[8px] w-[3px] rounded-sm bg-[#161519]" />
+          <span className="h-[10px] w-[3px] rounded-sm bg-[#161519]" />
+        </span>
+        <span className="relative h-[12px] w-[16px]">
+          <span className="absolute bottom-0 left-0 h-[4px] w-[16px] rounded-t-full border-t-2 border-[#161519]" />
+          <span className="absolute bottom-[3px] left-[3px] h-[5px] w-[10px] rounded-t-full border-t-2 border-[#161519]" />
+          <span className="absolute bottom-[6px] left-[6px] h-[4px] w-[4px] rounded-t-full border-t-2 border-[#161519]" />
+        </span>
+        <span className="relative h-[12px] w-[24px] rounded-[4px] border-2 border-[#161519]">
+          <span className="absolute -right-[4px] top-[3px] h-[4px] w-[2px] rounded-r-sm bg-[#161519]" />
+          <span className="absolute left-[2px] top-[2px] h-[4px] w-[16px] rounded-sm bg-[#161519]" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AuthMobileLanguageToggle() {
+  const { t } = useTranslation();
+  const lang = useLangStore((s) => s.lang);
+  const setLang = useLangStore((s) => s.setLang);
+  const nextLang: Language = lang === 'ru' ? 'kk' : 'ru';
+
+  return (
+    <button
+      type="button"
+      aria-label={t('common.language')}
+      className="flex h-8 items-center justify-center gap-[5px] px-5 text-[12px] font-normal leading-none text-[#b1acb9]"
+      onClick={() => setLang(nextLang)}
+    >
+      <span>{lang.toUpperCase()}</span>
+      <HugeiconsIcon icon={Globe02Icon} size={14} strokeWidth={1.8} />
+    </button>
   );
 }
 
@@ -87,7 +151,7 @@ export function AuthSubmit({
     <button
       type="submit"
       disabled={loading || disabled}
-      className="w-full bg-primary text-surface rounded-[10px] py-3 text-[16px] mt-2 hover:opacity-90 transition-opacity disabled:opacity-60"
+      className="w-full bg-primary text-surface rounded-[10px] py-3 text-[16px] mt-2 hover:opacity-90 transition-opacity disabled:opacity-60 max-lg:h-12 max-lg:mt-8 max-lg:rounded-[8px] max-lg:bg-[#44237d] max-lg:p-0 max-lg:font-medium max-lg:text-white"
     >
       {children}
     </button>
@@ -96,10 +160,10 @@ export function AuthSubmit({
 
 export function AuthDivider({ label }: { label: string }) {
   return (
-    <div className="my-5 flex items-center gap-3 text-[13px] text-muted">
-      <span className="h-px flex-1 bg-border" />
+    <div className="my-5 flex items-center gap-3 text-[13px] text-muted max-lg:my-6 max-lg:text-[14px] max-lg:text-[#c5b1e7]">
+      <span className="h-px flex-1 bg-border max-lg:bg-[#c5b1e7]" />
       <span>{label}</span>
-      <span className="h-px flex-1 bg-border" />
+      <span className="h-px flex-1 bg-border max-lg:bg-[#c5b1e7]" />
     </div>
   );
 }
@@ -131,7 +195,7 @@ export function GoogleAuthButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg"
+      className="flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:p-0 max-lg:text-[#161519]"
     >
       <GoogleIcon />
       <span>{children}</span>
@@ -155,8 +219,8 @@ export function AuthEmailInput({
   return (
     <label className="mb-4 flex flex-col gap-1.5">
       <span className="relative block">
-        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted">
-          <HugeiconsIcon icon={Mail01Icon} size={20} strokeWidth={1.7} />
+        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]">
+          <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={1.7} />
         </span>
         <input
           type="email"
@@ -166,7 +230,7 @@ export function AuthEmailInput({
           placeholder={label}
           aria-label={label}
           required
-          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted ${
+          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
             error || invalid
               ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
               : 'border-border bg-surface focus:border-accent'
@@ -198,8 +262,8 @@ export function AuthUsernameInput({
   return (
     <label className="mb-4 flex flex-col gap-1.5">
       <span className="relative block">
-        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted">
-          <HugeiconsIcon icon={UserIcon} size={20} strokeWidth={1.7} />
+        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]">
+          <HugeiconsIcon icon={UserIcon} size={18} strokeWidth={1.7} />
         </span>
         <input
           type="text"
@@ -210,7 +274,7 @@ export function AuthUsernameInput({
           placeholder={label}
           aria-label={label}
           required
-          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted ${
+          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
             error
               ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
               : 'border-border bg-surface focus:border-accent'
@@ -255,8 +319,8 @@ export function AuthPasswordInput({
   return (
     <label className="mb-4 flex flex-col gap-1.5">
       <span className="relative block">
-        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted">
-          <HugeiconsIcon icon={LockPasswordIcon} size={20} strokeWidth={1.7} />
+        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]">
+          <HugeiconsIcon icon={LockPasswordIcon} size={18} strokeWidth={1.7} />
         </span>
         <input
           type={visible ? 'text' : 'password'}
@@ -266,7 +330,7 @@ export function AuthPasswordInput({
           placeholder={label}
           aria-label={label}
           required
-          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted ${
+          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
             error || invalid
               ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
               : 'border-border bg-surface focus:border-accent'
@@ -277,9 +341,9 @@ export function AuthPasswordInput({
           onClick={onToggle}
           aria-label={toggleLabel}
           title={toggleLabel}
-          className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent"
+          className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:text-[#8c8698]"
         >
-          <HugeiconsIcon icon={visible ? ViewOffIcon : ViewIcon} size={20} strokeWidth={1.7} />
+          <HugeiconsIcon icon={visible ? ViewOffIcon : ViewIcon} size={18} strokeWidth={1.7} />
         </button>
       </span>
       {error && <span className="text-danger text-[13px] font-normal">{error}</span>}

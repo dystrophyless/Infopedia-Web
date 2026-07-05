@@ -69,8 +69,8 @@ assert.ok(
 
 assert.match(
   mobileGuestHeroSource,
-  /to="\/register"/,
-  'Guest mobile hero primary CTA should send visitors to registration',
+  /to=\{ONBOARDING_TARGET\}/,
+  'Guest mobile hero primary CTA should start onboarding',
 );
 
 assert.match(
@@ -141,24 +141,29 @@ for (const [name, source] of [
   assert.doesNotMatch(
     source,
     /max-md:pb-\[calc\(theme\(spacing\.24\)\+env\(safe-area-inset-bottom\)\)\]/,
-    `${name} should rely on Layout for fixed bottom-nav scroll space instead of stacking page-level bottom padding`,
+    `${name} should not keep legacy fixed mobile chrome padding at page level`,
   );
 }
 
-for (const [name, source] of [
-  ['TermSearch', termSearchSource],
-  ['SemanticSearch', semanticSearchSource],
-  ['Analyze', analyzeSource],
-  ['Profile', profileSource],
-  ['TermDetail', termDetailSource],
-  ['AuthShell', authShellSource],
+for (const [name, source, gutterPattern] of [
+  ['TermSearch', termSearchSource, /max-md:px-\[24px\]/],
+  ['SemanticSearch', semanticSearchSource, /max-md:px-4/],
+  ['Analyze', analyzeSource, /max-md:px-4/],
+  ['Profile', profileSource, /max-md:px-4/],
+  ['TermDetail', termDetailSource, /max-md:px-4/],
 ]) {
   assert.match(
     source,
-    /max-md:px-4/,
+    gutterPattern,
     `${name} should keep a consistent mobile horizontal page gutter`,
   );
 }
+
+assert.match(
+  authShellSource,
+  /max-md:px-8[\s\S]*max-md:max-w-\[366px\]/,
+  'Auth shell should use the Figma mobile onboarding gutter and 366px content rail',
+);
 
 assert.match(
   analyzeSource,

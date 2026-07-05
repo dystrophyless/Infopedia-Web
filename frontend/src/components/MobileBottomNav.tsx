@@ -3,10 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ChartColumnIcon,
-  Home01Icon,
-  Profile02Icon,
+  ChartAnalysisIcon,
+  CheckmarkSquare02Icon,
   Search01Icon,
+  UserIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { SearchChoiceModal } from './SearchChoiceModal';
@@ -18,68 +18,70 @@ function authTarget(path: string, isAuthenticated: boolean): string {
   return `/login?next=${encodeURIComponent(path)}`;
 }
 
+const itemBaseClass =
+  'flex h-10 min-w-0 appearance-none flex-col items-center justify-start gap-2 border-0 p-0 text-center text-[10px] font-normal leading-[10px] no-underline transition-colors hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]';
+const inactiveItemClass = 'bg-transparent text-[#524d5b]';
+const activeItemClass = 'text-[#4c268c]';
+
+const labelClass = 'block w-full overflow-hidden text-ellipsis whitespace-nowrap';
+
+function getItemClass(isActive: boolean): string {
+  return `${itemBaseClass} ${isActive ? activeItemClass : inactiveItemClass}`;
+}
+
 export function MobileBottomNav() {
   const { t } = useTranslation();
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const searchIsActive = SEARCH_NAV_PATHS.has(location.pathname);
-
-  const itemClass =
-    'flex min-w-0 flex-col items-center justify-center gap-1 rounded-[12px] px-1 py-1 text-[11px] font-medium leading-none transition-colors';
-  const inactiveClass = 'text-muted hover:text-primary';
-  const activeClass = 'text-primary';
+  const testsIsActive = location.pathname.startsWith('/tests');
 
   return (
     <>
       <nav
-        aria-label={t('nav.mobilePrimary')}
-        className="fixed inset-x-0 bottom-0 z-40 bg-surface border-0 px-3 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2 shadow-none max-md:shadow-none md:hidden"
+        aria-label={t('mobile.bottomNavigation', { defaultValue: 'Bottom navigation' })}
+        data-figma-node="14:1564"
+        className="bottom-nav md:hidden"
       >
-        <div className="grid h-[64px] grid-cols-4 gap-1">
-          <Link
-            to="/"
-            className={`${itemClass} ${
-              location.pathname === '/' ? activeClass : inactiveClass
-            }`}
-            aria-current={location.pathname === '/' ? 'page' : undefined}
-          >
-            <HugeiconsIcon icon={Home01Icon} size={23} strokeWidth={1.8} />
-            <span>{t('nav.home')}</span>
-          </Link>
-
+        <div className="bottom-nav-inner mx-auto grid h-[88px] w-full max-w-[430px] grid-cols-4 px-[7px] pt-3">
           <button
             type="button"
-            className={`${itemClass} border-0 bg-transparent ${
-              searchIsActive ? activeClass : inactiveClass
-            }`}
+            className={getItemClass(searchIsActive)}
             aria-current={searchIsActive ? 'page' : undefined}
             onClick={() => setSearchModalOpen(true)}
           >
-            <HugeiconsIcon icon={Search01Icon} size={23} strokeWidth={1.8} />
-            <span>{t('nav.search')}</span>
+            <HugeiconsIcon icon={Search01Icon} size={24} strokeWidth={1.5} />
+            <span className={labelClass}>{t('nav.search')}</span>
           </button>
 
           <Link
+            to="/tests"
+            className={getItemClass(testsIsActive)}
+            aria-current={testsIsActive ? 'page' : undefined}
+          >
+            <HugeiconsIcon icon={CheckmarkSquare02Icon} size={24} strokeWidth={1.5} />
+            <span className={labelClass}>{t('nav.tests')}</span>
+          </Link>
+
+          <Link
             to="/analyze"
-            className={`${itemClass} ${
-              location.pathname === '/analyze' ? activeClass : inactiveClass
-            }`}
+            className={getItemClass(location.pathname === '/analyze')}
             aria-current={location.pathname === '/analyze' ? 'page' : undefined}
           >
-            <HugeiconsIcon icon={ChartColumnIcon} size={23} strokeWidth={1.8} />
-            <span>{t('nav.mobileAnalyze')}</span>
+            <HugeiconsIcon icon={ChartAnalysisIcon} size={24} strokeWidth={1.5} />
+            <span className={labelClass}>{t('nav.analyze')}</span>
           </Link>
 
           <Link
             to="/profile"
-            className={`${itemClass} ${
-              location.pathname === '/profile' ? activeClass : inactiveClass
-            }`}
+            className={getItemClass(location.pathname === '/profile')}
             aria-current={location.pathname === '/profile' ? 'page' : undefined}
           >
-            <HugeiconsIcon icon={Profile02Icon} size={23} strokeWidth={1.8} />
-            <span>{t('nav.mobileProfile')}</span>
+            <HugeiconsIcon icon={UserIcon} size={24} strokeWidth={1.5} />
+            <span className={labelClass}>
+              {t('profile.navProfile', { defaultValue: t('nav.profile') })}
+            </span>
           </Link>
         </div>
       </nav>

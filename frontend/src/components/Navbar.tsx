@@ -40,17 +40,19 @@ export function Navbar() {
           <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex" aria-label="primary">
             {isAuthenticated ? (
               <>
-                <button
-                  type="button"
-                  className={`border-0 bg-transparent px-5 py-4 text-[16px] transition-colors ${
+                <Link
+                  to="/search"
+                  className={`px-5 py-4 text-[16px] transition-colors ${
                     searchNavIsActive
                       ? 'font-medium text-accent'
                       : 'text-muted hover:text-accent'
                   }`}
-                  onClick={() => setSearchModalOpen(true)}
                 >
                   {t('nav.search')}
-                </button>
+                </Link>
+                <NavLink to="/tests" className={navLinkClass}>
+                  {t('nav.tests', { defaultValue: 'Тесты' })}
+                </NavLink>
                 <NavLink to="/analyze" className={navLinkClass}>
                   {t('nav.analyze')}
                 </NavLink>

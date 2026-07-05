@@ -8,7 +8,17 @@
 html,
 body,
 #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
   height: 100%;
+  width: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
@@ -17,7 +27,6 @@ html {
 }
 
 body {
-  margin: 0;
   font-family: 'Mabry Pro', sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
@@ -29,6 +38,22 @@ body {
 
 button {
   font-family: inherit;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #f8f5fc;
+  z-index: 40;
+}
+
+.bottom-nav-inner {
+  height: 88px;
 }
 
 input[type='password']::-ms-reveal,
@@ -87,6 +112,43 @@ select:focus-visible {
   outline: none;
 }
 
+.search-filter-option {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.search-filter-checkbox-visual {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.search-filter-action-button {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.search-filter-sheet {
+  transition: transform 180ms ease;
+  will-change: transform;
+}
+
+.mobile-search-sheet {
+  transition: transform 180ms ease;
+  will-change: transform;
+}
+
 @media (max-width: 767px) {
   [class*='shadow-'] {
     box-shadow: none !important;
@@ -94,6 +156,119 @@ select:focus-visible {
 
   [class*='border'] {
     border-color: transparent !important;
+  }
+
+  .mobile-search-sheet-field {
+    border-color: #a585db !important;
+  }
+
+  .search-filter-control {
+    border-color: #a585db !important;
+  }
+
+  .search-filter-option,
+  .search-filter-checkbox-visual {
+    border-color: #a585db !important;
+  }
+
+  .search-filter-reset-button {
+    border-color: #a585db !important;
+  }
+}
+
+.test-answer-option-neutral {
+  border-color: #ded2f1 !important;
+}
+
+.test-answer-option-selected {
+  border-color: #6a37c3 !important;
+}
+
+.test-answer-option-correct {
+  border-color: #29ae70 !important;
+}
+
+.test-answer-option-incorrect {
+  border-color: #bc251a !important;
+}
+
+.search-filter-option.search-filter-option-active {
+  border-color: #6a37c3 !important;
+  box-shadow: inset 0 0 0 1px #6a37c3;
+}
+
+.search-filter-checkbox-visual.search-filter-checkbox-visual-active {
+  border-color: #6a37c3 !important;
+}
+
+.search-filter-option:active {
+  transform: scale(0.99);
+}
+
+.search-filter-action-button:active {
+  opacity: 0.92;
+  transform: scale(0.99);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .search-filter-option:not(.search-filter-option-active):hover {
+    background-color: #f8f5fc;
+    border-color: #a585db !important;
+    box-shadow: 0 6px 16px rgba(106, 55, 195, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .search-filter-option:not(.search-filter-option-active):hover .search-filter-checkbox-visual {
+    box-shadow: 0 0 0 1px #a585db;
+    transform: scale(1.04);
+  }
+
+  .search-filter-option.search-filter-option-active:hover {
+    box-shadow:
+      inset 0 0 0 1px #6a37c3,
+      0 6px 16px rgba(106, 55, 195, 0.14);
+    transform: translateY(-1px);
+  }
+
+  .search-filter-save-button:hover {
+    background-color: #6a37c3;
+    box-shadow: 0 8px 18px rgba(106, 55, 195, 0.18);
+    transform: translateY(-1px);
+  }
+
+  .search-filter-reset-button:hover {
+    border-color: #6a37c3 !important;
+    box-shadow: 0 8px 18px rgba(106, 55, 195, 0.12);
+    color: #6a37c3;
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-filter-option,
+  .search-filter-checkbox-visual,
+  .search-filter-action-button,
+  .search-filter-sheet,
+  .mobile-search-sheet {
+    transition: none;
+  }
+
+  .search-filter-option:hover,
+  .search-filter-option:active,
+  .search-filter-option:hover .search-filter-checkbox-visual,
+  .search-filter-action-button:hover,
+  .search-filter-action-button:active {
+    transform: none;
+  }
+}
+
+@keyframes mobile-search-sheet-in {
+  0% {
+    transform: translateY(100%);
+  }
+
+  100% {
+    transform: translateY(0);
   }
 }
 

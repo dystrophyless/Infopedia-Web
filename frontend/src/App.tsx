@@ -9,9 +9,12 @@ import { GoogleCallback } from './pages/GoogleCallback';
 import { Onboarding } from './pages/Onboarding';
 import { ResetPassword } from './pages/ResetPassword';
 import { TermSearch } from './pages/TermSearch';
+import { SearchFilters } from './pages/SearchFilters';
 import { TermDetail } from './pages/TermDetail';
 import { SemanticSearch } from './pages/SemanticSearch';
 import { Analyze } from './pages/Analyze';
+import { Tests } from './pages/Tests';
+import { TestQuestionPage } from './pages/TestQuestionPage';
 import { Profile } from './pages/Profile';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -54,6 +57,14 @@ export default function App() {
           }
         />
         <Route
+          path="/search/filters"
+          element={
+            <Protected>
+              <SearchFilters />
+            </Protected>
+          }
+        />
+        <Route
           path="/terms/:termRef"
           element={
             <Public>
@@ -66,6 +77,22 @@ export default function App() {
           element={
             <Protected>
               <SemanticSearch />
+            </Protected>
+          }
+        />
+        <Route
+          path="/tests/:testMode"
+          element={
+            <Protected>
+              <TestQuestionPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/tests"
+          element={
+            <Protected>
+              <Tests />
             </Protected>
           }
         />

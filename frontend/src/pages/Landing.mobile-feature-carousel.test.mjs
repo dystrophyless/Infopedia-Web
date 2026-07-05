@@ -237,6 +237,24 @@ for (const handler of [
 
 assert.match(
   carouselSource,
+  /const handleCtaPointerDown = useCallback\(\(event: PointerEvent<HTMLAnchorElement>\) => \{[\s\S]*event\.stopPropagation\(\);[\s\S]*wasDraggedRef\.current = false;/,
+  'Feature carousel CTA should not start carousel dragging and should clear stale drag state before click',
+);
+
+assert.match(
+  carouselSource,
+  /<FeatureSlideCard[\s\S]*onPointerDown=\{handleCtaPointerDown\}/,
+  'Feature carousel should pass the CTA pointer guard into slide cards',
+);
+
+assert.match(
+  carouselSource,
+  /<Link[\s\S]*to=\{card\.href\}[\s\S]*onPointerDown=\{onPointerDown\}[\s\S]*onClick=\{onClick\}/,
+  'Feature carousel CTA links should stop pointerdown before the carousel captures the pointer',
+);
+
+assert.match(
+  carouselSource,
   /window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)/,
   'Feature carousel should honor reduced motion preferences',
 );
@@ -279,8 +297,32 @@ assert.match(
 
 assert.match(
   carouselSource,
-  /if \(isDesktop\) \{[\s\S]*relative block h-\[372px\][\s\S]*absolute inset-x-0 bottom-0 h-\[280px\][\s\S]*bg-\[#f8f5fc\]/,
+  /if \(isDesktop\) \{[\s\S]*relative (?:block )?h-\[372px\][\s\S]*absolute inset-x-0 bottom-0 h-\[280px\][\s\S]*bg-\[#f8f5fc\]/,
   'Desktop feature card should use a taller stage with the white panel anchored to the bottom',
+);
+
+assert.match(
+  desktopFeatureCardSource,
+  /<div[\s\S]*className="relative h-\[372px\][\s\S]*<Link[\s\S]*to=\{card\.href\}[\s\S]*h-\[48px\][\s\S]*card\.cta/,
+  'Desktop feature card should keep only the CTA button as the link target',
+);
+
+assert.doesNotMatch(
+  desktopFeatureCardSource,
+  /<Link[\s\S]*className="relative block h-\[372px\]/,
+  'Desktop feature card should not make the whole card a link',
+);
+
+assert.match(
+  carouselSource,
+  /return \(\s*<div[\s\S]*className="relative h-\[493px\][\s\S]*<Link[\s\S]*to=\{card\.href\}[\s\S]*bottom-8 left-8 right-8[\s\S]*card\.cta/,
+  'Mobile feature card should keep only the CTA button as the link target',
+);
+
+assert.doesNotMatch(
+  carouselSource,
+  /return \(\s*<Link[\s\S]*className="relative block h-\[493px\]/,
+  'Mobile feature card should not make the whole card a link',
 );
 
 assert.match(

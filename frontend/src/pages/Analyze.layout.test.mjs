@@ -15,19 +15,19 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /className=\{showUploadForm \? ANALYZE_UPLOAD_PAGE_CLASS : ANALYZE_PAGE_CLASS\}/,
-  'Analyze page should use the viewport-fit layout only for the upload screen',
+  /<PageContainer\s+width="full"\s+gutter="none"\s+className=\{showUploadForm \? ANALYZE_UPLOAD_PAGE_CLASS : ANALYZE_PAGE_CLASS\}/,
+  'Analyze page should use the shared page container while keeping its viewport-fit upload layout',
 );
 
 assert.match(
   analyzeSource,
-  /className=\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : ANALYZE_HEADER_CLASS\}/,
-  'Analyze upload header should use compact spacing while non-upload states keep the standard rhythm',
+  /<PageHeader\s+className=\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : ANALYZE_HEADER_CLASS\}/,
+  'Analyze upload header should use the shared header while non-upload states keep the standard rhythm',
 );
 
 assert.match(
   analyzeSource,
-  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-\[8px\] border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:shadow-none">/,
+  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:rounded-none max-md:shadow-none">/,
   'Analyze upload form should fill the remaining viewport height without forcing page scroll',
 );
 

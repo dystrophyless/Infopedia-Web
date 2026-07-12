@@ -2,13 +2,13 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import { Spinner } from './Spinner';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'surface';
-type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'surface';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-surface hover:opacity-90',
   secondary: 'bg-transparent text-accent hover:bg-surface/60',
-  danger: 'bg-danger text-surface hover:opacity-90',
+  danger: 'bg-danger-accent text-surface hover:opacity-90',
   ghost: 'bg-transparent text-muted hover:text-accent',
   surface: 'bg-surface text-text hover:bg-bg',
 };
@@ -46,8 +46,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       type={type}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      data-loading={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium outline-none transition-[color,background-color,border-color,opacity] duration-fast ease-standard focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-60',
         variantClasses[variant],
         sizeClasses[size],
         fullWidth && 'w-full',
@@ -55,7 +57,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       )}
       {...props}
     >
-      {loading && <Spinner />}
+      {loading && <Spinner className="shrink-0" />}
       {children}
     </button>
   ),

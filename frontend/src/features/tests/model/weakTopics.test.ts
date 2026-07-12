@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import type { AnalyzeChapterResult } from '../../../types';
+import {
+  FALLBACK_WEAK_TOPICS,
+  buildTestsWeakTopics,
+  clampPercent,
+  getWeakTopicSearchTarget,
+} from './weakTopics';
+
+const result = (
+  chapter: string,
+  percentage: number,
+  score: number,
+  maxScore = 10,
+): AnalyzeChapterResult => ({
+  chapter,
+  percentage,
+  score,
+  max_score: maxScore,
+  question_count: 10,
+  books: [],
+});
+
+describe('tests weak-topic model', () => {
+  it('clamps rendered progress values and encodes the first topic search target', () => {
+    expect(clampPercent(Number.NaN)).toBe(0);
+    expect(clampPercent(-4)).toBe(0);
+    expect(clampPercent(47.6)).toBe(48);
+    expect(clampPercent(140)).toBe(100);
+    expect(getWeakTopicSearchTarget([])).toBe('/search');
+    expect(getWeakTopicSearchTarget([{ chapter: '  ', percentage: 1 }])).toBe('/search');
+    expect(
+      getWeakTopicSearchTarget([{ chapter: 'Реляционные базы', percentage: 33 }]),
+    ).toBe('/search?query=%D0%A0%D0%B5%D0%BB%D1%8F%D1%86%D0%B8%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5%20%D0%B1%D0%B0%D0%B7%D1%8B');
+  });
+
+  it('uses up to three live weak topics in weakness order', () => {
+    const topics = buildTestsWeakTopics([
+      result('Strong', 95, 10),
+      result('Fourth', 60, 5),
+      result('Second', 20, 2),
+      result('First', 10, 1),
+      result('Third', 40, 4),
+    ]);
+
+    expect(topics).toEqual([
+      { chapter: 'First', percentage: 10 },
+      { chapter: 'Second', percentage: 20 },
+      { chapter: 'Third', percentage: 40 },
+    ]);
+  });
+
+  it('preserves the established fallback rows when live analysis has no mistakes', () => {
+    expect(buildTestsWeakTopics(null)).toEqual(FALLBACK_WEAK_TOPICS);
+    expect(buildTestsWeakTopics([result('Perfect', 100, 10)])).toEqual(FALLBACK_WEAK_TOPICS);
+  });
+});

@@ -1,0 +1,51 @@
+import type { Preview } from '@storybook/react-vite';
+import '../src/index.css';
+
+const preview = {
+  tags: ['autodocs', 'test'],
+  parameters: {
+    layout: 'centered',
+    controls: {
+      matchers: {
+        color: /(background|color)$/i,
+        date: /Date$/i,
+      },
+    },
+    a11y: {
+      test: 'error',
+    },
+    backgrounds: {
+      options: {
+        app: { name: 'App canvas', value: '#efebf6' },
+        surface: { name: 'Surface', value: '#ffffff' },
+        dark: { name: 'Brand dark', value: '#3a1c6e' },
+      },
+    },
+    viewport: {
+      options: {
+        mobile320: {
+          name: 'Mobile 320',
+          styles: { width: '320px', height: '568px' },
+          type: 'mobile',
+        },
+        mobile390: {
+          name: 'Mobile 390',
+          styles: { width: '390px', height: '844px' },
+          type: 'mobile',
+        },
+        mobile430: {
+          name: 'Mobile 430 × 932',
+          styles: { width: '430px', height: '932px' },
+          type: 'mobile',
+        },
+        desktop1440: {
+          name: 'Desktop 1440',
+          styles: { width: '1440px', height: '900px' },
+          type: 'desktop',
+        },
+      },
+    },
+  },
+} satisfies Preview;
+
+export default preview;

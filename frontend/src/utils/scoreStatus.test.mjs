@@ -19,8 +19,15 @@ async function importTs(relativePath) {
   return import(url);
 }
 
+const scoreStatusSource = readFileSync(path.resolve(frontendRoot, 'src/utils/scoreStatus.ts'), 'utf8');
 const { getScoreStatus } = await importTs('src/utils/scoreStatus.ts');
 const { buildWeakTopicInsights, getWeakTopicSummary } = await importTs('src/utils/weakTopics.ts');
+
+assert.doesNotMatch(
+  scoreStatusSource,
+  /#[\da-f]{3,8}\b/i,
+  'score statuses should reference semantic theme classes instead of raw colors',
+);
 
 assert.equal(getScoreStatus(0).id, 'low');
 assert.equal(getScoreStatus(39).id, 'low');
@@ -34,14 +41,15 @@ assert.equal(getScoreStatus(85).id, 'excellent');
 assert.equal(getScoreStatus(100).id, 'excellent');
 assert.equal(getScoreStatus(-10).id, 'low');
 assert.equal(getScoreStatus(140).id, 'excellent');
-assert.notEqual(getScoreStatus(60).progressColor, getScoreStatus(71).progressColor);
-assert.equal(getScoreStatus(50).backgroundColor, '#fef3c7');
-assert.equal(getScoreStatus(50).progressColor, '#eab308');
-assert.equal(getScoreStatus(50).borderColor, '#facc15');
-assert.equal(getScoreStatus(80).textColor, '#166534');
-assert.equal(getScoreStatus(80).progressColor, '#22c55e');
-assert.equal(getScoreStatus(90).textColor, '#047857');
-assert.equal(getScoreStatus(90).progressColor, '#059669');
+assert.notEqual(getScoreStatus(60).progressClass, getScoreStatus(71).progressClass);
+assert.equal(getScoreStatus(50).surfaceClass, 'bg-status-review-surface');
+assert.equal(getScoreStatus(50).progressClass, 'bg-status-review-progress');
+assert.equal(getScoreStatus(50).borderClass, 'border-status-review-border');
+assert.equal(getScoreStatus(80).textClass, 'text-status-good-foreground');
+assert.equal(getScoreStatus(80).progressClass, 'bg-status-good-progress');
+assert.equal(getScoreStatus(90).textClass, 'text-status-excellent-foreground');
+assert.equal(getScoreStatus(90).progressClass, 'bg-status-excellent-progress');
+assert.equal(getScoreStatus(90).accentClass, 'text-status-excellent-accent');
 
 const topics = [
   createTopic('DATABASES', 88, 5, 6, 6),

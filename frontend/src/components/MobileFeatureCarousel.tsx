@@ -379,6 +379,7 @@ export function MobileFeatureCarousel({
           {loopSlides.map((card, loopIndex) => {
             const realIndex = (loopIndex - 1 + featureCards.length) % featureCards.length;
             const isClone = loopIndex === 0 || loopIndex === loopSlides.length - 1;
+            const isAriaHidden = isClone || realIndex !== activeIndex;
 
             return (
               <li
@@ -387,11 +388,11 @@ export function MobileFeatureCarousel({
                   slideRefs.current[loopIndex] = node;
                 }}
                 className="w-[var(--feature-card-width)] shrink-0"
-                aria-hidden={isClone || realIndex !== activeIndex}
+                aria-hidden={isAriaHidden}
               >
                 <FeatureSlideCard
                   card={card}
-                  clone={isClone}
+                  ctaInteractive={!isAriaHidden}
                   variant={variant}
                   onPointerDown={handleCtaPointerDown}
                   onClick={handleCardClick}
@@ -426,13 +427,13 @@ export function MobileFeatureCarousel({
 
 function FeatureSlideCard({
   card,
-  clone,
+  ctaInteractive,
   variant,
   onClick,
   onPointerDown,
 }: {
   card: MobileFeatureCard;
-  clone: boolean;
+  ctaInteractive: boolean;
   variant: 'mobile' | 'desktop';
   onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
   onPointerDown: (event: PointerEvent<HTMLAnchorElement>) => void;
@@ -454,16 +455,23 @@ function FeatureSlideCard({
                 {card.description}
               </p>
             </div>
-            <Link
-              to={card.href}
-              className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
-              tabIndex={clone ? -1 : undefined}
-              draggable={false}
-              onPointerDown={onPointerDown}
-              onClick={onClick}
-            >
-              {card.cta}
-            </Link>
+            {ctaInteractive ? (
+              <Link
+                to={card.href}
+                className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
+                draggable={false}
+                onPointerDown={onPointerDown}
+                onClick={onClick}
+              >
+                {card.cta}
+              </Link>
+            ) : (
+              <span
+                className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white"
+              >
+                {card.cta}
+              </span>
+            )}
           </div>
         </div>
 
@@ -501,16 +509,23 @@ function FeatureSlideCard({
       <p className="absolute left-8 right-8 top-[365px] line-clamp-2 min-h-[32px] text-[16px] leading-none text-[#6e6779]">
         {card.description}
       </p>
-      <Link
-        to={card.href}
-        className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[16px] font-medium leading-none text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
-        tabIndex={clone ? -1 : undefined}
-        draggable={false}
-        onPointerDown={onPointerDown}
-        onClick={onClick}
-      >
-        {card.cta}
-      </Link>
+      {ctaInteractive ? (
+        <Link
+          to={card.href}
+          className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[16px] font-medium leading-none text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
+          draggable={false}
+          onPointerDown={onPointerDown}
+          onClick={onClick}
+        >
+          {card.cta}
+        </Link>
+      ) : (
+        <span
+          className="absolute bottom-8 left-8 right-8 flex h-10 items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[16px] font-medium leading-none text-white"
+        >
+          {card.cta}
+        </span>
+      )}
     </div>
   );
 }

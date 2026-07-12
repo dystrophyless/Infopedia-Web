@@ -61,7 +61,7 @@ function DesktopAuthenticatedLanding() {
         id="featured-terms"
         className="scroll-mt-[112px] bg-bg pb-[96px]"
       >
-        <p className="mb-6 text-center text-[14px] tracking-wider text-border">
+        <p className="mb-6 text-center text-[14px] tracking-wider text-[#524d5b]">
           {t('landing.termExamples')}
         </p>
         <TermCardCarousel />
@@ -195,7 +195,7 @@ function DesktopGuestSections() {
         className="scroll-mt-[112px] overflow-hidden bg-[#efebf6] pb-20 pt-12"
       >
         <div className="flex flex-col gap-8">
-          <p className="text-center text-[14px] font-medium uppercase leading-none text-[#6e6779]">
+          <p className="text-center text-[14px] font-medium uppercase leading-none text-text-body">
             {t('landing.termExamples')}
           </p>
           <div className="w-full overflow-hidden">
@@ -372,7 +372,7 @@ function MobileFigmaGuestSections() {
     <>
       <section id="mobile-proof" className="box-border w-screen max-w-full overflow-hidden bg-[#efebf6] py-8">
         <div className="flex flex-col gap-7">
-          <p className="text-center text-[14px] font-medium uppercase leading-none text-[#6e6779]">
+          <p className="text-center text-[14px] font-medium uppercase leading-none text-text-body">
             {t('landing.termExamples')}
           </p>
           <div className="w-full overflow-hidden">
@@ -610,7 +610,7 @@ function MobileHeroLanguageToggle() {
     <button
       type="button"
       aria-label={t('common.language')}
-      className="flex h-8 items-center justify-center gap-[5px] px-3 text-[12px] leading-none text-[#8c8698]"
+      className="flex h-8 items-center justify-center gap-[5px] px-3 text-[12px] leading-none text-[#524d5b]"
       onClick={() => setLang(nextLang)}
     >
       <span>{lang.toUpperCase()}</span>

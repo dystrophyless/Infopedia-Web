@@ -255,6 +255,24 @@ assert.match(
 
 assert.match(
   carouselSource,
+  /const isAriaHidden = isClone \|\| realIndex !== activeIndex;[\s\S]*aria-hidden=\{isAriaHidden\}[\s\S]*ctaInteractive=\{!isAriaHidden\}/,
+  'Every aria-hidden slide should pass a noninteractive CTA state to its card',
+);
+
+assert.match(
+  carouselSource,
+  /ctaInteractive \? \([\s\S]*?<Link[\s\S]*?to=\{card\.href\}[\s\S]*?\) : \([\s\S]*?<span[\s\S]*?\{card\.cta\}/,
+  'Only the active visible slide CTA should be a route link; hidden clones and inactive slides should use styled spans',
+);
+
+assert.doesNotMatch(
+  carouselSource,
+  /tabIndex=\{clone \? -1 : undefined\}/,
+  'Loop-clone CTAs should not rely on tabIndex alone to become noninteractive',
+);
+
+assert.match(
+  carouselSource,
   /window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)/,
   'Feature carousel should honor reduced motion preferences',
 );

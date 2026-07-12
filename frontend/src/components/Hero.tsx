@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { SearchChoiceModal } from './SearchChoiceModal';
+import { Button } from '../ui';
 
 function authTarget(path: string, isAuthenticated: boolean): string {
   if (isAuthenticated) return path;
@@ -23,16 +24,16 @@ export function Hero() {
           <p className="max-w-[860px] text-[20px] leading-[1.25] text-text-body max-md:text-[16px]">
             {t('landing.heroSubtitle')}
           </p>
-          <button
-            type="button"
-            className="rounded-[10px] border-0 bg-primary px-[45px] py-[16px] text-[20px] text-surface transition-opacity hover:opacity-90"
+          <Button
+            size="lg"
+            className="px-[45px] py-[16px] text-[20px]"
             onClick={() => setSearchModalOpen(true)}
           >
             <span>{t('landing.ctaFind')} </span>
             <span className="text-highlight">{t('landing.ctaTerm')}</span>
             <span> {t('landing.ctaOr')} </span>
             <span className="text-highlight">{t('landing.ctaDefinition')}</span>
-          </button>
+          </Button>
         </div>
       </section>
       {searchModalOpen && (

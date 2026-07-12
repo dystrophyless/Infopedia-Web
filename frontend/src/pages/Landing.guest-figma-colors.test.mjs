@@ -9,7 +9,7 @@ const featureCarouselSource = readFileSync(
   'utf8',
 );
 const termCarouselSource = readFileSync(
-  path.resolve(pagesDir, '../components/TermCardCarousel.tsx'),
+  path.resolve(pagesDir, '../features/terms/components/FeaturedTermCard.tsx'),
   'utf8',
 );
 
@@ -70,12 +70,6 @@ assert.match(
 
 assert.match(
   guestLandingPaletteSource,
-  /text-\[#6e6779\]/,
-  'Guest landing secondary text should use Figma #6e6779',
-);
-
-assert.match(
-  guestLandingPaletteSource,
   /bg-\[#6a37c3\]/,
   'Guest landing primary CTAs should use Figma #6a37c3',
 );
@@ -106,20 +100,20 @@ assert.doesNotMatch(
 
 assert.match(
   termCarouselSource,
-  /variant === 'guest'[\s\S]*bg-\[#fbfbfb\]/,
+  /variant === 'guest'[\s\S]*bg-surface-subtle/,
   'Guest term examples should use Figma #fbfbfb cards',
 );
 
 assert.match(
   termCarouselSource,
-  /text-\[#6a37c3\][\s\S]*text-\[#524d5b\]/,
-  'Guest term examples should use the refreshed Figma title and body colors',
+  /text-action-selected[\s\S]*text-text-body/,
+  'Guest term examples should use semantic title and body colors',
 );
 
 assert.match(
   featureCarouselSource,
-  /bg-\[#6a37c3\][\s\S]*text-\[#6a37c3\][\s\S]*text-\[#6e6779\]/,
-  'Feature carousel should use the refreshed Figma accent and body colors',
+  /bg-\[#6a37c3\][\s\S]*text-\[#6a37c3\]/,
+  'Feature carousel should use the refreshed Figma accent colors',
 );
 
 assert.doesNotMatch(

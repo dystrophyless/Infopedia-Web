@@ -149,56 +149,13 @@ select:focus-visible {
   will-change: transform;
 }
 
-@media (max-width: 767px) {
-  [class*='shadow-'] {
-    box-shadow: none !important;
-  }
-
-  [class*='border'] {
-    border-color: transparent !important;
-  }
-
-  .mobile-search-sheet-field {
-    border-color: #a585db !important;
-  }
-
-  .search-filter-control {
-    border-color: #a585db !important;
-  }
-
-  .search-filter-option,
-  .search-filter-checkbox-visual {
-    border-color: #a585db !important;
-  }
-
-  .search-filter-reset-button {
-    border-color: #a585db !important;
-  }
-}
-
-.test-answer-option-neutral {
-  border-color: #ded2f1 !important;
-}
-
-.test-answer-option-selected {
-  border-color: #6a37c3 !important;
-}
-
-.test-answer-option-correct {
-  border-color: #29ae70 !important;
-}
-
-.test-answer-option-incorrect {
-  border-color: #bc251a !important;
-}
-
 .search-filter-option.search-filter-option-active {
-  border-color: #6a37c3 !important;
+  border-color: #6a37c3;
   box-shadow: inset 0 0 0 1px #6a37c3;
 }
 
 .search-filter-checkbox-visual.search-filter-checkbox-visual-active {
-  border-color: #6a37c3 !important;
+  border-color: #6a37c3;
 }
 
 .search-filter-option:active {
@@ -213,7 +170,7 @@ select:focus-visible {
 @media (hover: hover) and (pointer: fine) {
   .search-filter-option:not(.search-filter-option-active):hover {
     background-color: #f8f5fc;
-    border-color: #a585db !important;
+    border-color: #a585db;
     box-shadow: 0 6px 16px rgba(106, 55, 195, 0.1);
     transform: translateY(-1px);
   }
@@ -237,7 +194,7 @@ select:focus-visible {
   }
 
   .search-filter-reset-button:hover {
-    border-color: #6a37c3 !important;
+    border-color: #6a37c3;
     box-shadow: 0 8px 18px rgba(106, 55, 195, 0.12);
     color: #6a37c3;
     transform: translateY(-1px);

@@ -10,6 +10,22 @@ const carouselSource = readFileSync(
   'utf8',
 );
 const testsPagePath = path.resolve(pagesDir, 'Tests.tsx');
+const testsHubViewPath = path.resolve(
+  srcDir,
+  'features/tests/components/TestsHubView.tsx',
+);
+const weakTopicProgressListPath = path.resolve(
+  srcDir,
+  'features/tests/components/WeakTopicProgressList.tsx',
+);
+const testEntryLinkPath = path.resolve(
+  srcDir,
+  'features/tests/components/TestEntryLink.tsx',
+);
+const weakTopicsModelSource = readFileSync(
+  path.resolve(srcDir, 'features/tests/model/weakTopics.ts'),
+  'utf8',
+);
 
 assert.ok(
   existsSync(testsPagePath),
@@ -19,6 +35,10 @@ assert.ok(
 const testsSource = existsSync(testsPagePath)
   ? readFileSync(testsPagePath, 'utf8')
   : '';
+const testsHubSource = readFileSync(testsHubViewPath, 'utf8');
+const weakTopicProgressSource = readFileSync(weakTopicProgressListPath, 'utf8');
+const testEntryLinkSource = readFileSync(testEntryLinkPath, 'utf8');
+const testsViewSource = `${testsHubSource}\n${weakTopicProgressSource}\n${testEntryLinkSource}`;
 
 assert.match(
   appSource,
@@ -45,9 +65,21 @@ assert.match(
 );
 
 assert.match(
-  testsSource,
+  weakTopicsModelSource,
   /buildWeakTopicInsights/,
-  'Tests page should reuse the weak-topic scoring utility',
+  'Tests page model should reuse the weak-topic scoring utility',
+);
+
+assert.match(
+  testsSource,
+  /buildTestsWeakTopics\(latestResults\)/,
+  'Tests page should derive its rendered rows through the extracted weak-topic model',
+);
+
+assert.match(
+  testsSource,
+  /getWeakTopicSearchTarget\(weakTopics\)/,
+  'Tests page should derive its search route through the extracted weak-topic model',
 );
 
 for (const text of [
@@ -61,7 +93,7 @@ for (const text of [
   'Тесты по разделам',
 ]) {
   assert.match(
-    testsSource,
+    testsViewSource,
     new RegExp(text),
     `Tests page should include the Figma text: ${text}`,
   );
@@ -75,32 +107,32 @@ for (const className of [
   'max-md:px-6',
 ]) {
   assert.match(
-    testsSource,
+    testsViewSource,
     new RegExp(className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
     `Tests page should preserve the Figma mobile class ${className}`,
   );
 }
 
 assert.match(
-  testsSource,
+  weakTopicsModelSource,
   /FALLBACK_WEAK_TOPICS/,
-  'Tests page should keep Figma sample weak topics visible before analysis data exists',
+  'Tests page model should keep Figma sample weak topics visible before analysis data exists',
 );
 
 assert.match(
-  testsSource,
-  /WeakTopicProgressRow/,
+  testsViewSource,
+  /WeakTopicProgressList/,
   'Tests page should isolate progress row rendering for weak-topic percentages',
 );
 
 assert.match(
-  testsSource,
+  testsViewSource,
   /Target01Icon/,
   'Weak-topic test card should use a goal/target icon matching the Figma card',
 );
 
 assert.match(
-  testsSource,
+  testsViewSource,
   /ArrowRight02Icon/,
   'Secondary test rows should use the Figma right-arrow affordance',
 );

@@ -1,30 +1,246 @@
 :root {
-  /* Brand palette extracted from Figma node 190:117 */
-  --color-bg: #efebf6;
-  --color-primary: #3a1c6e;
-  --color-accent: #44237d;
-  --color-secondary: #623f9f;
-  --color-border: #9683b7;
-  --color-muted: rgba(58, 28, 110, 0.5);
-  --color-highlight: #c89eff;
-  --color-surface: #ffffff;
-  --color-text: #000000;
-  --color-text-body: #404040;
-  --color-success: #16a34a;
-  --color-danger: #dc2626;
+  /*
+   * Reference palette
+   *
+   * Color channels stay space-separated so Tailwind can apply an alpha value
+   * without duplicating the palette in JavaScript configuration.
+   */
+  --ref-color-brand-950-rgb: 58 28 110;
+  --ref-color-brand-900-rgb: 68 35 125;
+  --ref-color-brand-emphasized-rgb: 87 45 159;
+  --ref-color-brand-selected-rgb: 106 55 195;
+  --ref-color-brand-700-rgb: 98 63 159;
+  --ref-color-brand-400-rgb: 150 131 183;
+  --ref-color-brand-interactive-border-rgb: 165 133 219;
+  --ref-color-brand-placeholder-rgb: 197 177 231;
+  --ref-color-brand-300-rgb: 200 158 255;
+  --ref-color-brand-100-rgb: 239 235 246;
+  --ref-color-brand-50-rgb: 248 245 252;
+  --ref-color-neutral-950-rgb: 0 0 0;
+  --ref-color-neutral-900-rgb: 22 21 25;
+  --ref-color-neutral-700-rgb: 64 64 64;
+  --ref-color-neutral-0-rgb: 255 255 255;
+  --ref-color-correct-600-rgb: 41 174 112;
+  --ref-color-incorrect-700-rgb: 188 37 26;
+  --ref-color-red-700-rgb: 185 28 28;
+  --ref-color-red-600-rgb: 220 38 38;
+  --ref-color-red-500-rgb: 239 68 68;
+  --ref-color-red-200-rgb: 254 202 202;
+  --ref-color-red-100-rgb: 254 226 226;
+  --ref-color-amber-800-rgb: 146 64 14;
+  --ref-color-amber-600-rgb: 202 138 4;
+  --ref-color-amber-500-rgb: 234 179 8;
+  --ref-color-amber-400-rgb: 250 204 21;
+  --ref-color-amber-100-rgb: 254 243 199;
+  --ref-color-green-800-rgb: 22 101 52;
+  --ref-color-green-600-rgb: 22 163 74;
+  --ref-color-green-500-rgb: 34 197 94;
+  --ref-color-green-300-rgb: 134 239 172;
+  --ref-color-green-100-rgb: 220 252 231;
+  --ref-color-emerald-700-rgb: 4 120 87;
+  --ref-color-emerald-600-rgb: 5 150 105;
+  --ref-color-emerald-500-rgb: 16 185 129;
+  --ref-color-emerald-300-rgb: 110 231 183;
+  --ref-color-emerald-100-rgb: 209 250 229;
 
-  /* Semantic UI primitives */
+  /* Semantic color roles */
+  --color-canvas-rgb: var(--ref-color-brand-100-rgb);
+  --color-surface-rgb: var(--ref-color-neutral-0-rgb);
+  --color-surface-muted-rgb: var(--ref-color-brand-100-rgb);
+  --color-surface-subtle-rgb: var(--ref-color-brand-50-rgb);
+  --color-surface-inverse-rgb: var(--ref-color-brand-selected-rgb);
+  --color-text-strong-rgb: var(--ref-color-neutral-950-rgb);
+  --color-text-body-rgb: var(--ref-color-neutral-900-rgb);
+  /*
+   * Muted copy is still text and must keep a 4.5:1 contrast ratio on both
+   * canvas and surface. The lighter Figma tint remains available only for
+   * non-text decoration through --color-decorative-muted.
+   */
+  --color-text-muted-rgb: var(--ref-color-brand-700-rgb);
+  --color-text-interactive-rgb: var(--ref-color-brand-selected-rgb);
+  --color-text-placeholder-rgb: var(--ref-color-brand-placeholder-rgb);
+  --color-text-inverse-rgb: var(--ref-color-brand-50-rgb);
+  --color-decorative-muted-rgb: var(--ref-color-brand-950-rgb);
+  --color-border-default-rgb: var(--ref-color-brand-400-rgb);
+  --color-border-subtle-rgb: var(--ref-color-brand-400-rgb);
+  --color-border-strong-rgb: var(--ref-color-brand-700-rgb);
+  --color-border-interactive-rgb: var(--ref-color-brand-interactive-border-rgb);
+  --color-action-primary-rgb: var(--ref-color-brand-950-rgb);
+  --color-action-primary-hover-rgb: var(--ref-color-brand-900-rgb);
+  --color-action-secondary-rgb: var(--ref-color-brand-700-rgb);
+  --color-action-selected-rgb: var(--ref-color-brand-selected-rgb);
+  --color-action-emphasized-rgb: var(--ref-color-brand-emphasized-rgb);
+  --color-focus-rgb: var(--ref-color-brand-900-rgb);
+  --color-highlight-rgb: var(--ref-color-brand-300-rgb);
+  --color-overlay-rgb: 18 9 31;
+  --color-success-text-rgb: var(--ref-color-green-800-rgb);
+  --color-success-surface-rgb: var(--ref-color-green-100-rgb);
+  --color-success-accent-rgb: var(--ref-color-green-600-rgb);
+  --color-danger-text-rgb: var(--ref-color-red-700-rgb);
+  --color-danger-surface-rgb: var(--ref-color-red-100-rgb);
+  --color-danger-accent-rgb: var(--ref-color-red-600-rgb);
+  /*
+   * Feedback accents retain the exact product-reference colors. Readable copy
+   * intentionally uses the darker semantic text roles instead of the accent.
+   */
+  --color-correct-text-rgb: var(--ref-color-green-800-rgb);
+  --color-correct-surface-rgb: var(--ref-color-green-100-rgb);
+  --color-correct-accent-rgb: var(--ref-color-correct-600-rgb);
+  --color-incorrect-text-rgb: var(--ref-color-incorrect-700-rgb);
+  --color-incorrect-surface-rgb: var(--ref-color-red-100-rgb);
+  --color-incorrect-accent-rgb: var(--ref-color-incorrect-700-rgb);
+
+  /* Compatibility channels: the unqualified role is safe for readable copy. */
+  --color-success-rgb: var(--color-success-text-rgb);
+  --color-danger-rgb: var(--color-danger-text-rgb);
+
+  --color-canvas: rgb(var(--color-canvas-rgb));
+  --color-surface: rgb(var(--color-surface-rgb));
+  --color-surface-muted: rgb(var(--color-surface-muted-rgb));
+  --color-surface-subtle: rgb(var(--color-surface-subtle-rgb));
+  --color-surface-inverse: rgb(var(--color-surface-inverse-rgb));
+  --color-text-strong: rgb(var(--color-text-strong-rgb));
+  --color-text-body: rgb(var(--color-text-body-rgb));
+  --color-text-muted: rgb(var(--color-text-muted-rgb));
+  --color-text-interactive: rgb(var(--color-text-interactive-rgb));
+  --color-text-placeholder: rgb(var(--color-text-placeholder-rgb));
+  --color-text-inverse: rgb(var(--color-text-inverse-rgb));
+  --color-decorative-muted: rgb(var(--color-decorative-muted-rgb) / 0.5);
+  --color-border-default: rgb(var(--color-border-default-rgb));
+  --color-border-subtle: rgb(var(--color-border-subtle-rgb) / 0.45);
+  --color-border-strong: rgb(var(--color-border-strong-rgb));
+  --color-border-interactive: rgb(var(--color-border-interactive-rgb));
+  --color-action-primary: rgb(var(--color-action-primary-rgb));
+  --color-action-primary-hover: rgb(var(--color-action-primary-hover-rgb));
+  --color-action-secondary: rgb(var(--color-action-secondary-rgb));
+  --color-action-selected: rgb(var(--color-action-selected-rgb));
+  --color-action-emphasized: rgb(var(--color-action-emphasized-rgb));
+  --color-focus: rgb(var(--color-focus-rgb));
+  --color-highlight: rgb(var(--color-highlight-rgb));
+  --color-overlay: rgb(var(--color-overlay-rgb) / 0.48);
+  --color-success-text: rgb(var(--color-success-text-rgb));
+  --color-success-surface: rgb(var(--color-success-surface-rgb));
+  --color-success-accent: rgb(var(--color-success-accent-rgb));
+  --color-danger-text: rgb(var(--color-danger-text-rgb));
+  --color-danger-surface: rgb(var(--color-danger-surface-rgb));
+  --color-danger-accent: rgb(var(--color-danger-accent-rgb));
+  --color-correct-text: rgb(var(--color-correct-text-rgb));
+  --color-correct-surface: rgb(var(--color-correct-surface-rgb));
+  --color-correct-accent: rgb(var(--color-correct-accent-rgb));
+  --color-incorrect-text: rgb(var(--color-incorrect-text-rgb));
+  --color-incorrect-surface: rgb(var(--color-incorrect-surface-rgb));
+  --color-incorrect-accent: rgb(var(--color-incorrect-accent-rgb));
+  --color-success: var(--color-success-text);
+  --color-danger: var(--color-danger-text);
+
+  /* Semantic score/status roles */
+  --color-status-low-foreground-rgb: var(--ref-color-red-700-rgb);
+  --color-status-low-surface-rgb: var(--ref-color-red-100-rgb);
+  --color-status-low-progress-rgb: var(--ref-color-red-600-rgb);
+  --color-status-low-border-rgb: var(--ref-color-red-200-rgb);
+  --color-status-low-accent-rgb: var(--ref-color-red-500-rgb);
+  --color-status-review-foreground-rgb: var(--ref-color-amber-800-rgb);
+  --color-status-review-surface-rgb: var(--ref-color-amber-100-rgb);
+  --color-status-review-progress-rgb: var(--ref-color-amber-500-rgb);
+  --color-status-review-border-rgb: var(--ref-color-amber-400-rgb);
+  --color-status-review-accent-rgb: var(--ref-color-amber-600-rgb);
+  --color-status-good-foreground-rgb: var(--ref-color-green-800-rgb);
+  --color-status-good-surface-rgb: var(--ref-color-green-100-rgb);
+  --color-status-good-progress-rgb: var(--ref-color-green-500-rgb);
+  --color-status-good-border-rgb: var(--ref-color-green-300-rgb);
+  --color-status-good-accent-rgb: var(--ref-color-green-600-rgb);
+  --color-status-excellent-foreground-rgb: var(--ref-color-emerald-700-rgb);
+  --color-status-excellent-surface-rgb: var(--ref-color-emerald-100-rgb);
+  --color-status-excellent-progress-rgb: var(--ref-color-emerald-600-rgb);
+  --color-status-excellent-border-rgb: var(--ref-color-emerald-300-rgb);
+  --color-status-excellent-accent-rgb: var(--ref-color-emerald-500-rgb);
+
+  /* Backwards-compatible aliases for the current application vocabulary. */
+  --color-bg-rgb: var(--color-canvas-rgb);
+  --color-primary-rgb: var(--color-action-primary-rgb);
+  --color-accent-rgb: var(--color-action-primary-hover-rgb);
+  --color-secondary-rgb: var(--color-action-secondary-rgb);
+  --color-border-rgb: var(--color-border-default-rgb);
+  --color-muted-rgb: var(--color-text-muted-rgb);
+  --color-text-rgb: var(--color-text-strong-rgb);
+  --color-bg: var(--color-canvas);
+  --color-primary: var(--color-action-primary);
+  --color-accent: var(--color-action-primary-hover);
+  --color-secondary: var(--color-action-secondary);
+  --color-border: var(--color-border-default);
+  --color-muted: var(--color-text-muted);
+  --color-text: var(--color-text-strong);
+
+  /* Spacing scale */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-page-inline-mobile: var(--space-6);
+  --space-mobile-rail: var(--space-page-inline-mobile);
+
+  /* Typography roles: size, line height and weight are separate ingredients. */
+  --type-screen-title-size: 30px;
+  --type-screen-title-line-height: 1.15;
+  --type-screen-title-weight: 500;
+  --type-section-title-size: 22px;
+  --type-section-title-line-height: 1.2;
+  --type-section-title-weight: 500;
+  --type-card-title-size: 20px;
+  --type-card-title-line-height: 1.25;
+  --type-card-title-weight: 500;
+  --type-body-size: 16px;
+  --type-body-line-height: 1.5;
+  --type-body-weight: 400;
+  --type-helper-size: 14px;
+  --type-helper-line-height: 1.4;
+  --type-helper-weight: 400;
+  --type-caption-size: 12px;
+  --type-caption-line-height: 1.35;
+  --type-caption-weight: 400;
+
+  /* Shape and control sizing */
+  --radius-none: 0;
+  --radius-xs: 6px;
   --radius-control: 8px;
   --radius-surface: 12px;
   --radius-card: 15px;
+  --radius-pill: 9999px;
   --control-height-sm: 40px;
   --control-height-md: 44px;
   --control-height-lg: 48px;
-  --space-mobile-rail: 24px;
-  --type-screen-title-size: 30px;
-  --type-section-title-size: 22px;
-  --type-card-title-size: 20px;
-  --type-body-size: 16px;
-  --type-helper-size: 14px;
-  --type-caption-size: 12px;
+  --control-touch-target: 44px;
+
+  /* Elevation */
+  --elevation-none: none;
+  --elevation-card: 8px 8px 0 rgb(var(--color-border-default-rgb));
+  --elevation-feature: 4px 4px 0 rgb(var(--color-border-default-rgb));
+  --elevation-overlay: 0 18px 54px rgb(var(--color-overlay-rgb) / 0.22);
+
+  /* Focus, motion and stacking */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --motion-duration-fast: 140ms;
+  --motion-duration-base: 180ms;
+  --motion-duration-slow: 240ms;
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+  --z-base: 0;
+  --z-dropdown: 20;
+  --z-sticky: 40;
+  --z-overlay: 50;
+  --z-overlay-step: 2;
+  --z-toast: 60;
+
+  /* App-shell dimensions */
+  --shell-desktop-header-height: 80px;
+  --shell-mobile-bottom-nav-height: 88px;
+  --shell-content-max-width: 1200px;
 }

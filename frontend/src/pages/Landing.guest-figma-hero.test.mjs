@@ -6,7 +6,15 @@ const pagesDir = import.meta.dirname;
 const srcDir = path.resolve(pagesDir, '..');
 const landingSource = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
 const carouselSource = readFileSync(
-  path.resolve(pagesDir, '../components/TermCardCarousel.tsx'),
+  path.resolve(pagesDir, '../features/terms/components/TermCardCarousel.tsx'),
+  'utf8',
+);
+const carouselViewSource = readFileSync(
+  path.resolve(pagesDir, '../features/terms/components/TermCardCarouselView.tsx'),
+  'utf8',
+);
+const featuredTermCardSource = readFileSync(
+  path.resolve(pagesDir, '../features/terms/components/FeaturedTermCard.tsx'),
   'utf8',
 );
 const mobileFeatureCarouselSource = readFileSync(
@@ -28,8 +36,8 @@ const mobileSourceProofSource =
   landingSource.match(/function MobileSourceProof[\s\S]*?\n\}\n\nfunction MobileToolsFeature/)?.[0] ?? '';
 const mobileToolsFeatureSource =
   landingSource.match(/function MobileToolsFeature[\s\S]*?\n\}\n\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
-const carouselFunctionSource = carouselSource.slice(
-  carouselSource.indexOf('export function TermCardCarousel('),
+const carouselViewFunctionSource = carouselViewSource.slice(
+  carouselViewSource.indexOf('export function TermCardCarouselView('),
 );
 
 assert.ok(mobileGuestHeroSource, 'Landing should define a guest-only mobile hero');
@@ -222,14 +230,14 @@ for (const key of [
 }
 
 assert.match(
-  carouselSource,
-  /variant\?: 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/,
+  featuredTermCardSource,
+  /export type FeaturedTermCardVariant = 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/,
   'TermCardCarousel should expose a guest variant',
 );
 
 assert.match(
-  carouselSource,
-  /h-\[168px\] w-\[216px\] rounded-\[16px\] border-0 bg-\[#fbfbfb\]/,
+  featuredTermCardSource,
+  /h-\[168px\] w-\[216px\] rounded-\[16px\] border-0 bg-surface-subtle/,
   'Guest term cards should use the taller 216px mobile footprint',
 );
 
@@ -240,19 +248,19 @@ assert.match(
 );
 
 assert.doesNotMatch(
-  carouselSource,
+  carouselViewFunctionSource,
   /GUEST_FALLBACK_TERMS|informatika-fallback|public_id: 'informatika'|public_id: 'alfavit'|public_id: 'etiket'/,
   'Guest term carousel should not fall back to static slug links when the backend is unavailable',
 );
 
 assert.match(
-  carouselFunctionSource,
+  carouselViewFunctionSource,
   /const shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop';/,
   'Desktop and guest carousels should use fixed-speed auto-scroll behavior',
 );
 
 assert.match(
-  carouselFunctionSource,
-  /variant === 'guest'\s*\?\s*'overflow-hidden pb-0'/,
+  carouselViewFunctionSource,
+  /variant === 'guest' \|\| variant === 'guestDesktop' \? 'overflow-hidden pb-0'/,
   'Guest mobile terms carousel should be moved by the animation rather than manual horizontal scrolling',
 );

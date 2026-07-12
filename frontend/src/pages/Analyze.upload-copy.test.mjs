@@ -16,8 +16,8 @@ const kkLocale = JSON.parse(
 
 assert.match(
   analyzeSource,
-  /\{!showUploadForm && \(\s*<p className="mt-2 max-w-\[720px\] text-\[16px\] leading-6 text-text-body">\s*\{t\('analyze\.description'\)\}/,
-  'Analyze upload screen should move the page description out of the top header',
+  /description=\{!showUploadForm \? t\('analyze\.description'\) : undefined\}/,
+  'Analyze upload screen should keep the page description out of the upload header through the shared PageHeader',
 );
 
 assert.match(

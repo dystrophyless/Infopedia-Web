@@ -12,6 +12,17 @@ import { useSSE } from '../hooks/useSSE';
 import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
 import { clampScorePercent, getScoreStatus } from '../utils/scoreStatus';
 import type { AnalyzeBookCoverage, AnalyzeChapterResult, AnalyzeTask } from '../types';
+import {
+  Button,
+  EmptyState,
+  PageContainer,
+  PageHeader,
+  Progress,
+  SegmentedControl,
+  StatCard,
+  StatusPanel,
+  Surface,
+} from '../ui';
 
 const MAX_ANALYZE_UPLOAD_BYTES = 2 * 1024 * 1024;
 const PDF_CONTENT_TYPES = new Set(['application/pdf', 'application/x-pdf']);
@@ -156,34 +167,21 @@ export function Analyze() {
   }
 
   return (
-    <div className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : ANALYZE_PAGE_CLASS}>
-      <header className={showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : ANALYZE_HEADER_CLASS}>
-        <div>
-          <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
-            {t('analyze.eyebrow')}
-          </p>
-          <h1 className="mt-2 text-[36px] font-medium leading-tight text-text max-md:text-[30px]">
-            {t('analyze.title')}
-          </h1>
-          {!showUploadForm && (
-            <p className="mt-2 max-w-[720px] text-[16px] leading-6 text-text-body">
-              {t('analyze.description')}
-            </p>
-          )}
-        </div>
-        {isTerminal && (
-          <button
-            type="button"
-            onClick={reset}
-            className="inline-flex h-[44px] items-center justify-center rounded-[8px] bg-primary px-5 text-[15px] font-medium text-surface transition-opacity hover:opacity-90"
-          >
-            {t('analyze.newUpload')}
-          </button>
-        )}
-      </header>
+    <PageContainer
+      width="full"
+      gutter="none"
+      className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : ANALYZE_PAGE_CLASS}
+    >
+      <PageHeader
+        className={showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : ANALYZE_HEADER_CLASS}
+        eyebrow={t('analyze.eyebrow')}
+        title={t('analyze.title')}
+        description={!showUploadForm ? t('analyze.description') : undefined}
+        trailing={isTerminal ? <Button onClick={reset}>{t('analyze.newUpload')}</Button> : undefined}
+      />
 
       {showUploadForm && (
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-[8px] border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:shadow-none">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:rounded-none max-md:shadow-none">
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1">
             <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4">
               <div>
@@ -246,34 +244,33 @@ export function Analyze() {
           {file && !taskId && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[8px] bg-bg px-4 py-3">
               <span className="min-w-0 truncate text-[15px] text-primary">{file.name}</span>
-              <button
-                type="button"
+              <Button
                 onClick={() => handleFileChange(null)}
                 aria-label={t('analyze.clearFile')}
-                className="flex size-9 shrink-0 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-surface hover:text-accent"
+                variant="ghost"
+                size="sm"
+                className="size-9 shrink-0 px-0"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={18} strokeWidth={1.8} />
-              </button>
+              </Button>
             </div>
           )}
 
-          {failureMessage && (
-            <p className="mt-4 rounded-[8px] bg-danger/10 px-4 py-3 text-[14px] text-danger" role="alert">
-              {failureMessage}
-            </p>
-          )}
+          {failureMessage && <StatusPanel className="mt-4" tone="danger" announce="assertive" title={failureMessage} headingLevel={3} />}
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
             <p className="max-w-[580px] text-[14px] leading-6 text-muted">
               {t('analyze.privacyNote')}
             </p>
-            <button
+            <Button
               type="submit"
+              size="lg"
               disabled={!file || submitting || Boolean(taskId)}
-              className="inline-flex h-[46px] items-center justify-center rounded-[8px] bg-primary px-6 text-[16px] font-medium text-surface transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full"
+              loading={submitting}
+              className="max-sm:w-full"
             >
               {submitting ? t('common.loading') : t('analyze.submit')}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -296,7 +293,7 @@ export function Analyze() {
           onSortDirectionChange={setSortDirection}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 
@@ -326,7 +323,7 @@ function InstructionStep({
   );
 }
 
-function AnalyzeProgress({
+export function AnalyzeProgress({
   currentTask,
 }: {
   currentTask: AnalyzeTask | null | undefined;
@@ -359,26 +356,19 @@ function AnalyzeProgress({
             <span>{getStageLabel(currentStage, t)}</span>
             <span>{t('analyze.progressPercent', { percent: progressPercent })}</span>
           </div>
-          <div
-            className="h-4 overflow-hidden rounded-full bg-bg"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progressPercent}
+          <Progress
+            value={progressPercent}
+            size="lg"
             aria-label={t('analyze.progressTitle')}
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500 ease-linear"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+            valueText={t('analyze.progressPercent', { percent: progressPercent })}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function AnalyzeFailure({
+export function AnalyzeFailure({
   message,
   onReset,
 }: {
@@ -388,26 +378,18 @@ function AnalyzeFailure({
   const { t } = useTranslation();
 
   return (
-    <section className="mt-6 rounded-[8px] border border-danger/40 bg-surface p-8 text-center shadow-feature max-md:shadow-none">
-      <span className="mx-auto flex size-14 items-center justify-center rounded-[8px] bg-danger/10 text-danger">
-        <HugeiconsIcon icon={AlertCircleIcon} size={30} strokeWidth={1.6} />
-      </span>
-      <h2 className="mt-5 text-[26px] font-medium leading-tight text-text">
-        {t('analyze.errorTitle')}
-      </h2>
-      <p className="mx-auto mt-3 max-w-[620px] text-[15px] leading-6 text-text-body">{message}</p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="mt-6 inline-flex h-[44px] items-center justify-center rounded-[8px] bg-primary px-5 text-[15px] font-medium text-surface transition-opacity hover:opacity-90"
-      >
-        {t('common.tryAgain')}
-      </button>
-    </section>
+    <Surface tone="plain" variant="mobile-flat" className="mt-6 border border-danger/40 p-8 shadow-feature">
+      <EmptyState
+        icon={<HugeiconsIcon icon={AlertCircleIcon} size={30} strokeWidth={1.6} />}
+        title={t('analyze.errorTitle')}
+        description={message}
+        action={<Button onClick={onReset}>{t('common.tryAgain')}</Button>}
+      />
+    </Surface>
   );
 }
 
-function AnalyzeResults({
+export function AnalyzeResults({
   results,
   summary,
   sortDirection,
@@ -423,9 +405,9 @@ function AnalyzeResults({
 
   if (results.length === 0) {
     return (
-      <p className="mt-8 rounded-[8px] border border-border bg-surface p-8 text-center text-muted shadow-feature max-md:shadow-none">
-        {t('analyze.noResults')}
-      </p>
+      <Surface tone="plain" variant="mobile-flat" className="mt-8 border border-border p-8 shadow-feature">
+        <EmptyState title={t('analyze.noResults')} />
+      </Surface>
     );
   }
 
@@ -443,32 +425,17 @@ function AnalyzeResults({
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[15px] font-medium text-primary">{t('analyze.sortLabel')}</p>
-        <div className="inline-flex rounded-[8px] border border-border/70 bg-bg/60 p-1">
-          <button
-            type="button"
-            onClick={() => onSortDirectionChange('weakFirst')}
-            aria-pressed={sortDirection === 'weakFirst'}
-            className={`h-9 rounded-[7px] px-4 text-[14px] font-medium transition-colors max-md:shadow-none ${
-              sortDirection === 'weakFirst'
-                ? 'bg-surface text-primary shadow-sm'
-                : 'text-muted hover:bg-surface/70 hover:text-primary'
-            }`}
-          >
-            {t('analyze.sortWeakFirst')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSortDirectionChange('strongFirst')}
-            aria-pressed={sortDirection === 'strongFirst'}
-            className={`h-9 rounded-[7px] px-4 text-[14px] font-medium transition-colors max-md:shadow-none ${
-              sortDirection === 'strongFirst'
-                ? 'bg-surface text-primary shadow-sm'
-                : 'text-muted hover:bg-surface/70 hover:text-primary'
-            }`}
-          >
-            {t('analyze.sortStrongFirst')}
-          </button>
-        </div>
+        <SegmentedControl
+          name="analyze-sort-direction"
+          label={t('analyze.sortLabel')}
+          labelHidden
+          value={sortDirection}
+          onValueChange={onSortDirectionChange}
+          options={[
+            { value: 'weakFirst', label: t('analyze.sortWeakFirst') },
+            { value: 'strongFirst', label: t('analyze.sortStrongFirst') },
+          ]}
+        />
       </div>
 
       <section className="mt-6 grid gap-4">
@@ -489,17 +456,7 @@ function SummaryStat({
   value: string;
   status?: ReturnType<typeof getScoreStatus>;
 }) {
-  return (
-    <article className="rounded-[8px] border border-border bg-surface p-5 shadow-feature max-md:shadow-none">
-      <p
-        className="text-[32px] font-medium leading-none text-primary"
-        style={status ? { color: status.textColor } : undefined}
-      >
-        {value}
-      </p>
-      <p className="mt-3 text-[14px] leading-tight text-text-body">{label}</p>
-    </article>
-  );
+  return <StatCard label={label} value={value} className={status?.textClass} />;
 }
 
 function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
@@ -521,19 +478,11 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
           </h2>
         </div>
         <div className="flex flex-col items-end gap-2 max-sm:items-start">
-          <span
-            className="text-[32px] font-medium leading-none"
-            style={{ color: scoreStatus.textColor }}
-          >
+          <span className={`text-[32px] font-medium leading-none ${scoreStatus.textClass}`}>
             {chapter.percentage}%
           </span>
           <span
-            className="rounded-full border px-3 py-1 text-[12px] font-medium leading-none"
-            style={{
-              backgroundColor: scoreStatus.backgroundColor,
-              borderColor: scoreStatus.borderColor,
-              color: scoreStatus.textColor,
-            }}
+            className={`rounded-full border px-3 py-1 text-[12px] font-medium leading-none ${scoreStatus.surfaceClass} ${scoreStatus.borderClass} ${scoreStatus.textClass}`}
           >
             {t(scoreStatus.labelKey)}
           </span>
@@ -564,8 +513,8 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
 
       <div className="mt-5 h-3 overflow-hidden rounded-full bg-bg" aria-hidden>
         <div
-          className="h-full rounded-full"
-          style={{ width: `${progress}%`, backgroundColor: scoreStatus.progressColor }}
+          className={`h-full rounded-full ${scoreStatus.progressClass}`}
+          style={{ width: `${progress}%` }}
         />
       </div>
 

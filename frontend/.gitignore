@@ -1,6 +1,10 @@
 node_modules
 dist
 dist-ssr
+storybook-static
+.vitest-storybook-report.json
+.vite-build-check
+/debug.log
 .vite/
 *.tsbuildinfo
 *.local

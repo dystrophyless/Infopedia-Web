@@ -3,7 +3,14 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const searchSource = readFileSync(
-  path.resolve(import.meta.dirname, 'TermSearch.tsx'),
+  path.resolve(import.meta.dirname, '../features/search/pages/TermSearchPage.tsx'),
+  'utf8',
+);
+const searchControllerSource = readFileSync(
+  path.resolve(
+    import.meta.dirname,
+    '../features/search/hooks/useTermSearchController.ts',
+  ),
   'utf8',
 );
 
@@ -20,7 +27,13 @@ assert.match(
 );
 
 assert.match(
-  searchSource,
+  searchControllerSource,
   /setQuery\(initialQuery\)/,
   'TermSearch should place the URL query into the shared search store',
+);
+
+assert.match(
+  searchSource,
+  /useTermSearchController\(initialQuery\)/,
+  'TermSearch should pass its URL query into the feature controller',
 );

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const termSearchSource = readFileSync(
-  path.resolve(import.meta.dirname, 'TermSearch.tsx'),
+  path.resolve(import.meta.dirname, '../features/search/pages/TermSearchPage.tsx'),
   'utf8',
 );
 const semanticSearchSource = readFileSync(
@@ -35,9 +35,14 @@ assert.match(
   'Semantic search should render a left-aligned eyebrow, shared search title, and description block',
 );
 
+const termSearchHeader = termSearchSource.match(
+  /<header className="mb-8 text-left">[\s\S]*?<\/header>/,
+)?.[0];
+
+assert.ok(termSearchHeader, 'Term search header should be present');
 assert.doesNotMatch(
-  termSearchSource,
-  /text-center[\s\S]*t\('search\.title'\)/,
+  termSearchHeader,
+  /\btext-center\b/,
   'Term search title should not stay centered',
 );
 

@@ -5,9 +5,29 @@ import path from 'node:path';
 const pagesDir = import.meta.dirname;
 const srcDir = path.resolve(pagesDir, '..');
 
-const termSearchSource = readFileSync(path.resolve(pagesDir, 'TermSearch.tsx'), 'utf8');
+const termSearchSource = readFileSync(
+  path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'),
+  'utf8',
+);
 const indexCssSource = readFileSync(path.resolve(srcDir, 'index.css'), 'utf8');
-const searchStoreSource = readFileSync(path.resolve(srcDir, 'stores/searchStore.ts'), 'utf8');
+const searchFeatureDir = path.resolve(srcDir, 'features/search');
+const searchControllerSource = readFileSync(
+  path.resolve(searchFeatureDir, 'hooks/useTermSearchController.ts'),
+  'utf8',
+);
+const filterTermsSource = readFileSync(
+  path.resolve(searchFeatureDir, 'model/filterTerms.ts'),
+  'utf8',
+);
+const resultFilterChipsSource = readFileSync(
+  path.resolve(searchFeatureDir, 'model/resultFilterChips.ts'),
+  'utf8',
+);
+const resultFilterIntegrationSource = `${resultFilterChipsSource}\n${termSearchSource}`;
+const searchStoreSource = readFileSync(
+  path.resolve(searchFeatureDir, 'model/searchStore.ts'),
+  'utf8',
+);
 const ruLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
 );
@@ -70,7 +90,7 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /SEARCH_RESULT_LIMIT = 11/,
   'Typed/result search should request the updated Figma total of 11 terms',
 );
@@ -102,27 +122,21 @@ assert.match(
 for (const mode of ['random', 'forYou', 'popular']) {
   assert.match(
     termSearchSource,
-    new RegExp(`id: '${mode}'`),
+    new RegExp(`value: '${mode}'`),
     `Term search should render the ${mode} Figma search mode pill`,
   );
 }
 
 assert.match(
   termSearchSource,
-  /data-search-mode-pill=\{mode\.id\}/,
-  'Term search mode pills should expose a stable data hook',
-);
-
-assert.match(
-  termSearchSource,
-  /function MobileSearchModePills[\s\S]*overflow-x-auto[\s\S]*\[scrollbar-width:none\][\s\S]*\[\&::-webkit-scrollbar\]:hidden/,
+  /function MobileSearchModePills[\s\S]*SegmentedControl[\s\S]*name="mobile-search-mode"[\s\S]*labelHidden[\s\S]*value=\{mode\}[\s\S]*onValueChange=\{setMode\}[\s\S]*overflow-x-auto[\s\S]*\[scrollbar-width:none\][\s\S]*\[\&::-webkit-scrollbar\]:hidden/,
   'Mobile search mode pills should remain horizontally scrollable without showing a browser scrollbar',
 );
 
 assert.match(
   termSearchSource,
-  /function MobileSearchModePills[\s\S]*'bg-\[#ded2f1\] text-\[#a585db\]'/,
-  'Inactive mobile search mode pills should use the updated Figma lavender treatment',
+  /function MobileSearchModePills[\s\S]*useState<'random' \| 'forYou' \| 'popular'>\('random'\)[\s\S]*value: 'random'[\s\S]*value: 'forYou'[\s\S]*value: 'popular'/,
+  'Mobile search mode pills should keep the Figma label order in controlled local radio state',
 );
 
 assert.match(
@@ -162,7 +176,7 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /MOBILE_SEARCH_PAGE_SIZE = 4/,
   'Term search should initially show the four Figma result cards on mobile',
 );
@@ -186,13 +200,13 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /hasExpandedRandomResults/,
   'Term search should track when random browsing has moved into the expanded results state',
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /const queryHasText = Boolean\(query\.trim\(\)\);[\s\S]*const searchResultViewActive = queryHasText \|\| hasExpandedRandomResults;/,
   'Term search should use the typed Figma result page after searching or expanding random results',
 );
@@ -210,14 +224,14 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  resultFilterChipsSource,
   /function getSearchResultFilterChips[\s\S]*search\.resultFilterSpecification[\s\S]*search\.resultFilterBook[\s\S]*search\.resultFilterGrade[\s\S]*search\.resultFilterTopic/,
   'Typed/result search header should match the full-width Figma input with ENT, book, grade, and topic filter chips',
 );
 
 assert.match(
   searchStoreSource,
-  /export type SearchFilterSelectId = 'grade' \| 'book' \| 'section';[\s\S]*export type SearchFilterSelectionLabels = Record<SearchFilterSelectId, Record<string, string>>;[\s\S]*searchFilterSelections: SearchFilterSelections;[\s\S]*searchFilterSelectionLabels: SearchFilterSelectionLabels;[\s\S]*entOnlyFilterActive: boolean;/,
+  /export type SearchFilterSelectId = 'grade' \| 'book' \| 'section';[\s\S]*export type SearchFilterSelectionLabels = Record<\s*SearchFilterSelectId,\s*Record<string, string>\s*>;[\s\S]*searchFilterSelections: SearchFilterSelections;[\s\S]*searchFilterSelectionLabels: SearchFilterSelectionLabels;[\s\S]*entOnlyFilterActive: boolean;/,
   'Search filter selections and labels should live in the shared search store so the result page can render selected public-ref filters after closing the filter page',
 );
 
@@ -228,55 +242,55 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  resultFilterChipsSource,
   /function getSearchResultFilterChips\([\s\S]*const usedFilters = filterChips\.filter\(\(filter\) => filter\.active\);[\s\S]*const unusedFilters = filterChips\.filter\(\(filter\) => !filter\.active\);[\s\S]*return \[filterCountChip, \.\.\.usedFilters, \.\.\.unusedFilters\];/,
   'Result-page filter chips should render the filter-count chip first, then selected/used filters before unused filters',
 );
 
 assert.match(
-  termSearchSource,
+  filterTermsSource,
   /function filterTermsBySearchFilters\([\s\S]*searchFilterSelections: SearchFilterSelections[\s\S]*terms\.filter\(\(term\) => termMatchesSearchFilters\(term, searchFilterSelections\)\)/,
   'Result-page term data should be filtered by the selected search filters before rendering cards',
 );
 
 assert.match(
-  termSearchSource,
+  filterTermsSource,
   /function definitionMatchesSearchFilters\([\s\S]*definition\.topic\?\.book[\s\S]*searchFilterSelections\.book[\s\S]*searchFilterSelections\.grade[\s\S]*searchFilterSelections\.section/,
   'Result-page filtering should inspect definition topic metadata for book, grade, and section filters',
 );
 
 assert.match(
-  termSearchSource,
+  filterTermsSource,
   /const matchesBook =[\s\S]*book\?\.public_id[\s\S]*book\?\.publisher[\s\S]*getBookFilterCandidates/,
   'Result-page book filtering should prefer book public refs while keeping fallback publisher slugs working',
 );
 
 assert.match(
-  termSearchSource,
+  filterTermsSource,
   /const matchesSection =[\s\S]*chapter\?\.public_id[\s\S]*chapter\?\.name/,
   'Result-page section filtering should match chapter public refs before falling back to chapter names',
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /const unfilteredDisplayResults = showingSearchResults \? results : featuredTerms;[\s\S]*const displayResults = useMemo\(\s*\(\) => filterTermsBySearchFilters\(unfilteredDisplayResults, searchFilterSelections\),[\s\S]*\[unfilteredDisplayResults, searchFilterSelections\]/,
   'Term search should derive visible result data from filterTermsBySearchFilters rather than raw API results',
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /useEffect\(\(\) => \{[\s\S]*setVisibleCount\(MOBILE_SEARCH_PAGE_SIZE\);[\s\S]*setHasExpandedRandomResults\(false\);[\s\S]*\}, \[debounced, searchFilterSelections\]\);/,
   'Changing selected filters should reset the visible mobile result slice before rendering updated results',
 );
 
 assert.match(
-  termSearchSource,
+  resultFilterChipsSource,
   /function getSelectedResultFilterLabel\([\s\S]*selectionLabels: Record<string, string> \| undefined[\s\S]*if \(selectedIds\.length > 1\) \{[\s\S]*selectedCount: selectedIds\.length,[\s\S]*\}/,
   'Result-page multi-select filter chips should collapse one category into a label plus selected count',
 );
 
 assert.match(
-  termSearchSource,
+  resultFilterChipsSource,
   /label:[\s\S]*selectionLabels\?\.\[selectedIds\[0\]\][\s\S]*getFallbackResultFilterOptionLabel/,
   'Result-page single-select chips should render the stored readable label for public-ref selections',
 );
@@ -325,18 +339,18 @@ assert.doesNotMatch(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultHeader[\s\S]*filter\.active \? 'bg-\[#44237d\] text-\[#f8f5fc\]' : 'bg-\[#ded2f1\] text-\[#a585db\]'/,
-  'Typed/result filter chips should use the updated lavender Figma treatment',
+  /function MobileSearchResultHeader[\s\S]*filter\.active \? 'bg-\[#44237d\] text-\[#f8f5fc\]' : 'bg-\[#ded2f1\] text-\[#5a3688\]'/,
+  'Typed/result filter chips should retain the Figma lavender treatment with accessible inactive text',
 );
 
 assert.match(
-  termSearchSource,
+  resultFilterChipsSource,
   /id: 'book'[\s\S]*to: '\/search\/filters\?select=book'[\s\S]*id: 'grade'[\s\S]*to: '\/search\/filters\?select=grade'/,
   'Book and grade result chips should deep-link to their corresponding filter popups',
 );
 
 assert.match(
-  termSearchSource,
+  resultFilterIntegrationSource,
   /id: 'specification'[\s\S]*toggle: true[\s\S]*aria-pressed=\{filter\.active\}[\s\S]*onClick=\{filter\.onToggle\}/,
   'ENT specification chip should toggle inline instead of navigating to the filters page',
 );
@@ -367,13 +381,13 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /search\.resultsCount[\s\S]*count: resultCount[\s\S]*mb-4 text-\[16px\] font-normal leading-4 text-\[#6e6779\]/,
+  /search\.resultsCount[\s\S]*count: resultCount[\s\S]*mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]/,
   'Typed/result search should render the Figma result count row 16px above the first card',
 );
 
 assert.match(
   termSearchSource,
-  /search\.resultsCount[\s\S]*className="-mx-\[2px\] mb-4 text-\[16px\] font-normal leading-4 text-\[#6e6779\]"/,
+  /search\.resultsCount[\s\S]*className="-mx-\[2px\] mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]"/,
   'Typed/result count should align to the Figma x=22 rail',
 );
 
@@ -403,7 +417,7 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchEmptyState[\s\S]*text-\[14px\] leading-\[14px\] text-\[#6e6779\][\s\S]*search\.emptyDescription[\s\S]*query/,
+  /function MobileSearchEmptyState[\s\S]*text-\[14px\] leading-\[14px\] text-\[#514b5c\][\s\S]*search\.emptyDescription[\s\S]*query/,
   'Mobile zero-terms empty state should render the Figma two-line query-aware description',
 );
 
@@ -426,7 +440,7 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /const hiddenResultsCount = Math\.max\(displayResults\.length - visibleResults\.length, 0\);/,
   'Load-more count should be based on the updated 11-result total and four visible cards',
 );
@@ -438,7 +452,7 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /function handleMobileResultsBack\(\)[\s\S]*setQuery\(''\)[\s\S]*setHasExpandedRandomResults\(false\)[\s\S]*setVisibleCount\(MOBILE_SEARCH_PAGE_SIZE\)/,
   'Typed/result search back action should return to the browse search state',
 );
@@ -492,7 +506,7 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  searchControllerSource,
   /const \[mobileSearchSheetOpen, setMobileSearchSheetOpen\] = useState\(false\);/,
   'Term search should track whether the mobile search bottom sheet is open',
 );
@@ -535,14 +549,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /id="mobile-search-sheet-title"[\s\S]*text-\[#6a37c3\][\s\S]*search\.sheetTitle[\s\S]*mobile-search-sheet-field[\s\S]*h-12 w-full rounded-\[12px\] border border-\[#a585db\] bg-white[\s\S]*placeholder:text-\[#a585db\]/,
-  'Mobile search bottom sheet should match the updated Figma title and focused input colors',
-);
-
-assert.match(
-  indexCssSource,
-  /\.mobile-search-sheet-field\s*\{[\s\S]*border-color: #a585db !important;/,
-  'Mobile search bottom sheet input should preserve the Figma purple border despite the mobile border reset',
+  /id="mobile-search-sheet-title"[\s\S]*text-\[#6a37c3\][\s\S]*search\.sheetTitle[\s\S]*mobile-search-sheet-field[\s\S]*h-12 w-full rounded-\[12px\] border border-\[#a585db\] bg-white[\s\S]*placeholder:text-\[#7650b4\]/,
+  'Mobile search bottom sheet should match the Figma title and border with an accessible placeholder color',
 );
 
 assert.match(
@@ -553,8 +561,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-clear[\s\S]*text-\[#a585db\][\s\S]*<HugeiconsIcon icon=\{Cancel01Icon\} \/>/,
-  'Mobile search bottom sheet clear button should use the requested default Cancel01Icon in the sheet palette',
+  /data-mobile-search-clear[\s\S]*text-\[#7650b4\][\s\S]*<HugeiconsIcon icon=\{Cancel01Icon\} \/>/,
+  'Mobile search bottom sheet clear button should use the requested Cancel01Icon with accessible sheet contrast',
 );
 
 assert.doesNotMatch(

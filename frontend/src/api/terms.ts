@@ -1,12 +1,7 @@
 import { apiClient } from './client';
 import type { FeaturedTerm, Term, Topic } from '../types';
 
-export async function searchTerms(query: string, limit = 10): Promise<Term[]> {
-  const { data } = await apiClient.get<Term[]>('/api/search/', {
-    params: { query, limit },
-  });
-  return data;
-}
+export { searchTerms } from '../features/search/api/termSearch';
 
 export async function getTerm(publicId: string): Promise<Term> {
   const { data } = await apiClient.get<Term>(`/api/terms/${publicId}`);

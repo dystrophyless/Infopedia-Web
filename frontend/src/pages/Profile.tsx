@@ -719,8 +719,7 @@ function WeakTopicList({
                 </span>
               </span>
               <span
-                className="mt-0.5 inline-flex min-w-[46px] shrink-0 justify-center rounded-[8px] bg-bg px-1.5 py-1 text-[14px] font-medium leading-none tabular-nums"
-                style={{ color: status.textColor }}
+                className={`mt-0.5 inline-flex min-w-[46px] shrink-0 justify-center rounded-[8px] bg-bg px-1.5 py-1 text-[14px] font-medium leading-none tabular-nums ${status.textClass}`}
               >
                 {topic.percentage}%
               </span>
@@ -779,16 +778,13 @@ function WeakTopicResultIndicator({
 }) {
   return (
     <div className="min-w-[104px] text-right max-sm:w-full max-sm:text-left">
-      <span
-        className="text-[30px] font-medium leading-none"
-        style={{ color: status.textColor }}
-      >
+      <span className={`text-[30px] font-medium leading-none ${status.textClass}`}>
         {percentage}%
       </span>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg" aria-hidden>
         <div
-          className="h-full rounded-full"
-          style={{ width: `${progress}%`, backgroundColor: status.progressColor }}
+          className={`h-full rounded-full ${status.progressClass}`}
+          style={{ width: `${progress}%` }}
         />
       </div>
     </div>

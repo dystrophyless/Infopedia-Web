@@ -3,49 +3,49 @@ export type ScoreStatusId = 'low' | 'review' | 'good' | 'excellent';
 export interface ScoreStatus {
   id: ScoreStatusId;
   labelKey: string;
-  textColor: string;
-  backgroundColor: string;
-  progressColor: string;
-  borderColor: string;
-  accentColor: string;
+  textClass: string;
+  surfaceClass: string;
+  progressClass: string;
+  borderClass: string;
+  accentClass: string;
 }
 
 const SCORE_STATUSES: Record<ScoreStatusId, ScoreStatus> = {
   low: {
     id: 'low',
     labelKey: 'scoreStatus.low',
-    textColor: '#b91c1c',
-    backgroundColor: '#fee2e2',
-    progressColor: '#dc2626',
-    borderColor: '#fecaca',
-    accentColor: '#ef4444',
+    textClass: 'text-status-low-foreground',
+    surfaceClass: 'bg-status-low-surface',
+    progressClass: 'bg-status-low-progress',
+    borderClass: 'border-status-low-border',
+    accentClass: 'text-status-low-accent',
   },
   review: {
     id: 'review',
     labelKey: 'scoreStatus.review',
-    textColor: '#92400e',
-    backgroundColor: '#fef3c7',
-    progressColor: '#eab308',
-    borderColor: '#facc15',
-    accentColor: '#ca8a04',
+    textClass: 'text-status-review-foreground',
+    surfaceClass: 'bg-status-review-surface',
+    progressClass: 'bg-status-review-progress',
+    borderClass: 'border-status-review-border',
+    accentClass: 'text-status-review-accent',
   },
   good: {
     id: 'good',
     labelKey: 'scoreStatus.good',
-    textColor: '#166534',
-    backgroundColor: '#dcfce7',
-    progressColor: '#22c55e',
-    borderColor: '#86efac',
-    accentColor: '#16a34a',
+    textClass: 'text-status-good-foreground',
+    surfaceClass: 'bg-status-good-surface',
+    progressClass: 'bg-status-good-progress',
+    borderClass: 'border-status-good-border',
+    accentClass: 'text-status-good-accent',
   },
   excellent: {
     id: 'excellent',
     labelKey: 'scoreStatus.excellent',
-    textColor: '#047857',
-    backgroundColor: '#d1fae5',
-    progressColor: '#059669',
-    borderColor: '#6ee7b7',
-    accentColor: '#10b981',
+    textClass: 'text-status-excellent-foreground',
+    surfaceClass: 'bg-status-excellent-surface',
+    progressClass: 'bg-status-excellent-progress',
+    borderClass: 'border-status-excellent-border',
+    accentClass: 'text-status-excellent-accent',
   },
 };
 

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const termSearchSource = readFileSync(
-  path.resolve(import.meta.dirname, 'TermSearch.tsx'),
+  path.resolve(import.meta.dirname, '../features/search/pages/TermSearchPage.tsx'),
   'utf8',
 );
 const semanticSearchSource = readFileSync(
@@ -11,7 +11,7 @@ const semanticSearchSource = readFileSync(
   'utf8',
 );
 const termDetailSource = readFileSync(
-  path.resolve(import.meta.dirname, 'TermDetail.tsx'),
+  path.resolve(import.meta.dirname, '../features/terms/components/TermDetailView.tsx'),
   'utf8',
 );
 const analyzeSource = readFileSync(

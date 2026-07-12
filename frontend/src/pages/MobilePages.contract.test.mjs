@@ -7,11 +7,17 @@ const componentsDir = path.resolve(pagesDir, '../components');
 const srcDir = path.resolve(pagesDir, '..');
 
 const landingSource = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
-const termSearchSource = readFileSync(path.resolve(pagesDir, 'TermSearch.tsx'), 'utf8');
+const termSearchSource = readFileSync(
+  path.resolve(pagesDir, '../features/search/pages/TermSearchPage.tsx'),
+  'utf8',
+);
 const semanticSearchSource = readFileSync(path.resolve(pagesDir, 'SemanticSearch.tsx'), 'utf8');
 const analyzeSource = readFileSync(path.resolve(pagesDir, 'Analyze.tsx'), 'utf8');
 const profileSource = readFileSync(path.resolve(pagesDir, 'Profile.tsx'), 'utf8');
-const termDetailSource = readFileSync(path.resolve(pagesDir, 'TermDetail.tsx'), 'utf8');
+const termDetailSource = readFileSync(
+  path.resolve(pagesDir, '../features/terms/components/TermDetailView.tsx'),
+  'utf8',
+);
 const authShellSource = readFileSync(path.resolve(componentsDir, 'AuthShell.tsx'), 'utf8');
 const ruLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
@@ -203,6 +209,6 @@ assert.match(
 
 assert.match(
   termDetailSource,
-  /max-md:rounded-\[12px\]/,
-  'Term detail should use a mobile-specific flat article shape',
+  /max-md:bg-canvas[\s\S]*max-md:px-4/,
+  'Term detail should use the mobile-specific flat canvas and shared page gutter',
 );

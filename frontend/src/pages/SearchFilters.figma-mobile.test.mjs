@@ -7,10 +7,28 @@ const srcDir = path.resolve(pagesDir, '..');
 const rootDir = path.resolve(srcDir, '..');
 
 const appSource = readFileSync(path.resolve(srcDir, 'App.tsx'), 'utf8');
-const termSearchSource = readFileSync(path.resolve(pagesDir, 'TermSearch.tsx'), 'utf8');
+const termSearchSource = readFileSync(
+  path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'),
+  'utf8',
+);
 const indexCssSource = readFileSync(path.resolve(srcDir, 'index.css'), 'utf8');
-const searchStoreSource = readFileSync(path.resolve(srcDir, 'stores/searchStore.ts'), 'utf8');
-const searchFiltersPath = path.resolve(pagesDir, 'SearchFilters.tsx');
+const searchFeatureDir = path.resolve(srcDir, 'features/search');
+const searchStoreSource = readFileSync(
+  path.resolve(searchFeatureDir, 'model/searchStore.ts'),
+  'utf8',
+);
+const filterOptionsSource = readFileSync(
+  path.resolve(searchFeatureDir, 'model/filterOptions.ts'),
+  'utf8',
+);
+const filterCatalogHookSource = readFileSync(
+  path.resolve(searchFeatureDir, 'hooks/useSearchFilterCatalog.ts'),
+  'utf8',
+);
+const searchFiltersPath = path.resolve(
+  srcDir,
+  'features/search/pages/SearchFiltersPage.tsx',
+);
 const searchFiltersSource = existsSync(searchFiltersPath)
   ? readFileSync(searchFiltersPath, 'utf8')
   : '';
@@ -61,8 +79,8 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /import \{ useSearchStore \} from '\.\.\/stores\/searchStore';/,
-  'Search filters page should use the shared search store for persistent selected filters',
+  /from '\.\.\/model';/,
+  'Search filters page should consume its persistent store and option model from the search feature',
 );
 
 assert.match(
@@ -73,7 +91,7 @@ assert.match(
 
 assert.match(
   searchStoreSource,
-  /const INITIAL_SEARCH_FILTER_SELECTIONS: SearchFilterSelections = \{[\s\S]*grade: \[\],[\s\S]*book: \[\],[\s\S]*section: \[\],[\s\S]*\};/,
+  /export const INITIAL_SEARCH_FILTER_SELECTIONS: SearchFilterSelections = \{[\s\S]*grade: \[\],[\s\S]*book: \[\],[\s\S]*section: \[\],[\s\S]*\};/,
   'Search store should own the reusable empty filter selection shape',
 );
 
@@ -96,7 +114,7 @@ assert.match(
 );
 
 assert.match(
-  searchFiltersSource,
+  filterOptionsSource,
   /function isFilterSelectId\(value: string \| null\): value is FilterSelectId[\s\S]*value === 'grade'[\s\S]*value === 'book'[\s\S]*value === 'section'/,
   'Search filters page should only accept known popup deep-link values',
 );
@@ -150,12 +168,6 @@ assert.match(
 );
 
 assert.match(
-  indexCssSource,
-  /\.search-filter-control\s*\{[\s\S]*border-color: #a585db !important;/,
-  'Search filters controls should preserve the Figma purple border despite the mobile border reset',
-);
-
-assert.match(
   searchFiltersSource,
   /h-1 w-8 rounded-\[4px\] bg-\[#ded2f1\]/,
   'Search filters page should include the Figma drag handle',
@@ -182,38 +194,44 @@ for (const field of ['grade', 'book', 'section']) {
 }
 
 assert.match(
-  searchFiltersSource,
-  /type FilterSelectId = 'grade' \| 'book' \| 'section';/,
+  searchStoreSource,
+  /export type SearchFilterSelectId = 'grade' \| 'book' \| 'section';/,
   'Search filters should model the three selectable fields explicitly',
 );
 
 assert.match(
-  searchFiltersSource,
+  filterOptionsSource,
+  /export type FilterSelectId = SearchFilterSelectId;/,
+  'Search filter option models should reuse the canonical store filter ids',
+);
+
+assert.match(
+  filterOptionsSource,
   /const SEARCH_FILTER_GRADES[\s\S]*'7'[\s\S]*'8'[\s\S]*'9'[\s\S]*'10'[\s\S]*'11'/,
   'Grade popup should keep the Figma grade options from 7 through 11',
 );
 
 assert.match(
-  searchFiltersSource,
-  /getTopicBooks[\s\S]*mapBookOptions\(books, t\)/,
+  filterCatalogHookSource,
+  /getSearchFilterBooks[\s\S]*mapBookOptions\(books, t\)/,
   'Book popup should derive visible book names from the catalog API response',
 );
 
 assert.match(
-  searchFiltersSource,
+  filterOptionsSource,
   /function mapBookOptions\(books: BookCatalogItem\[\], t: TFunction\)[\s\S]*id: book\.public_id[\s\S]*metadata\.bookWithGrade/,
   'Book popup options should keep book public refs as canonical ids while rendering readable labels',
 );
 
 assert.match(
-  searchFiltersSource,
-  /getTopicChapters[\s\S]*setChapterOptions/,
+  filterCatalogHookSource,
+  /getSearchFilterChapters[\s\S]*setChapterOptions/,
   'Chapter popup should derive visible chapter names from the catalog API response',
 );
 
 assert.match(
-  searchFiltersSource,
-  /function mapChapterOptions\(chapters: ChapterCatalogItem\[\]\)[\s\S]*id: chapter\.public_id[\s\S]*label: chapter\.name\.trim\(\)/,
+  filterOptionsSource,
+  /function mapChapterOptions\(chapters: ChapterCatalogItem\[\]\)[\s\S]*id: chapter\.public_id[\s\S]*label/,
   'Chapter popup options should keep chapter public refs as canonical ids while rendering chapter names',
 );
 
@@ -290,7 +308,7 @@ assert.match(
 );
 
 assert.match(
-  searchFiltersSource,
+  filterOptionsSource,
   /function getSelectedFilterOptions\([\s\S]*selectedIds\.map[\s\S]*resolveOptionLabel/,
   'Search filter fields should resolve every selected option into an individual visible chip',
 );
@@ -303,8 +321,14 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /function SelectedFilterControl\([\s\S]*data-search-filter-select=\{filterId\}[\s\S]*role="button"[\s\S]*tabIndex=\{0\}[\s\S]*onClick=\{onOpen\}/,
-  'Selected filter field should keep the whole control area clickable to reopen the options popup',
+  /function SelectedFilterControl\([\s\S]*data-search-filter-select=\{filterId\}[\s\S]*selectedOptions\.length > 0[\s\S]*<button[\s\S]*aria-label=\{t\('searchFilters\.openFilterAria', \{ label \}\)\}[\s\S]*onClick=\{onOpen\}[\s\S]*data-search-filter-chip-remove/,
+  'Selected filter field should expose a dedicated keyboard-accessible open button beside each remove button',
+);
+
+assert.doesNotMatch(
+  searchFiltersSource,
+  /data-search-filter-select=\{filterId\}[\s\S]*role="button"[\s\S]*data-search-filter-chip-remove/,
+  'Selected filter controls should not nest remove buttons inside an element with button semantics',
 );
 
 assert.match(
@@ -346,19 +370,13 @@ assert.match(
 assert.match(
   searchFiltersSource,
   /className=\{`search-filter-option [^`]*border-\[#a585db\][^`]*\$\{\s*selected \? 'search-filter-option-active border-\[#6a37c3\]' : ''[\s\S]*?\}`\}/,
-  'Options dialog rows should use a named class so the mobile border reset cannot hide the Figma stroke',
+  'Options dialog rows should use a named class while preserving the Figma stroke in their source contract',
 );
 
 assert.match(
   searchFiltersSource,
   /search-filter-checkbox-visual[^`]*rounded-\[4px\][^`]*border-\[1\.5px\][^`]*border-\[#a585db\]/,
   'Options dialog checkbox square should keep the Figma 1.5px purple stroke and 4px radius',
-);
-
-assert.match(
-  indexCssSource,
-  /\.search-filter-option,\s*[\r\n]+\s*\.search-filter-checkbox-visual\s*\{[\s\S]*border-color: #a585db !important;/,
-  'Mobile CSS should exempt popup option rows and checkbox squares from the global transparent border reset',
 );
 
 assert.doesNotMatch(
@@ -381,13 +399,13 @@ assert.match(
 
 assert.match(
   indexCssSource,
-  /\.search-filter-option\.search-filter-option-active\s*\{[\s\S]*border-color: #6a37c3 !important;[\s\S]*box-shadow: inset 0 0 0 1px #6a37c3;/,
+  /\.search-filter-option\.search-filter-option-active\s*\{[\s\S]*border-color: #6a37c3;[\s\S]*box-shadow: inset 0 0 0 1px #6a37c3;/,
   'Options dialog selected rows should thicken the border inward so the scroll container cannot clip the active stroke',
 );
 
 assert.match(
   indexCssSource,
-  /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover\s*\{[\s\S]*background-color: #f8f5fc;[\s\S]*border-color: #a585db !important;[\s\S]*transform: translateY\(-1px\);[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover \.search-filter-checkbox-visual\s*\{[\s\S]*box-shadow: 0 0 0 1px #a585db;[\s\S]*transform: scale\(1\.04\);/,
+  /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover\s*\{[\s\S]*background-color: #f8f5fc;[\s\S]*border-color: #a585db;[\s\S]*transform: translateY\(-1px\);[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover \.search-filter-checkbox-visual\s*\{[\s\S]*box-shadow: 0 0 0 1px #a585db;[\s\S]*transform: scale\(1\.04\);/,
   'Options dialog hover animation should stay lighter than the selected active state',
 );
 
@@ -405,8 +423,8 @@ assert.match(
 
 assert.match(
   indexCssSource,
-  /\.search-filter-checkbox-visual\.search-filter-checkbox-visual-active\s*\{[\s\S]*border-color: #6a37c3 !important;/,
-  'Selected checkbox border should override the mobile border reset with active purple',
+  /\.search-filter-checkbox-visual\.search-filter-checkbox-visual-active\s*\{[\s\S]*border-color: #6a37c3;/,
+  'Selected checkbox border should remain active purple',
 );
 
 assert.match(

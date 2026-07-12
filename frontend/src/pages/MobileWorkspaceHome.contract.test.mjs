@@ -5,7 +5,11 @@ import path from 'node:path';
 const pagesDir = import.meta.dirname;
 const landingSource = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
 const carouselSource = readFileSync(
-  path.resolve(pagesDir, '../components/TermCardCarousel.tsx'),
+  path.resolve(pagesDir, '../features/terms/components/TermCardCarouselView.tsx'),
+  'utf8',
+);
+const featuredTermCardSource = readFileSync(
+  path.resolve(pagesDir, '../features/terms/components/FeaturedTermCard.tsx'),
   'utf8',
 );
 
@@ -52,25 +56,25 @@ assert.doesNotMatch(
 );
 
 assert.match(
-  carouselSource,
-  /variant\?: 'desktop' \| 'mobile' \| 'home' \| 'guest'/,
+  featuredTermCardSource,
+  /export type FeaturedTermCardVariant = 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/,
   'TermCardCarousel should expose a compact home variant without changing guest mobile proof cards',
 );
 
 assert.match(
-  carouselSource,
+  featuredTermCardSource,
   /const isHomeVariant = variant === 'home';/,
   'Featured term cards should branch for a compact home card shape',
 );
 
 assert.match(
-  carouselSource,
+  featuredTermCardSource,
   /h-\[134px\] w-\[204px\] rounded-\[8px\] border border-\[#e8e1ee\] bg-surface p-4 shadow-none/,
   'Home terms cards should match the compact white screenshot-style card footprint',
 );
 
 assert.match(
   carouselSource,
-  /variant === 'home' \? 'gap-2\.5 pl-0 pr-4'/,
+  /home: 'gap-2\.5 pl-0 pr-4'/,
   'Home terms carousel should use tight spacing and right-side horizontal overflow',
 );

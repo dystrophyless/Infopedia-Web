@@ -1,26 +1,80 @@
-import { type HTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
+  type ElementType,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { cn } from '../utils/cn';
 
-type SurfaceTone = 'plain' | 'card' | 'soft';
+export type SurfaceTone =
+  | 'plain'
+  | 'card'
+  | 'canvas'
+  | 'soft'
+  | 'subtle'
+  | 'inverse'
+  | 'transparent';
+export type SurfaceVariant = 'default' | 'mobile-flat';
+export type SurfaceElement =
+  | 'div'
+  | 'section'
+  | 'article'
+  | 'aside'
+  | 'nav'
+  | 'main'
+  | 'header'
+  | 'footer';
 
 const toneClasses: Record<SurfaceTone, string> = {
   plain: 'bg-surface',
   card: 'bg-surface shadow-feature max-md:shadow-none',
+  canvas: 'bg-canvas',
   soft: 'bg-bg',
+  subtle: 'bg-surface-subtle',
+  inverse: 'bg-surface-inverse text-inverse',
+  transparent: 'bg-transparent',
 };
 
-export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
-  tone?: SurfaceTone;
-  children: ReactNode;
-}
+const variantClasses: Record<SurfaceVariant, string> = {
+  default: '',
+  'mobile-flat': 'max-md:rounded-none max-md:shadow-none',
+};
 
-export function Surface({ tone = 'plain', className, children, ...props }: SurfaceProps) {
+type SurfaceOwnProps<E extends SurfaceElement> = {
+  as?: E;
+  tone?: SurfaceTone;
+  variant?: SurfaceVariant;
+  children: ReactNode;
+};
+
+export type SurfaceProps<E extends SurfaceElement = 'div'> = SurfaceOwnProps<E> &
+  Omit<ComponentPropsWithoutRef<E>, keyof SurfaceOwnProps<E>>;
+
+type SurfaceComponent = {
+  <E extends SurfaceElement = 'div'>(
+    props: SurfaceProps<E> & { ref?: ComponentPropsWithRef<E>['ref'] },
+  ): ReactElement | null;
+  displayName?: string;
+};
+
+function SurfaceRender<E extends SurfaceElement = 'div'>(
+  { as, tone = 'plain', variant = 'default', className, children, ...props }: SurfaceProps<E>,
+  ref: ComponentPropsWithRef<E>['ref'],
+) {
+  const Component = (as ?? 'div') as ElementType;
+
   return (
-    <div
-      className={cn('rounded-[var(--radius-surface)]', toneClasses[tone], className)}
+    <Component
       {...props}
+      ref={ref}
+      className={cn('rounded-surface', toneClasses[tone], variantClasses[variant], className)}
     >
       {children}
-    </div>
+    </Component>
   );
 }
+
+export const Surface = forwardRef(SurfaceRender as never) as unknown as SurfaceComponent;
+Surface.displayName = 'Surface';

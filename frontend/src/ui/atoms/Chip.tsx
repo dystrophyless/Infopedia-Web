@@ -6,8 +6,8 @@ type ChipTone = 'neutral' | 'brand' | 'success' | 'danger';
 const toneClasses: Record<ChipTone, string> = {
   neutral: 'bg-surface text-muted',
   brand: 'bg-primary text-surface',
-  success: 'bg-success/10 text-success',
-  danger: 'bg-danger/10 text-danger',
+  success: 'bg-success-surface text-success',
+  danger: 'bg-danger-surface text-danger',
 };
 
 export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {

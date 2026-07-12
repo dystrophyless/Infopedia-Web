@@ -4,13 +4,11 @@ import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Globe02Icon,
-  LockPasswordIcon,
   Mail01Icon,
   UserIcon,
-  ViewIcon,
-  ViewOffIcon,
 } from '@hugeicons/core-free-icons';
 import { useLangStore, type Language } from '../stores/langStore';
+import { Button, Divider, FormField, Input, PasswordField, Text } from '../ui';
 
 export function AuthShell({
   title,
@@ -119,22 +117,24 @@ export function AuthInput({
   error?: string;
 }) {
   return (
-    <label className="mb-4 flex flex-col gap-1.5 text-[14px] font-medium text-text-body">
-      <span>{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoComplete={autoComplete}
-        required={required}
-        className={`border ${
-          error
-            ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
-            : 'border-border bg-surface focus:border-accent'
-        } rounded-[10px] px-4 py-3 text-[16px] text-text outline-none transition-colors`}
-      />
-      {error && <span className="text-danger text-[13px]">{error}</span>}
-    </label>
+    <FormField label={label} error={error} className="mb-4">
+      {(controlProps) => (
+        <Input
+          {...controlProps}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          required={required}
+          invalid={Boolean(error)}
+          className={`rounded-[10px] border px-4 py-3 text-[16px] text-text outline-none transition-colors ${
+            error
+              ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
+              : 'auth-field border-border bg-surface focus:border-accent'
+          }`}
+        />
+      )}
+    </FormField>
   );
 }
 
@@ -148,22 +148,27 @@ export function AuthSubmit({
   children: ReactNode;
 }) {
   return (
-    <button
+    <Button
       type="submit"
       disabled={loading || disabled}
+      aria-busy={loading || undefined}
+      fullWidth
+      size="lg"
       className="w-full bg-primary text-surface rounded-[10px] py-3 text-[16px] mt-2 hover:opacity-90 transition-opacity disabled:opacity-60 max-lg:h-12 max-lg:mt-8 max-lg:rounded-[8px] max-lg:bg-[#44237d] max-lg:p-0 max-lg:font-medium max-lg:text-white"
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
 export function AuthDivider({ label }: { label: string }) {
   return (
     <div className="my-5 flex items-center gap-3 text-[13px] text-muted max-lg:my-6 max-lg:text-[14px] max-lg:text-[#c5b1e7]">
-      <span className="h-px flex-1 bg-border max-lg:bg-[#c5b1e7]" />
-      <span>{label}</span>
-      <span className="h-px flex-1 bg-border max-lg:bg-[#c5b1e7]" />
+      <Divider className="h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7]" />
+      <Text as="span" tone="inherit" size="caption">
+        {label}
+      </Text>
+      <Divider className="h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7]" />
     </div>
   );
 }
@@ -192,14 +197,17 @@ export function GoogleAuthButton({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
+      variant="surface"
+      size="lg"
+      fullWidth
       className="flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:p-0 max-lg:text-[#161519]"
     >
       <GoogleIcon />
       <span>{children}</span>
-    </button>
+    </Button>
   );
 }
 
@@ -217,28 +225,34 @@ export function AuthEmailInput({
   invalid?: boolean;
 }) {
   return (
-    <label className="mb-4 flex flex-col gap-1.5">
-      <span className="relative block">
-        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]">
-          <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={1.7} />
+    <FormField error={error} className="mb-4">
+      {(controlProps) => (
+        <span className="relative block">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]"
+          >
+            <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={1.7} />
+          </span>
+          <Input
+            {...controlProps}
+            type="email"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            autoComplete="email"
+            placeholder={label}
+            aria-label={label}
+            required
+            invalid={Boolean(error || invalid)}
+            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
+              error || invalid
+                ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
+                : 'border-border bg-surface focus:border-accent'
+            }`}
+          />
         </span>
-        <input
-          type="email"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete="email"
-          placeholder={label}
-          aria-label={label}
-          required
-          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
-            error || invalid
-              ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
-              : 'border-border bg-surface focus:border-accent'
-          }`}
-        />
-      </span>
-      {error && <span className="text-danger text-[13px] font-normal">{error}</span>}
-    </label>
+      )}
+    </FormField>
   );
 }
 
@@ -260,38 +274,40 @@ export function AuthUsernameInput({
   helperTone?: 'muted' | 'success';
 }) {
   return (
-    <label className="mb-4 flex flex-col gap-1.5">
-      <span className="relative block">
-        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]">
-          <HugeiconsIcon icon={UserIcon} size={18} strokeWidth={1.7} />
-        </span>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          autoComplete="username"
-          placeholder={label}
-          aria-label={label}
-          required
-          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
-            error
-              ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
-              : 'border-border bg-surface focus:border-accent'
-          }`}
-        />
-      </span>
-      {error && <span className="text-danger text-[13px] font-normal">{error}</span>}
-      {!error && helperText && (
-        <span
-          className={`text-[13px] font-normal ${
-            helperTone === 'success' ? 'text-success' : 'text-muted'
-          }`}
-        >
-          {helperText}
+    <FormField
+      error={error}
+      helperText={helperText}
+      helperTone={helperTone}
+      className="mb-4"
+    >
+      {(controlProps) => (
+        <span className="relative block">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]"
+          >
+            <HugeiconsIcon icon={UserIcon} size={18} strokeWidth={1.7} />
+          </span>
+          <Input
+            {...controlProps}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
+            autoComplete="username"
+            placeholder={label}
+            aria-label={label}
+            required
+            invalid={Boolean(error)}
+            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
+              error
+                ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
+                : 'border-border bg-surface focus:border-accent'
+            }`}
+          />
         </span>
       )}
-    </label>
+    </FormField>
   );
 }
 
@@ -317,36 +333,24 @@ export function AuthPasswordInput({
   autoComplete?: string;
 }) {
   return (
-    <label className="mb-4 flex flex-col gap-1.5">
-      <span className="relative block">
-        <span className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]">
-          <HugeiconsIcon icon={LockPasswordIcon} size={18} strokeWidth={1.7} />
-        </span>
-        <input
-          type={visible ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          placeholder={label}
-          aria-label={label}
-          required
-          className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
-            error || invalid
-              ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
-              : 'border-border bg-surface focus:border-accent'
-          }`}
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={toggleLabel}
-          title={toggleLabel}
-          className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:text-[#8c8698]"
-        >
-          <HugeiconsIcon icon={visible ? ViewOffIcon : ViewIcon} size={18} strokeWidth={1.7} />
-        </button>
-      </span>
-      {error && <span className="text-danger text-[13px] font-normal">{error}</span>}
-    </label>
+    <PasswordField
+      label={label}
+      value={value}
+      visible={visible}
+      onChange={onChange}
+      onToggle={onToggle}
+      toggleLabel={toggleLabel}
+      error={error}
+      invalid={invalid}
+      autoComplete={autoComplete}
+      className="mb-4"
+      leadingIconClassName="max-lg:size-4 max-lg:text-[#c5b1e7]"
+      inputClassName={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
+        error || invalid
+          ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
+          : 'border-border bg-surface focus:border-accent'
+      }`}
+      toggleClassName="right-3 flex size-8 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:text-[#8c8698]"
+    />
   );
 }

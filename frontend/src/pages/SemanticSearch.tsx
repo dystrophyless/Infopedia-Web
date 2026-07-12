@@ -5,6 +5,7 @@ import { useSSE } from '../hooks/useSSE';
 import { LoadingPanel } from '../components/LoadingPanel';
 import { SemanticResultCard } from '../components/SemanticResultCard';
 import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
+import { Textarea } from '../ui';
 import type { Definition, SearchTask, SearchTaskError } from '../types';
 
 const MIN_CHARS = 10;
@@ -82,14 +83,14 @@ export function SemanticSearch() {
         <label htmlFor="semantic-query" className="sr-only">
           {t('semanticSearch.title')}
         </label>
-        <textarea
+        <Textarea
           id="semantic-query"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('semanticSearch.placeholder')}
           rows={5}
           aria-describedby="semantic-query-hint"
-          className="w-full bg-surface border border-border rounded-[15px] p-5 text-[16px] text-text outline-none focus:border-accent shadow-feature resize-y min-h-[140px] max-md:shadow-none"
+          className="min-h-[140px] rounded-[15px] p-5 text-[16px] shadow-feature focus-visible:border-accent max-md:shadow-none"
         />
         <div className="mt-3 flex items-center justify-between">
           <span id="semantic-query-hint" className="text-[13px] text-muted">

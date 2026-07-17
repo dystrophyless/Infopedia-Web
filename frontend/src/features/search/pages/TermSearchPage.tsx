@@ -29,6 +29,7 @@ import { TermCard } from '../../../components/TermCard';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import { SegmentedControl } from '../../../ui';
 import type { Definition, Term } from '../../../types';
+import { SearchFilters } from './SearchFiltersPage';
 
 const DRAG_CLOSE_THRESHOLD = 72;
 const DRAG_CLOSE_ANIMATION_MS = 180;
@@ -66,7 +67,7 @@ export function MobileSearchModePills() {
       options={modes}
       value={mode}
       onValueChange={setMode}
-      className="mb-6 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>div]:h-[30px] [&>div]:gap-2 [&>div]:rounded-[16px] [&>div]:bg-transparent [&>div]:p-0 [&_label]:flex [&_label]:h-[30px] [&_label]:shrink-0 [&_label]:items-center [&_label]:justify-center [&_label]:rounded-[16px] [&_label]:px-4 [&_label]:py-0 [&_label]:leading-none"
+      className="mb-6 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>div]:h-[30px] [&>div]:gap-2 [&>div]:rounded-[16px] [&>div]:bg-transparent [&>div]:p-0 [&_label]:flex [&_label]:h-[30px] [&_label]:shrink-0 [&_label]:items-center [&_label]:justify-center [&_label]:rounded-[16px] [&_label]:px-4 [&_label]:py-0 [&_label]:leading-none [&_label]:!bg-[#ded2f1] [&_label]:!text-[#a585db] [&_label:has(:checked)]:!bg-[#44237d] [&_label:has(:checked)]:!text-[#f8f5fc]"
     />
   );
 }
@@ -75,10 +76,12 @@ export function MobileSearchBrowseHeader({
   query,
   onQueryChange,
   onSearchInputFocus,
+  onOpenFilters,
 }: {
   query: string;
   onQueryChange: (query: string) => void;
   onSearchInputFocus: () => void;
+  onOpenFilters?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -102,13 +105,14 @@ export function MobileSearchBrowseHeader({
           />
         </label>
 
-        <Link
-          to="/search/filters"
+        <button
+          type="button"
+          onClick={onOpenFilters}
           aria-label={t('search.filterAria')}
           className="flex size-10 items-center justify-center rounded-[8px] bg-[#572d9f] text-[#f8f5fc]"
         >
           <HugeiconsIcon icon={FilterHorizontalIcon} size={18} strokeWidth={1.7} />
-        </Link>
+        </button>
 
         <Link
           to="/profile"
@@ -128,7 +132,7 @@ function MobileSearchResultAppBar({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation();
 
   return (
-    <header className="flex h-14 -mx-[24px] w-[calc(100%+48px)] items-center gap-4 px-4 text-[#252329]">
+    <header className="flex h-14 -mx-[24px] w-[calc(100%+48px)] items-start gap-4 px-4 text-[#252329]">
       <button
         type="button"
         className="flex size-6 items-center justify-center text-[#252329]"
@@ -137,7 +141,7 @@ function MobileSearchResultAppBar({ onBack }: { onBack: () => void }) {
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
       </button>
-      <h1 className="text-[16px] font-medium leading-4 text-[#252329]">
+      <h1 className="mt-1 text-[16px] font-medium leading-4 text-[#252329]">
         {t('search.resultsTitle')}
       </h1>
     </header>
@@ -154,6 +158,7 @@ export function MobileSearchResultHeader({
   onQueryChange,
   onSearchInputFocus,
   onEntOnlyFilterToggle,
+  onOpenFilters,
 }: {
   query: string;
   resultCount: number;
@@ -164,6 +169,7 @@ export function MobileSearchResultHeader({
   onQueryChange: (query: string) => void;
   onSearchInputFocus: () => void;
   onEntOnlyFilterToggle: () => void;
+  onOpenFilters?: () => void;
 }) {
   const { t } = useTranslation();
   const filters = useMemo(
@@ -190,7 +196,7 @@ export function MobileSearchResultHeader({
     <>
       <MobileSearchResultAppBar onBack={onBack} />
 
-      <div className="mt-2 mb-4 -mx-[2px] grid w-[calc(100%+4px)] grid-cols-[minmax(0,1fr)]">
+      <div className="mt-0 mb-4 -mx-[2px] grid w-[calc(100%+4px)] grid-cols-[minmax(0,1fr)]">
         <label className="relative block">
           <span className="sr-only">{t('search.title')}</span>
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b1acb9]">
@@ -213,7 +219,7 @@ export function MobileSearchResultHeader({
         {filters.map((filter) => {
           const filterIsIconOnly = filter.id === 'filter';
           const chipClassName = `flex h-[30px] shrink-0 items-center justify-center gap-1 rounded-[16px] px-4 text-[14px] font-medium leading-none ${
-            filter.active ? 'bg-[#44237d] text-[#f8f5fc]' : 'bg-[#ded2f1] text-[#5a3688]'
+            filter.active ? 'bg-[#44237d] text-[#f8f5fc]' : 'bg-[#ded2f1] text-[#a585db]'
           }`;
 
           const chipContent = (
@@ -242,7 +248,7 @@ export function MobileSearchResultHeader({
             </>
           );
 
-          return filter.to ? (
+          return filter.to && !filterIsIconOnly ? (
             <Link
               key={filter.id}
               to={filter.to}
@@ -259,7 +265,7 @@ export function MobileSearchResultHeader({
               data-search-result-filter={filter.id}
               className={chipClassName}
               aria-pressed={filter.active}
-              onClick={filter.onToggle}
+              onClick={filterIsIconOnly ? onOpenFilters : filter.onToggle}
             >
               {chipContent}
             </button>
@@ -267,9 +273,11 @@ export function MobileSearchResultHeader({
         })}
       </div>
 
-      <p className="-mx-[2px] mb-4 text-[16px] font-normal leading-4 text-[#514b5c]">
-        {resultsCountLabel}
-      </p>
+      {resultCount > 0 && (
+        <p className="-mx-[2px] mb-4 text-[16px] font-normal leading-4 text-[#514b5c]">
+          {resultsCountLabel}
+        </p>
+      )}
     </>
   );
 }
@@ -280,7 +288,7 @@ export function MobileSearchEmptyState({ query }: { query: string }) {
   return (
     <div
       data-mobile-search-empty
-      className="hidden flex-col items-center text-center max-md:mt-[88px] max-md:flex max-md:w-[calc(100%+4px)]"
+      className="hidden flex-col items-center text-center max-md:mt-[140px] max-md:flex max-md:w-[calc(100%+4px)]"
     >
       <div
         data-mobile-search-empty-icon
@@ -288,16 +296,16 @@ export function MobileSearchEmptyState({ query }: { query: string }) {
       >
         <HugeiconsIcon icon={Search01Icon} size={32} strokeWidth={1.6} />
       </div>
-      <h2 className="mt-[21px] text-[20px] font-medium leading-5 text-[#161519]">
+      <h2 className="mt-4 text-[20px] font-medium leading-5 text-[#161519]">
         {t('search.emptyTitle')}
       </h2>
-      <p className="mt-[21px] max-w-[284px] text-center text-[14px] leading-[14px] text-[#514b5c]">
+      <p className="mt-4 max-w-[284px] text-center text-[14px] leading-[14px] text-[#514b5c]">
         {t('search.emptyDescription', { query })}
       </p>
       <Link
         to="/search/filters"
         data-mobile-search-empty-action
-        className="mt-[21px] flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-4 text-white"
+        className="mt-6 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-4 text-white"
       >
         {t('search.emptyChangeParameters')}
       </Link>
@@ -609,7 +617,7 @@ export function MobileSearchTermCard({
       <Link
         to={`/terms/${term.public_id}`}
         state={{ backTo: '/search', term, relatedTerms }}
-        className="mt-8 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#572d9f] px-4 text-[16px] font-medium leading-none text-[#efeaf8] transition-opacity hover:opacity-90"
+        className="mt-8 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-[#efeaf8] transition-opacity hover:opacity-90"
       >
         {t('search.detailsCta')}
       </Link>
@@ -620,6 +628,7 @@ export function MobileSearchTermCard({
 export function TermSearchPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+  const [filtersOverlayOpen, setFiltersOverlayOpen] = useState(false);
   const initialQuery = searchParams.get('query') ?? '';
   const {
     query,
@@ -644,7 +653,7 @@ export function TermSearchPage() {
   } = useTermSearchController(initialQuery);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-14 max-md:max-w-none max-md:min-h-[100dvh] max-md:bg-[#efebf6] max-md:px-[24px] max-md:pb-0 max-md:pt-[max(64px,calc(24px+env(safe-area-inset-top,0px)))]">
+    <div className="mx-auto max-w-[900px] px-6 py-14 max-md:max-w-none max-md:min-h-[100dvh] max-md:bg-[#efebf6] max-md:px-[24px] max-md:pb-8 max-md:pt-[80px]">
       <div className="max-md:hidden">
         <header className="mb-8 text-left">
           <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
@@ -683,10 +692,12 @@ export function TermSearchPage() {
           onQueryChange={setQuery}
           onSearchInputFocus={() => setMobileSearchSheetOpen(true)}
           onEntOnlyFilterToggle={() => setEntOnlyFilterActive(!entOnlyFilterActive)}
+          onOpenFilters={() => setFiltersOverlayOpen(true)}
         /> : <MobileSearchBrowseHeader
           query={query}
           onQueryChange={setQuery}
           onSearchInputFocus={() => setMobileSearchSheetOpen(true)}
+          onOpenFilters={() => setFiltersOverlayOpen(true)}
         />}
       </div>
 
@@ -756,6 +767,7 @@ export function TermSearchPage() {
           onClose={() => setMobileSearchSheetOpen(false)}
         />
       )}
+      {filtersOverlayOpen && <SearchFilters overlay onDismiss={() => setFiltersOverlayOpen(false)} />}
     </div>
   );
 }

@@ -53,10 +53,10 @@ assert.match(
   'Search filters should be a protected route at /search/filters',
 );
 
-assert.match(
+assert.doesNotMatch(
   termSearchSource,
   /to="\/search\/filters"[\s\S]*search\.filterAria/,
-  'Term search filter button should route to the dedicated filters page',
+  'Term search filter button should open its contextual overlay instead of navigating away',
 );
 
 assert.doesNotMatch(
@@ -67,8 +67,24 @@ assert.doesNotMatch(
 
 assert.match(
   searchFiltersSource,
-  /export function SearchFilters\(\)/,
-  'Search filters page should export SearchFilters',
+  /export function SearchFilters\(\{ overlay = false, onDismiss \}: SearchFiltersProps\)/,
+  'Search filters page should export reusable standalone and overlay modes',
+);
+
+assert.ok(
+  searchFiltersSource.includes("? 'fixed inset-0 z-50 bg-transparent max-md:overflow-y-auto'"),
+  'Filter overlay root should preserve the search page behind a transparent fixed layer',
+);
+
+assert.ok(
+  searchFiltersSource.includes("? 'mt-[80px] min-h-[calc(100dvh-80px)] max-w-none rounded-b-none rounded-t-[32px] bg-white flex flex-col overflow-hidden px-6 pb-0 pt-2'"),
+  'Filter overlay sheet should match the Figma 80px top offset and 32px sheet shell',
+);
+
+assert.match(
+  searchFiltersSource,
+  /function closeFiltersPage\(\) \{[\s\S]*if \(overlay\) \{[\s\S]*onDismiss\?\.\(\);/,
+  'Overlay dismissal should close locally so the underlying search page stays mounted',
 );
 
 assert.match(

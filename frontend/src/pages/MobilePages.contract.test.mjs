@@ -36,7 +36,7 @@ const mobileHeroLocaleKeys = [
 ];
 
 const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
+  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\r?\n\}\r?\n\r?\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
 
 assert.match(
   landingSource,

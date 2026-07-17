@@ -2,15 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowDown01Icon,
-  ArrowRight01Icon,
   Bookmark02Icon,
   BookOpen01Icon,
   BookOpen02Icon,
-  ChartColumnIcon,
-  Search01Icon,
   SearchList01Icon,
 } from '@hugeicons/core-free-icons';
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
@@ -19,7 +15,6 @@ import { StatsBar } from '../components/StatsBar';
 import { FeatureCard } from '../components/FeatureCard';
 import { MobileFeatureCarousel } from '../components/MobileFeatureCarousel';
 import { TermCardCarousel } from '../components/TermCardCarousel';
-import { SearchChoiceModal } from '../components/SearchChoiceModal';
 import {
   FigmaFeatureAnalyticsIcon,
   FigmaFeatureDescriptionIcon,
@@ -298,9 +293,7 @@ function DesktopToolsFeature({ isAuthenticated }: { isAuthenticated: boolean }) 
 }
 
 function MobileHome() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
-  return isAuthenticated ? <MobileAppHome /> : <MobileConversionHeroHome />;
+  return <MobileConversionHeroHome />;
 }
 
 function MobileConversionHeroHome() {
@@ -383,131 +376,6 @@ function MobileFigmaGuestSections() {
 
       <MobileSourceProof />
       <MobileToolsFeature isAuthenticated={false} />
-    </>
-  );
-}
-
-function MobileAppHome() {
-  const { t } = useTranslation();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const quickActions = [
-    {
-      title: t('landing.mobileDictionaryTitle', { defaultValue: 'Dictionary Lookup' }),
-      description: t('landing.mobileDictionaryDescription', {
-        defaultValue: 'Search exact informatics terminology',
-      }),
-      to: authTarget('/search', isAuthenticated),
-      icon: BookOpen01Icon,
-    },
-    {
-      title: t('landing.mobileMockExamTitle', { defaultValue: 'Mock Exam Analysis' }),
-      description: t('landing.mobileMockExamDescription', {
-        defaultValue: 'Review performance and weak areas',
-      }),
-      to: authTarget('/analyze', isAuthenticated),
-      icon: ChartColumnIcon,
-    },
-  ];
-
-  return (
-    <>
-      <section className="min-h-screen overflow-hidden bg-bg px-4 pb-3 pt-[calc(30px+env(safe-area-inset-top))]">
-        <header>
-          <h1 className="text-[28px] font-medium leading-none text-primary">
-            {t('landing.mobileWorkspaceTitle', { defaultValue: 'Workspace' })}
-          </h1>
-          <p className="mt-2 text-[13px] leading-none text-text-body">
-            {t('landing.mobileWorkspaceSubtitle', {
-              defaultValue: 'UNT Informatics Preparation',
-            })}
-          </p>
-        </header>
-
-        <section className="mt-7" aria-labelledby="mobile-terms-title">
-          <div className="flex items-center justify-between gap-3">
-            <h2
-              id="mobile-terms-title"
-              className="text-[19px] font-medium leading-none text-primary"
-            >
-              {t('landing.mobileTermsTitle', { defaultValue: 'Terms of the Day' })}
-            </h2>
-            <Link
-              to={authTarget('/search', isAuthenticated)}
-              className="flex min-h-[32px] items-center gap-1 rounded-[8px] px-1 text-[12px] font-medium leading-none text-secondary"
-            >
-              <span>{t('landing.mobileTermsViewAll', { defaultValue: 'View All' })}</span>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={1.8} />
-            </Link>
-          </div>
-          <div className="-mr-4 mt-4">
-            <TermCardCarousel variant="home" />
-          </div>
-        </section>
-
-        <section className="mt-6" aria-labelledby="mobile-quick-actions-title">
-          <h2
-            id="mobile-quick-actions-title"
-            className="text-[19px] font-medium leading-none text-primary"
-          >
-            {t('landing.mobileQuickActionsTitle', { defaultValue: 'Quick Actions' })}
-          </h2>
-
-          <div className="mt-4 grid gap-3">
-            <button
-              type="button"
-              className="grid min-h-[52px] w-full grid-cols-[34px_minmax(0,1fr)] items-center gap-3 rounded-[8px] border border-[#e8e1ee] bg-surface px-4 text-left"
-              onClick={() => setSearchModalOpen(true)}
-            >
-              <HugeiconsIcon
-                icon={Search01Icon}
-                size={19}
-                strokeWidth={1.9}
-                className="text-primary"
-              />
-              <span className="min-w-0 truncate text-[12px] leading-none text-muted">
-                {t('landing.mobileConceptSearchPlaceholder', {
-                  defaultValue: 'Describe a concept to find its term...',
-                })}
-              </span>
-            </button>
-
-            {quickActions.map((action) => (
-              <Link
-                key={action.to}
-                to={action.to}
-                className="grid min-h-[68px] grid-cols-[44px_minmax(0,1fr)_18px] items-center gap-3 rounded-[8px] border border-[#e8e1ee] bg-surface px-4 py-3 text-left"
-              >
-                <span className="flex size-[44px] items-center justify-center rounded-full bg-bg text-primary">
-                  <HugeiconsIcon icon={action.icon} size={21} strokeWidth={1.8} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-[16px] font-medium leading-tight text-text">
-                    {action.title}
-                  </span>
-                  <span className="mt-1 line-clamp-2 block text-[12px] leading-snug text-text-body">
-                    {action.description}
-                  </span>
-                </span>
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  size={18}
-                  strokeWidth={1.8}
-                  className="text-muted"
-                />
-              </Link>
-            ))}
-          </div>
-        </section>
-      </section>
-
-      {searchModalOpen && (
-        <SearchChoiceModal
-          termSearchTo={authTarget('/search', isAuthenticated)}
-          descriptionSearchTo={authTarget('/semantic-search', isAuthenticated)}
-          onClose={() => setSearchModalOpen(false)}
-        />
-      )}
     </>
   );
 }

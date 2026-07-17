@@ -21,7 +21,7 @@ function authTarget(path: string, isAuthenticated: boolean): string {
 const itemBaseClass =
   'flex h-10 min-w-0 appearance-none flex-col items-center justify-start gap-2 border-0 p-0 text-center text-[10px] font-normal leading-[10px] no-underline transition-colors hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]';
 const inactiveItemClass = 'bg-transparent text-[#524d5b]';
-const activeItemClass = 'text-[#4c268c]';
+const activeItemClass = 'text-[#6a37c3]';
 
 const labelClass = 'block w-full overflow-hidden text-ellipsis whitespace-nowrap';
 

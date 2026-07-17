@@ -30,7 +30,7 @@ function sourceBetween(start, end) {
 
 const desktopGuestBundleSource = sourceBetween('function DesktopGuestLanding', 'function MobileHome');
 const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileAppHome/)?.[1] ?? '';
+  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
 
 assert.match(
   landingSource,

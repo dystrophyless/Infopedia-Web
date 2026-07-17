@@ -30,7 +30,7 @@ const mobileGuestHeroSource = sourceBetween(
 const mobileGuestSectionsSource = sourceBetween(
   landingSource,
   'function MobileFigmaGuestSections',
-  'function MobileAppHome',
+  'function MobileSourceProof',
 );
 const mobileSourceProofSource = sourceBetween(
   landingSource,

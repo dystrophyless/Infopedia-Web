@@ -1,14 +1,15 @@
 import json
 import logging
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import uuid4
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.analyze.exceptions import InvalidAnalyzeDocumentError
+from src.analyze.locale import normalize_analyze_locale
 from src.analyze.repository import get_analyze_result_by_user_id
 from src.analyze.schemas import AnalyzeChapterResult, AnalyzeTaskResponse
 from src.analyze.serialization import encode_file_content
@@ -43,6 +44,7 @@ async def create_analyze_task(
     file: Annotated[UploadFile, File(...)],
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    locale: Annotated[Literal["kk", "ru"], Form()] = "kk",
 ):
     user_id = current_user.id
     logger.info(
@@ -75,6 +77,7 @@ async def create_analyze_task(
             kwargs={
                 "user_id": user_id,
                 "file_content_b64": encode_file_content(content),
+                "locale": normalize_analyze_locale(locale),
             },
             task_id=task_id,
         )
@@ -114,10 +117,12 @@ async def create_analyze_task(
 async def get_latest_analyze_result(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     current_user: Annotated[User, Depends(get_current_user)],
+    locale: Annotated[Literal["kk", "ru"], Query()] = "kk",
 ):
     analyze_result = await get_analyze_result_by_user_id(
         session,
         user_id=current_user.id,
+        locale=locale,
     )
     if analyze_result is None:
         return []
@@ -129,7 +134,9 @@ async def get_latest_analyze_result(
 
     return [
         AnalyzeChapterResult(
-            chapter=item.analyze_chapter.value,
+            chapter_id=item.chapter_id,
+            code=item.chapter.code,
+            title=item.chapter.title,
             question_count=item.question_count,
             max_score=item.max_score,
             score=item.score,

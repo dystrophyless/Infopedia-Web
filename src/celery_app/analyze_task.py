@@ -4,6 +4,7 @@ import logging
 from asgiref.sync import async_to_sync
 
 from src.analyze.exceptions import AnalyzeError
+from src.analyze.locale import normalize_analyze_locale
 from src.analyze.serialization import decode_file_content
 from src.analyze.service import get_analyze_result
 from src.celery_app.app import app
@@ -56,6 +57,7 @@ async def run_analyze_task(
     task_id: str,
     user_id: int,
     file_content_b64: str,
+    locale: str = "kk",
 ) -> dict:
     try:
         file_content = decode_file_content(file_content_b64)
@@ -71,6 +73,7 @@ async def run_analyze_task(
                 user_id=user_id,
                 file_content=file_content,
                 emit_progress=emit_progress,
+                locale=normalize_analyze_locale(locale),
             )
 
         logger.info(
@@ -116,10 +119,16 @@ async def run_analyze_task(
     bind=True,
     name="analyze_task.process_document",
 )
-def process_document(self, user_id: int, file_content_b64: str) -> dict:
+def process_document(
+    self,
+    user_id: int,
+    file_content_b64: str,
+    locale: str = "kk",
+) -> dict:
     logger.info("Celery принял задачу task_id=%s", self.request.id)
     return async_to_sync(run_analyze_task)(
         task_id=self.request.id,
         user_id=user_id,
         file_content_b64=file_content_b64,
+        locale=locale,
     )

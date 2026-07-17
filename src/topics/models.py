@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -32,9 +32,10 @@ class Book(Base):
 
 class Chapter(Base):
     __tablename__ = "chapter"
+    __table_args__ = (UniqueConstraint("code", name="uq_chapter_code"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
 
     topic_codes: Mapped[list["TopicCode"]] = relationship(
         back_populates="chapter",
@@ -43,6 +44,58 @@ class Chapter(Base):
         back_populates="chapter",
         cascade="all, delete-orphan",
     )
+
+    translations: Mapped[list["ChapterTranslation"]] = relationship(
+        back_populates="chapter", cascade="all, delete-orphan"
+    )
+    aliases: Mapped[list["ChapterAlias"]] = relationship(
+        back_populates="chapter", cascade="all, delete-orphan"
+    )
+
+    @property
+    def title(self) -> str:
+        return getattr(self, "_localized_title", self.code)
+
+    @title.setter
+    def title(self, value: str) -> None:
+        self._localized_title = value
+
+    @property
+    def name(self) -> str:
+        """Read-only runtime compatibility alias for the removed DB column."""
+        return self.code
+
+
+class ChapterAlias(Base):
+    __tablename__ = "chapter_alias"
+    __table_args__ = (
+        UniqueConstraint(
+            "chapter_id", "locale", "normalized_alias",
+            name="uq_chapter_alias_chapter_locale_normalized",
+        ),
+        CheckConstraint("locale IN ('kk', 'ru')", name="ck_chapter_alias_locale"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chapter_id: Mapped[int] = mapped_column(Integer, ForeignKey("chapter.id"), nullable=False)
+    locale: Mapped[str] = mapped_column(String(8), nullable=False)
+    alias: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_alias: Mapped[str] = mapped_column(Text, nullable=False)
+    chapter: Mapped["Chapter"] = relationship(back_populates="aliases")
+
+
+class ChapterTranslation(Base):
+    __tablename__ = "chapter_translation"
+    __table_args__ = (
+        UniqueConstraint("chapter_id", "locale", name="uq_chapter_translation_chapter_locale"),
+        CheckConstraint("locale IN ('kk', 'ru')", name="ck_chapter_translation_locale"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chapter_id: Mapped[int] = mapped_column(Integer, ForeignKey("chapter.id"), nullable=False)
+    locale: Mapped[str] = mapped_column(String(8), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    chapter: Mapped["Chapter"] = relationship(back_populates="translations")
 
 
 class TopicCode(Base):
@@ -66,6 +119,39 @@ class TopicCode(Base):
         back_populates="topic_codes",
         secondary="topic_mapping",
     )
+    translations: Mapped[list["TopicCodeTranslation"]] = relationship(
+        back_populates="topic_code",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def title(self) -> str:
+        return getattr(self, "_localized_title", self.name)
+
+    def set_localized_title(self, title: str) -> None:
+        self._localized_title = title
+
+
+class TopicCodeTranslation(Base):
+    __tablename__ = "topic_code_translation"
+    __table_args__ = (
+        UniqueConstraint(
+            "topic_code_id",
+            "locale",
+            name="uq_topic_code_translation_code_locale",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    topic_code_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("topic_code.id"),
+        nullable=False,
+    )
+    locale: Mapped[str] = mapped_column(String(8), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+
+    topic_code: Mapped["TopicCode"] = relationship(back_populates="translations")
 
 
 class TopicMapping(Base):

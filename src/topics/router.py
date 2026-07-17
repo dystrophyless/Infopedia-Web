@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,6 +81,7 @@ async def get_chapter_catalog(
     request: Request,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    locale: Annotated[Literal["kk", "ru"], Query()] = "kk",
 ):
     await enforce_anti_scrape(
         request,
@@ -88,7 +89,7 @@ async def get_chapter_catalog(
         user_id=current_user.id,
     )
 
-    return await get_all_chapters(session)
+    return await get_all_chapters(session, locale=locale)
 
 
 @router.get("/book/{book_ref}", response_model=list[TopicResponse])
@@ -129,7 +130,8 @@ async def get_topics_by_chapter(
     )
     chapter_id = _decode_public_ref_or_404("chapter", chapter_ref)
     topics: list[Topic] | None = await get_topics_by_chapter_id(
-        session, chapter_id=chapter_id
+        session,
+        chapter_id=chapter_id,
     )
 
     if not topics:
@@ -147,6 +149,7 @@ async def get_topic(
     topic_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    locale: Annotated[Literal["kk", "ru"], Query()] = "kk",
 ):
     await enforce_anti_scrape(
         request,
@@ -154,7 +157,11 @@ async def get_topic(
         user_id=current_user.id,
     )
     topic_id = _decode_public_ref_or_404("topic", topic_ref)
-    topic: Topic | None = await get_topic_by_id(session, topic_id=topic_id)
+    topic: Topic | None = await get_topic_by_id(
+        session,
+        topic_id=topic_id,
+        locale=locale,
+    )
 
     if topic is None:
         raise HTTPException(

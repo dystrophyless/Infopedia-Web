@@ -17,6 +17,7 @@ from src.loader import (
     load_terms_from_json,
     refresh_book_chapter_coverage,
 )
+from src.migrations.chapter_migration import migrate_chapter_schema
 from src.logging_settings import logging_config
 from src.models import Base
 from src.terms.service import get_embedder
@@ -31,6 +32,8 @@ async def create_tables() -> None:
 
         async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+        await migrate_chapter_schema(async_engine)
 
         logger.debug("Схема базы данных успешно инициализирована.")
     except SQLAlchemyError:

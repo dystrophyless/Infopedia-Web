@@ -17,7 +17,9 @@ class AnalyzeBookCoverage(BaseModel):
 
 
 class AnalyzeChapterResult(BaseModel):
-    chapter: str
+    chapter_id: int = Field(ge=1)
+    code: str = Field(min_length=1)
+    title: str = Field(min_length=1)
     question_count: int = Field(ge=0)
     max_score: int = Field(ge=0)
     score: int = Field(ge=0)

@@ -19,6 +19,10 @@ const filterTermsSource = readFileSync(
   path.resolve(searchFeatureDir, 'model/filterTerms.ts'),
   'utf8',
 );
+const filterOptionsSource = readFileSync(
+  path.resolve(searchFeatureDir, 'model/filterOptions.ts'),
+  'utf8',
+);
 const resultFilterChipsSource = readFileSync(
   path.resolve(searchFeatureDir, 'model/resultFilterChips.ts'),
   'utf8',
@@ -303,8 +307,14 @@ assert.match(
 
 assert.match(
   filterTermsSource,
-  /const matchesSection =[\s\S]*chapter\?\.public_id[\s\S]*chapter\?\.name/,
-  'Result-page section filtering should match chapter public refs before falling back to chapter names',
+  /const matchesSection =[\s\S]*chapter\?\.public_id[\s\S]*chapter\?\.code/,
+  'Result-page section filtering should match chapter public refs before falling back to stable chapter codes',
+);
+
+assert.match(
+  filterOptionsSource,
+  /const label = \(chapter\.title \?\? chapter\.name \?\? ''\)\.trim\(\);/,
+  'Search filter options should render localized chapter titles with an explicit legacy-name fallback',
 );
 
 assert.match(

@@ -36,7 +36,7 @@ const mobileHeroLocaleKeys = [
 ];
 
 const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileAppHome/)?.[1] ?? '';
+  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
 
 assert.match(
   landingSource,
@@ -62,11 +62,9 @@ assert.match(
   'Landing should render the Figma-inspired guest conversion landing for desktop guests',
 );
 
-assert.match(
-  landingSource,
-  /isAuthenticated \? <MobileAppHome \/> : <MobileConversionHeroHome \/>/,
-  'Mobile landing should split authenticated app home from the guest conversion hero',
-);
+assert.match(landingSource, /function MobileHome\(\)[\s\S]*<MobileConversionHeroHome \/>/, 'Mobile landing should keep the guest conversion hero branch');
+
+assert.doesNotMatch(landingSource, /MobileAppHome|Workspace|Terms of the Day|Quick Actions/, 'Landing should not contain the removed authenticated mobile workspace');
 
 assert.ok(
   mobileGuestHeroSource,
@@ -106,12 +104,6 @@ for (const key of mobileHeroLocaleKeys) {
   assert.ok(ruLocale.landing[key], `RU locale should define landing.${key}`);
   assert.ok(kkLocale.landing[key], `KK locale should define landing.${key}`);
 }
-
-assert.match(
-  landingSource,
-  /function MobileAppHome\(\)[\s\S]*setSearchModalOpen\(true\)/,
-  'Authenticated mobile home should keep the app-style search CTA and bottom-sheet trigger',
-);
 
 assert.match(
   landingSource,

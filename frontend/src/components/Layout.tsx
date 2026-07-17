@@ -13,7 +13,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <Navbar />
       <main
         className={`flex-1 w-full max-md:min-w-0 ${
-          isAuthenticated ? 'max-md:pb-[calc(88px+env(safe-area-inset-bottom,0px))]' : ''
+          isAuthenticated ? 'max-md:pb-[88px]' : ''
         }`}
       >
         {children}

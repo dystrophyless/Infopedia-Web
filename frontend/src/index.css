@@ -46,14 +46,9 @@ button {
   right: 0;
   bottom: 0;
   width: 100%;
-  height: calc(88px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: 88px;
   background: #f8f5fc;
   z-index: 40;
-}
-
-.bottom-nav-inner {
-  height: 88px;
 }
 
 input[type='password']::-ms-reveal,

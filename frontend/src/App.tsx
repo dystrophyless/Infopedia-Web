@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
-import { Landing } from './pages/Landing';
+import { RootEntry } from './components/RootEntry';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
@@ -44,7 +44,7 @@ export default function App() {
           path="/"
           element={
             <Public>
-              <Landing />
+              <RootEntry />
             </Public>
           }
         />

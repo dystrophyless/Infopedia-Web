@@ -29,9 +29,9 @@ const kkLocale = JSON.parse(
 );
 
 const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileAppHome/)?.[1] ?? '';
+  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
 const guestSectionsSource =
-  landingSource.match(/function MobileFigmaGuestSections[\s\S]*?\n\}\n\nfunction MobileAppHome/)?.[0] ?? '';
+  landingSource.match(/function MobileFigmaGuestSections[\s\S]*?\n\}\n\nfunction MobileSourceProof/)?.[0] ?? '';
 const mobileSourceProofSource =
   landingSource.match(/function MobileSourceProof[\s\S]*?\n\}\n\nfunction MobileToolsFeature/)?.[0] ?? '';
 const mobileToolsFeatureSource =

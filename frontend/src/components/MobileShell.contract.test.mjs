@@ -26,6 +26,12 @@ assert.ok(
 );
 
 const bottomNavSource = readFileSync(bottomNavPath, 'utf8');
+
+assert.match(
+  bottomNavSource,
+  /const activeItemClass = 'text-\[#6a37c3\]';/,
+  'Mobile bottom navigation should use the Figma active violet',
+);
 const splashSource = readFileSync(splashPath, 'utf8');
 const bottomNavCssBlock = indexCssSource.match(/\.bottom-nav\s*\{[^}]*\}/)?.[0] ?? '';
 
@@ -43,8 +49,8 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /max-md:pb-\[calc\(88px\+env\(safe-area-inset-bottom,0px\)\)\]/,
-  'Layout should reserve the Figma 88px bottom-navigation height plus safe-area fallback on mobile',
+  /max-md:pb-\[88px\]/,
+  'Layout should reserve exactly the Figma 88px bottom-navigation height on mobile',
 );
 
 assert.match(
@@ -85,14 +91,14 @@ assert.match(
 
 assert.match(
   bottomNavCssBlock,
-  /\.bottom-nav\s*\{[\s\S]*position:\s*fixed;[\s\S]*left:\s*0;[\s\S]*right:\s*0;[\s\S]*bottom:\s*0;[\s\S]*width:\s*100%;[\s\S]*height:\s*calc\(88px \+ env\(safe-area-inset-bottom, 0px\)\);[\s\S]*padding-bottom:\s*env\(safe-area-inset-bottom, 0px\);[\s\S]*background:\s*#f8f5fc;[\s\S]*\}/,
-  'Mobile bottom navigation shell should pin to the viewport edge and absorb safe-area inset internally',
+  /\.bottom-nav\s*\{[\s\S]*position:\s*fixed;[\s\S]*left:\s*0;[\s\S]*right:\s*0;[\s\S]*bottom:\s*0;[\s\S]*width:\s*100%;[\s\S]*height:\s*88px;[\s\S]*background:\s*#f8f5fc;[\s\S]*\}/,
+  'Mobile bottom navigation shell should pin to the viewport edge at the Figma 88px height',
 );
 
-assert.match(
-  indexCssSource,
-  /\.bottom-nav-inner\s*\{[\s\S]*height:\s*88px;[\s\S]*\}/,
-  'Mobile bottom navigation content should keep the ordinary Figma 88px height inside the safe-area shell',
+assert.doesNotMatch(
+  bottomNavCssBlock,
+  /safe-area-inset/,
+  'Figma canvas already includes the safe zone, so the mobile nav shell must not add one dynamically',
 );
 
 assert.doesNotMatch(
@@ -150,7 +156,7 @@ assert.match(
 
 assert.match(
   bottomNavSource,
-  /activeItemClass\s*=\s*'text-\[#4c268c\]'/,
+  /activeItemClass\s*=\s*'text-\[#6a37c3\]'/,
   'Mobile bottom navigation should accent the active tab icon and label with the updated Figma purple text color',
 );
 

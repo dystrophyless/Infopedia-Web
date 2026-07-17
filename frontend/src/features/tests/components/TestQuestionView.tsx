@@ -38,8 +38,8 @@ export function TestQuestionView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px-env(safe-area-inset-bottom,0px))] max-md:px-6 max-md:pb-12 max-md:pt-[calc(64px+env(safe-area-inset-top,0px))]">
-      <main className="test-question-content mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px)] max-md:px-6 max-md:pb-12 max-md:pt-[64px]">
+      <main className="test-question-content mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
         <MobileAppBar
           title={title}
           titleAlign="start"
@@ -55,18 +55,18 @@ export function TestQuestionView({
         <Progress
           value={progressPercent}
           aria-label={t('tests.questionProgress', { defaultValue: 'Прогресс теста' })}
-          className="test-question-progress mt-4 bg-[rgba(106,55,195,0.25)] [&>span]:bg-[#6a37c3]"
+          className="test-question-progress mt-4 !h-2 !bg-[rgba(106,55,195,0.25)] [&>span]:!bg-[#6a37c3]"
         />
 
         <section className="mt-6 rounded-[8px] bg-[#6a37c3] p-6 text-[#f8f5fc]">
-          <p className="text-[12px] font-medium leading-3 text-[#f8f5fc]">
+          <p className="text-[12px] font-medium leading-3 text-[#c5b1e7]">
             {t('tests.questionCounter', {
               current: currentQuestionIndex + 1,
               total: totalQuestions,
               defaultValue: 'Вопрос {{current}} из {{total}}',
             })}
           </p>
-          <p className="mt-2 text-[16px] font-medium leading-4">{question.prompt}</p>
+          <p className="mt-2 text-[#f8f5fc] text-[16px] font-medium leading-4">{question.prompt}</p>
         </section>
 
         <fieldset className="mt-6 flex flex-col gap-2">
@@ -95,7 +95,7 @@ export function TestQuestionView({
 
         {checked && (
           <section className="mt-8 rounded-[8px] bg-[#a4e5c7] px-6 py-4">
-            <h2 className="text-[12px] font-medium leading-3 text-[#1a6140]">
+            <h2 className="text-[12px] font-medium leading-3 text-[#22915d]">
               {t('tests.explanationTitle', { defaultValue: 'Объяснение' })}
             </h2>
             <p className="mt-2 max-w-[280px] text-[14px] font-medium leading-[14px] text-[#1a6140]">
@@ -108,10 +108,10 @@ export function TestQuestionView({
           <Button
             fullWidth
             size="lg"
-            className={`h-12 rounded-[8px] px-6 text-[16px] leading-4 ${
+            className={`h-12 rounded-[8px] px-6 !text-[16px] !leading-4 ${
               checkDisabled
-                ? 'bg-[#ded2f1] text-[#6a37c3]'
-                : 'bg-[#6a37c3] text-[#f8f5fc] hover:bg-[#572d9f]'
+                ? '!bg-[#ded2f1] !text-[#a585db] disabled:!opacity-100'
+                : '!bg-[#6a37c3] !text-[#f8f5fc] hover:!bg-[#6a37c3] hover:!opacity-100'
             }`}
             disabled={checkDisabled}
             onClick={onPrimaryAction}

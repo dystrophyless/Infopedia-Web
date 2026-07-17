@@ -23,8 +23,8 @@ export function TestStatusView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px-env(safe-area-inset-bottom,0px))] max-md:px-6 max-md:pb-12 max-md:pt-[calc(64px+env(safe-area-inset-top,0px))]">
-      <main className="mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]" aria-busy={loading}>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px)] max-md:px-6 max-md:pb-12 max-md:pt-[64px]">
+      <main className="mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]" aria-busy={loading}>
         <MobileAppBar
           title={title}
           titleAlign="start"

@@ -218,10 +218,50 @@ assert.match(
   'Question page body content should remain constrained to the Figma 382px column',
 );
 
+for (const viewSource of [questionViewSource, resultViewSource]) {
+  assert.match(
+    viewSource,
+    /max-md:min-h-\[calc\(100dvh-88px\)\]/,
+    'Test screens should occupy the exact 844px Figma area above the 88px bottom nav',
+  );
+  assert.match(
+    viewSource,
+    /max-md:pt-\[64px\]/,
+    'Test screens should start their mobile content at the 64px Figma top origin',
+  );
+  assert.match(
+    viewSource,
+    /max-md:min-h-\[calc\(100dvh-200px\)\]/,
+    'Test screen content should reserve its exact Figma app-bar and CTA geometry',
+  );
+  assert.doesNotMatch(
+    viewSource,
+    /safe-area-inset/,
+    'Test screens should not add dynamic safe-area offsets to the Figma canvas',
+  );
+}
+
 assert.match(
   questionSource,
   /test-question-progress[\s\S]*mt-4/,
   'Question progress bar should sit 16px below the 56px Figma header',
+);
+
+assert.match(
+  questionViewSource,
+  /test-question-progress[\s\S]*!h-2[\s\S]*!bg-\[rgba\(106,55,195,0\.25\)\][\s\S]*\[&>span\]:!bg-\[#6a37c3\]/,
+  'Question progress should keep the exact Figma track and fill above shared Progress styles',
+);
+
+assert.match(
+  questionViewSource,
+  /text-\[#c5b1e7\][\s\S]*questionCounter/,
+  'Question card counter should use the Figma lavender text token',
+);
+
+assert.ok(
+  questionViewSource.includes('mt-2 text-[#f8f5fc] text-[16px] font-medium leading-4">{question.prompt}</p>'),
+  'Question card prompt should keep the explicit Figma white typography',
 );
 
 for (const codePattern of [
@@ -267,8 +307,26 @@ assert.doesNotMatch(
 
 assert.match(
   questionSource,
-  /: 'bg-\[#6a37c3\] text-\[#f8f5fc\] hover:bg-\[#572d9f\]'/,
-  'Check button should become the enabled purple Figma state after an answer is selected',
+  /: '!bg-\[#6a37c3\] !text-\[#f8f5fc\] hover:!bg-\[#6a37c3\] hover:!opacity-100'/,
+  'Enabled check CTA should retain the exact Figma purple and full opacity on hover',
+);
+
+assert.match(
+  questionViewSource,
+  /checkDisabled[\s\S]*\? '!bg-\[#ded2f1\] !text-\[#a585db\] disabled:!opacity-100'[\s\S]*: '!bg-\[#6a37c3\] !text-\[#f8f5fc\] hover:!bg-\[#6a37c3\] hover:!opacity-100'[\s\S]*disabled=\{checkDisabled\}/,
+  'CTA should preserve disabled Figma colors and full-opacity enabled hover colors',
+);
+
+assert.match(
+  questionViewSource,
+  /\{checked && \([\s\S]*bg-\[#a4e5c7\][\s\S]*<h2[^>]*text-\[#22915d\][\s\S]*<p[^>]*text-\[#1a6140\]/,
+  'Explanation heading should use the Figma green while its body retains the darker readable green',
+);
+
+assert.match(
+  questionViewSource,
+  /className=\{`h-12 rounded-\[8px\] px-6 !text-\[16px\] !leading-4 \$\{/,
+  'Check CTA should preserve the 48px Figma height with important typography overrides',
 );
 
 assert.match(
@@ -386,13 +444,17 @@ for (const text of [
 }
 
 for (const className of [
-  'mt-8 rounded-[8px] bg-[#6a37c3] p-6',
-  'bg-[rgba(248,245,252,0.25)]',
-  'bg-[#f8f5fc]',
-  'grid grid-cols-2 gap-2',
-  'text-[#6a37c3]',
-  'text-[#6b6573]',
-  'bg-white px-6 py-4',
+  'mt-6 h-[118px] rounded-[8px] bg-[#6a37c3] p-6',
+  'text-[#c5b1e7]',
+  'text-[32px] font-medium leading-8 text-white',
+  'text-[16px] font-medium leading-4 text-white',
+  'result-score-progress mt-4 !h-2 !bg-[rgba(248,245,252,0.25)] [&>span]:!bg-[#f8f5fc]',
+  'mt-4 grid grid-cols-2 gap-2',
+  'h-24 rounded-[8px] bg-white p-4',
+  'text-[12px] font-medium leading-3 text-[#865bcf]',
+  'text-[16px] font-medium leading-4 text-black',
+  'text-[12px] font-normal leading-3 text-[#b1acb9]',
+  'mt-12 text-[20px] font-medium leading-5 text-[#572d9f]',
 ]) {
   assert.match(
     questionSource,
@@ -400,6 +462,24 @@ for (const className of [
     `Result screen should preserve the Figma class ${className}`,
   );
 }
+
+assert.doesNotMatch(
+  resultViewSource,
+  /StatCard/,
+  'Result metrics should use local Figma markup instead of shared StatCard styles',
+);
+
+assert.match(
+  resultViewSource,
+  /className="h-10 min-h-10 translate-y-2 p-0 text-\[#252329\]"/,
+  'Result app bar contents should move 8px down without shifting the Results heading',
+);
+
+assert.match(
+  resultViewSource,
+  /h-12 rounded-\[8px\] px-6 !text-\[16px\] !leading-4 !bg-\[#6a37c3\] !text-\[#f8f5fc\] hover:!bg-\[#6a37c3\] hover:!opacity-100/,
+  'Result CTA should keep exact Figma color and typography above shared Button styles',
+);
 
 assert.match(
   questionSource,

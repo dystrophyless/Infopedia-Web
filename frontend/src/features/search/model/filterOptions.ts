@@ -32,27 +32,7 @@ export const SEARCH_FILTER_BOOKS: FilterOption[] = [
   { id: 'almatykitap', labelKey: 'searchFilters.books.almatykitap' },
 ];
 
-export const SEARCH_FILTER_CHAPTERS: FilterOption[] = [
-  { id: 'COMPUTER_DEVICES', labelKey: 'analyze.chapters.COMPUTER_DEVICES' },
-  { id: 'COMPUTER_NETWORKS', labelKey: 'analyze.chapters.COMPUTER_NETWORKS' },
-  {
-    id: 'INFORMATION_REPRESENTATION_AND_CODING',
-    labelKey: 'analyze.chapters.INFORMATION_REPRESENTATION_AND_CODING',
-  },
-  { id: 'NUMBER_SYSTEMS', labelKey: 'analyze.chapters.NUMBER_SYSTEMS' },
-  { id: 'LOGIC_BASICS', labelKey: 'analyze.chapters.LOGIC_BASICS' },
-  { id: 'PYTHON_PROGRAMMING', labelKey: 'analyze.chapters.PYTHON_PROGRAMMING' },
-  {
-    id: 'ALGORITHMS_AND_PROGRAMMING',
-    labelKey: 'analyze.chapters.ALGORITHMS_AND_PROGRAMMING',
-  },
-  { id: 'HARDWARE_AND_SOFTWARE', labelKey: 'analyze.chapters.HARDWARE_AND_SOFTWARE' },
-  { id: 'RELATIONAL_DATABASES', labelKey: 'analyze.chapters.RELATIONAL_DATABASES' },
-  { id: 'DATABASES_AND_QUERIES', labelKey: 'analyze.chapters.DATABASES_AND_QUERIES' },
-  { id: 'IT_TECHNOLOGIES', labelKey: 'analyze.chapters.IT_TECHNOLOGIES' },
-  { id: 'INFORMATION_OBJECTS', labelKey: 'analyze.chapters.INFORMATION_OBJECTS' },
-  { id: 'WEB_DESIGN', labelKey: 'analyze.chapters.WEB_DESIGN' },
-];
+export const SEARCH_FILTER_CHAPTERS: FilterOption[] = [];
 
 export function isFilterSelectId(value: string | null): value is FilterSelectId {
   return value === 'grade' || value === 'book' || value === 'section';
@@ -87,7 +67,7 @@ export function mapChapterOptions(chapters: ChapterCatalogItem[]): FilterOption[
   const options: FilterOption[] = [];
 
   chapters.forEach((chapter) => {
-    const label = chapter.name.trim();
+    const label = (chapter.title ?? chapter.name ?? '').trim();
     if (!chapter.public_id || !label || seen.has(chapter.public_id)) return;
 
     seen.add(chapter.public_id);
@@ -104,7 +84,7 @@ export function createFilterOptionCatalog(
   return {
     grade: SEARCH_FILTER_GRADES,
     book: bookOptions.length > 0 ? bookOptions : SEARCH_FILTER_BOOKS,
-    section: chapterOptions.length > 0 ? chapterOptions : SEARCH_FILTER_CHAPTERS,
+    section: chapterOptions,
   };
 }
 

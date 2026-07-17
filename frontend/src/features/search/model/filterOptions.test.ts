@@ -18,7 +18,7 @@ const t = ((key: string, options?: Record<string, unknown>) =>
     : `translated:${key}`) as unknown as TFunction;
 
 describe('search filter option characterization', () => {
-  it('keeps the static grade, book, and chapter fallback catalogs', () => {
+  it('keeps static grade and book fallbacks while chapters remain backend-only', () => {
     expect(SEARCH_FILTER_GRADES.map(({ id }) => id)).toEqual(['7', '8', '9', '10', '11']);
     expect(SEARCH_FILTER_BOOKS.map(({ id }) => id)).toEqual([
       'atamura',
@@ -26,7 +26,7 @@ describe('search filter option characterization', () => {
       'mektep',
       'almatykitap',
     ]);
-    expect(SEARCH_FILTER_CHAPTERS).not.toHaveLength(0);
+    expect(SEARCH_FILTER_CHAPTERS).toEqual([]);
   });
 
   it('maps, labels, deduplicates, and validates live book options in source order', () => {
@@ -58,9 +58,21 @@ describe('search filter option characterization', () => {
     ).toEqual([{ id: 'CHAPTER_1', label: 'Chapter one' }]);
   });
 
+  it('prefers localized title and falls back to stable name', () => {
+    expect(
+      mapChapterOptions([
+        { public_id: 'CHAPTER_1', name: 'Stable name', title: 'Русское название' },
+        { public_id: 'CHAPTER_2', name: 'Fallback name' },
+      ]),
+    ).toEqual([
+      { id: 'CHAPTER_1', label: 'Русское название' },
+      { id: 'CHAPTER_2', label: 'Fallback name' },
+    ]);
+  });
+
   it('uses live catalogs only when they contain valid options', () => {
     expect(createFilterOptionCatalog([], []).book).toBe(SEARCH_FILTER_BOOKS);
-    expect(createFilterOptionCatalog([], []).section).toBe(SEARCH_FILTER_CHAPTERS);
+    expect(createFilterOptionCatalog([], []).section).toEqual(SEARCH_FILTER_CHAPTERS);
 
     const liveBook = [{ id: 'book-1', label: 'Book one' }];
     const liveChapter = [{ id: 'chapter-1', label: 'Chapter one' }];

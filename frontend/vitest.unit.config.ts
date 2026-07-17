@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       'src/features/**/*.test.ts',
       'src/features/**/*.test.tsx',
+      'src/api/**/*.test.ts',
     ],
     passWithNoTests: false,
   },

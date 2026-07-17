@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { getSearchFilterBooks, getSearchFilterChapters } from '../api/filterCatalog';
 import {
   createFilterOptionCatalog,
@@ -9,6 +10,7 @@ import {
 } from '../model/filterOptions';
 
 export function useSearchFilterCatalog(t: TFunction) {
+  const { i18n } = useTranslation();
   const [bookOptions, setBookOptions] = useState<FilterOption[]>([]);
   const [chapterOptions, setChapterOptions] = useState<FilterOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -24,7 +26,7 @@ export function useSearchFilterCatalog(t: TFunction) {
         type: 'books' as const,
         options: mapBookOptions(books, t),
       })),
-      getSearchFilterChapters().then((chapters) => ({
+      getSearchFilterChapters(i18n.language).then((chapters) => ({
         type: 'chapters' as const,
         options: mapChapterOptions(chapters),
       })),
@@ -54,7 +56,7 @@ export function useSearchFilterCatalog(t: TFunction) {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [i18n.language, t]);
 
   const selectOptions = useMemo(
     () => createFilterOptionCatalog(bookOptions, chapterOptions),

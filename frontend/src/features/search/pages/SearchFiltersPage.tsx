@@ -24,7 +24,12 @@ const DRAG_CLOSE_ANIMATION_MS = 180;
 const DRAG_CLOSE_TRANSLATE_FALLBACK = 720;
 const TOUCH_DRAG_INTENT_THRESHOLD = 6;
 
-export function SearchFilters() {
+export interface SearchFiltersProps {
+  overlay?: boolean;
+  onDismiss?: () => void;
+}
+
+export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -71,6 +76,11 @@ export function SearchFilters() {
   }
 
   function closeFiltersPage() {
+    if (overlay) {
+      onDismiss?.();
+      return;
+    }
+
     navigate('/search');
   }
 
@@ -219,14 +229,18 @@ export function SearchFilters() {
     <div
       data-search-filter-page-scroll
       ref={filterPageScrollRef}
-      className="mx-auto max-w-[900px] px-6 py-14 max-md:fixed max-md:inset-0 max-md:z-50 max-md:max-w-none max-md:overflow-y-auto max-md:bg-[#efebf6] max-md:px-0 max-md:py-0"
+      className={overlay
+        ? 'fixed inset-0 z-50 bg-transparent max-md:overflow-y-auto'
+        : 'mx-auto max-w-[900px] px-6 py-14 max-md:fixed max-md:inset-0 max-md:z-50 max-md:max-w-none max-md:overflow-y-auto max-md:bg-[#efebf6] max-md:px-0 max-md:py-0'}
       onKeyDown={(event) => {
         if (event.key === 'Escape') closeFiltersPage();
       }}
     >
       <section
         data-search-filter-page-sheet
-        className="search-filter-sheet mx-auto max-w-[560px] rounded-[16px] bg-surface px-6 py-8 max-md:mt-[calc(62px+env(safe-area-inset-top))] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[32px] max-md:bg-white max-md:min-h-[calc(100dvh-62px)] max-md:flex max-md:flex-col max-md:overflow-hidden max-md:px-6 max-md:pb-0 max-md:pt-2"
+        className={`search-filter-sheet mx-auto max-w-[560px] rounded-[16px] bg-surface px-6 py-8 ${overlay
+          ? 'mt-[80px] min-h-[calc(100dvh-80px)] max-w-none rounded-b-none rounded-t-[32px] bg-white flex flex-col overflow-hidden px-6 pb-0 pt-2'
+          : 'max-md:mt-[calc(62px+env(safe-area-inset-top))] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[32px] max-md:bg-white max-md:min-h-[calc(100dvh-62px)] max-md:flex max-md:flex-col max-md:overflow-hidden max-md:px-6 max-md:pb-0 max-md:pt-2'}`}
         onPointerDown={handlePageDragStart}
         onPointerMove={handlePageDragMove}
         onPointerUp={handlePageDragEnd}

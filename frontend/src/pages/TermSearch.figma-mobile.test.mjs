@@ -49,8 +49,14 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /max-md:px-\[24px\][\s\S]*max-md:pt-\[max\(64px,calc\(24px\+env\(safe-area-inset-top,0px\)\)\)\]/,
-  'Term search mobile route should reserve the Figma 24px rail and status-bar safe zone before content',
+  /max-md:px-\[24px\][\s\S]*max-md:pt-\[80px\]/,
+  'Term search mobile route should start at the exact 80px Figma canvas origin',
+);
+
+assert.match(
+  termSearchSource,
+  /max-md:px-\[24px\][\s\S]*max-md:pb-8[\s\S]*max-md:pt-\[80px\]/,
+  'Term search mobile route should retain the Figma 32px clearance between the load-more CTA and fixed navigation',
 );
 
 assert.doesNotMatch(
@@ -61,8 +67,8 @@ assert.doesNotMatch(
 
 assert.doesNotMatch(
   termSearchSource,
-  /max-md:pt-\[calc\(24px\+env\(safe-area-inset-top\)\)\]/,
-  'Term search mobile route should not fall back to the old too-high 24px top padding',
+  /max-md:pt-\[[^\]]*safe-area-inset-top[^\]]*\]/,
+  'Term search mobile route should not add a dynamic top safe-area offset to the Figma canvas',
 );
 
 assert.match(
@@ -73,8 +79,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultHeader[\s\S]*mt-2 mb-4 -mx-\[2px\] grid w-\[calc\(100%\+4px\)\] grid-cols-\[minmax\(0,1fr\)\][\s\S]*h-10 w-full rounded-\[8px\] bg-white/,
-  'Typed/result search input should use the Figma 22px rail and 386px field inside the 24px browse shell',
+  /function MobileSearchResultHeader[\s\S]*mt-0 mb-4 -mx-\[2px\] grid w-\[calc\(100%\+4px\)\] grid-cols-\[minmax\(0,1fr\)\][\s\S]*h-10 w-full rounded-\[8px\] bg-white/,
+  'Typed/result search input should start at the exact Figma position on the 22px rail',
 );
 
 assert.match(
@@ -103,8 +109,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultAppBar[\s\S]*h-14[\s\S]*-mx-\[24px\][\s\S]*w-\[calc\(100%\+48px\)\][\s\S]*px-4[\s\S]*ArrowLeft01Icon[\s\S]*search\.resultsTitle/,
-  'Typed/result search should render the updated 56px full-width result app bar on the 24px rail',
+  /function MobileSearchResultAppBar[\s\S]*h-14[\s\S]*-mx-\[24px\][\s\S]*w-\[calc\(100%\+48px\)\][\s\S]*items-start[\s\S]*px-4[\s\S]*className="flex size-6[\s\S]*ArrowLeft01Icon[\s\S]*className="mt-1 text-\[16px\][\s\S]*search\.resultsTitle/,
+  'Typed/result search app bar should keep its 56px frame while aligning its arrow and title to the Figma top offsets',
 );
 
 assert.match(
@@ -115,8 +121,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /<MobileSearchResultAppBar onBack=\{onBack\} \/>[\s\S]*mt-2 mb-4 -mx-\[2px\] grid w-\[calc\(100%\+4px\)\] grid-cols-\[minmax\(0,1fr\)\]/,
-  'Typed/result search input should sit 8px below the app bar on the Figma 22px rail',
+  /<MobileSearchResultAppBar onBack=\{onBack\} \/>[\s\S]*mt-0 mb-4 -mx-\[2px\] grid w-\[calc\(100%\+4px\)\] grid-cols-\[minmax\(0,1fr\)\]/,
+  'Typed/result search input should begin directly after the app bar at the Figma position',
 );
 
 for (const mode of ['random', 'forYou', 'popular']) {
@@ -135,14 +141,38 @@ assert.match(
 
 assert.match(
   termSearchSource,
+  /function MobileSearchModePills[\s\S]*\[&_label\]:!bg-\[#ded2f1\] \[&_label\]:!text-\[#a585db\] \[&_label:has\(:checked\)\]:!bg-\[#44237d\] \[&_label:has\(:checked\)\]:!text-\[#f8f5fc\]/,
+  'Mobile search mode pills should override shared label colors with the Figma inactive and selected states',
+);
+
+assert.match(
+  termSearchSource,
   /function MobileSearchModePills[\s\S]*useState<'random' \| 'forYou' \| 'popular'>\('random'\)[\s\S]*value: 'random'[\s\S]*value: 'forYou'[\s\S]*value: 'popular'/,
   'Mobile search mode pills should keep the Figma label order in controlled local radio state',
 );
 
 assert.match(
   termSearchSource,
-  /to="\/search\/filters"[\s\S]*search\.filterAria/,
-  'Term search filter control should route to the dedicated filters page',
+  /const \[filtersOverlayOpen, setFiltersOverlayOpen\] = useState\(false\);/,
+  'Term search should track the contextual filters overlay locally',
+);
+
+assert.match(
+  termSearchSource,
+  /function MobileSearchBrowseHeader[\s\S]*<button[\s\S]*onClick=\{onOpenFilters\}[\s\S]*search\.filterAria/,
+  'Browse filter control should open the overlay rather than navigating away',
+);
+
+assert.match(
+  termSearchSource,
+  /onOpenFilters=\{\(\) => setFiltersOverlayOpen\(true\)\}/,
+  'Typed-result filter control should open the same contextual overlay',
+);
+
+assert.match(
+  termSearchSource,
+  /filtersOverlayOpen && <SearchFilters overlay onDismiss=\{\(\) => setFiltersOverlayOpen\(false\)\} \/>/,
+  'The overlay should be rendered alongside the mounted search view and dismiss locally',
 );
 
 assert.doesNotMatch(
@@ -197,6 +227,12 @@ assert.match(
   termSearchSource,
   /search\.detailsCta/,
   'Term search result cards should use the localized Figma details CTA',
+);
+
+assert.match(
+  termSearchSource,
+  /to=\{`\/terms\/\$\{term\.public_id\}`\}[\s\S]*h-10 w-full items-center justify-center rounded-\[8px\] bg-\[#6a37c3\][\s\S]*text-\[#efeaf8\][\s\S]*search\.detailsCta/,
+  'Mobile term-card CTA should preserve the exact Figma purple, dimensions, radius, and text color',
 );
 
 assert.match(
@@ -339,8 +375,8 @@ assert.doesNotMatch(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultHeader[\s\S]*filter\.active \? 'bg-\[#44237d\] text-\[#f8f5fc\]' : 'bg-\[#ded2f1\] text-\[#5a3688\]'/,
-  'Typed/result filter chips should retain the Figma lavender treatment with accessible inactive text',
+  /function MobileSearchResultHeader[\s\S]*filter\.active \? 'bg-\[#44237d\] text-\[#f8f5fc\]' : 'bg-\[#ded2f1\] text-\[#a585db\]'/,
+  'Typed/result filter chips should retain the exact Figma active and inactive colors',
 );
 
 assert.match(
@@ -351,7 +387,7 @@ assert.match(
 
 assert.match(
   resultFilterIntegrationSource,
-  /id: 'specification'[\s\S]*toggle: true[\s\S]*aria-pressed=\{filter\.active\}[\s\S]*onClick=\{filter\.onToggle\}/,
+  /id: 'specification'[\s\S]*toggle: true[\s\S]*aria-pressed=\{filter\.active\}[\s\S]*onClick=\{filterIsIconOnly \? onOpenFilters : filter\.onToggle\}/,
   'ENT specification chip should toggle inline instead of navigating to the filters page',
 );
 
@@ -381,14 +417,14 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /search\.resultsCount[\s\S]*count: resultCount[\s\S]*mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]/,
-  'Typed/result search should render the Figma result count row 16px above the first card',
+  /search\.resultsCount[\s\S]*count: resultCount[\s\S]*resultCount > 0 && \([\s\S]*mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]/,
+  'Typed/result search should render the Figma result count row only when terms are present',
 );
 
 assert.match(
   termSearchSource,
-  /search\.resultsCount[\s\S]*className="-mx-\[2px\] mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]"/,
-  'Typed/result count should align to the Figma x=22 rail',
+  /resultCount > 0 && \([\s\S]*className="-mx-\[2px\] mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]"/,
+  'Positive typed/result count should align to the Figma x=22 rail',
 );
 
 assert.match(
@@ -399,8 +435,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-empty[\s\S]*max-md:mt-\[88px\][\s\S]*max-md:w-\[calc\(100%\+4px\)\]/,
-  'Mobile zero-terms empty state should sit on the Figma 386px rail below the result count row',
+  /data-mobile-search-empty[\s\S]*max-md:mt-\[140px\][\s\S]*max-md:w-\[calc\(100%\+4px\)\]/,
+  'Mobile zero-terms empty state should start at the exact Figma y=366 position on the 386px rail',
 );
 
 assert.match(
@@ -411,20 +447,20 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchEmptyState[\s\S]*text-\[20px\] font-medium leading-5 text-\[#161519\][\s\S]*search\.emptyTitle/,
-  'Mobile zero-terms empty state should render the Figma 20px title',
+  /data-mobile-search-empty-icon[\s\S]*<\/div>\s*<h2 className="mt-4 text-\[20px\] font-medium leading-5 text-\[#161519\]"[\s\S]*search\.emptyTitle/,
+  'Mobile zero-terms empty-state title should begin 16px below the icon',
 );
 
 assert.match(
   termSearchSource,
-  /function MobileSearchEmptyState[\s\S]*text-\[14px\] leading-\[14px\] text-\[#514b5c\][\s\S]*search\.emptyDescription[\s\S]*query/,
-  'Mobile zero-terms empty state should render the Figma two-line query-aware description',
+  /search\.emptyTitle[\s\S]*<\/h2>\s*<p className="mt-4 max-w-\[284px\] text-center text-\[14px\] leading-\[14px\] text-\[#514b5c\]"[\s\S]*search\.emptyDescription[\s\S]*query/,
+  'Mobile zero-terms description should begin 16px below the title and retain its query-aware copy',
 );
 
 assert.match(
   termSearchSource,
-  /to="\/search\/filters"[\s\S]*data-mobile-search-empty-action[\s\S]*h-10 w-full[\s\S]*rounded-\[8px\] bg-\[#6a37c3\][\s\S]*search\.emptyChangeParameters/,
-  'Mobile zero-terms empty state should expose the Figma change-parameters CTA that opens filters',
+  /to="\/search\/filters"[\s\S]*data-mobile-search-empty-action[\s\S]*className="mt-6 flex h-10 w-full[\s\S]*rounded-\[8px\] bg-\[#6a37c3\][\s\S]*search\.emptyChangeParameters/,
+  'Mobile zero-terms CTA should begin 24px below the description and preserve its filters deep link',
 );
 
 assert.match(

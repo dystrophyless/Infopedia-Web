@@ -459,11 +459,11 @@ function PlaceholderPanel({ type }: { type: Exclude<ProfileTabId, 'profile' | 's
 }
 
 function WeakTopicsPanel() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [results, setResults] = useState<AnalyzeChapterResult[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -471,7 +471,7 @@ function WeakTopicsPanel() {
     setLoading(true);
     setError(null);
 
-    getLatestAnalyzeResult()
+    getLatestAnalyzeResult(i18n.language)
       .then((data) => {
         if (!cancelled) setResults(data);
       })
@@ -485,22 +485,21 @@ function WeakTopicsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [i18n.language, t]);
 
   const weakTopics = useMemo(
     () => buildWeakTopicInsights(results ?? []),
     [results],
   );
 
-  // TODO backend: expose a stable chapter id and optional weight_note when the API supports them.
   useEffect(() => {
     if (weakTopics.length === 0) {
       setSelectedChapter(null);
       return;
     }
 
-    if (!selectedChapter || !weakTopics.some((topic) => topic.chapter === selectedChapter)) {
-      setSelectedChapter(weakTopics[0].chapter);
+    if (!selectedChapter || !weakTopics.some((topic) => topic.chapter_id === selectedChapter)) {
+      setSelectedChapter(weakTopics[0].chapter_id);
     }
   }, [selectedChapter, weakTopics]);
 
@@ -635,20 +634,20 @@ function WeakTopicsMasterDetail({
   onSelectChapter,
 }: {
   weakTopics: WeakTopicInsight[];
-  selectedChapter: string | null;
-  onSelectChapter: (chapter: string) => void;
+  selectedChapter: number | null;
+  onSelectChapter: (chapterId: number) => void;
 }) {
   const selectedTopic =
-    weakTopics.find((topic) => topic.chapter === selectedChapter) ?? weakTopics[0];
+    weakTopics.find((topic) => topic.chapter_id === selectedChapter) ?? weakTopics[0];
 
   return (
     <div className={WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS}>
       <WeakTopicList
-        selectedChapter={selectedTopic.chapter}
+        selectedChapter={selectedTopic.chapter_id}
         weakTopics={weakTopics}
         onSelectChapter={onSelectChapter}
       />
-      <WeakTopicDetail key={selectedTopic.chapter} topic={selectedTopic} />
+      <WeakTopicDetail key={selectedTopic.chapter_id} topic={selectedTopic} />
     </div>
   );
 }
@@ -659,8 +658,8 @@ function WeakTopicList({
   onSelectChapter,
 }: {
   weakTopics: WeakTopicInsight[];
-  selectedChapter: string;
-  onSelectChapter: (chapter: string) => void;
+  selectedChapter: number | null;
+  onSelectChapter: (chapterId: number) => void;
 }) {
   const { t } = useTranslation();
   const lostPoints = weakTopics.reduce((sum, topic) => sum + topic.lostPoints, 0);
@@ -688,16 +687,16 @@ function WeakTopicList({
       >
         {weakTopics.map((topic) => {
           const status = getScoreStatus(topic.percentage);
-          const chapterLabel = getAnalyzeChapterLabel(topic.chapter, t);
-          const isSelected = selectedChapter === topic.chapter;
+          const chapterLabel = topic.title;
+          const isSelected = selectedChapter === topic.chapter_id;
 
           return (
             <button
-              key={topic.chapter}
+              key={topic.chapter_id}
               type="button"
               role="option"
               aria-selected={isSelected}
-              onClick={() => onSelectChapter(topic.chapter)}
+              onClick={() => onSelectChapter(topic.chapter_id)}
               className={`group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[8px] border px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:shadow-none ${
                 isSelected
                   ? 'border-primary/35 bg-surface shadow-sm'
@@ -735,7 +734,7 @@ function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
   const { t } = useTranslation();
   const status = getScoreStatus(topic.percentage);
   const progress = clampScorePercent(topic.percentage);
-  const chapterLabel = getAnalyzeChapterLabel(topic.chapter, t);
+  const chapterLabel = topic.title;
 
   return (
     <article
@@ -993,12 +992,6 @@ function WeakTopicInfoTooltip({
       </button>
     </span>
   );
-}
-
-function getAnalyzeChapterLabel(chapter: string, t: (key: string, values?: Record<string, unknown>) => string) {
-  const key = `analyze.chapters.${chapter}`;
-  const translated = t(key);
-  return translated === key ? chapter : translated;
 }
 
 type SettingsView = 'menu' | 'password' | 'email' | 'language' | 'delete';

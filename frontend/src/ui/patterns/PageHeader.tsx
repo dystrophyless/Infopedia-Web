@@ -8,7 +8,9 @@ export interface PageHeaderProps {
   title: ReactNode;
   titleId?: string;
   description?: ReactNode;
+  descriptionClassName?: string;
   eyebrow?: ReactNode;
+  eyebrowClassName?: string;
   leading?: ReactNode;
   trailing?: ReactNode;
   actions?: ReactNode;
@@ -22,7 +24,9 @@ export function PageHeader({
   title,
   titleId,
   description,
+  descriptionClassName,
   eyebrow,
+  eyebrowClassName,
   leading,
   trailing,
   actions,
@@ -51,7 +55,7 @@ export function PageHeader({
               as="div"
               tone="muted"
               size="helper"
-              className="mb-1 font-medium uppercase tracking-wide"
+              className={cn('mb-1 font-medium uppercase tracking-wide', eyebrowClassName)}
             >
               {eyebrow}
             </Text>
@@ -60,7 +64,7 @@ export function PageHeader({
             {title}
           </Heading>
           {description && (
-            <Text className="mt-2 max-w-[760px]" tone="muted">
+            <Text className={cn('mt-2 max-w-[760px]', descriptionClassName)} tone="muted">
               {description}
             </Text>
           )}

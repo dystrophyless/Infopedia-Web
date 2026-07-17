@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getLatestAnalyzeResult } from '../api/analyze';
 import type { AnalyzeChapterResult } from '../types';
 import {
@@ -8,6 +9,7 @@ import {
 } from '../features/tests';
 
 export function Tests() {
+  const { i18n } = useTranslation();
   const [latestResults, setLatestResults] = useState<AnalyzeChapterResult[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +17,7 @@ export function Tests() {
     let cancelled = false;
 
     setLoading(true);
-    getLatestAnalyzeResult()
+    getLatestAnalyzeResult(i18n.language)
       .then((data) => {
         if (!cancelled) setLatestResults(data);
       })
@@ -29,7 +31,7 @@ export function Tests() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [i18n.language]);
 
   const weakTopics = useMemo(() => buildTestsWeakTopics(latestResults), [latestResults]);
   const weakTopicSearchTarget = getWeakTopicSearchTarget(weakTopics);

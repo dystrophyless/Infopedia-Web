@@ -5,7 +5,8 @@ import {
   AlertCircleIcon,
   BookOpen01Icon,
   Cancel01Icon,
-  FileUploadIcon,
+  DocumentAttachmentIcon,
+  UserAiIcon,
 } from '@hugeicons/core-free-icons';
 import { buildAnalyzeSseUrl, createAnalyzeTask, getAnalyzeTask } from '../api/analyze';
 import { useSSE } from '../hooks/useSSE';
@@ -37,14 +38,16 @@ const ANALYZE_STAGE_ALIASES: Record<string, string> = {
   llmwhisperer_processed: 'extraction_completed',
 };
 const ANALYZE_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:px-4';
-const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:px-4';
+const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:pt-[88px] max-md:px-6`;
+const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:bg-[#efebf6] max-md:px-6';
 const ANALYZE_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5';
-const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4';
+const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-6 max-md:[&>div>div>h1]:text-[#000000]';
+const ANALYZE_PROCESSING_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5 max-md:mb-6 max-md:[&>div>div>div]:hidden max-md:[&>div>div>p]:hidden max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-6 max-md:[&>div>div>h1]:text-[#000000]';
 
 type AnalyzeSortDirection = 'weakFirst' | 'strongFirst';
 
 export function Analyze() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [createdTask, setCreatedTask] = useState<AnalyzeTask | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -146,7 +149,7 @@ export function Analyze() {
     setSubmitting(true);
 
     try {
-      const task = await createAnalyzeTask(file as File);
+      const task = await createAnalyzeTask(file as File, i18n.language);
       setCreatedTask(task);
       setTaskId(task.task_id);
     } catch (err) {
@@ -170,20 +173,23 @@ export function Analyze() {
     <PageContainer
       width="full"
       gutter="none"
-      className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : ANALYZE_PAGE_CLASS}
+      className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing ? ANALYZE_PROCESSING_PAGE_CLASS : ANALYZE_PAGE_CLASS}
     >
       <PageHeader
-        className={showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : ANALYZE_HEADER_CLASS}
-        eyebrow={t('analyze.eyebrow')}
+        className={showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS}
+        eyebrow={!showUploadForm ? t('analyze.eyebrow') : undefined}
+        eyebrowClassName={isProcessing ? 'max-md:hidden' : undefined}
         title={t('analyze.title')}
         description={!showUploadForm ? t('analyze.description') : undefined}
+        descriptionClassName={isProcessing ? 'max-md:hidden' : undefined}
         trailing={isTerminal ? <Button onClick={reset}>{t('analyze.newUpload')}</Button> : undefined}
       />
 
       {showUploadForm && (
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:rounded-none max-md:shadow-none">
-          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1">
-            <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
+          <p className="mt-8 hidden text-[20px] font-medium leading-5 text-[#572d9f] max-md:block">{t('analyze.uploadTitle')}</p>
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1 max-md:mt-6">
+            <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4 max-md:hidden">
               <div>
                 <h2 className="text-[21px] font-medium leading-tight text-primary">
                   {t('analyze.uploadInstructionTitle')}
@@ -214,7 +220,7 @@ export function Analyze() {
 
             <label
               htmlFor="analyze-file"
-              className="group flex h-full min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-[8px] border border-dashed border-border bg-bg px-6 py-8 text-center transition-colors hover:border-accent hover:bg-surface focus-within:border-accent"
+              className="group flex h-full min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-[8px] border border-dashed border-border bg-bg px-6 py-8 text-center transition-colors hover:border-accent hover:bg-surface focus-within:border-accent max-md:h-[214px] max-md:min-h-0 max-md:rounded-[8px] max-md:border-[2px] max-md:border-[#a585db] max-md:bg-[#ffffff] max-md:px-12 max-md:py-12"
             >
               <input
                 id="analyze-file"
@@ -224,25 +230,28 @@ export function Analyze() {
                 disabled={submitting || Boolean(taskId)}
                 onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
               />
-              <span className="flex size-14 items-center justify-center rounded-[8px] bg-surface text-primary transition-colors group-hover:bg-bg">
-                <HugeiconsIcon icon={FileUploadIcon} size={30} strokeWidth={1.6} />
+              <span className={`flex size-14 items-center justify-center rounded-full transition-colors ${file ? 'size-16 bg-[#6a37c3] text-[#ffffff]' : 'bg-bg text-primary group-hover:bg-surface max-md:size-16 max-md:!bg-[#ded2f1] max-md:hover:!bg-[#ded2f1] max-md:focus-within:!bg-[#ded2f1] max-md:text-[#572d9f]'}`}>
+                <HugeiconsIcon icon={DocumentAttachmentIcon} size={32} strokeWidth={1.5} />
               </span>
-              <span className="mt-4 text-[24px] font-medium leading-tight text-primary max-md:text-[22px]">
-                {file ? file.name : t('analyze.uploadTitle')}
+              <span className="mt-4 text-[24px] font-medium leading-tight text-primary max-md:text-[16px] max-md:leading-4 max-md:text-[#161519]">
+                {file ? file.name : t('analyze.uploadHint')}
               </span>
-              <span className="mt-1.5 text-[15px] leading-6 text-text-body">
-                {file
-                  ? t('analyze.fileMeta', { size: formatBytes(file.size) })
-                  : t('analyze.uploadHint')}
+              <span className="mt-1.5 text-[15px] leading-6 text-text-body max-md:mt-2 max-md:text-[14px] max-md:leading-[14px] max-md:text-[#a585db]">
+                {file ? (
+                  t('analyze.selectedFileHint')
+                ) : (
+                  <>
+                    {t('analyze.uploadDropHint').replace(/\s+\S+$/, '')}{' '}
+                    <span className="text-[#6a37c3]">{t('analyze.uploadDropHint').match(/\S+$/)}</span>
+                  </>
+                )}
               </span>
-              <span className="mt-2 max-w-[420px] text-[14px] leading-5 text-muted">
-                {t('analyze.uploadDropHint')}
-              </span>
+              <span className="mt-2 hidden max-w-[420px] text-[14px] leading-5 text-muted md:block">{t('analyze.uploadTitle')}</span>
             </label>
           </div>
 
           {file && !taskId && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[8px] bg-bg px-4 py-3">
+            <div className="mt-4 hidden md:flex flex-wrap items-center justify-between gap-3 rounded-[8px] bg-bg px-4 py-3">
               <span className="min-w-0 truncate text-[15px] text-primary">{file.name}</span>
               <Button
                 onClick={() => handleFileChange(null)}
@@ -259,7 +268,7 @@ export function Analyze() {
           {failureMessage && <StatusPanel className="mt-4" tone="danger" announce="assertive" title={failureMessage} headingLevel={3} />}
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-            <p className="max-w-[580px] text-[14px] leading-6 text-muted">
+            <p className="max-w-[580px] text-[14px] leading-6 text-muted max-md:hidden">
               {t('analyze.privacyNote')}
             </p>
             <Button
@@ -267,10 +276,24 @@ export function Analyze() {
               size="lg"
               disabled={!file || submitting || Boolean(taskId)}
               loading={submitting}
-              className="max-sm:w-full"
+              className={`max-sm:w-full max-md:h-12 max-md:rounded-[8px] ${file ? 'max-md:bg-[#6a37c3] max-md:text-[#ffffff]' : 'max-md:bg-[#ded2f1] max-md:text-[#a585db]'} disabled:opacity-100`}
             >
-              {submitting ? t('common.loading') : t('analyze.submit')}
+              {submitting ? (
+                t('common.loading')
+              ) : (
+                <>
+                  <span className="max-md:hidden">{t('analyze.submit')}</span>
+                  <span className="hidden max-md:inline">{t('analyze.submit')} →</span>
+                </>
+              )}
             </Button>
+          </div>
+
+          <div className="mt-12 hidden max-md:block">
+            <h2 className="text-[20px] font-medium leading-5 text-[#572d9f]">
+              {t('analyze.benefitsTitle')}
+            </h2>
+            <AnalyzeBenefitCards />
           </div>
         </form>
       )}
@@ -278,6 +301,7 @@ export function Analyze() {
       {isProcessing && (
         <AnalyzeProgress
           currentTask={currentTask}
+          file={file}
         />
       )}
 
@@ -295,6 +319,49 @@ export function Analyze() {
       )}
     </PageContainer>
   );
+}
+
+function AnalyzeBenefitCards() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="mt-6 grid grid-cols-2 gap-2">
+      <AnalyzeBenefitCard eyebrow={t('analyze.benefitWeakEyebrow')} title={t('analyze.benefitWeakTitle')} body={t('analyze.benefitWeakBody')} />
+      <AnalyzeBenefitCard eyebrow={t('analyze.benefitBooksEyebrow')} title={t('analyze.benefitBooksTitle')} body={t('analyze.benefitBooksBody')} />
+      <AnalyzeBenefitCard icon={UserAiIcon} eyebrow={t('analyze.benefitPersonalEyebrow')} title={t('analyze.benefitPersonalTitle')} body={t('analyze.benefitPersonalBody')} />
+    </div>
+  );
+}
+
+function AnalyzeBenefitCard({
+  icon,
+  eyebrow,
+  title,
+  body,
+}: {
+  icon?: typeof UserAiIcon;
+  eyebrow: string;
+  title: string;
+  body: string;
+}) {
+  const content = (
+    <div>
+        <p className="text-[12px] font-medium leading-3 text-[#865bcf]">{eyebrow}</p>
+        <h3 className="mt-1 text-[16px] font-normal leading-4 text-[#161519]">{title}</h3>
+      <p className="mt-2 text-[12px] leading-3 text-[#b1acb9]">{body}</p>
+    </div>
+  );
+
+  if (icon) {
+    return (
+      <article className="col-span-2 flex h-24 items-center gap-6 rounded-[8px] bg-[#ffffff] px-6 py-4">
+        <img src="/figma-user-ai.svg" alt="" width={32} height={32} className="shrink-0" />
+        {content}
+      </article>
+    );
+  }
+
+  return <article className="h-24 rounded-[8px] bg-[#ffffff] p-4">{content}</article>;
 }
 
 function InstructionStep({
@@ -325,20 +392,32 @@ function InstructionStep({
 
 export function AnalyzeProgress({
   currentTask,
+  file,
+  progressOverride,
 }: {
   currentTask: AnalyzeTask | null | undefined;
+  file?: File | null;
+  progressOverride?: number;
 }) {
   const { t } = useTranslation();
   const currentStage = currentTask?.stage ?? currentTask?.status ?? 'pending';
-  const progressPercent = useSmoothAnalyzeProgress();
+  const liveProgressPercent = useSmoothAnalyzeProgress();
+  const sourceProgressPercent = progressOverride ?? liveProgressPercent;
+  const progressPercent = Number.isFinite(sourceProgressPercent)
+    ? Math.min(100, Math.max(0, sourceProgressPercent))
+    : 0;
+  const mobileProgressCaption =
+    t('analyze.mobileProgressCaption') === 'analyze.mobileProgressCaption'
+      ? t('analyze.stages.parsing')
+      : t('analyze.mobileProgressCaption');
 
   return (
-    <section className="mt-6 overflow-hidden rounded-[8px] border border-border bg-surface shadow-feature max-md:shadow-none">
-      <div className="h-1 bg-bg" aria-hidden>
+    <section className="mt-6 overflow-hidden rounded-[8px] border border-border bg-surface shadow-feature max-md:mt-12 max-md:overflow-visible max-md:rounded-[8px] max-md:border-0 max-md:bg-transparent max-md:shadow-none">
+      <div className="h-1 bg-bg max-md:hidden" aria-hidden>
         <div className="h-full w-1/3 animate-[analyze-scan_1.8s_ease-in-out_infinite] bg-accent" />
       </div>
 
-      <div className="p-8 max-md:p-5">
+      <div className="p-8 max-md:p-5 max-md:hidden">
         <div className="max-w-[760px]">
           <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
             {t('analyze.progressCurrentStage')}
@@ -363,6 +442,57 @@ export function AnalyzeProgress({
             valueText={t('analyze.progressPercent', { percent: progressPercent })}
           />
         </div>
+      </div>
+
+      <div className="hidden max-md:block">
+        <div className="w-full rounded-[8px] bg-[#ffffff] p-8 max-md:w-full max-md:rounded-[8px] max-md:bg-[#ffffff] max-md:p-8">
+          <div
+            className="relative mx-auto flex size-36 items-center justify-center rounded-full p-[8px]"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progressPercent}
+            aria-label={t('analyze.progressTitle')}
+          >
+            <svg
+              className="pointer-events-none absolute inset-0 size-full -rotate-90"
+              viewBox="0 0 144 144"
+              aria-hidden="true"
+            >
+                <circle cx="72" cy="72" r="68" fill="none" stroke="#ded2f1" strokeWidth="8" />
+              {progressPercent > 0 && (
+                <circle
+                  cx="72"
+                  cy="72"
+                    r="68"
+                  fill="none"
+                  stroke="#6a37c3"
+                    strokeWidth="8"
+                  strokeLinecap="round"
+                  pathLength="100"
+                  strokeDasharray={progressPercent >= 100 ? '100' : `${progressPercent} 100`}
+                />
+              )}
+            </svg>
+            <div className="flex size-full items-center justify-center rounded-full bg-[#ffffff]">
+              <span className="text-[32px] font-medium leading-none text-[#000000]">{progressPercent}%</span>
+            </div>
+          </div>
+          <p className="mt-6 text-center text-[16px] leading-5 text-[#524d5b]">
+            {mobileProgressCaption}
+          </p>
+        </div>
+
+        {file && (
+          <div className="mt-8 flex w-full items-center gap-4 rounded-[8px] bg-[#ffffff] px-6 py-4 max-md:mt-3 max-md:gap-6">
+              <HugeiconsIcon icon={DocumentAttachmentIcon} size={32} strokeWidth={1.5} className="shrink-0 text-[#6a37c3]" />
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium leading-3 text-[#865bcf]">{t('analyze.fileEyebrow')}</p>
+              <p className="mt-1 truncate text-[16px] leading-4 text-[#161519]">{file.name}</p>
+              <p className="mt-2 text-[12px] leading-3 text-[#b1acb9]">{formatAnalyzeFileSize(file.size)}</p>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -474,7 +604,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="min-w-0">
           <h2 className="text-[24px] font-medium leading-tight text-primary max-md:text-[20px]">
-            {getChapterLabel(chapter.chapter, t)}
+            {chapter.title}
           </h2>
         </div>
         <div className="flex flex-col items-end gap-2 max-sm:items-start">
@@ -648,6 +778,17 @@ function validateAnalyzeFile(file: File | null, t: (key: string, values?: Record
   return null;
 }
 
+function formatAnalyzeFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+
+  const megabytes = bytes / (1024 * 1024);
+  if (megabytes >= 1) {
+    return `${megabytes.toFixed(megabytes < 10 ? 1 : 0)}MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))}KB`;
+}
+
 function sortChaptersByPercentage(
   results: AnalyzeChapterResult[],
   direction: AnalyzeSortDirection,
@@ -659,7 +800,7 @@ function sortChaptersByPercentage(
         : second.percentage - first.percentage;
     }
 
-    return first.chapter.localeCompare(second.chapter);
+    return first.title.localeCompare(second.title);
   });
 }
 
@@ -725,7 +866,7 @@ function mergeAnalyzeBooks(
 }
 
 function getAnalyzeChapterKey(chapter: AnalyzeChapterResult) {
-  return normalizeAnalyzeIdentity(chapter.chapter);
+  return String(chapter.chapter_id);
 }
 
 function getAnalyzeChapterSignature(chapter: AnalyzeChapterResult) {
@@ -804,17 +945,4 @@ function getStageLabel(stage: string | undefined, t: (key: string) => string) {
   const key = `analyze.stages.${publicStage}`;
   const translated = t(key);
   return translated === key ? t('analyze.stages.processing') : translated;
-}
-
-function getChapterLabel(chapter: string, t: (key: string) => string) {
-  const key = `analyze.chapters.${chapter}`;
-  const translated = t(key);
-  return translated === key ? chapter : translated;
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  const kilobytes = bytes / 1024;
-  if (kilobytes < 1024) return `${Math.round(kilobytes)} KB`;
-  return `${Math.round((kilobytes / 1024) * 10) / 10} MB`;
 }

@@ -22,6 +22,10 @@ const testEntryLinkPath = path.resolve(
   srcDir,
   'features/tests/components/TestEntryLink.tsx',
 );
+const testsHubStoryPath = path.resolve(
+  srcDir,
+  'features/tests/components/TestsHubView.stories.tsx',
+);
 const weakTopicsModelSource = readFileSync(
   path.resolve(srcDir, 'features/tests/model/weakTopics.ts'),
   'utf8',
@@ -38,7 +42,26 @@ const testsSource = existsSync(testsPagePath)
 const testsHubSource = readFileSync(testsHubViewPath, 'utf8');
 const weakTopicProgressSource = readFileSync(weakTopicProgressListPath, 'utf8');
 const testEntryLinkSource = readFileSync(testEntryLinkPath, 'utf8');
+const testsHubStorySource = readFileSync(testsHubStoryPath, 'utf8');
 const testsViewSource = `${testsHubSource}\n${weakTopicProgressSource}\n${testEntryLinkSource}`;
+
+assert.doesNotMatch(
+  testsHubSource,
+  /max-md:min-h-\[100dvh\]/,
+  'Tests hub should not reserve the full viewport in addition to the fixed mobile navigation',
+);
+
+assert.match(
+  testsHubSource,
+  /max-md:min-h-\[calc\(100dvh-88px\)\]/,
+  'Tests hub should occupy only the mobile viewport area available above the navigation',
+);
+
+assert.doesNotMatch(
+  testsHubSource,
+  /safe-area-inset/,
+  'Tests hub should not duplicate the safe zone already present in the Figma frame',
+);
 
 assert.match(
   appSource,
@@ -86,8 +109,9 @@ for (const text of [
   'Тесты',
   'Проблемные точки',
   'Ваши слабые темы',
+  'Проверь свои знания',
   'Тест по слабым темам',
-  'Начать тест',
+  'Пройти тест →',
   'Другие тесты',
   'Обычный тест',
   'Тесты по разделам',
@@ -101,10 +125,12 @@ for (const text of [
 
 for (const className of [
   'bg-[#efebf6]',
-  'bg-[#865bcf]',
+  'bg-[#ded2f1]',
   'bg-[#6a37c3]',
-  'rounded-[16px]',
-  'max-md:px-6',
+  'rounded-[8px]',
+  'h-10 w-full',
+  'size-8',
+  'bg-[rgba(134,91,207,0.25)]',
 ]) {
   assert.match(
     testsViewSource,
@@ -126,9 +152,21 @@ assert.match(
 );
 
 assert.match(
+  weakTopicProgressSource,
+  /!h-1 !w-\[112px\] !bg-\[rgba\(134,91,207,0\.25\)\] \[&>span\]:!bg-\[#865bcf\]/,
+  'Weak-topic progress track and fill should override shared Progress surface colors with the Figma tokens',
+);
+
+assert.match(
   testsViewSource,
-  /Target01Icon/,
-  'Weak-topic test card should use a goal/target icon matching the Figma card',
+  /GoalIcon/,
+  'Weak-topic test card should use the requested Hugeicons GoalIcon',
+);
+
+assert.match(
+  testsHubStorySource,
+  /getByRole\('link', \{ name: 'Пройти тест →' \}\)/,
+  'Live Analysis story should focus the Figma weak-topic CTA',
 );
 
 assert.match(

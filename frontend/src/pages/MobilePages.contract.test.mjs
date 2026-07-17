@@ -148,7 +148,7 @@ for (const [name, source, gutterPattern] of [
   ['SemanticSearch', semanticSearchSource, /max-md:px-4/],
   ['Analyze', analyzeSource, /max-md:px-4/],
   ['Profile', profileSource, /max-md:px-4/],
-  ['TermDetail', termDetailSource, /max-md:px-4/],
+  ['TermDetail', termDetailSource, /max-md:px-0[\s\S]*max-md:px-6/],
 ]) {
   assert.match(
     source,
@@ -201,6 +201,6 @@ assert.match(
 
 assert.match(
   termDetailSource,
-  /max-md:bg-canvas[\s\S]*max-md:px-4/,
-  'Term detail should use the mobile-specific flat canvas and shared page gutter',
+  /max-md:bg-canvas[\s\S]*max-md:px-0[\s\S]*<div className="hidden max-md:block max-md:px-6/,
+  'Term detail should keep an outer flat canvas and an explicit inner 24px content rail',
 );

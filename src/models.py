@@ -9,8 +9,11 @@ from src.topics.models import (
     Book,
     BookChapterCoverage,
     Chapter,
+    ChapterAlias,
+    ChapterTranslation,
     Topic,
     TopicCode,
+    TopicCodeTranslation,
     TopicMapping,
 )
 from src.users.models import FeatureUsage, User

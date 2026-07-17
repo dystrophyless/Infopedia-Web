@@ -31,7 +31,7 @@ class BookResponse(BookBase):
 
 
 class ChapterBase(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    code: str = Field(min_length=1, max_length=128)
 
 
 class ChapterCreate(ChapterBase):
@@ -39,15 +39,26 @@ class ChapterCreate(ChapterBase):
 
 
 class ChapterUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
-    topic_codes: list[TopicCodeDetailedResponse] | None = Field(default=None)
+    code: str | None = Field(default=None, min_length=1, max_length=128)
+    topic_codes: list["TopicCodeReferenceResponse"] | None = Field(default=None)
 
 
 class ChapterResponse(ChapterBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(ge=1, exclude=True)
+    title: str = Field(min_length=1)
 
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("chapter", self.id)
+
+
+class ChapterReferenceResponse(ChapterBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(ge=1, exclude=True)
     @computed_field
     @property
     def public_id(self) -> str:
@@ -63,19 +74,33 @@ class TopicCodeBase(BaseModel):
 
 
 class TopicCodeCreate(TopicCodeBase):
-    chapter: ChapterResponse | None = Field(default=None)
+    chapter: ChapterReferenceResponse | None = Field(default=None)
 
 
 class TopicCodeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=512)
-    chapter: ChapterResponse | None = Field(default=None)
+    chapter: ChapterReferenceResponse | None = Field(default=None)
 
 
 class TopicCodeResponse(TopicCodeBase):
     model_config = ConfigDict(from_attributes=True)
 
+    title: str = Field(min_length=1)
+
     id: int = Field(ge=1, exclude=True)
 
+    @computed_field
+    @property
+    def public_id(self) -> str:
+        return encode_public_ref("topic_code", self.id)
+
+
+class TopicCodeReferenceResponse(TopicCodeBase):
+    """Input/reference shape for topic associations; titles are response-only."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(ge=1, exclude=True)
     @computed_field
     @property
     def public_id(self) -> str:
@@ -94,7 +119,7 @@ class TopicBase(BaseModel):
 
 class TopicCreate(TopicBase):
     book_id: int = Field(ge=1)
-    topic_codes: list[TopicCodeResponse] = Field(min_length=1)
+    topic_codes: list[TopicCodeReferenceResponse] = Field(min_length=1)
 
 
 class TopicUpdate(BaseModel):
@@ -102,7 +127,7 @@ class TopicUpdate(BaseModel):
     page_start: int | None = Field(default=None, ge=1)
     page_end: int | None = Field(default=None, ge=1)
     book_id: int | None = Field(default=None, ge=1)
-    topic_codes: list[TopicCodeResponse] | None = Field(default=None, min_length=1)
+    topic_codes: list[TopicCodeReferenceResponse] | None = Field(default=None, min_length=1)
 
 
 class TopicResponse(TopicBase):

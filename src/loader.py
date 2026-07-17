@@ -1,8 +1,9 @@
 import asyncio
+import json
+import logging
+import re
 from collections import defaultdict
 from collections.abc import Iterable
-import json
-import re
 from pathlib import Path
 
 from sqlalchemy import delete, func, select
@@ -16,13 +17,18 @@ from src.topics.models import (
     Book,
     BookChapterCoverage,
     Chapter,
+    ChapterAlias,
+    ChapterTranslation,
     Topic,
     TopicCode,
+    TopicCodeTranslation,
     TopicMapping,
 )
+from src.topics.chapter_catalog import load_chapter_catalog, normalize_chapter
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 TOPIC_CODE_RE = re.compile(r"^\s*(\d+(?:\.\d+)+)")
+logger = logging.getLogger(__name__)
 
 
 def parse_book_key(book_key: str) -> tuple[str, int]:
@@ -50,6 +56,23 @@ def normalize_topic_code_name(topic_code_name: str | None) -> str:
         return match.group(1)
 
     return topic_code_name
+
+
+def parse_lesson_goal(lesson_goal: str | None) -> tuple[str, str] | None:
+    """Extract the stable topic code and its localized lesson-goal title."""
+    if not isinstance(lesson_goal, str):
+        return None
+
+    value = lesson_goal.strip()
+    match = TOPIC_CODE_RE.match(value)
+    if not match:
+        return None
+
+    code = normalize_topic_code_name(match.group(1))
+    title = value[match.end() :].strip()
+    if not code or not title:
+        return None
+    return code, title
 
 
 def calculate_book_chapter_coverage_rows(
@@ -171,6 +194,40 @@ async def load_chapters_and_topic_codes(
     data = await asyncio.to_thread(_load_json_file, json_path)
 
     try:
+        titles_by_code: dict[str, str] = {}
+        catalog = load_chapter_catalog()
+        chapters_by_code: dict[str, Chapter] = {}
+
+        for catalog_item in catalog:
+            code = str(catalog_item["code"]).strip()
+            if not code:
+                raise ValueError("Chapter catalog contains an empty code")
+
+            result = await session.execute(select(Chapter).where(Chapter.code == code))
+            chapter = result.scalar_one_or_none()
+            if chapter is None:
+                chapter = Chapter(code=code)
+                session.add(chapter)
+                await session.flush()
+            chapters_by_code[code] = chapter
+
+            for locale, title in catalog_item.get("translations", {}).items():
+                translation_query = select(ChapterTranslation).where(
+                    ChapterTranslation.chapter_id == chapter.id,
+                    ChapterTranslation.locale == locale,
+                )
+                translation = (await session.execute(translation_query)).scalar_one_or_none()
+                if translation is None:
+                    session.add(ChapterTranslation(
+                        chapter_id=chapter.id, locale=locale, title=title,
+                    ))
+                elif translation.title != title:
+                    translation.title = title
+
+            for locale, aliases in catalog_item.get("aliases", {}).items():
+                for alias in aliases:
+                    await _upsert_chapter_alias(session, chapter, locale, alias)
+
         for _, chapter_items in data.items():
             for item in chapter_items:
                 chapter_name: str = (item.get("title") or "").strip()
@@ -178,18 +235,38 @@ async def load_chapters_and_topic_codes(
                 if not chapter_name:
                     continue
 
-                query = select(Chapter).where(Chapter.name == chapter_name)
-                result = await session.execute(query)
+                chapter = await resolve_chapter_alias(session, chapter_name)
+                await _upsert_chapter_alias(session, chapter, "kk", chapter_name)
 
-                chapter: Chapter = result.scalar_one_or_none()
-
-                if not chapter:
-                    chapter: Chapter = Chapter(name=chapter_name)
-                    session.add(chapter)
-                    await session.flush()
+                for locale, title in (("kk", chapter_name),):
+                    translation_query = select(ChapterTranslation).where(
+                        ChapterTranslation.chapter_id == chapter.id,
+                        ChapterTranslation.locale == locale,
+                    )
+                    translation_result = await session.execute(translation_query)
+                    translation = translation_result.scalar_one_or_none()
+                    if translation is None:
+                        session.add(ChapterTranslation(
+                            chapter_id=chapter.id, locale=locale, title=title,
+                        ))
+                    elif translation.title != title:
+                        translation.title = title
 
                 for lesson_goal in item.get("lessonGoals", []):
-                    topic_code_name = normalize_topic_code_name(lesson_goal)
+                    parsed_lesson_goal = parse_lesson_goal(lesson_goal)
+                    if parsed_lesson_goal is None:
+                        logger.warning("Пропущен malformed lessonGoal: %r", lesson_goal)
+                        continue
+
+                    topic_code_name, title = parsed_lesson_goal
+
+                    previous_title = titles_by_code.get(topic_code_name)
+                    if previous_title is not None and previous_title != title:
+                        raise ValueError(
+                            f"Конфликтующие kk titles для TopicCode '{topic_code_name}': "
+                            f"{previous_title!r} и {title!r}",
+                        )
+                    titles_by_code[topic_code_name] = title
 
                     if not topic_code_name:
                         continue
@@ -206,15 +283,31 @@ async def load_chapters_and_topic_codes(
                         )
                         session.add(topic_code)
                         await session.flush()
-                    else:
-                        if topic_code.chapter_id is None:
-                            topic_code.chapter_id = chapter.id
-                        elif topic_code.chapter_id != chapter.id:
-                            raise ValueError(
-                                f"TopicCode '{topic_code_name}' уже связан с другим chapter_id="
-                                f"{topic_code.chapter_id}, но в JSON встретился в chapter "
-                                f"'{chapter_name}' (id={chapter.id})",
-                            )
+                    elif topic_code.chapter_id is None:
+                        topic_code.chapter_id = chapter.id
+                    elif topic_code.chapter_id != chapter.id:
+                        raise ValueError(
+                            f"TopicCode '{topic_code_name}' уже связан с другим chapter_id="
+                            f"{topic_code.chapter_id}, но в JSON встретился в chapter "
+                            f"'{chapter_name}' (id={chapter.id})",
+                        )
+
+                    translation_query = select(TopicCodeTranslation).where(
+                        TopicCodeTranslation.topic_code_id == topic_code.id,
+                        TopicCodeTranslation.locale == "kk",
+                    )
+                    translation_result = await session.execute(translation_query)
+                    translation = translation_result.scalar_one_or_none()
+                    if translation is None:
+                        session.add(
+                            TopicCodeTranslation(
+                                topic_code_id=topic_code.id,
+                                locale="kk",
+                                title=title,
+                            ),
+                        )
+                    elif translation.title != title:
+                        translation.title = title
 
         await session.commit()
 
@@ -313,6 +406,74 @@ async def load_books_topics_and_mappings(
     except Exception:
         await session.rollback()
         raise
+
+
+async def _upsert_chapter_alias(
+    session: AsyncSession,
+    chapter: Chapter,
+    locale: str,
+    alias: str,
+) -> ChapterAlias:
+    normalized_alias = normalize_chapter(alias)
+    if not normalized_alias:
+        raise ValueError("Chapter alias cannot be empty")
+
+    query = select(ChapterAlias).where(
+        ChapterAlias.chapter_id == chapter.id,
+        ChapterAlias.locale == locale,
+        ChapterAlias.normalized_alias == normalized_alias,
+    )
+    existing = (await session.execute(query)).scalar_one_or_none()
+    if existing is None:
+        existing = ChapterAlias(
+            chapter_id=chapter.id,
+            locale=locale,
+            alias=alias,
+            normalized_alias=normalized_alias,
+        )
+        session.add(existing)
+    elif existing.alias != alias:
+        existing.alias = alias
+    return existing
+
+
+async def resolve_chapter_alias(
+    session: AsyncSession,
+    value: str,
+) -> Chapter:
+    normalized = normalize_chapter(value)
+    if not normalized:
+        raise ValueError("Chapter title cannot be empty")
+
+    aliases = (await session.execute(
+        select(ChapterAlias, Chapter)
+        .join(Chapter, Chapter.id == ChapterAlias.chapter_id)
+    )).all()
+
+    exact = {chapter.id: chapter for alias, chapter in aliases if alias.normalized_alias == normalized}
+    if len(exact) == 1:
+        return next(iter(exact.values()))
+    if len(exact) > 1:
+        raise ValueError(f"Ambiguous chapter alias {value!r}")
+
+    separators = (".", ":", ";", ",", "(", "-", "—")
+    candidates: dict[int, Chapter] = {}
+    for alias, chapter in aliases:
+        alias_value = alias.normalized_alias
+        if (
+            normalized.startswith(alias_value)
+            and normalized[len(alias_value):].lstrip().startswith(separators)
+        ) or (
+            alias_value.startswith(normalized)
+            and alias_value[len(normalized):].lstrip().startswith(separators)
+        ):
+            candidates[chapter.id] = chapter
+
+    if len(candidates) == 1:
+        return next(iter(candidates.values()))
+    if len(candidates) > 1:
+        raise ValueError(f"Ambiguous chapter alias {value!r}")
+    raise ValueError(f"Unknown chapter alias {value!r}")
 
 
 async def refresh_book_chapter_coverage(session: AsyncSession) -> None:

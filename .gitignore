@@ -5,6 +5,10 @@ __pycache__/
 AGENTS.md
 scripts/
 data/
+!src/data/
+!src/data/chapterCatalog.json
+src/data/*
+!src/data/chapterCatalog.json
 .worktrees/
 .claude/
 .codex/

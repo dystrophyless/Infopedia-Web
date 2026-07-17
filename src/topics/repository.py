@@ -2,11 +2,29 @@ import logging
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.security.public_refs import encode_public_ref
 from src.topics.models import Book, BookChapterCoverage, Chapter, Topic, TopicCode
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_topic_code_title(topic_code: TopicCode, locale: str) -> str:
+    translations = {
+        translation.locale: translation.title
+        for translation in topic_code.translations
+    }
+    title = translations.get(locale) or translations.get("kk") or topic_code.name
+    topic_code.set_localized_title(title)
+    return title
+
+
+def resolve_chapter_title(chapter: Chapter, locale: str) -> str:
+    translations = {translation.locale: translation.title for translation in chapter.translations}
+    title = translations.get(locale) or translations.get("kk") or chapter.code
+    chapter.title = title
+    return title
 
 
 async def get_topic_by_name(
@@ -43,9 +61,17 @@ async def get_topic_by_id(
     session: AsyncSession,
     *,
     topic_id: int,
+    locale: str = "kk",
 ) -> Topic | None:
     query = (
         select(Topic)
+        .options(
+            selectinload(Topic.book),
+            selectinload(Topic.topic_codes).options(
+                selectinload(TopicCode.chapter).selectinload(Chapter.translations),
+                selectinload(TopicCode.translations),
+            ),
+        )
         .where(Topic.id == topic_id)
     )  # fmt: skip
 
@@ -65,6 +91,11 @@ async def get_topic_by_id(
         topic_id,
         topic.name,
     )
+
+    for topic_code in topic.topic_codes:
+        resolve_topic_code_title(topic_code, locale)
+        if topic_code.chapter is not None:
+            resolve_chapter_title(topic_code.chapter, locale)
 
     return topic
 
@@ -165,11 +196,13 @@ async def get_all_books(session: AsyncSession) -> list[Book]:
     return books
 
 
-async def get_all_chapters(session: AsyncSession) -> list[Chapter]:
-    query = select(Chapter).order_by(Chapter.id.asc())
+async def get_all_chapters(session: AsyncSession, locale: str = "kk") -> list[Chapter]:
+    query = select(Chapter).options(selectinload(Chapter.translations)).order_by(Chapter.id.asc())
 
     result = await session.execute(query)
     chapters: list[Chapter] = result.scalars().all()
+    for chapter in chapters:
+        resolve_chapter_title(chapter, locale)
 
     logger.debug("Получены разделы для каталога фильтров. Кол-во: %d", len(chapters))
 

@@ -62,12 +62,12 @@ const topics = [
 
 const weakTopics = buildWeakTopicInsights(topics);
 assert.deepEqual(
-  weakTopics.map((topic) => topic.chapter),
+  weakTopics.map((topic) => topic.title),
   ['NETWORKS', 'LOGIC', 'PYTHON', 'WEB', 'DATABASES'],
 );
 assert.equal(weakTopics.length, 5);
 assert.equal(
-  weakTopics.some((topic) => topic.chapter === 'PERFECT'),
+  weakTopics.some((topic) => topic.title === 'PERFECT'),
   false,
 );
 assert.equal(weakTopics[0].lostPoints, 4);

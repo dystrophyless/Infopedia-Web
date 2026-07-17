@@ -8,7 +8,7 @@ export interface Topic {
     publisher?: string;
     grade?: number;
   };
-  chapter?: { public_id?: string; name: string };
+  chapter?: { public_id?: string; code: string; title?: string };
 }
 
 export interface Definition {
@@ -37,7 +37,30 @@ export interface BookCatalogItem {
 
 export interface ChapterCatalogItem {
   public_id: string;
+  code?: string;
+  title?: string;
+  /** Legacy fixture compatibility; API responses use title. */
+  name?: string;
+}
+
+export type TopicLocale = 'kk' | 'ru';
+
+export interface TopicCodeDetail {
+  public_id: string;
+  /** Stable public topic code; keep this separate from the localized title. */
   name: string;
+  /** Localized lesson-goal display text selected by the API. */
+  title: string;
+  chapter?: ChapterCatalogItem | null;
+}
+
+export interface TopicDetail {
+  public_id: string;
+  name: string;
+  page_start: number;
+  page_end: number;
+  book: BookCatalogItem;
+  topic_codes: TopicCodeDetail[];
 }
 
 export interface AuthTokens {

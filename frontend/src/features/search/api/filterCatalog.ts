@@ -1,4 +1,5 @@
 import { apiClient } from '../../../api/client';
+import { normalizeTopicLocale } from '../../../api/topicLocale';
 import type { BookCatalogItem, ChapterCatalogItem } from '../../../types';
 
 export async function getSearchFilterBooks(): Promise<BookCatalogItem[]> {
@@ -6,8 +7,10 @@ export async function getSearchFilterBooks(): Promise<BookCatalogItem[]> {
   return data;
 }
 
-export async function getSearchFilterChapters(): Promise<ChapterCatalogItem[]> {
-  const { data } = await apiClient.get<ChapterCatalogItem[]>('/api/topics/chapters');
+export async function getSearchFilterChapters(locale: string = 'kk'): Promise<ChapterCatalogItem[]> {
+  const { data } = await apiClient.get<ChapterCatalogItem[]>('/api/topics/chapters', {
+    params: { locale: normalizeTopicLocale(locale) },
+  });
   return data;
 }
 

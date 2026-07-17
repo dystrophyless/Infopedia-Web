@@ -27,7 +27,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         page: 10,
         topic: {
           book: { public_id: 'book-1', publisher: 'Арман-ПВ', grade: 10 },
-          chapter: { public_id: 'PYTHON_PROGRAMMING', name: 'Python programming' },
+          chapter: { public_id: 'chapter-python', code: 'python-programming', title: 'Python programming' },
         },
       },
     ]),
@@ -37,7 +37,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         page: 20,
         topic: {
           book: { public_id: 'book-2', publisher: 'Мектеп', grade: 9 },
-          chapter: { public_id: 'COMPUTER_NETWORKS', name: 'Computer networks' },
+          chapter: { public_id: 'chapter-networks', code: 'computer-networks', title: 'Computer networks' },
         },
       },
     ]),
@@ -85,7 +85,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         page: 1,
         topic: {
           book: { public_id: 'book-1', publisher: 'Арман-ПВ', grade: 10 },
-          chapter: { public_id: 'OTHER', name: 'Other' },
+          chapter: { public_id: 'chapter-other', code: 'other', title: 'Other' },
         },
       },
       {
@@ -93,7 +93,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         page: 2,
         topic: {
           book: { public_id: 'book-2', publisher: 'Мектеп', grade: 9 },
-          chapter: { public_id: 'PYTHON_PROGRAMMING', name: 'Python programming' },
+          chapter: { public_id: 'chapter-python', code: 'python-programming', title: 'Python programming' },
         },
       },
     ]);

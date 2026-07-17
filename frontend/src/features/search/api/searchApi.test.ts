@@ -32,6 +32,14 @@ describe('typed search API adapters', () => {
     await expect(getSearchFilterBooks()).resolves.toBe(books);
     await expect(getSearchFilterChapters()).resolves.toBe(chapters);
     expect(get).toHaveBeenNthCalledWith(1, '/api/topics/books');
-    expect(get).toHaveBeenNthCalledWith(2, '/api/topics/chapters');
+    expect(get).toHaveBeenNthCalledWith(2, '/api/topics/chapters', {
+      params: { locale: 'kk' },
+    });
+
+    get.mockResolvedValueOnce({ data: chapters });
+    await expect(getSearchFilterChapters('ru-RU')).resolves.toBe(chapters);
+    expect(get).toHaveBeenNthCalledWith(3, '/api/topics/chapters', {
+      params: { locale: 'ru' },
+    });
   });
 });

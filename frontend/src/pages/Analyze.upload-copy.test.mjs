@@ -16,14 +16,63 @@ const kkLocale = JSON.parse(
 
 assert.match(
   analyzeSource,
-  /description=\{!showUploadForm \? t\('analyze\.description'\) : undefined\}/,
-  'Analyze upload screen should keep the page description out of the upload header through the shared PageHeader',
+  /eyebrow=\{!showUploadForm \? t\('analyze\.eyebrow'\) : undefined\}[\s\S]*description=\{!showUploadForm \? t\('analyze\.description'\) : undefined\}/,
+  'Analyze upload screen should match the compact Figma title treatment without an eyebrow or page description',
 );
 
 assert.match(
   analyzeSource,
-  /<h2 className="text-\[21px\] font-medium leading-tight text-primary">[\s\S]*\{t\('analyze\.uploadInstructionTitle'\)\}[\s\S]*<p className="mt-1\.5 text-\[14px\] leading-5 text-text-body">[\s\S]*\{t\('analyze\.description'\)\}/,
-  'Analyze upload description should sit under the What to do heading',
+  /<p className="mt-8 hidden text-\[20px\] font-medium leading-5 text-\[#572d9f\] max-md:block">\{t\('analyze\.uploadTitle'\)\}<\/p>/,
+  'Analyze upload screen should render the Figma PDF-upload subtitle on mobile',
+);
+
+assert.match(
+  analyzeSource,
+  /<span className="mt-4 text-\[24px\][^"]*max-md:text-\[16px\][^"]*">[\s\S]*\{file \? file\.name : t\('analyze\.uploadHint'\)\}/,
+  'Analyze dropzone should use the Figma upload prompt on mobile',
+);
+
+assert.match(
+  analyzeSource,
+  /<span className="mt-1\.5 text-\[15px\][^"]*max-md:text-\[14px\][^"]*max-md:leading-\[14px\][^"]*max-md:text-\[#a585db\]">[\s\S]*t\('analyze\.uploadDropHint'\)/,
+  'Analyze dropzone should use the Figma learn-more helper copy when no file is selected',
+);
+assert.match(
+  analyzeSource,
+  /file \?[\s\S]*t\('analyze\.selectedFileHint'\)[\s\S]*file && !taskId/,
+  'Analyze selected dropzone should use only the filename and exact alternate-file helper',
+);
+assert.match(
+  analyzeSource,
+  /file \?[\s\S]*size-16 bg-\[#6a37c3\] text-\[#ffffff\]/,
+  'Analyze selected dropzone should use an unconditional 64px solid purple attachment circle',
+);
+assert.match(
+  analyzeSource,
+  /<HugeiconsIcon icon=\{DocumentAttachmentIcon\} size=\{32\} strokeWidth=\{1\.5\} \/>/,
+  'Analyze dropzone should render one always-visible 32px HugeIcons attachment glyph with a 1.5px stroke in both states',
+);
+assert.doesNotMatch(
+  analyzeSource,
+  /figma-document-attachment\.svg|DocumentAttachmentIcon[^\n]*max-md:hidden/,
+  'Analyze selected dropzone should not split the attachment glyph across responsive implementations',
+);
+assert.match(
+  analyzeSource,
+  /file && !taskId[\s\S]*hidden md:flex/,
+  'Analyze selected file row should stay desktop-only to avoid a mobile duplicate',
+);
+
+assert.match(
+  analyzeSource,
+  /<span className="hidden max-md:inline">\{t\('analyze\.submit'\)\} →<\/span>/,
+  'Analyze mobile CTA should include the Figma arrow without changing the desktop label',
+);
+
+assert.match(
+  analyzeSource,
+  /<AnalyzeBenefitCard eyebrow=\{t\('analyze\.benefitWeakEyebrow'\)\} title=\{t\('analyze\.benefitWeakTitle'\)\} body=\{t\('analyze\.benefitWeakBody'\)\} \/>[\s\S]*<AnalyzeBenefitCard eyebrow=\{t\('analyze\.benefitBooksEyebrow'\)\} title=\{t\('analyze\.benefitBooksTitle'\)\} body=\{t\('analyze\.benefitBooksBody'\)\} \/>[\s\S]*<AnalyzeBenefitCard icon=\{UserAiIcon\} eyebrow=\{t\('analyze\.benefitPersonalEyebrow'\)\} title=\{t\('analyze\.benefitPersonalTitle'\)\} body=\{t\('analyze\.benefitPersonalBody'\)\}/,
+  'Analyze benefit cards should use localized copy for the three Figma outcomes',
 );
 
 assert.doesNotMatch(
@@ -50,6 +99,16 @@ for (const [localeName, locale] of [
     analyze.uploadStep3Title,
     analyze.uploadStep3Body,
     analyze.privacyNote,
+    analyze.benefitsTitle,
+    analyze.benefitWeakEyebrow,
+    analyze.benefitWeakTitle,
+    analyze.benefitWeakBody,
+    analyze.benefitBooksEyebrow,
+    analyze.benefitBooksTitle,
+    analyze.benefitBooksBody,
+    analyze.benefitPersonalEyebrow,
+    analyze.benefitPersonalTitle,
+    analyze.benefitPersonalBody,
     analyze.errors.fileTooLarge,
   ].join('\n');
 

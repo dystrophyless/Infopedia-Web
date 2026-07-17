@@ -6,9 +6,9 @@ import { FALLBACK_WEAK_TOPICS } from '../model';
 import { TestsHubView } from './TestsHubView';
 
 const liveTopics = [
-  { chapter: 'Алгоритмдер және программалау', percentage: 18 },
-  { chapter: 'Деректер базасы', percentage: 34 },
-  { chapter: 'Компьютерлік желілер', percentage: 46 },
+  { chapter_id: 7, code: 'algorithms-and-programming', title: 'Алгоритмдер және программалау', percentage: 18 },
+  { chapter_id: 10, code: 'databases-and-queries', title: 'Деректер базасы', percentage: 34 },
+  { chapter_id: 2, code: 'computer-networks', title: 'Компьютерлік желілер', percentage: 46 },
 ];
 
 const meta = {
@@ -32,7 +32,7 @@ export const LiveAnalysis: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Алгоритмдер және программалау')).toBeVisible();
     await userEvent.tab();
-    await expect(canvas.getByRole('link', { name: 'Начать тест' })).toHaveFocus();
+    await expect(canvas.getByRole('link', { name: 'Пройти тест →' })).toHaveFocus();
   },
 };
 

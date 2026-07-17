@@ -127,7 +127,9 @@ export interface AnalyzeBookCoverage {
 }
 
 export interface AnalyzeChapterResult {
-  chapter: string;
+  chapter_id: number;
+  code: string;
+  title: string;
   question_count: number;
   max_score: number;
   score: number;

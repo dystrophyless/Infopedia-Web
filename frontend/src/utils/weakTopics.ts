@@ -21,7 +21,7 @@ export function buildWeakTopicInsights(results: AnalyzeChapterResult[]): WeakTop
       if (first.percentage !== second.percentage) return first.percentage - second.percentage;
       if (first.lostPoints !== second.lostPoints) return second.lostPoints - first.lostPoints;
       if (first.question_count !== second.question_count) return second.question_count - first.question_count;
-      return first.chapter.localeCompare(second.chapter);
+      return first.title.localeCompare(second.title);
     });
 }
 

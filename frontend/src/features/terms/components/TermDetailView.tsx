@@ -9,6 +9,7 @@ import {
   UserMultiple03Icon,
 } from '@hugeicons/core-free-icons';
 import type { Definition, Term } from '../../../types';
+import { useAuthStore } from '../../../stores/authStore';
 import { buildDefinitionMetadataItems, getDefinitionIndex } from '../model';
 import { DefinitionMetadata } from './DefinitionMetadata';
 
@@ -33,7 +34,7 @@ function getSourceRows(definition: Definition | undefined, t: TFunction) {
 export function TermDetailHeader({ backTo }: { backTo: string }) {
   const { t } = useTranslation();
   return (
-    <header className="mx-2 flex h-[72px] items-center justify-between md:hidden">
+    <header className="flex h-[72px] items-center justify-between px-4 md:hidden">
       <Link to={backTo} aria-label={t('termDetail.back')} className="flex items-center gap-4 text-[#252329]">
         <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
         <span className="text-[16px] font-medium leading-4">{t('termDetail.title')}</span>
@@ -55,8 +56,8 @@ export function TermDetailStatPanel() {
   return (
     <div className="mt-4 grid grid-cols-2 gap-2">
       {stats.map((stat) => (
-        <div key={stat.label} className="flex min-h-12 items-start justify-between rounded-[8px] bg-action-selected px-4 py-2 text-text-inverse">
-          <div className="min-w-0 pr-2"><p className="truncate text-[16px] font-medium leading-4">{stat.value}</p><p className="mt-1 truncate text-[12px] leading-3 text-text-inverse">{stat.label}</p></div>
+        <div key={stat.label} className="flex min-w-px flex-1 items-start justify-between overflow-hidden rounded-[8px] bg-[#ded2f1] px-4 py-2 text-[#865bcf]">
+          <div className="shrink-0 whitespace-nowrap -mr-[3px]"><p className="text-[16px] font-medium leading-4">{stat.value}</p><p className="mt-1 text-[12px] leading-3 text-[#a585db]">{stat.label}</p></div>
           <HugeiconsIcon icon={stat.icon} size={16} strokeWidth={1.7} className="shrink-0" />
         </div>
       ))}
@@ -68,16 +69,18 @@ export function TermDetailSourcePanel({ definition }: { definition: Definition }
   const { t } = useTranslation();
   const rows = getSourceRows(definition, t);
   if (rows.length === 0) return null;
+  const book = rows.find((row) => row.key === 'book');
+  const topic = rows.find((row) => row.key === 'topic');
+  const page = rows.find((row) => row.key === 'page');
   return (
     <section className="mt-12">
       <h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.source')}</h2>
-      <div className="mt-4 grid min-h-[90px] grid-cols-[117px_minmax(0,1fr)] overflow-hidden rounded-[16px] bg-surface-subtle text-text-body">
-        <div className="flex flex-col justify-center gap-2 p-4 text-[14px] leading-[14px]">
-          {rows.map((row) => <div key={row.key} className="flex min-w-0 items-center gap-2"><HugeiconsIcon icon={row.icon} size={14} strokeWidth={1.7} className="shrink-0" /><span className="truncate">{row.label}</span></div>)}
-        </div>
-        <div className="relative flex min-w-0 flex-col justify-center gap-2 py-4 pl-5 pr-4 text-[14px] leading-[14px]">
-          <span className="absolute inset-y-0 left-0 w-1 bg-action-selected" aria-hidden="true" />
-          {rows.map((row) => <p key={row.key} className="truncate">{row.value}</p>)}
+      <div className="mt-4 flex items-center gap-6 rounded-[8px] bg-surface px-6 py-4 text-text-body">
+        <HugeiconsIcon icon={BookOpen02Icon} size={24} strokeWidth={1.7} className="shrink-0 text-action-selected" />
+        <div className="min-w-0">
+          {page && <p className="truncate text-[12px] font-medium leading-3 text-[#865bcf]">{page.value}</p>}
+          {book && <p className="mt-1 truncate text-[16px] leading-4">{book.value}</p>}
+          {topic && <p className="mt-2 truncate text-[12px] leading-3 text-[#b1acb9]">{topic.value}</p>}
         </div>
       </div>
     </section>
@@ -91,17 +94,17 @@ export function TermDetailRelatedPanel({ relatedTerms, backTo }: { relatedTerms:
     <section className="mt-12">
       <h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.relatedTerms')}</h2>
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {relatedTerms.map((term) => <Link key={term.public_id} to={`/terms/${term.public_id}`} state={{ backTo }} data-term-related-chip className="flex h-[30px] shrink-0 items-center rounded-[8px] bg-surface-subtle px-4 text-[14px] leading-[14px] text-text-body">{term.name}</Link>)}
+        {relatedTerms.map((term) => <Link key={term.public_id} to={`/terms/${term.public_id}`} state={{ backTo }} data-term-related-chip className="flex h-[30px] shrink-0 items-center rounded-[8px] bg-surface px-4 text-[14px] leading-[14px] text-[#39363f]">{term.name}</Link>)}
       </div>
     </section>
   );
 }
 
-function TermDetailTestCta() {
+function TermDetailTestCta({ isAuthenticated }: { isAuthenticated: boolean }) {
   const { t } = useTranslation();
   return (
-    <button type="button" aria-disabled="true" className="mt-[55px] flex min-h-[68px] w-full items-center justify-between rounded-[16px] bg-[#252329] px-6 py-4 text-left text-[#f6f5f7]">
-      <span className="min-w-0"><span className="block truncate text-[16px] font-medium leading-4">{t('termDetail.testCta')}</span><span className="mt-1 block truncate text-[12px] leading-4 text-[#b1acb9]">{t('termDetail.testMeta')}</span></span>
+    <button type="button" aria-disabled="true" className={`fixed left-6 right-6 ${isAuthenticated ? 'bottom-[128px]' : 'bottom-10'} z-30 flex min-h-[68px] items-center justify-between rounded-[8px] bg-[#6a37c3] px-6 py-4 text-left text-[#f6f5f7]`}>
+      <span className="min-w-0"><span className="block truncate text-[16px] font-medium leading-4">{t('termDetail.testCta')}</span><span className="mt-1 block truncate text-[12px] leading-4 text-[#c5b1e7]">{t('termDetail.testMeta')}</span></span>
       <HugeiconsIcon icon={ArrowRight02Icon} size={24} strokeWidth={1.8} className="shrink-0" />
     </button>
   );
@@ -109,6 +112,7 @@ function TermDetailTestCta() {
 
 export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
   const { t } = useTranslation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const definitions = term?.definitions ?? [];
   const [index, setIndex] = useState(() => getDefinitionIndex(definitions, selectedDefinitionPublicId));
   useEffect(() => { setIndex(getDefinitionIndex(term?.definitions ?? [], selectedDefinitionPublicId)); }, [term, selectedDefinitionPublicId]);
@@ -120,21 +124,20 @@ export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms 
   const goNext = () => setIndex((value) => Math.min(total - 1, value + 1));
 
   return (
-    <div className="mx-auto max-w-[860px] px-6 py-14 max-md:max-w-none max-md:bg-canvas max-md:px-4 max-md:pb-8 max-md:pt-[calc(24px+env(safe-area-inset-top))]">
+    <div className="mx-auto max-w-[860px] px-6 py-14 max-md:max-w-none max-md:bg-canvas max-md:px-0 max-md:pb-8 max-md:pt-[calc(56px+env(safe-area-inset-top))]">
       <TermDetailHeader backTo={backTo} />
-      <div className="hidden max-md:block max-md:px-2 max-md:pb-[calc(112px+env(safe-area-inset-bottom))]">
+      <div className="hidden max-md:block max-md:px-6 max-md:pb-[108px]">
         {isLoading && <p className="py-20 text-center text-action-selected">{t('termDetail.loading')}</p>}
         {hasError && <p className="py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
         {term && <>
-          <h1 className="mt-4 text-[24px] font-medium leading-6 text-text-body">{term.name}</h1>
           {total === 0 && <p className="py-12 text-center text-[16px] leading-5 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
           {current && <>
-            <section className="mt-8"><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 rounded-[8px] bg-surface-subtle p-4"><p className="whitespace-pre-line text-[16px] leading-4 text-text-body">{current.text}</p></div></section>
+            <section className="mt-2"><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{term.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
             <TermDetailStatPanel />
             {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
             <TermDetailSourcePanel definition={current} />
             <TermDetailRelatedPanel relatedTerms={relatedTerms} backTo={backTo} />
-            <TermDetailTestCta />
+            <TermDetailTestCta isAuthenticated={isAuthenticated} />
           </>}
         </>}
       </div>

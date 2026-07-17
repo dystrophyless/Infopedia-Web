@@ -9,7 +9,7 @@ from unstract.llmwhisperer.client_v2 import LLMWhispererClientException
 from src.analyze.client import get_llmwhisperer_client
 from src.analyze.exceptions import AnalyzeError, AnalyzeExtractionError
 from src.analyze.parser import parse_table
-from src.analyze.repository import create_analyze_result
+from src.analyze.repository import create_analyze_result, get_analyze_result_by_id
 from src.analyze.schemas import AnalyzeChapterResult
 from src.topics.repository import get_books_coverage_by_chapter_ids
 
@@ -159,6 +159,7 @@ class AnalyzeService:
         *,
         user_id: int,
         parsed_data: list[dict],
+        locale: str = "kk",
     ):
         result = await create_analyze_result(
             session,
@@ -167,9 +168,14 @@ class AnalyzeService:
         )
 
         await session.commit()
-        await session.refresh(result, attribute_names=["items"])
-
-        return result
+        loaded_result = await get_analyze_result_by_id(
+            session,
+            result_id=result.id,
+            locale=locale,
+        )
+        if loaded_result is None:
+            raise RuntimeError(f"Analyze result id={result.id} disappeared after commit")
+        return loaded_result
 
     async def analyze_document(
         self,
@@ -178,6 +184,7 @@ class AnalyzeService:
         user_id: int,
         file_content: bytes,
         emit_progress: ProgressEmitter | None = None,
+        locale: str = "kk",
     ):
         if emit_progress is not None:
             await emit_progress("extracting")
@@ -193,6 +200,7 @@ class AnalyzeService:
             session,
             user_id=user_id,
             parsed_data=parsed_data,
+            locale=locale,
         )
 
         if emit_progress is not None:
@@ -206,9 +214,13 @@ class AnalyzeService:
 
         for item in result.items:
             books = coverage_by_chapter.get(item.chapter_id, [])
+            if item.chapter is None:
+                raise RuntimeError(f"Analyze result item id={item.id} has no Chapter")
 
             chapter_result = AnalyzeChapterResult(
-                chapter=item.analyze_chapter.value,
+                chapter_id=item.chapter_id,
+                code=item.chapter.code,
+                title=item.chapter.title,
                 question_count=item.question_count,
                 max_score=item.max_score,
                 score=item.score,
@@ -227,6 +239,7 @@ async def get_analyze_result(
     user_id: int,
     file_content: bytes,
     emit_progress: ProgressEmitter | None = None,
+    locale: str = "kk",
 ) -> list[dict]:
     llmwhisperer_client = get_llmwhisperer_client()
 
@@ -237,4 +250,5 @@ async def get_analyze_result(
         user_id=user_id,
         file_content=file_content,
         emit_progress=emit_progress,
+        locale=locale,
     )

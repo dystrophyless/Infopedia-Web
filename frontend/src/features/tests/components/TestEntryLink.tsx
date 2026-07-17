@@ -15,7 +15,7 @@ export function TestEntryLink({ title, description, to, icon, className = '' }: 
   return (
     <Link
       to={to}
-      className={`flex min-h-[70px] items-center gap-6 rounded-[16px] bg-[#fbfbfb] px-6 py-4 transition-opacity hover:opacity-90 ${className}`}
+      className={`flex min-h-[70px] items-center gap-6 rounded-[8px] bg-white px-6 py-4 transition-opacity hover:opacity-90 ${className}`}
     >
       <span className="min-w-0 flex-1">
         <span className="block text-[16px] font-medium leading-[16px] text-[#6a37c3]">

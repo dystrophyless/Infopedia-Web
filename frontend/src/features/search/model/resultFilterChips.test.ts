@@ -108,7 +108,7 @@ describe('result filter chip view model characterization', () => {
       'translated:searchFilters.books.atamura',
     );
     expect(chips.find(({ id }) => id === 'topic')?.label).toBe(
-      'translated:analyze.chapters.PYTHON_PROGRAMMING',
+      'PYTHON_PROGRAMMING',
     );
     expect(chips.find(({ id }) => id === 'topic')?.to).toBe(
       '/search/filters?select=section',

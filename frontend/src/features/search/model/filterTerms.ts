@@ -51,7 +51,7 @@ export function definitionMatchesSearchFilters(
   );
   const matchesSection =
     searchFilterSelections.section.length === 0 ||
-    [chapter?.public_id, chapter?.name].some((value) =>
+    [chapter?.public_id, chapter?.code].some((value) =>
       selectedFilterMatchesValue(value, searchFilterSelections.section),
     );
 

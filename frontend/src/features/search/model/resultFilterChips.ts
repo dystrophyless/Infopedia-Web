@@ -61,10 +61,6 @@ export function getFallbackResultFilterOptionLabel(
     return labelKey ? t(labelKey) : selectedId;
   }
 
-  if (/^[A-Z0-9_]+$/.test(selectedId)) {
-    return t(`analyze.chapters.${selectedId}`);
-  }
-
   return selectedId;
 }
 

@@ -1,6 +1,14 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -48,9 +56,6 @@ class Chapter(Base):
     translations: Mapped[list["ChapterTranslation"]] = relationship(
         back_populates="chapter", cascade="all, delete-orphan"
     )
-    aliases: Mapped[list["ChapterAlias"]] = relationship(
-        back_populates="chapter", cascade="all, delete-orphan"
-    )
 
     @property
     def title(self) -> str:
@@ -60,39 +65,20 @@ class Chapter(Base):
     def title(self, value: str) -> None:
         self._localized_title = value
 
-    @property
-    def name(self) -> str:
-        """Read-only runtime compatibility alias for the removed DB column."""
-        return self.code
-
-
-class ChapterAlias(Base):
-    __tablename__ = "chapter_alias"
-    __table_args__ = (
-        UniqueConstraint(
-            "chapter_id", "locale", "normalized_alias",
-            name="uq_chapter_alias_chapter_locale_normalized",
-        ),
-        CheckConstraint("locale IN ('kk', 'ru')", name="ck_chapter_alias_locale"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    chapter_id: Mapped[int] = mapped_column(Integer, ForeignKey("chapter.id"), nullable=False)
-    locale: Mapped[str] = mapped_column(String(8), nullable=False)
-    alias: Mapped[str] = mapped_column(Text, nullable=False)
-    normalized_alias: Mapped[str] = mapped_column(Text, nullable=False)
-    chapter: Mapped["Chapter"] = relationship(back_populates="aliases")
-
 
 class ChapterTranslation(Base):
     __tablename__ = "chapter_translation"
     __table_args__ = (
-        UniqueConstraint("chapter_id", "locale", name="uq_chapter_translation_chapter_locale"),
+        UniqueConstraint(
+            "chapter_id", "locale", name="uq_chapter_translation_chapter_locale"
+        ),
         CheckConstraint("locale IN ('kk', 'ru')", name="ck_chapter_translation_locale"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    chapter_id: Mapped[int] = mapped_column(Integer, ForeignKey("chapter.id"), nullable=False)
+    chapter_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("chapter.id"), nullable=False
+    )
     locale: Mapped[str] = mapped_column(String(8), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     chapter: Mapped["Chapter"] = relationship(back_populates="translations")
@@ -100,9 +86,7 @@ class ChapterTranslation(Base):
 
 class TopicCode(Base):
     __tablename__ = "topic_code"
-    __table_args__ = (
-        Index("ix_topic_code_chapter_id", "chapter_id"),
-    )
+    __table_args__ = (Index("ix_topic_code_chapter_id", "chapter_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(512), unique=True, nullable=False)
@@ -156,9 +140,7 @@ class TopicCodeTranslation(Base):
 
 class TopicMapping(Base):
     __tablename__ = "topic_mapping"
-    __table_args__ = (
-        Index("ix_topic_mapping_topic_id", "topic_id"),
-    )
+    __table_args__ = (Index("ix_topic_mapping_topic_id", "topic_id"),)
 
     topic_code_id: Mapped[int] = mapped_column(
         Integer,

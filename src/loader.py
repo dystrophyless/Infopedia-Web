@@ -17,14 +17,14 @@ from src.topics.models import (
     Book,
     BookChapterCoverage,
     Chapter,
-    ChapterAlias,
     ChapterTranslation,
     Topic,
     TopicCode,
     TopicCodeTranslation,
     TopicMapping,
 )
-from src.topics.chapter_catalog import load_chapter_catalog, normalize_chapter
+from src.topics.chapter_catalog import load_chapter_catalog
+from src.topics.repository import resolve_chapter_by_title
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 TOPIC_CODE_RE = re.compile(r"^\s*(\d+(?:\.\d+)+)")
@@ -224,10 +224,6 @@ async def load_chapters_and_topic_codes(
                 elif translation.title != title:
                     translation.title = title
 
-            for locale, aliases in catalog_item.get("aliases", {}).items():
-                for alias in aliases:
-                    await _upsert_chapter_alias(session, chapter, locale, alias)
-
         for _, chapter_items in data.items():
             for item in chapter_items:
                 chapter_name: str = (item.get("title") or "").strip()
@@ -235,22 +231,7 @@ async def load_chapters_and_topic_codes(
                 if not chapter_name:
                     continue
 
-                chapter = await resolve_chapter_alias(session, chapter_name)
-                await _upsert_chapter_alias(session, chapter, "kk", chapter_name)
-
-                for locale, title in (("kk", chapter_name),):
-                    translation_query = select(ChapterTranslation).where(
-                        ChapterTranslation.chapter_id == chapter.id,
-                        ChapterTranslation.locale == locale,
-                    )
-                    translation_result = await session.execute(translation_query)
-                    translation = translation_result.scalar_one_or_none()
-                    if translation is None:
-                        session.add(ChapterTranslation(
-                            chapter_id=chapter.id, locale=locale, title=title,
-                        ))
-                    elif translation.title != title:
-                        translation.title = title
+                chapter = await resolve_chapter_by_title(session, chapter_name)
 
                 for lesson_goal in item.get("lessonGoals", []):
                     parsed_lesson_goal = parse_lesson_goal(lesson_goal)
@@ -406,74 +387,6 @@ async def load_books_topics_and_mappings(
     except Exception:
         await session.rollback()
         raise
-
-
-async def _upsert_chapter_alias(
-    session: AsyncSession,
-    chapter: Chapter,
-    locale: str,
-    alias: str,
-) -> ChapterAlias:
-    normalized_alias = normalize_chapter(alias)
-    if not normalized_alias:
-        raise ValueError("Chapter alias cannot be empty")
-
-    query = select(ChapterAlias).where(
-        ChapterAlias.chapter_id == chapter.id,
-        ChapterAlias.locale == locale,
-        ChapterAlias.normalized_alias == normalized_alias,
-    )
-    existing = (await session.execute(query)).scalar_one_or_none()
-    if existing is None:
-        existing = ChapterAlias(
-            chapter_id=chapter.id,
-            locale=locale,
-            alias=alias,
-            normalized_alias=normalized_alias,
-        )
-        session.add(existing)
-    elif existing.alias != alias:
-        existing.alias = alias
-    return existing
-
-
-async def resolve_chapter_alias(
-    session: AsyncSession,
-    value: str,
-) -> Chapter:
-    normalized = normalize_chapter(value)
-    if not normalized:
-        raise ValueError("Chapter title cannot be empty")
-
-    aliases = (await session.execute(
-        select(ChapterAlias, Chapter)
-        .join(Chapter, Chapter.id == ChapterAlias.chapter_id)
-    )).all()
-
-    exact = {chapter.id: chapter for alias, chapter in aliases if alias.normalized_alias == normalized}
-    if len(exact) == 1:
-        return next(iter(exact.values()))
-    if len(exact) > 1:
-        raise ValueError(f"Ambiguous chapter alias {value!r}")
-
-    separators = (".", ":", ";", ",", "(", "-", "—")
-    candidates: dict[int, Chapter] = {}
-    for alias, chapter in aliases:
-        alias_value = alias.normalized_alias
-        if (
-            normalized.startswith(alias_value)
-            and normalized[len(alias_value):].lstrip().startswith(separators)
-        ) or (
-            alias_value.startswith(normalized)
-            and alias_value[len(normalized):].lstrip().startswith(separators)
-        ):
-            candidates[chapter.id] = chapter
-
-    if len(candidates) == 1:
-        return next(iter(candidates.values()))
-    if len(candidates) > 1:
-        raise ValueError(f"Ambiguous chapter alias {value!r}")
-    raise ValueError(f"Unknown chapter alias {value!r}")
 
 
 async def refresh_book_chapter_coverage(session: AsyncSession) -> None:

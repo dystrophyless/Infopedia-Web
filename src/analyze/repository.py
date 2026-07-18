@@ -4,68 +4,16 @@ from sqlalchemy.orm import selectinload
 
 from src.analyze.exceptions import UnsupportedAnalyzeDocumentError
 from src.analyze.models import AnalyzeResult, AnalyzeResultItem
-from src.topics.chapter_catalog import normalize_chapter
-from src.topics.models import Chapter, ChapterAlias
-from src.topics.repository import resolve_chapter_title
+from src.topics.models import Chapter
+from src.topics.repository import resolve_chapter_by_title, resolve_chapter_title
 
 
-CHAPTER_NAME_EXTENSION_SEPARATORS = (".", ":", ";", ",", "(", "-", "—")
-
-
-def normalize_chapter_lookup_name(value: str) -> str:
-    return normalize_chapter(value)
-
-
-def is_chapter_name_extension(shorter_name: str, longer_name: str) -> bool:
-    if not longer_name.startswith(shorter_name):
-        return False
-    suffix = longer_name[len(shorter_name):].lstrip()
-    return bool(suffix) and suffix.startswith(CHAPTER_NAME_EXTENSION_SEPARATORS)
-
-
-async def resolve_chapter_alias(
-    session: AsyncSession,
-    value: str,
-) -> Chapter:
-    """Resolve Analyze input using exact DB aliases, with a safe extension rule."""
-    normalized = normalize_chapter_lookup_name(value)
-    if not normalized:
-        raise ValueError("Chapter alias cannot be empty")
-
-    rows = (await session.execute(
-        select(ChapterAlias, Chapter)
-        .join(Chapter, Chapter.id == ChapterAlias.chapter_id)
-    )).all()
-
-    exact = {
-        chapter.id: chapter
-        for alias, chapter in rows
-        if alias.normalized_alias == normalized
-    }
-    if len(exact) == 1:
-        return next(iter(exact.values()))
-    if len(exact) > 1:
-        raise ValueError(f"Ambiguous chapter alias {value!r}")
-
-    extension_matches = {
-        chapter.id: chapter
-        for alias, chapter in rows
-        if is_chapter_name_extension(alias.normalized_alias, normalized)
-        or is_chapter_name_extension(normalized, alias.normalized_alias)
-    }
-    if len(extension_matches) == 1:
-        return next(iter(extension_matches.values()))
-    if len(extension_matches) > 1:
-        raise ValueError(f"Ambiguous chapter alias {value!r}")
-    raise ValueError(f"Unknown chapter alias {value!r}")
-
-
-async def get_chapter_model_by_alias(
+async def get_chapter_model_by_title(
     session: AsyncSession,
     *,
     value: str,
 ) -> Chapter:
-    return await resolve_chapter_alias(session, value)
+    return await resolve_chapter_by_title(session, value, allow_extensions=True)
 
 
 async def create_analyze_result(
@@ -78,7 +26,7 @@ async def create_analyze_result(
 
     for row in parsed_data:
         try:
-            chapter = await get_chapter_model_by_alias(
+            chapter = await get_chapter_model_by_title(
                 session,
                 value=row["topic"],
             )

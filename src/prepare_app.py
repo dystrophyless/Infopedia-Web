@@ -64,7 +64,7 @@ async def main() -> None:
             logger.debug("Книги, темы и их связи успешно загружены в БД")
 
             await refresh_book_chapter_coverage(session)
-            logger.debug("Book coverage by chapter recalculated")
+            logger.debug("Охват книг по главам пересчитан")
 
             await load_terms_from_json(
                 session,

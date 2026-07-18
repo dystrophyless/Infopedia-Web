@@ -368,7 +368,7 @@ async def verify_email(
         await session.commit()
     except IntegrityError:
         await session.rollback()
-        logger.exception("Failed to complete email verification for %s", email)
+        logger.exception("Не удалось завершить подтверждение электронной почты для %s", email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Не удалось завершить регистрацию. Попробуйте запросить новый код.",

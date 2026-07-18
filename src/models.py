@@ -9,7 +9,6 @@ from src.topics.models import (
     Book,
     BookChapterCoverage,
     Chapter,
-    ChapterAlias,
     ChapterTranslation,
     Topic,
     TopicCode,

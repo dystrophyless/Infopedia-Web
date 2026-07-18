@@ -5,15 +5,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.security.public_refs import encode_public_ref
-from src.topics.models import Book, BookChapterCoverage, Chapter, Topic, TopicCode
+from src.topics.chapter_catalog import normalize_chapter
+from src.topics.models import (
+    Book,
+    BookChapterCoverage,
+    Chapter,
+    ChapterTranslation,
+    Topic,
+    TopicCode,
+)
 
 logger = logging.getLogger(__name__)
+
+CHAPTER_NAME_EXTENSION_SEPARATORS = (".", ":", ";", ",", "(", "-", "—")
 
 
 def resolve_topic_code_title(topic_code: TopicCode, locale: str) -> str:
     translations = {
-        translation.locale: translation.title
-        for translation in topic_code.translations
+        translation.locale: translation.title for translation in topic_code.translations
     }
     title = translations.get(locale) or translations.get("kk") or topic_code.name
     topic_code.set_localized_title(title)
@@ -21,10 +30,62 @@ def resolve_topic_code_title(topic_code: TopicCode, locale: str) -> str:
 
 
 def resolve_chapter_title(chapter: Chapter, locale: str) -> str:
-    translations = {translation.locale: translation.title for translation in chapter.translations}
+    translations = {
+        translation.locale: translation.title for translation in chapter.translations
+    }
     title = translations.get(locale) or translations.get("kk") or chapter.code
     chapter.title = title
     return title
+
+
+def _is_chapter_name_extension(shorter_name: str, longer_name: str) -> bool:
+    if not longer_name.startswith(shorter_name):
+        return False
+    suffix = longer_name[len(shorter_name) :].lstrip()
+    return bool(suffix) and suffix.startswith(CHAPTER_NAME_EXTENSION_SEPARATORS)
+
+
+async def resolve_chapter_by_title(
+    session: AsyncSession,
+    value: str,
+    allow_extensions: bool = False,
+) -> Chapter:
+    normalized = normalize_chapter(value)
+    rows = (
+        await session.execute(
+            select(ChapterTranslation, Chapter).join(
+                Chapter, Chapter.id == ChapterTranslation.chapter_id
+            )
+        )
+    ).all()
+
+    exact_matches = {
+        chapter.id: chapter
+        for translation, chapter in rows
+        if normalize_chapter(translation.title) == normalized
+    }
+    if len(exact_matches) == 1:
+        return next(iter(exact_matches.values()))
+    if len(exact_matches) > 1:
+        raise ValueError(f"Ambiguous chapter title {value!r}")
+
+    if allow_extensions:
+        extension_matches = {
+            chapter.id: chapter
+            for translation, chapter in rows
+            if _is_chapter_name_extension(
+                normalize_chapter(translation.title), normalized
+            )
+            or _is_chapter_name_extension(
+                normalized, normalize_chapter(translation.title)
+            )
+        }
+        if len(extension_matches) == 1:
+            return next(iter(extension_matches.values()))
+        if len(extension_matches) > 1:
+            raise ValueError(f"Ambiguous chapter title {value!r}")
+
+    raise ValueError(f"Unknown chapter title {value!r}")
 
 
 async def get_topic_by_name(
@@ -197,7 +258,11 @@ async def get_all_books(session: AsyncSession) -> list[Book]:
 
 
 async def get_all_chapters(session: AsyncSession, locale: str = "kk") -> list[Chapter]:
-    query = select(Chapter).options(selectinload(Chapter.translations)).order_by(Chapter.id.asc())
+    query = (
+        select(Chapter)
+        .options(selectinload(Chapter.translations))
+        .order_by(Chapter.id.asc())
+    )
 
     result = await session.execute(query)
     chapters: list[Chapter] = result.scalars().all()

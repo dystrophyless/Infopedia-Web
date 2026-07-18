@@ -236,7 +236,7 @@ async def load_chapters_and_topic_codes(
                 for lesson_goal in item.get("lessonGoals", []):
                     parsed_lesson_goal = parse_lesson_goal(lesson_goal)
                     if parsed_lesson_goal is None:
-                        logger.warning("Пропущен malformed lessonGoal: %r", lesson_goal)
+                        logger.warning("Пропущен некорректный lessonGoal: %r", lesson_goal)
                         continue
 
                     topic_code_name, title = parsed_lesson_goal

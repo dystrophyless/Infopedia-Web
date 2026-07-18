@@ -54,6 +54,7 @@ async def main() -> None:
             await load_chapters_and_topic_codes(
                 session,
                 get_data_file_path("mappingStructure.json"),
+                get_data_file_path("topicCodeTranslations.json"),
             )
             logger.debug("Главы и коды тем успешно загружены в БД")
 

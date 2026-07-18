@@ -75,6 +75,83 @@ def parse_lesson_goal(lesson_goal: str | None) -> tuple[str, str] | None:
     return code, title
 
 
+def validate_topic_code_translations(
+    mapping_data: dict,
+    translation_catalog: dict,
+) -> dict[str, dict[str, str]]:
+    """Validate topic-code translations against lesson goals without ORM access."""
+    expected_titles_by_code: dict[str, str] = {}
+
+    for chapter_items in mapping_data.values():
+        for item in chapter_items:
+            for lesson_goal in item.get("lessonGoals", []):
+                parsed_lesson_goal = parse_lesson_goal(lesson_goal)
+                if parsed_lesson_goal is None:
+                    logger.warning(
+                        "Пропущен некорректный lessonGoal: %r",
+                        lesson_goal,
+                    )
+                    continue
+
+                code, title = parsed_lesson_goal
+                previous_title = expected_titles_by_code.get(code)
+                if previous_title is not None and previous_title != title:
+                    raise ValueError(
+                        f"Конфликтующие kk titles для TopicCode '{code}': "
+                        f"{previous_title!r} и {title!r}",
+                    )
+                expected_titles_by_code[code] = title
+
+    if not isinstance(translation_catalog, dict):
+        raise ValueError("TopicCodeTranslations catalog must be a dict")
+
+    expected_codes = set(expected_titles_by_code)
+    catalog_codes = set(translation_catalog)
+    missing_codes = sorted(expected_codes - catalog_codes)
+    extra_codes = sorted(catalog_codes - expected_codes)
+    if missing_codes or extra_codes:
+        raise ValueError(
+            "TopicCodeTranslations codes do not match mapping: "
+            f"missing={missing_codes}, extra={extra_codes}",
+        )
+
+    for code, translations in translation_catalog.items():
+        if not isinstance(translations, dict) or set(translations) != {"kk", "ru"}:
+            raise ValueError(
+                f"TopicCodeTranslations[{code!r}] must contain exactly kk and ru",
+            )
+
+        kk = translations["kk"]
+        ru = translations["ru"]
+        if not isinstance(kk, str) or not kk.strip():
+            raise ValueError(f"TopicCodeTranslations[{code!r}].kk must be a non-empty string")
+        if not isinstance(ru, str) or not ru.strip():
+            raise ValueError(f"TopicCodeTranslations[{code!r}].ru must be a non-empty string")
+        if kk != expected_titles_by_code[code]:
+            raise ValueError(
+                f"TopicCodeTranslations[{code!r}].kk does not match mapping title",
+            )
+
+    return translation_catalog
+
+
+def build_topic_code_translation_payload(
+    topic_code_id: int,
+    code: str,
+    validated_catalog: dict[str, dict[str, str]],
+) -> list[dict[str, int | str]]:
+    """Build the two locale rows for an already validated topic-code catalog."""
+    translations = validated_catalog[code]
+    return [
+        {
+            "topic_code_id": topic_code_id,
+            "locale": locale,
+            "title": translations[locale],
+        }
+        for locale in ("kk", "ru")
+    ]
+
+
 def calculate_book_chapter_coverage_rows(
     rows: Iterable[tuple[int, int, int]],
 ) -> list[dict[str, int]]:
@@ -190,11 +267,18 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
 async def load_chapters_and_topic_codes(
     session: AsyncSession,
     json_path: str,
+    translations_json_path: str,
 ) -> None:
     data = await asyncio.to_thread(_load_json_file, json_path)
+    translation_catalog = await asyncio.to_thread(
+        _load_json_file,
+        translations_json_path,
+    )
+    validated_catalog = validate_topic_code_translations(data, translation_catalog)
 
     try:
         titles_by_code: dict[str, str] = {}
+        processed_codes: set[str] = set()
         catalog = load_chapter_catalog()
         chapters_by_code: dict[str, Chapter] = {}
 
@@ -273,22 +357,26 @@ async def load_chapters_and_topic_codes(
                             f"'{chapter_name}' (id={chapter.id})",
                         )
 
-                    translation_query = select(TopicCodeTranslation).where(
-                        TopicCodeTranslation.topic_code_id == topic_code.id,
-                        TopicCodeTranslation.locale == "kk",
-                    )
-                    translation_result = await session.execute(translation_query)
-                    translation = translation_result.scalar_one_or_none()
-                    if translation is None:
-                        session.add(
-                            TopicCodeTranslation(
-                                topic_code_id=topic_code.id,
-                                locale="kk",
-                                title=title,
-                            ),
+                    if topic_code_name in processed_codes:
+                        continue
+
+                    for translation_payload in build_topic_code_translation_payload(
+                        topic_code.id,
+                        topic_code_name,
+                        validated_catalog,
+                    ):
+                        translation_query = select(TopicCodeTranslation).where(
+                            TopicCodeTranslation.topic_code_id == topic_code.id,
+                            TopicCodeTranslation.locale == translation_payload["locale"],
                         )
-                    elif translation.title != title:
-                        translation.title = title
+                        translation_result = await session.execute(translation_query)
+                        translation = translation_result.scalar_one_or_none()
+                        if translation is None:
+                            session.add(TopicCodeTranslation(**translation_payload))
+                        elif translation.title != translation_payload["title"]:
+                            translation.title = translation_payload["title"]
+
+                    processed_codes.add(topic_code_name)
 
         await session.commit()
 

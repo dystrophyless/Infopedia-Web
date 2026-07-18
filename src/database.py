@@ -118,7 +118,7 @@ async def ensure_user_schema_compatibility(engine: AsyncEngine) -> None:
                 )
             )
     except Exception as e:
-        logger.exception("Could not update user schema compatibility: %s", e)
+        logger.exception("Не удалось обновить совместимость схемы пользователя: %s", e)
         raise
 
 

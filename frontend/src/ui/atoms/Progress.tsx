@@ -19,6 +19,8 @@ export type ProgressProps = Omit<
     size?: ProgressSize;
     tone?: ProgressTone;
     valueText?: string;
+    trackClassName?: string;
+    indicatorClassName?: string;
   };
 
 const sizeClasses: Record<ProgressSize, string> = {
@@ -48,6 +50,8 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(
       size = 'md',
       tone = 'brand',
       valueText,
+      trackClassName,
+      indicatorClassName,
       className,
       ...props
     },
@@ -69,6 +73,7 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(
         className={cn(
           'w-full overflow-hidden rounded-[var(--radius-pill)] bg-surface-muted',
           sizeClasses[size],
+          trackClassName,
           className,
         )}
       >
@@ -77,6 +82,7 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(
           className={cn(
             'block h-full rounded-[var(--radius-pill)] transition-[width] duration-base ease-standard motion-reduce:transition-none',
             toneClasses[tone],
+            indicatorClassName,
           )}
           style={{ width: `${percentage}%` }}
         />

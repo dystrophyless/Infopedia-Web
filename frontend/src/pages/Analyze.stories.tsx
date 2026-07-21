@@ -1,8 +1,10 @@
 import '../i18n';
+import { MemoryRouter } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import type { AnalyzeChapterResult, AnalyzeTask } from '../types';
-import { Analyze, AnalyzeFailure, AnalyzeProgress, AnalyzeResults } from './Analyze';
+import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
+import { Analyze, AnalyzeFailure, AnalyzeMobileResults, AnalyzeProgress, AnalyzeResults } from './Analyze';
 
 const results: AnalyzeChapterResult[] = [
   {
@@ -14,10 +16,70 @@ const results: AnalyzeChapterResult[] = [
     score: 14,
     percentage: 70,
     books: [{ public_id: 'book-1', publisher: 'Arman-PV', grade: 10, topic_count: 3, percentage: 75 }],
+    topic_count: 3,
+    material_grades: [10],
   },
 ];
 
 const processingTask: AnalyzeTask = { task_id: 'story-task', status: 'started', stage: 'extraction_processing' };
+
+const mobileResults: AnalyzeChapterResult[] = [
+  {
+    chapter_id: 4,
+    code: 'algorithms-and-programming',
+    title: 'Алгоритмы и программирование',
+    question_count: 12,
+    max_score: 20,
+    score: 8,
+    percentage: 40,
+    books: [{ public_id: 'book-1', publisher: 'Arman-PV', grade: 10, topic_count: 4, percentage: 48 }],
+    topic_count: 4,
+    material_grades: [10, 11],
+    topic_codes: [
+      { name: 'loops', title: 'Циклы и повторяющиеся действия' },
+      { name: 'arrays', title: 'Массивы и обработка данных' },
+    ],
+  },
+  {
+    chapter_id: 2,
+    code: 'computer-networks',
+    title: 'Компьютерные сети',
+    question_count: 10,
+    max_score: 15,
+    score: 5,
+    percentage: 33,
+    books: [{ public_id: 'book-2', publisher: 'Мектеп', grade: 11, topic_count: 3, percentage: 42 }],
+    topic_count: 3,
+    material_grades: [11],
+    topic_codes: [],
+  },
+  {
+    chapter_id: 8,
+    code: 'databases-and-queries',
+    title: 'Базы данных и запросы',
+    question_count: 8,
+    max_score: 12,
+    score: 4,
+    percentage: 33,
+    books: [{ public_id: 'book-3', publisher: 'Арман', grade: 10, topic_count: 2, percentage: 35 }],
+    topic_count: 2,
+    material_grades: [10],
+    topic_codes: [],
+  },
+  {
+    chapter_id: 11,
+    code: 'information-representation',
+    title: 'Ақпаратты ұсыну, өлшеу және кодтау',
+    question_count: 6,
+    max_score: 10,
+    score: 2,
+    percentage: 20,
+    books: [{ public_id: 'book-4', publisher: 'Мектеп', grade: 11, topic_count: 4, percentage: 25 }],
+    topic_count: 4,
+    material_grades: [11],
+    topic_codes: [],
+  },
+];
 
 const meta = {
   title: 'Pages/Analyze',
@@ -96,7 +158,7 @@ export const ProcessingUploadedFileMobile430: Story = {
   render: () => (
     <div className="min-h-dvh bg-[#efebf6] pb-[88px]">
       <main className="mx-auto w-full max-w-none px-6 pt-[88px]">
-        <h1 className="mb-12 text-[24px] font-medium leading-6 text-[#000000]">Анализ ЕНТ</h1>
+        <h1 className="mb-12 text-[24px] font-medium leading-none text-[#000000]">Анализ ЕНТ</h1>
         <AnalyzeProgress
           currentTask={processingTask}
           file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
@@ -129,4 +191,28 @@ export const PopulatedDesktop: Story = {
 export const PopulatedMobile: Story = {
   globals: { viewport: { value: 'mobile390', isRotated: false } },
   render: () => <AnalyzeResults results={results} summary={{ score: 14, maxScore: 20, percentage: 70, chapterCount: 1 }} sortDirection="weakFirst" onSortDirectionChange={() => undefined} />,
+};
+
+export const MobileResultsFigma430: Story = {
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => (
+    <MemoryRouter>
+      <AnalyzeMobileResults access={selectAnalyzeResultAccess(mobileResults)} onReset={() => undefined} />
+    </MemoryRouter>
+  ),
+};
+
+export const MobileSingleKazakh: Story = {
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => (
+    <MemoryRouter>
+      <AnalyzeMobileResults
+        access={selectAnalyzeResultAccess([mobileResults[3]])}
+        onReset={() => undefined}
+      />
+    </MemoryRouter>
+  ),
 };

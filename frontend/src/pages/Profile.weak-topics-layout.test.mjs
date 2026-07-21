@@ -93,7 +93,7 @@ assert.match(
 
 assert.match(
   profileSource,
-  /break-words text-\[14px\] font-medium leading-\[1\.16\] text-text/,
+  /break-words text-\[14px\] font-medium leading-none text-text/,
   'Long topic names in the selection list should wrap instead of being truncated',
 );
 

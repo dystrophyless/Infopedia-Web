@@ -29,6 +29,6 @@ assert.doesNotMatch(
 
 assert.match(
   profileShellSource,
-  /onClick=\{handleLogout\}[\s\S]*border border-border\/55 bg-surface px-5 text-\[17px\] text-text-body[\s\S]*hover:bg-bg hover:text-primary/,
+  /onClick=\{handleLogout\}[\s\S]*border border-border\/55 bg-surface px-5 text-\[17px\] leading-none text-text-body[\s\S]*hover:bg-bg hover:text-primary/,
   'Logout button should use a neutral outlined treatment that fits the profile header',
 );

@@ -38,3 +38,13 @@ export const CustomRange: Story = {
     valueText: '7 of 10 questions',
   },
 };
+
+export const FigmaTrack: Story = {
+  args: {
+    value: 0,
+    size: 'md',
+    'aria-label': 'Section progress',
+    trackClassName: '!rounded-[8px] !bg-[rgba(106,55,195,0.25)]',
+    indicatorClassName: '!rounded-[8px] !bg-[#6a37c3]',
+  },
+};

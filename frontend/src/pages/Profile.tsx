@@ -1,22 +1,30 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
+  AllBookmarkIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ChartColumnIcon,
+  Coins02Icon,
   Delete02Icon,
   HelpCircleIcon,
+  InformationCircleIcon,
+  Invoice03Icon,
   LockPasswordIcon,
+  MentorIcon,
   Logout01Icon,
   Mail01Icon,
   Profile02Icon,
   Settings01Icon,
   StarIcon,
   Tick02Icon,
+  UserIcon,
+  UserEdit01Icon,
+  ResetPasswordIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
@@ -24,11 +32,14 @@ import { getLatestAnalyzeResult } from '../api/analyze';
 import { changeMyPassword, deleteMyAccount, getMe } from '../api/users';
 import type { AnalyzeBookCoverage, AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
+import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
+import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { AuthPasswordInput, AuthSubmit } from '../components/AuthShell';
 import { getPasswordValidationError } from '../utils/passwordValidation';
 import { shouldShowProfileLogout, type ProfileTabId } from '../utils/profileTabs';
 import { clampScorePercent, getScoreStatus, type ScoreStatus } from '../utils/scoreStatus';
+import { BottomSheet } from '../ui/molecules/BottomSheet';
 import {
   buildWeakTopicInsights,
   type WeakTopicInsight,
@@ -37,6 +48,12 @@ import {
 const INITIAL_VISIBLE_BOOKS_LIMIT = 3;
 const WEAK_TOPICS_PANEL_SECTION_CLASS = 'px-8 py-12 max-md:px-5';
 const WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS = 'grid gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]';
+
+// Display-only Figma samples: User/API expose no profile stats, subscription, or favorites contracts.
+export const MOBILE_PROFILE_DESIGN_SAMPLE_STATS = {
+  terms: 24,
+  points: 38,
+} as const;
 
 const profileNavItems: Array<{
   id: ProfileTabId;
@@ -108,12 +125,12 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-4 max-md:pt-[calc(18px+env(safe-area-inset-top))]">
+    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pt-0">
       <div className="mx-auto max-w-[640px] md:hidden">
         {loading && !profile && <SkeletonCard />}
 
         {!loading && !profile && fetchError && (
-          <p className="rounded-[10px] border border-danger/35 bg-surface p-4 text-[15px] text-danger">
+          <p className="rounded-[10px] border border-danger/35 bg-surface p-4 text-[15px] leading-none text-danger">
             {t('common.error')}
           </p>
         )}
@@ -121,8 +138,8 @@ export function Profile() {
         {profile && (
           <MobileProfileDashboard
             activeTab={activeTab}
-            onLogout={handleLogout}
             onSelectTab={setActiveTab}
+            onLogout={handleLogout}
             profile={profile}
           />
         )}
@@ -137,7 +154,7 @@ export function Profile() {
             <div className="flex items-center gap-3">
               <FigmaProfileIcon className="block size-[56px] shrink-0 text-accent" />
               <div className="min-w-0">
-                <p className="truncate text-[24px] font-medium leading-tight text-primary max-sm:text-[22px]">
+                <p className="truncate text-[24px] font-medium leading-none text-primary max-sm:text-[22px] max-sm:leading-none">
                   {profile?.username ?? user?.username ?? t('profile.usernameUndefined')}
                 </p>
               </div>
@@ -153,7 +170,7 @@ export function Profile() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:shadow-none ${
+                  className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] leading-none text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:shadow-none ${
                     isActive
                       ? 'border-transparent bg-surface shadow-sm'
                       : 'border-transparent text-primary/80 hover:bg-surface/70 hover:text-primary'
@@ -183,7 +200,7 @@ export function Profile() {
           )}
 
           {!loading && !profile && fetchError && (
-            <p className="p-8 text-[16px] text-danger">{t('common.error')}</p>
+            <p className="p-8 text-[16px] leading-none text-danger">{t('common.error')}</p>
           )}
 
           {profile && (
@@ -194,7 +211,7 @@ export function Profile() {
                     <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
                       {activeTab === 'weakTopics' ? t('profile.weakTopicsEyebrow') : t('profile.accountArea')}
                     </p>
-                    <h1 className="mt-2 text-[38px] font-medium leading-tight text-text max-md:text-[32px]">
+                    <h1 className="mt-2 text-[38px] font-medium leading-none text-text max-md:text-[32px] max-md:leading-none">
                       {getTabTitle(activeTab, t)}
                     </h1>
                   </div>
@@ -202,7 +219,7 @@ export function Profile() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] border border-border/55 bg-surface px-5 text-[17px] text-text-body transition-colors hover:bg-bg hover:text-primary max-sm:w-full"
+                      className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] border border-border/55 bg-surface px-5 text-[17px] leading-none text-text-body transition-colors hover:bg-bg hover:text-primary max-sm:w-full"
                     >
                       <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
                       {t('profile.logout')}
@@ -226,85 +243,494 @@ export function Profile() {
 
 function MobileProfileDashboard({
   activeTab,
-  onLogout,
   onSelectTab,
+  onLogout,
   profile,
 }: {
   activeTab: ProfileTabId;
-  onLogout: () => void;
   onSelectTab: (tab: ProfileTabId) => void;
+  onLogout: () => void;
+  profile: User;
+}) {
+  const [settingsView, setSettingsView] = useState<'home' | 'account' | 'email'>('home');
+
+  useEffect(() => {
+    if (activeTab !== 'settings') setSettingsView('home');
+  }, [activeTab]);
+
+  if (activeTab === 'profile') {
+    return <MobileProfileHome profile={profile} onSelectTab={onSelectTab} />;
+  }
+
+  if (activeTab === 'settings') {
+    if (settingsView === 'email') {
+      return <MobileEmail email={profile.email} onBack={() => setSettingsView('account')} />;
+    }
+
+    if (settingsView === 'account') {
+      return <MobileAccount onBack={() => setSettingsView('home')} onOpenEmail={() => setSettingsView('email')} onLogout={onLogout} />;
+    }
+
+    return <MobileSettingsHome onBack={() => onSelectTab('profile')} onOpenAccount={() => setSettingsView('account')} />;
+  }
+
+  return (
+    <MobileProfileDetail activeTab={activeTab} onBack={() => onSelectTab('profile')} profile={profile} />
+  );
+}
+
+function MobileProfileHome({
+  profile,
+  onSelectTab,
+}: {
+  profile: User;
+  onSelectTab: (tab: ProfileTabId) => void;
+}) {
+  const { t } = useTranslation();
+  const lang = useLangStore((state) => state.lang);
+  const setLang = useLangStore((state) => state.setLang);
+  const [isLanguageSheetOpen, setIsLanguageSheetOpen] = useState(false);
+  const pendingLanguageRef = useRef<Language | null>(null);
+  const languageSheetTitleId = useId();
+  const statusKey = profile.banned ? 'profile.mobileStatusBanned' : 'profile.mobileStatusActive';
+  const languageOptions: Array<{ value: Language; labelKey: 'common.kazakh' | 'common.russian' }> = [
+    { value: 'kk', labelKey: 'common.kazakh' },
+    { value: 'ru', labelKey: 'common.russian' },
+  ];
+
+  function handleLanguageSelect(value: Language) {
+    pendingLanguageRef.current = value;
+    setIsLanguageSheetOpen(false);
+  }
+
+  function handleLanguageDismiss() {
+    pendingLanguageRef.current = null;
+    setIsLanguageSheetOpen(false);
+  }
+
+  function handleLanguageSheetAfterClose() {
+    const pendingLanguage = pendingLanguageRef.current;
+    pendingLanguageRef.current = null;
+
+    if (pendingLanguage !== null) setLang(pendingLanguage);
+  }
+
+  function openLanguageSheet() {
+    pendingLanguageRef.current = null;
+    setIsLanguageSheetOpen(true);
+  }
+
+  return (
+    <div data-figma-node="168:2074" className="min-h-screen bg-[#efebf6] px-[24px] pb-8 pt-[80px]">
+      <header className="flex h-[40px] items-center justify-between gap-4">
+        <h1 className="text-[24px] font-medium leading-[24px] text-black">{t('profile.mobileTitle')}</h1>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openLanguageSheet}
+            aria-label={t('profile.mobileLanguageAriaLabel')}
+            aria-haspopup="dialog"
+            aria-expanded={isLanguageSheetOpen}
+            className="flex size-[40px] items-center justify-center rounded-[8px] bg-white text-[14px] leading-[14px] text-[#39363f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+          >
+            {lang === 'kk' ? 'KZ' : 'RU'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectTab('settings')}
+            aria-label={t('profile.mobileSettingsAriaLabel')}
+            className="flex size-[40px] items-center justify-center rounded-[8px] bg-white text-[#39363f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+          >
+            <HugeiconsIcon icon={Settings01Icon} size={20} strokeWidth={1.7} />
+          </button>
+        </div>
+      </header>
+
+      <section className="mt-10 flex flex-col gap-4 rounded-[8px] bg-white p-6" aria-label={t('profile.profileSummary')}>
+        <div className="flex items-center gap-4">
+          <img src={mobileProfileAsset} alt="" className="size-[64px] shrink-0" />
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="truncate text-[20px] font-normal leading-[20px] text-black">
+              {profile.username ?? t('profile.usernameUndefined')}
+            </p>
+            <p className="text-[14px] font-medium leading-[14px] text-[#6a37c3]">{t(statusKey)}</p>
+          </div>
+        </div>
+        <div className="h-px w-full bg-[#efeaf8]" />
+        <div className="flex w-full gap-2">
+          <MobileProfileStat icon={AllBookmarkIcon} count={MOBILE_PROFILE_DESIGN_SAMPLE_STATS.terms} labelKey="profile.mobileTermsStat" helperKey="profile.mobileTermsStatHelper" />
+          <MobileProfileStat icon={Coins02Icon} count={MOBILE_PROFILE_DESIGN_SAMPLE_STATS.points} labelKey="profile.mobilePointsStat" helperKey="profile.mobilePointsStatHelper" />
+        </div>
+      </section>
+
+      <section className="mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[8px] bg-[#ded2f1] px-6 py-4" aria-label={t('profile.mobilePremiumTitle')}>
+        <img src={mobilePremiumAsset} alt="" className="size-[32px] shrink-0" />
+        <div className="flex min-w-0 flex-col gap-1">
+          <p className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">{t('profile.mobilePremiumTitle')}</p>
+          <p className="text-[12px] font-normal leading-[12px] text-[#865bcf]">{t('profile.mobilePremiumSubtitle')}</p>
+        </div>
+      </section>
+
+      <section className="mt-4 flex flex-col gap-4 rounded-[8px] bg-white px-6 py-4" aria-label={t('profile.mobileActionsLabel')}>
+        <MobileProfileAction
+          icon={AllBookmarkIcon}
+          title={t('profile.navFavorites')}
+          helper={t('profile.mobileFavoritesHelper')}
+          onClick={() => onSelectTab('favorites')}
+        />
+        <div className="h-px w-full bg-[#f6f5f7]" />
+        <MobileProfileAction
+          icon={MentorIcon}
+          title={t('profile.navWeakTopics')}
+          helper={t('profile.mobileWeakTopicsHelper')}
+          onClick={() => onSelectTab('weakTopics')}
+        />
+      </section>
+
+      <BottomSheet
+        open={isLanguageSheetOpen}
+        onDismiss={handleLanguageDismiss}
+        onAfterClose={handleLanguageSheetAfterClose}
+        titleId={languageSheetTitleId}
+        className="h-[320px] max-h-[320px] rounded-t-[32px] bg-white px-6 py-2 !pb-2 !pt-2 shadow-none [&>[data-bottom-sheet-handle]]:mb-4"
+        overlayClassName="!bg-[rgba(22,21,25,0.25)]"
+      >
+        <h2 id={languageSheetTitleId} className="text-center text-[20px] font-normal leading-[20px] text-[#6a37c3]">
+          {t('common.language')}
+        </h2>
+        <fieldset className="mt-8 flex flex-col gap-4 border-0 p-0" aria-labelledby={languageSheetTitleId}>
+          {languageOptions.map((option, index) => {
+            const selected = lang === option.value;
+
+            return (
+              <div key={option.value}>
+                <label className="flex w-full cursor-pointer items-center justify-between text-left text-[16px] font-normal leading-[16px] text-[#39363f]">
+                  <input
+                    type="radio"
+                    name="mobile-profile-language"
+                    value={option.value}
+                    checked={selected}
+                    onChange={() => handleLanguageSelect(option.value)}
+                    onClick={() => {
+                      if (selected) handleLanguageSelect(option.value);
+                    }}
+                    className="peer sr-only"
+                  />
+                  <span>{t(option.labelKey)}</span>
+                  <span
+                    aria-hidden="true"
+                    className={`flex size-5 items-center justify-center rounded-full peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#6a37c3] ${
+                      selected ? 'bg-[#6a37c3] text-white' : 'border-2 border-[#8c8698]'
+                    }`}
+                  >
+                    {selected && <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2} />}
+                  </span>
+                </label>
+                {index === 0 && <div className="mt-4 h-px w-full bg-[#f6f5f7]" />}
+              </div>
+            );
+          })}
+        </fieldset>
+      </BottomSheet>
+    </div>
+  );
+}
+
+function MobileProfileStat({
+  icon,
+  count,
+  labelKey,
+  helperKey,
+}: {
+  icon: typeof AllBookmarkIcon;
+  count: number;
+  labelKey: string;
+  helperKey: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-4 rounded-[4px] bg-[#efeaf8] px-4 py-2">
+      <HugeiconsIcon icon={icon} size={20} strokeWidth={1.7} className="shrink-0 text-[#6a37c3]" />
+      <div className="min-w-0">
+        <p className="text-[14px] font-medium leading-[14px] text-[#865bcf]">{t(labelKey, { count })}</p>
+        <p className="mt-0.5 text-[12px] font-normal leading-[12px] text-[#a585db]">{t(helperKey)}</p>
+      </div>
+    </div>
+  );
+}
+
+function MobileProfileAction({
+  icon,
+  title,
+  helper,
+  onClick,
+}: {
+  icon: typeof AllBookmarkIcon;
+  title: string;
+  helper: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[40px] w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+    >
+      <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+        <HugeiconsIcon icon={icon} size={24} strokeWidth={1.7} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-[16px] font-medium leading-[16px] text-[#252329]">{title}</span>
+        <span className="truncate text-[12px] font-normal leading-[12px] text-[#8c8698]">{helper}</span>
+      </span>
+      <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.7} className="shrink-0 text-[#252329]" />
+    </button>
+  );
+}
+
+function MobileSettingsHome({
+  onBack,
+  onOpenAccount,
+}: {
+  onBack: () => void;
+  onOpenAccount: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <section data-figma-node="286:2862" className="min-h-screen bg-[#efebf6] pb-8 pt-[80px]">
+      <header className="flex h-[24px] items-center gap-4 px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={t('profile.mobileSettingsBackAriaLabel')}
+          className="flex size-[24px] shrink-0 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
+        </button>
+        <h1 className="text-[16px] font-medium leading-[16px] text-[#252329]">
+          {t('profile.mobileSettingsTitle')}
+        </h1>
+      </header>
+
+      <section
+        aria-label={t('profile.mobileSettingsListLabel')}
+        className="mx-6 mt-8 flex flex-col gap-4 rounded-[8px] bg-white px-6 py-4"
+      >
+        <button
+          type="button"
+          onClick={onOpenAccount}
+          aria-label={t('profile.mobileSettingsAccountTitle')}
+          className="flex min-h-[40px] w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+            <HugeiconsIcon icon={UserIcon} size={24} strokeWidth={1.5} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-[16px] font-medium leading-[16px] text-[#252329]">
+              {t('profile.mobileSettingsAccountTitle')}
+            </span>
+            <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">
+              {t('profile.mobileSettingsAccountHelper')}
+            </span>
+          </span>
+          <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#252329]" />
+        </button>
+        <div className="h-px w-full bg-[#f6f5f7]" />
+        <div className="flex min-h-[40px] items-center gap-4">
+          <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+            <HugeiconsIcon icon={Invoice03Icon} size={24} strokeWidth={1.5} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-[16px] font-medium leading-[16px] text-[#252329]">
+              {t('profile.mobileSettingsSubscriptionTitle')}
+            </span>
+            <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">
+              {t('profile.mobileSettingsSubscriptionHelper')}
+            </span>
+          </span>
+          <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#252329]" />
+        </div>
+        <div className="h-px w-full bg-[#f6f5f7]" />
+        <div className="flex min-h-[40px] items-center gap-4">
+          <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+            <HugeiconsIcon icon={InformationCircleIcon} size={24} strokeWidth={1.5} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-[16px] font-medium leading-[16px] text-[#252329]">
+              {t('profile.mobileSettingsAboutTitle')}
+            </span>
+            <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">
+              {t('profile.mobileSettingsAboutHelper')}
+            </span>
+          </span>
+          <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#252329]" />
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function MobileAccount({
+  onBack,
+  onOpenEmail,
+  onLogout,
+}: {
+  onBack: () => void;
+  onOpenEmail: () => void;
+  onLogout: () => void;
+}) {
+  const { t } = useTranslation();
+
+  const accountRows = [
+    {
+      icon: UserEdit01Icon,
+      title: t('profile.mobileAccountUsernameTitle'),
+      helper: t('profile.mobileAccountUsernameHelper'),
+    },
+    {
+      icon: ResetPasswordIcon,
+      title: t('profile.mobileAccountPasswordTitle'),
+      helper: t('profile.mobileAccountPasswordHelper'),
+    },
+  ];
+
+  return (
+    <section data-figma-node="286:3079" className="min-h-screen bg-[#efebf6] pb-8 pt-[80px]">
+      <header className="flex h-[24px] items-center gap-4 px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={t('profile.mobileAccountBackAriaLabel')}
+          className="flex size-[24px] shrink-0 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
+        </button>
+        <h1 className="text-[16px] font-medium leading-[16px] text-[#252329]">{t('profile.mobileAccountTitle')}</h1>
+      </header>
+
+      <section
+        aria-label={t('profile.mobileAccountListLabel')}
+        className="mx-6 mt-8 flex flex-col gap-4 rounded-[8px] bg-white px-6 py-4"
+      >
+        <button
+          type="button"
+          onClick={onOpenEmail}
+          aria-label={t('profile.mobileAccountEmailTitle')}
+          className="flex min-h-[40px] w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+            <HugeiconsIcon icon={Mail01Icon} size={24} strokeWidth={1.5} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-[16px] font-medium leading-[16px] text-[#252329]">{t('profile.mobileAccountEmailTitle')}</span>
+            <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">{t('profile.mobileAccountEmailHelper')}</span>
+          </span>
+          <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#252329]" />
+        </button>
+        <div className="h-px w-full rounded-[1px] bg-[#f6f5f7]" />
+        {accountRows.map((row, index) => (
+          <div key={row.title} className="contents">
+            <div className="flex min-h-[40px] items-center gap-4">
+              <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+                <HugeiconsIcon icon={row.icon} size={24} strokeWidth={1.5} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="text-[16px] font-medium leading-[16px] text-[#252329]">{row.title}</span>
+                <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">{row.helper}</span>
+              </span>
+            </div>
+            {index < accountRows.length - 1 && <div className="h-px w-full rounded-[1px] bg-[#f6f5f7]" />}
+          </div>
+        ))}
+      </section>
+
+      <section className="mx-6 mt-4 rounded-[8px] bg-white px-6 py-4">
+        <button
+          type="button"
+          onClick={onLogout}
+          aria-label={t('profile.logout')}
+          className="flex min-h-[40px] w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#fce5e3] text-[#bc251a]">
+            <HugeiconsIcon icon={Logout01Icon} size={24} strokeWidth={1.5} />
+          </span>
+          <span className="text-[16px] font-medium leading-[16px] text-[#bc251a]">{t('profile.logout')}</span>
+        </button>
+      </section>
+    </section>
+  );
+}
+
+function MobileEmail({ email, onBack }: { email: string; onBack: () => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <section data-figma-node="286:3183" className="min-h-screen bg-[#efebf6] pb-8 pt-[80px]">
+      <header className="flex h-[24px] items-center gap-4 px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={t('profile.mobileEmailBackAriaLabel')}
+          className="flex size-[24px] shrink-0 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
+        </button>
+        <h1 className="text-[16px] font-medium leading-[16px] text-[#252329]">{t('profile.mobileEmailTitle')}</h1>
+      </header>
+
+      <section className="mx-6 mt-8 flex flex-col gap-4 rounded-[8px] bg-white p-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-[18px] font-medium leading-[18px] text-[#161519]">{t('profile.mobileEmailCardTitle')}</h2>
+          <p className="text-[14px] font-normal leading-[14px] text-[#8c8698]">{t('profile.mobileEmailBody')}</p>
+        </div>
+        <div className="flex h-16 flex-col justify-center gap-2 rounded-[4px] bg-[#efeaf8] px-4 py-2">
+          <span className="text-[12px] font-medium leading-[12px] text-[#a585db]">{t('profile.mobileEmailValueLabel')}</span>
+          <span className="text-[12px] font-normal leading-[12px] text-[#6a37c3]">{email}</span>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function MobileProfileDetail({
+  activeTab,
+  onBack,
+  profile,
+}: {
+  activeTab: Exclude<ProfileTabId, 'profile'>;
+  onBack: () => void;
   profile: User;
 }) {
   const { t } = useTranslation();
 
   return (
-    <div>
-      <section className="rounded-[12px] border border-border/45 bg-surface p-4">
-        <div className="flex items-center gap-3">
-          <FigmaProfileIcon className="block size-[58px] shrink-0 text-accent" />
-          <div className="min-w-0">
-            <p className="truncate text-[24px] font-medium leading-tight text-primary">
-              {profile.username ?? t('profile.usernameUndefined')}
-            </p>
-            <p className="mt-1 text-[13px] leading-none text-muted">
-              {t('profile.profileSummary')}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <nav className="mt-3 grid gap-2" aria-label={t('profile.title')}>
-        {profileNavItems.map((item) => {
-          const isActive = activeTab === item.id;
-
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSelectTab(item.id)}
-              className={`grid min-h-[56px] grid-cols-[32px_minmax(0,1fr)_18px] items-center gap-3 rounded-[12px] border px-4 text-left transition-colors ${
-                isActive
-                  ? 'border-primary/45 bg-surface text-primary'
-                  : 'border-border/40 bg-surface/65 text-primary/80'
-              }`}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.7} />
-              <span className="truncate text-[16px] font-medium">{t(item.labelKey)}</span>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={17} strokeWidth={1.8} className="text-muted" />
-            </button>
-          );
-        })}
-      </nav>
-
-      {shouldShowProfileLogout(activeTab) && (
+    <section
+      aria-labelledby="mobile-profile-detail-title"
+      className="min-h-screen bg-[#efebf6] px-[24px] pb-8 pt-[80px]"
+    >
+      <header className="flex items-center gap-3">
         <button
           type="button"
-          onClick={onLogout}
-          className="mt-3 flex h-[48px] w-full items-center justify-center gap-2 rounded-[12px] border border-border/45 bg-surface text-[15px] font-medium text-primary"
+          onClick={onBack}
+          aria-label={t('profile.mobileBackToProfile')}
+          className="inline-flex h-[40px] items-center gap-2 rounded-[8px] bg-white px-4 text-[14px] leading-[14px] text-[#6a37c3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
         >
-          <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
-          {t('profile.logout')}
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.8} />
+          <span>{t('profile.mobileBackToProfile')}</span>
         </button>
-      )}
-
-      <section className="mt-4 rounded-[12px] border border-border/45 bg-surface">
-        <header className="border-b border-border/45 px-4 py-4">
-          <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
-            {activeTab === 'weakTopics' ? t('profile.weakTopicsEyebrow') : t('profile.accountArea')}
-          </p>
-          <h1 className="mt-2 text-[26px] font-medium leading-tight text-text">
-            {getTabTitle(activeTab, t)}
-          </h1>
-        </header>
-
-        {activeTab === 'profile' && <ProfileOverview profile={profile} />}
+        <h1 id="mobile-profile-detail-title" className="text-[24px] font-medium leading-[24px] text-[#252329]">
+          {getTabTitle(activeTab, t)}
+        </h1>
+      </header>
+      <div className="mt-4 overflow-hidden rounded-[8px] bg-white">
         {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
         {activeTab === 'weakTopics' && <WeakTopicsPanel />}
         {activeTab === 'favorites' && <PlaceholderPanel type="favorites" />}
         {activeTab === 'settings' && <SettingsPanel profile={profile} />}
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -325,7 +751,7 @@ function ProfileOverview({
               <p className="text-[13px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
                 {t('profile.profileSummary')}
               </p>
-              <h2 className="mt-2 truncate text-[34px] font-medium leading-tight text-primary max-md:text-[27px]">
+              <h2 className="mt-2 truncate text-[34px] font-medium leading-none text-primary max-md:text-[27px] max-md:leading-none">
                 {profile.username ?? t('profile.usernameUndefined')}
               </h2>
             </div>
@@ -334,8 +760,8 @@ function ProfileOverview({
             {learningStats.map((stat) => (
               <div key={stat.labelKey} className="rounded-[8px] bg-surface p-4">
                 <p className="text-[30px] font-medium leading-none text-primary">{stat.value}</p>
-                <p className="mt-2 text-[14px] leading-tight text-text">{t(stat.labelKey)}</p>
-                <p className="mt-1 text-[13px] leading-tight text-muted">{t(stat.helperKey)}</p>
+                <p className="mt-2 text-[14px] leading-none text-text">{t(stat.labelKey)}</p>
+                <p className="mt-1 text-[13px] leading-none text-muted">{t(stat.helperKey)}</p>
               </div>
             ))}
           </div>
@@ -373,7 +799,7 @@ function SubscriptionPromo() {
     <section className="flex h-[320px] flex-col overflow-hidden rounded-[8px] border border-border/65 bg-surface p-5 max-sm:h-auto max-sm:min-h-[320px]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="text-[22px] font-medium leading-tight text-primary">
+          <h2 className="text-[22px] font-medium leading-none text-primary">
             {t('profile.subscriptionTitle')}
           </h2>
           <span className="mt-2 block text-[13px] font-medium leading-none text-primary">
@@ -390,7 +816,7 @@ function SubscriptionPromo() {
         {benefits.map((benefit) => (
           <span
             key={benefit.label}
-            className="inline-flex min-h-8 w-full items-center gap-2 border-b border-border/25 px-3 py-1.5 text-[12px] font-medium leading-tight text-primary"
+            className="inline-flex min-h-8 w-full items-center gap-2 border-b border-border/25 px-3 py-1.5 text-[12px] font-medium leading-none text-primary"
           >
             <span className="flex size-5 shrink-0 items-center justify-center text-primary">
               <HugeiconsIcon icon={benefit.icon} size={13} strokeWidth={1.8} />
@@ -402,7 +828,7 @@ function SubscriptionPromo() {
 
       <button
         type="button"
-        className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[8px] bg-primary px-4 text-[15px] font-medium text-surface transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[8px] bg-primary px-4 text-[15px] font-medium leading-none text-surface transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <span>{t('profile.subscriptionUpgradeButton')}</span>
         <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
@@ -439,16 +865,16 @@ function PlaceholderPanel({ type }: { type: Exclude<ProfileTabId, 'profile' | 's
         <span className="flex size-14 items-center justify-center rounded-full bg-surface text-primary">
           <HugeiconsIcon icon={content.icon} size={28} strokeWidth={1.7} />
         </span>
-        <h2 className="mt-5 text-[28px] font-medium leading-tight text-text max-md:text-[24px]">
+        <h2 className="mt-5 text-[28px] font-medium leading-none text-text max-md:text-[24px] max-md:leading-none">
           {t(content.titleKey)}
         </h2>
-        <p className="mt-3 max-w-[520px] text-[17px] leading-relaxed text-text-body">
+        <p className="mt-3 max-w-[520px] text-[17px] leading-none text-text-body">
           {t(content.bodyKey)}
         </p>
         {'actionTo' in content && content.actionTo && (
           <Link
             to={content.actionTo}
-            className="mt-6 inline-flex h-[44px] items-center justify-center rounded-[8px] bg-primary px-5 text-[15px] font-medium text-surface transition-opacity hover:opacity-90"
+            className="mt-6 inline-flex h-[44px] items-center justify-center rounded-[8px] bg-primary px-5 text-[15px] font-medium leading-none text-surface transition-opacity hover:opacity-90"
           >
             {t(content.actionLabelKey)}
           </Link>
@@ -511,10 +937,10 @@ function WeakTopicsPanel() {
     return (
       <section className="px-8 py-12 max-md:px-5">
         <div className="rounded-[8px] border border-danger/35 bg-[#fff5f5] p-5">
-          <p className="text-[22px] font-medium leading-tight text-danger">
+          <p className="text-[22px] font-medium leading-none text-danger">
             {t('profile.weakTopicsErrorTitle')}
           </p>
-          <p className="mt-2 text-[15px] leading-relaxed text-danger">{error}</p>
+          <p className="mt-2 text-[15px] leading-none text-danger">{error}</p>
         </div>
       </section>
     );
@@ -670,10 +1096,10 @@ function WeakTopicList({
         <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
           {t('profile.weakTopicsListEyebrow')}
         </p>
-        <h2 className="mt-1.5 text-[17px] font-medium leading-tight text-text">
+        <h2 className="mt-1.5 text-[17px] font-medium leading-none text-text">
           {t('profile.weakTopicsListTitle')}
         </h2>
-        <p className="mt-1.5 text-[12px] leading-4 text-muted">
+        <p className="mt-1.5 text-[12px] leading-none text-muted">
           {t('profile.weakTopicsLostPointsInline', {
             count: lostPoints,
           })}
@@ -708,7 +1134,7 @@ function WeakTopicList({
               })}
             >
               <span className="min-w-0 flex-1">
-                <span className="block min-w-0 break-words text-[14px] font-medium leading-[1.16] text-text">
+                <span className="block min-w-0 break-words text-[14px] font-medium leading-none text-text">
                   {chapterLabel}
                 </span>
                 <span className="mt-1 block truncate text-[12px] leading-none text-muted">
@@ -747,7 +1173,7 @@ function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
           <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
             {t('profile.weakTopicsSelectedLabel')}
           </p>
-          <h3 className="mt-1 break-words text-[22px] font-medium leading-snug text-text max-md:text-[20px]">
+          <h3 className="mt-1 break-words text-[22px] font-medium leading-none text-text max-md:text-[20px] max-md:leading-none">
             {chapterLabel}
           </h3>
           <WeakTopicStatsRow topic={topic} />
@@ -859,7 +1285,7 @@ function WeakTopicBookList({
 
   if (books.length === 0) {
     return (
-      <p className="rounded-[8px] bg-bg px-4 py-3 text-[14px] leading-6 text-muted">
+      <p className="rounded-[8px] bg-bg px-4 py-3 text-[14px] leading-none text-muted">
         {t('profile.weakTopicsNoBooks')}
       </p>
     );
@@ -869,7 +1295,7 @@ function WeakTopicBookList({
     <div className="rounded-[8px] bg-bg/70 p-2">
       <div className="flex min-h-8 flex-wrap items-center gap-2">
         <span className="inline-flex min-w-0 items-center gap-1">
-          <p className="truncate text-[15px] font-medium leading-tight text-primary">
+          <p className="truncate text-[15px] font-medium leading-none text-primary">
             {t('profile.weakTopicsBooksTitle')}
           </p>
           <WeakTopicInfoTooltip text={t('profile.weakTopicsBooksInfoTooltip')} />
@@ -929,7 +1355,7 @@ function WeakTopicBookRow({
   return (
     <div className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3 shadow-sm max-md:shadow-none">
       <span className="flex min-w-0 items-start justify-between gap-2">
-        <span className="line-clamp-2 block min-w-0 break-words text-[14px] font-medium leading-tight text-text">
+        <span className="line-clamp-2 block min-w-0 break-words text-[14px] font-medium leading-none text-text">
           {book.publisher}
         </span>
         <span className="shrink-0 rounded-full bg-bg px-2 py-0.5 text-[11px] font-medium leading-none text-muted">
@@ -984,7 +1410,7 @@ function WeakTopicInfoTooltip({
         <span
           id={tooltipId}
           role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[8px] bg-surface px-3 py-2.5 text-left text-[12px] font-normal leading-5 text-text-body opacity-0 shadow-[0_14px_34px_rgba(58,28,110,0.16)] transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 max-md:shadow-none"
+          className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[8px] bg-surface px-3 py-2.5 text-left text-[12px] font-normal leading-none text-text-body opacity-0 shadow-[0_14px_34px_rgba(58,28,110,0.16)] transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 max-md:shadow-none"
         >
           <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-surface" />
           {text}
@@ -1100,7 +1526,7 @@ function LanguageSettingsPanel() {
             key={option.value}
             type="button"
             onClick={() => setLang(option.value)}
-            className={`flex min-h-[52px] items-center justify-between gap-3 rounded-[8px] border px-4 text-left text-[16px] font-medium transition-colors ${
+            className={`flex min-h-[52px] items-center justify-between gap-3 rounded-[8px] border px-4 text-left text-[16px] font-medium leading-none transition-colors ${
               selected
                 ? 'border-primary/45 bg-bg text-primary'
                 : 'border-border/65 bg-surface text-text-body hover:bg-bg'
@@ -1153,13 +1579,13 @@ function SettingsActionButton({
         </span>
         <span className="min-w-0">
           <span
-            className={`block text-[18px] font-medium leading-tight ${
+            className={`block text-[18px] font-medium leading-none ${
               isDanger ? 'text-danger' : 'text-primary'
             }`}
           >
             {title}
           </span>
-          <span className="mt-1 block text-[14px] leading-snug text-text-body">{body}</span>
+          <span className="mt-1 block text-[14px] leading-none text-text-body">{body}</span>
         </span>
       </span>
       <HugeiconsIcon
@@ -1190,15 +1616,15 @@ function SettingsDetail({
       <button
         type="button"
         onClick={onBack}
-        className="mb-5 inline-flex h-[40px] items-center gap-2 rounded-[8px] border border-border/65 px-4 text-[15px] text-primary transition-colors hover:bg-bg"
+        className="mb-5 inline-flex h-[40px] items-center gap-2 rounded-[8px] border border-border/65 px-4 text-[15px] leading-none text-primary transition-colors hover:bg-bg"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.8} />
         <span>{t('profile.settingsBackButton')}</span>
       </button>
 
       <div className="rounded-[8px] border border-border/65 p-5">
-        <p className="text-[22px] font-medium leading-tight text-primary">{title}</p>
-        <p className="mt-2 text-[16px] leading-relaxed text-text-body">{body}</p>
+        <p className="text-[22px] font-medium leading-none text-primary">{title}</p>
+        <p className="mt-2 text-[16px] leading-none text-text-body">{body}</p>
         <div className="mt-5">{children}</div>
       </div>
     </section>
@@ -1291,12 +1717,12 @@ function ChangePasswordFlow() {
           error={fieldErrors.currentPassword}
         />
         {notice && (
-          <p className="mb-3 rounded-[8px] bg-success/10 px-3 py-2 text-[14px] text-success" role="status">
+          <p className="mb-3 rounded-[8px] bg-success/10 px-3 py-2 text-[14px] leading-none text-success" role="status">
             {notice}
           </p>
         )}
         {error && (
-          <p className="mb-3 text-[14px] text-danger" role="alert">
+          <p className="mb-3 text-[14px] leading-none text-danger" role="alert">
             {error}
           </p>
         )}
@@ -1340,7 +1766,7 @@ function ChangePasswordFlow() {
         />
       </div>
       {error && (
-        <p className="mb-3 text-[14px] text-danger" role="alert">
+        <p className="mb-3 text-[14px] leading-none text-danger" role="alert">
           {error}
         </p>
       )}
@@ -1352,7 +1778,7 @@ function ChangePasswordFlow() {
           setNotice(null);
           setFieldErrors({});
         }}
-        className="mb-3 inline-flex h-[40px] items-center justify-center rounded-[8px] px-2 text-[15px] text-primary transition-colors hover:bg-bg"
+        className="mb-3 inline-flex h-[40px] items-center justify-center rounded-[8px] px-2 text-[15px] leading-none text-primary transition-colors hover:bg-bg"
       >
         {t('profile.changePasswordEditCurrentButton')}
       </button>
@@ -1385,11 +1811,11 @@ function DeleteAccountPanel({ userId }: { userId: number }) {
 
   return (
     <div>
-      <div className="rounded-[8px] bg-[#fff5f5] px-4 py-3 text-[15px] leading-relaxed text-danger">
+      <div className="rounded-[8px] bg-[#fff5f5] px-4 py-3 text-[15px] leading-none text-danger">
         {t('profile.deleteAccountWarning')}
       </div>
       {error && (
-        <p className="mt-3 text-[14px] text-danger" role="alert">
+        <p className="mt-3 text-[14px] leading-none text-danger" role="alert">
           {error}
         </p>
       )}
@@ -1397,7 +1823,7 @@ function DeleteAccountPanel({ userId }: { userId: number }) {
         type="button"
         onClick={handleDeleteAccount}
         disabled={loading}
-        className="mt-5 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[8px] bg-danger px-4 text-[15px] font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-5 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[8px] bg-danger px-4 text-[15px] font-medium leading-none text-surface transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         <HugeiconsIcon icon={Delete02Icon} size={18} strokeWidth={1.8} />
         <span>{loading ? t('common.loading') : t('profile.deleteAccountButton')}</span>
@@ -1417,7 +1843,7 @@ function ProfileField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-h-[92px] flex-col justify-center rounded-[8px] bg-bg px-5 py-4">
       <span className="text-[14px] leading-none text-muted">{label}</span>
-      <span className="mt-3 break-all text-[20px] leading-tight text-primary max-sm:text-[17px]">
+      <span className="mt-3 break-all text-[20px] leading-none text-primary max-sm:text-[17px] max-sm:leading-none">
         {value}
       </span>
     </div>

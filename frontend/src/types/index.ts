@@ -126,6 +126,17 @@ export interface AnalyzeBookCoverage {
   percentage: number;
 }
 
+export interface AnalyzeTopicCode {
+  /** Stable topic-code identifier; keep it separate from the localized title. */
+  name: string;
+  /** Localized lesson-goal display text selected by the API. */
+  title: string;
+  /** Optional practice state; legacy analyze responses omit practice progress. */
+  status?: 'completed' | 'active' | 'pending';
+  /** Optional topic progress percentage supplied by a practice-aware API. */
+  progress?: number;
+}
+
 export interface AnalyzeChapterResult {
   chapter_id: number;
   code: string;
@@ -135,6 +146,12 @@ export interface AnalyzeChapterResult {
   score: number;
   percentage: number;
   books: AnalyzeBookCoverage[];
+  /** Total topic count used for locked previews without exposing topic details. */
+  topic_count?: number;
+  /** School grades represented by the chapter's material topics. */
+  material_grades?: number[];
+  /** API responses include this field; optional for legacy fixtures and clients. */
+  topic_codes?: AnalyzeTopicCode[];
 }
 
 export interface AnalyzeTask {

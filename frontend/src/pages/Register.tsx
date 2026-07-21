@@ -184,7 +184,7 @@ export function Register() {
     >
       {step === 'account' ? (
         <form onSubmit={handleAccountSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body max-lg:text-[16px] max-lg:leading-[1.25] max-lg:text-[#8c8698]">
+          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
             {t('auth.registerHelper')}
           </p>
           <AuthEmailInput
@@ -219,7 +219,7 @@ export function Register() {
         </form>
       ) : (
         <form onSubmit={handleCodeSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body max-lg:text-[16px] max-lg:leading-[1.25] max-lg:text-[#8c8698]">
+          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
             {t('auth.verifyHelperShort')}
           </p>
           <VerificationCodeInput

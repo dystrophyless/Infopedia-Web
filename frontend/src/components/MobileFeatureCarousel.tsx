@@ -448,17 +448,17 @@ function FeatureSlideCard({
         <div className="absolute left-0 top-[92px] flex h-[280px] w-[480px] p-[48px]">
           <div className="flex min-h-0 w-full flex-col justify-between">
             <div className="flex w-full flex-col gap-6">
-              <h3 className="w-full [text-wrap:balance] text-[32px] font-medium leading-[32px] text-[#6a37c3]">
+              <h3 className="w-full [text-wrap:balance] text-[32px] font-medium leading-none text-[#6a37c3]">
                 {card.title}
               </h3>
-              <p className="w-full [text-wrap:pretty] text-[20px] leading-[20px] text-[#6e6779]">
+              <p className="w-full [text-wrap:pretty] text-[20px] leading-none text-[#6e6779]">
                 {card.description}
               </p>
             </div>
             {ctaInteractive ? (
               <Link
                 to={card.href}
-                className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
+                className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-none text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
                 draggable={false}
                 onPointerDown={onPointerDown}
                 onClick={onClick}
@@ -467,7 +467,7 @@ function FeatureSlideCard({
               </Link>
             ) : (
               <span
-                className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-[16px] text-white"
+                className="flex h-[48px] w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-6 py-3 text-center text-[16px] font-medium leading-none text-white"
               >
                 {card.cta}
               </span>

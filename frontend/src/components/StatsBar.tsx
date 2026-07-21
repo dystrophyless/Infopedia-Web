@@ -16,8 +16,8 @@ function StatItem({ icon, number, label }: StatItemProps) {
   return (
     <div className="flex items-center gap-4">
       <div className="flex h-[75px] items-center justify-center">{icon}</div>
-      <div className="flex flex-col leading-tight">
-        <span className="font-medium text-[55px] text-accent leading-[1] max-md:text-[40px]">
+      <div className="flex flex-col">
+        <span className="font-medium text-[55px] text-accent leading-none max-md:text-[40px]">
           {number}
         </span>
         <span className="text-[25px] text-muted max-md:text-[18px]">{label}</span>

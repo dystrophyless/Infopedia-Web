@@ -13,9 +13,9 @@ const toneClasses: Record<TextTone, string> = {
 };
 
 const sizeClasses: Record<TextSize, string> = {
-  body: 'text-[var(--type-body-size)] leading-snug',
-  helper: 'text-[var(--type-helper-size)] leading-snug',
-  caption: 'text-[var(--type-caption-size)] leading-tight',
+  body: 'text-[var(--type-body-size)] leading-none',
+  helper: 'text-[var(--type-helper-size)] leading-none',
+  caption: 'text-[var(--type-caption-size)] leading-none',
 };
 
 export interface TextProps extends HTMLAttributes<HTMLElement> {

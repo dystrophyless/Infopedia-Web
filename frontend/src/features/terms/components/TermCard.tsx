@@ -21,9 +21,9 @@ export function TermCard({ term, relatedTerms = [] }: TermCardProps) {
     >
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[24px] font-medium leading-tight text-text max-md:text-[21px]">{term.name}</h3>
+          <h3 className="text-[24px] font-medium leading-6 text-text max-md:text-[21px] max-md:leading-[21px]">{term.name}</h3>
           {definition && (
-            <p className="mt-3 line-clamp-3 max-w-[760px] whitespace-pre-line text-[15px] leading-relaxed text-text-body">
+            <p className="mt-3 line-clamp-3 max-w-[760px] whitespace-pre-line text-[15px] leading-[15px] text-text-body">
               {normalizeDefinitionPreviewText(definition.text)}
             </p>
           )}

@@ -29,13 +29,13 @@ const kkLocale = JSON.parse(
 );
 
 const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
+  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\r?\n\}\r?\n\r?\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
 const guestSectionsSource =
-  landingSource.match(/function MobileFigmaGuestSections[\s\S]*?\n\}\n\nfunction MobileSourceProof/)?.[0] ?? '';
+  landingSource.match(/function MobileFigmaGuestSections[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileSourceProof/)?.[0] ?? '';
 const mobileSourceProofSource =
-  landingSource.match(/function MobileSourceProof[\s\S]*?\n\}\n\nfunction MobileToolsFeature/)?.[0] ?? '';
+  landingSource.match(/function MobileSourceProof[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileToolsFeature/)?.[0] ?? '';
 const mobileToolsFeatureSource =
-  landingSource.match(/function MobileToolsFeature[\s\S]*?\n\}\n\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
+  landingSource.match(/function MobileToolsFeature[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
 const carouselViewFunctionSource = carouselViewSource.slice(
   carouselViewSource.indexOf('export function TermCardCarouselView('),
 );
@@ -125,7 +125,7 @@ assert.match(
 
 assert.match(
   mobileSourceProofSource,
-  /rounded-l-\[16px\] rounded-r-none[\s\S]*pl-6[\s\S]*pr-\[22px\][\s\S]*pt-8[\s\S]*pb-5[\s\S]*text-\[14px\][\s\S]*text-\[20px\][\s\S]*max-w-\[194px\][\s\S]*leading-\[12px\]/,
+  /rounded-l-\[16px\] rounded-r-none[\s\S]*pl-6[\s\S]*pr-\[22px\][\s\S]*pt-8[\s\S]*pb-5[\s\S]*text-\[14px\][\s\S]*text-\[20px\][\s\S]*max-w-\[194px\][\s\S]*leading-none/,
   'Mobile source proof copy card should match the Figma left-card padding, type scale, and text measure',
 );
 

@@ -22,12 +22,12 @@ export function Navbar() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `whitespace-nowrap px-4 py-4 text-[16px] transition-colors ${
+    `whitespace-nowrap px-4 py-4 text-[16px] leading-none transition-colors ${
       isActive ? 'font-medium text-accent' : 'text-muted hover:text-accent'
     }`;
 
   const marketingLinkClass =
-    'whitespace-nowrap border-0 bg-transparent px-4 py-4 text-[16px] text-muted transition-colors hover:text-accent';
+    'whitespace-nowrap border-0 bg-transparent px-4 py-4 text-[16px] leading-none text-muted transition-colors hover:text-accent';
 
   return (
     <>
@@ -42,7 +42,7 @@ export function Navbar() {
               <>
                 <Link
                   to="/search"
-                  className={`px-5 py-4 text-[16px] transition-colors ${
+                  className={`px-5 py-4 text-[16px] leading-none transition-colors ${
                     searchNavIsActive
                       ? 'font-medium text-accent'
                       : 'text-muted hover:text-accent'
@@ -89,7 +89,7 @@ export function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="rounded-[10px] bg-accent px-5 py-3 text-[16px] text-surface transition-opacity hover:opacity-90"
+                className="rounded-[10px] bg-accent px-5 py-3 text-[16px] leading-none text-surface transition-opacity hover:opacity-90"
               >
                 {t('nav.login')}
               </Link>

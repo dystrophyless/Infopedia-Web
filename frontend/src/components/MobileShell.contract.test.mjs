@@ -8,7 +8,7 @@ const indexCssSource = readFileSync(path.resolve(componentDir, '../index.css'), 
 const layoutSource = readFileSync(path.resolve(componentDir, 'Layout.tsx'), 'utf8');
 const navbarSource = readFileSync(path.resolve(componentDir, 'Navbar.tsx'), 'utf8');
 const searchChoiceSource = readFileSync(
-  path.resolve(componentDir, 'SearchChoiceModal.tsx'),
+  path.resolve(componentDir, '../features/search/components/SearchChoiceModal.tsx'),
   'utf8',
 );
 
@@ -150,7 +150,7 @@ assert.match(
 
 assert.match(
   bottomNavSource,
-  /text-\[10px\][^"]*leading-\[10px\][^"]*text-\[#524d5b\]/,
+  /text-\[10px\][^"]*leading-none[^"]*text-\[#524d5b\]/,
   'Mobile bottom navigation labels should match the Figma 10px muted text treatment',
 );
 
@@ -203,7 +203,7 @@ assert.doesNotMatch(
 
 assert.match(
   searchChoiceSource,
-  /max-md:items-end/,
+  /overlayClassName="bg-\[#12091f\]\/65 backdrop-blur-\[2px\] max-md:items-end max-md:p-0 max-md:backdrop-blur-none"/,
   'Search choice overlay should align the dialog to the bottom on mobile',
 );
 
@@ -215,8 +215,8 @@ assert.match(
 
 assert.match(
   searchChoiceSource,
-  /searchChoice\.sheetHandle/,
-  'Search choice bottom sheet should expose an accessible drag handle label',
+  /<span\s+aria-hidden="true"\s+className="mx-auto mt-3 hidden h-1\.5 w-\[72px\] rounded-full bg-border\/25 max-md:block"\s+\/>/,
+  'Search choice bottom sheet should expose its non-interactive drag handle as decoration',
 );
 
 assert.match(

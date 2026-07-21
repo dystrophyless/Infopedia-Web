@@ -27,7 +27,7 @@ type Story = StoryObj<typeof meta>;
 export const Roles: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 28, maxWidth: 920 }}>
-      {typeRoles.map(([label, size, weight, lineHeight]) => (
+      {typeRoles.map(([label, size, weight]) => (
         <section key={size}>
           <code style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>{label} · {size}</code>
           <p
@@ -35,7 +35,7 @@ export const Roles: Story = {
               color: 'var(--color-text)',
               fontSize: `var(${size})`,
               fontWeight: `var(${weight})`,
-              lineHeight: `var(${lineHeight})`,
+              lineHeight: 1,
               margin: '8px 0 0',
             }}
           >
@@ -50,10 +50,10 @@ export const Roles: Story = {
 export const LongRussianAndKazakhCopy: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 20, maxWidth: 390 }}>
-      <p style={{ fontSize: 'var(--type-body-size)', lineHeight: 1.4, margin: 0 }}>
+      <p style={{ fontSize: 'var(--type-body-size)', lineHeight: 1, margin: 0 }}>
         Изучите результаты анализа и выберите следующую тему, чтобы последовательно закрыть пробелы в знаниях.
       </p>
-      <p style={{ fontSize: 'var(--type-body-size)', lineHeight: 1.4, margin: 0 }} lang="kk">
+      <p style={{ fontSize: 'var(--type-body-size)', lineHeight: 1, margin: 0 }} lang="kk">
         Талдау нәтижелерін қарап шығып, білімдегі олқылықтарды біртіндеп толықтыру үшін келесі тақырыпты таңдаңыз.
       </p>
     </div>

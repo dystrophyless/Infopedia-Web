@@ -68,7 +68,7 @@ function DesktopAuthenticatedLanding() {
         id="tools"
         className="scroll-mt-[112px] bg-bg px-6 py-[110px]"
       >
-        <h2 className="mb-12 text-center text-[40px] font-medium leading-[1] text-text max-md:text-[28px]">
+        <h2 className="mb-12 text-center text-[40px] font-medium leading-none text-text max-md:text-[28px]">
           {t('landing.allTools')}
         </h2>
         <div className="mx-auto flex max-w-[1334px] flex-wrap justify-center gap-8">
@@ -101,10 +101,10 @@ function DesktopAuthenticatedLanding() {
           <div className="mb-[27px] flex size-[59px] items-center justify-center rounded-[10px] bg-secondary">
             <HugeiconsIcon icon={BookOpen01Icon} size={31} strokeWidth={1.7} className="text-surface" />
           </div>
-          <h2 className="mb-[26px] text-[40px] font-medium leading-[1] text-text max-md:text-[28px]">
+          <h2 className="mb-[26px] text-[40px] font-medium leading-none text-text max-md:text-[28px]">
             {t('landing.booksSectionTitle')}
           </h2>
-          <p className="mb-[32px] max-w-[533px] text-[16px] leading-[1] text-muted">
+          <p className="mb-[32px] max-w-[533px] text-[16px] leading-none text-muted">
             {t('landing.booksSectionSubtitle')}
           </p>
           <div className="flex flex-wrap justify-center gap-[10px]">
@@ -116,7 +116,7 @@ function DesktopAuthenticatedLanding() {
             ].map((chip) => (
               <span
                 key={chip}
-                className="rounded-full bg-bg px-5 py-[7px] text-[16px] font-medium leading-[1] text-secondary"
+                className="rounded-full bg-bg px-5 py-[7px] text-[16px] font-medium leading-none text-secondary"
               >
                 {chip}
               </span>
@@ -144,7 +144,7 @@ function DesktopGuestHero() {
     <section className="overflow-hidden bg-[#efebf6] px-6 pb-16 pt-12">
       <div className="mx-auto flex max-w-[1180px] flex-col items-center gap-8 text-center">
         <div className="flex flex-col items-center gap-3">
-          <p className="text-[190px] font-medium leading-[0.82] text-[#161519]">
+          <p className="text-[190px] font-medium leading-none text-[#161519]">
             {t('landing.mobileHeroScoreValue')}
           </p>
           <p className="text-[18px] leading-none text-[#6e6779]">
@@ -153,7 +153,7 @@ function DesktopGuestHero() {
         </div>
 
         <div className="flex max-w-[820px] flex-col items-center gap-5">
-          <h1 className="text-[56px] font-medium leading-[1.05] text-[#161519]">
+          <h1 className="text-[56px] font-medium leading-none text-[#161519]">
             {t('landing.mobileHeroTitle')}
           </h1>
           <p className="text-[20px] leading-none text-[#6e6779]">
@@ -164,13 +164,13 @@ function DesktopGuestHero() {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             to={ONBOARDING_TARGET}
-            className="flex min-h-[56px] min-w-[240px] items-center justify-center rounded-[18px] bg-[#6a37c3] px-8 text-[18px] font-medium leading-tight text-white transition-opacity hover:opacity-90"
+            className="flex min-h-[56px] min-w-[240px] items-center justify-center rounded-[18px] bg-[#6a37c3] px-8 text-[18px] font-medium leading-none text-white transition-opacity hover:opacity-90"
           >
             {t('landing.mobileHeroPrimaryCta')}
           </Link>
           <a
             href="#tools"
-            className="flex min-h-[56px] min-w-[180px] items-center justify-center rounded-[18px] bg-[#fbfbfb] px-8 text-[18px] font-medium leading-tight text-[#524d5b] transition-opacity hover:opacity-90"
+            className="flex min-h-[56px] min-w-[180px] items-center justify-center rounded-[18px] bg-[#fbfbfb] px-8 text-[18px] font-medium leading-none text-[#524d5b] transition-opacity hover:opacity-90"
           >
             {t('landing.mobileHeroSecondaryCta')}
           </a>
@@ -230,10 +230,10 @@ function DesktopSourceProof() {
             <p className="text-[20px] leading-none text-[#6e6779] max-lg:text-[18px]">
               {t('landing.mobileSourceGuess')}
             </p>
-            <h2 className="mt-2 text-[40px] font-medium leading-[0.98] text-[#6a37c3] max-lg:text-[32px]">
+            <h2 className="mt-2 text-[40px] font-medium leading-none text-[#6a37c3] max-lg:text-[32px]">
               {t('landing.mobileSourceCite')}
             </h2>
-            <p className="mt-5 max-w-[520px] text-[18px] leading-[1.2] text-[#6e6779] max-lg:text-[16px]">
+            <p className="mt-5 max-w-[520px] text-[18px] leading-none text-[#6e6779] max-lg:text-[16px]">
               {t('landing.mobileSourceBody')}
             </p>
           </div>
@@ -262,7 +262,7 @@ function DesktopSourceProof() {
 
         <Link
           to={ONBOARDING_TARGET}
-          className="flex h-14 min-w-[240px] items-center justify-center rounded-[16px] bg-[#6a37c3] px-6 text-[16px] font-medium leading-tight text-white transition-opacity hover:opacity-90"
+          className="flex h-14 min-w-[240px] items-center justify-center rounded-[16px] bg-[#6a37c3] px-6 text-[16px] font-medium leading-none text-white transition-opacity hover:opacity-90"
         >
           {t('landing.mobileHeroPrimaryCta')}
         </Link>
@@ -278,10 +278,10 @@ function DesktopToolsFeature({ isAuthenticated }: { isAuthenticated: boolean }) 
     <section id="tools" className="scroll-mt-[112px] overflow-hidden bg-[#efebf6] px-6 pb-24 pt-16">
       <div className="mx-auto flex max-w-[980px] flex-col items-center gap-12">
         <div className="flex max-w-[760px] flex-col gap-6 text-center">
-          <h2 className="text-[44px] font-medium leading-[1.08] text-[#161519]">
+          <h2 className="text-[44px] font-medium leading-none text-[#161519]">
             {t('landing.mobileToolsTitle')}
           </h2>
-          <p className="text-[18px] leading-[1.25] text-[#6e6779]">
+          <p className="text-[18px] leading-none text-[#6e6779]">
             {t('landing.mobileToolsSubtitle')}
           </p>
         </div>
@@ -319,7 +319,7 @@ function MobileConversionHeroHome() {
       <section className="box-border w-full overflow-hidden bg-[#efebf6] px-6 pb-14 pt-7">
         <div className="mx-auto flex w-full max-w-[366px] flex-col items-center gap-8 text-center">
           <div className="flex flex-col items-center gap-1">
-            <p className="text-[80px] font-medium leading-[0.9] text-[#161519]">
+            <p className="text-[80px] font-medium leading-none text-[#161519]">
               {t('landing.mobileHeroScoreValue')}
             </p>
             <p className="text-[14px] leading-none text-[#6e6779]">
@@ -328,7 +328,7 @@ function MobileConversionHeroHome() {
           </div>
 
           <div className="flex max-w-[330px] flex-col items-center gap-4">
-            <h1 className="text-[24px] font-medium leading-[1.06] text-[#161519]">
+            <h1 className="text-[24px] font-medium leading-none text-[#161519]">
               {t('landing.mobileHeroTitle')}
             </h1>
             <p className="text-[14px] leading-none text-[#6e6779]">
@@ -339,13 +339,13 @@ function MobileConversionHeroHome() {
           <div className="grid w-full gap-2">
             <Link
               to={ONBOARDING_TARGET}
-              className="flex min-h-12 items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-tight text-white"
+              className="flex min-h-12 items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-none text-white"
             >
               {t('landing.mobileHeroPrimaryCta')}
             </Link>
             <a
               href="#mobile-tools"
-              className="flex min-h-12 items-center justify-center rounded-[16px] bg-[#fbfbfb] px-5 text-[14px] font-medium leading-tight text-[#524d5b]"
+              className="flex min-h-12 items-center justify-center rounded-[16px] bg-[#fbfbfb] px-5 text-[14px] font-medium leading-none text-[#524d5b]"
             >
               {t('landing.mobileHeroSecondaryCta')}
             </a>
@@ -410,7 +410,7 @@ function MobileSourceProof() {
                 {t('landing.mobileSourceCite')}
               </h2>
             </div>
-            <p className="mt-[8px] max-w-[194px] text-[12px] leading-[12px] text-[#6e6779]">
+            <p className="mt-[8px] max-w-[194px] text-[12px] leading-none text-[#6e6779]">
               {t('landing.mobileSourceBody')}
             </p>
           </div>
@@ -428,7 +428,7 @@ function MobileSourceProof() {
                     strokeWidth={1.8}
                     className="shrink-0 text-[#6a37c3]"
                   />
-                  <span className="min-w-0 text-[12px] leading-[14px] text-[#6e6779]">
+                  <span className="min-w-0 text-[12px] leading-none text-[#6e6779]">
                     {item.label}
                   </span>
                 </div>
@@ -438,7 +438,7 @@ function MobileSourceProof() {
         </div>
         <Link
           to={ONBOARDING_TARGET}
-          className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-tight text-white"
+          className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-none text-white"
         >
           {t('landing.mobileHeroPrimaryCta')}
         </Link>
@@ -454,7 +454,7 @@ function MobileToolsFeature({ isAuthenticated }: { isAuthenticated: boolean }) {
     <section id="mobile-tools" className="box-border w-screen max-w-full overflow-hidden bg-[#efebf6] px-6 py-14">
       <div className="mx-auto flex w-full max-w-[366px] flex-col gap-10">
         <div className="flex flex-col gap-6 text-center">
-          <h2 className="text-[24px] font-medium leading-[1.12] text-[#161519]">
+          <h2 className="text-[24px] font-medium leading-none text-[#161519]">
             {t('landing.mobileToolsTitle')}
           </h2>
           <p className="text-[14px] leading-none text-[#6e6779]">

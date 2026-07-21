@@ -85,11 +85,11 @@ export function ForgotPassword() {
         }
       >
         <div className="text-left">
-          <p className="max-w-full break-words text-[15px] leading-snug text-text-body">
+          <p className="max-w-full break-words text-[15px] leading-none text-text-body">
             {t('auth.resetEmailSentBody', { email })}
           </p>
           {error && (
-            <p className="mt-4 text-[14px] leading-snug text-danger" role="alert">
+            <p className="mt-4 text-[14px] leading-none text-danger" role="alert">
               {error}
             </p>
           )}
@@ -117,7 +117,7 @@ export function ForgotPassword() {
       }
     >
       <form onSubmit={handleSubmit} noValidate>
-        <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body">
+        <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body">
           {t('auth.forgotPasswordHelper')}
         </p>
         <AuthEmailInput

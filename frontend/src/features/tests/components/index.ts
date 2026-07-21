@@ -4,5 +4,6 @@ export * from './TestQuestionView';
 export * from './TestResultView';
 export * from './TestStatusView';
 export * from './TestsHubView';
+export * from './PracticeByTopicView';
 export * from './WeakTopicProgressList';
 export * from './WeakTopicRecommendation';

@@ -15,6 +15,7 @@ import { SemanticSearch } from './pages/SemanticSearch';
 import { Analyze } from './pages/Analyze';
 import { Tests } from './pages/Tests';
 import { TestQuestionPage } from './pages/TestQuestionPage';
+import { PracticeByTopicPage } from './pages/PracticeByTopicPage';
 import { Profile } from './pages/Profile';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -85,6 +86,14 @@ export default function App() {
           element={
             <Protected>
               <TestQuestionPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/practice-by-topic"
+          element={
+            <Protected>
+              <PracticeByTopicPage />
             </Protected>
           }
         />

@@ -65,25 +65,27 @@ const testSessionFixtures: Record<string, TestSession> = {
   },
 };
 
-function cloneTestSession(session: TestSession): TestSession {
+function cloneTestSession(session: TestSession, topicCode?: string): TestSession {
   return {
     ...session,
     questions: session.questions.map((question) => ({
       ...question,
       options: question.options.map((option) => ({ ...option })),
-      topic: { ...question.topic },
+      topic: { ...question.topic, ...(topicCode ? { id: topicCode } : {}) },
     })),
   };
 }
 
-export async function getTestSession(testMode: string): Promise<TestSession> {
+export async function getTestSession(testMode: string, topicCode?: string): Promise<TestSession> {
   const useRemoteTestsApi =
     (import.meta.env.VITE_TESTS_API_ENABLED as string | undefined) === 'true';
 
   if (useRemoteTestsApi) {
-    const { data } = await apiClient.get<TestSession>(`/api/tests/${encodeURIComponent(testMode)}`);
+    const { data } = await apiClient.get<TestSession>(`/api/tests/${encodeURIComponent(testMode)}`, {
+      params: topicCode ? { topicCode } : undefined,
+    });
     return data;
   }
 
-  return cloneTestSession(testSessionFixtures[testMode] ?? testSessionFixtures.default);
+  return cloneTestSession(testSessionFixtures[testMode] ?? testSessionFixtures.default, topicCode);
 }

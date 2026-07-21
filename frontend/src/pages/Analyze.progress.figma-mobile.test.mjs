@@ -28,7 +28,7 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /className=\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\}/,
+  /className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\}`\}/,
   'Analyze should select processing-specific mobile header spacing without changing desktop result/header behavior',
 );
 assert.match(

@@ -22,7 +22,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /<p className="mt-8 hidden text-\[20px\] font-medium leading-5 text-\[#572d9f\] max-md:block">\{t\('analyze\.uploadTitle'\)\}<\/p>/,
+  /<p className="mt-8 hidden text-\[20px\] font-medium leading-none text-\[#572d9f\] max-md:block">\{t\('analyze\.uploadTitle'\)\}<\/p>/,
   'Analyze upload screen should render the Figma PDF-upload subtitle on mobile',
 );
 

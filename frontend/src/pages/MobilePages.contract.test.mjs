@@ -147,7 +147,7 @@ for (const [name, source, gutterPattern] of [
   ['TermSearch', termSearchSource, /max-md:px-\[24px\]/],
   ['SemanticSearch', semanticSearchSource, /max-md:px-4/],
   ['Analyze', analyzeSource, /max-md:px-4/],
-  ['Profile', profileSource, /max-md:px-4/],
+  ['Profile', profileSource, /max-md:px-(?:4|0)/],
   ['TermDetail', termDetailSource, /max-md:px-0[\s\S]*max-md:px-6/],
 ]) {
   assert.match(

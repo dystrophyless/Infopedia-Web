@@ -3,6 +3,8 @@ import {
   type PointerEvent,
   type ReactNode,
   type RefObject,
+  type TransitionEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -57,6 +59,7 @@ type BottomSheetAccessibleName =
 type BottomSheetBaseProps = {
   open: boolean;
   onDismiss: () => void;
+  onAfterClose?: () => void;
   descriptionId?: string;
   initialFocusRef?: RefObject<HTMLElement>;
   children: ReactNode;
@@ -90,6 +93,7 @@ const idleDragState: DragState = {
 export function BottomSheet({
   open,
   onDismiss,
+  onAfterClose,
   titleId,
   descriptionId,
   initialFocusRef,
@@ -109,14 +113,89 @@ export function BottomSheet({
   const initialFocusTargetRef = useRef(initialFocusRef);
   const dragStateRef = useRef<DragState>(idleDragState);
   const dragOffsetRef = useRef(0);
+  const exitTimerRef = useRef<number | null>(null);
+  const exitGenerationRef = useRef(0);
+  const isExitingRef = useRef(false);
+  const onAfterCloseRef = useRef(onAfterClose);
+  const [isPresent, setIsPresent] = useState(open);
+  const [isExiting, setIsExiting] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   onDismissRef.current = onDismiss;
   initialFocusTargetRef.current = initialFocusRef;
+  onAfterCloseRef.current = onAfterClose;
+
+  const clearExitTimer = useCallback(() => {
+    if (exitTimerRef.current !== null) {
+      window.clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+  }, []);
+
+  const completeExit = useCallback((generation: number) => {
+    if (!isExitingRef.current || generation !== exitGenerationRef.current) return;
+
+    isExitingRef.current = false;
+    clearExitTimer();
+    setIsExiting(false);
+    setIsPresent(false);
+    onAfterCloseRef.current?.();
+  }, [clearExitTimer]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (open) {
+      exitGenerationRef.current += 1;
+      isExitingRef.current = false;
+      clearExitTimer();
+      setIsExiting(false);
+      setIsPresent(true);
+      return undefined;
+    }
+
+    if (!isPresent) return undefined;
+
+    if (!onAfterCloseRef.current) {
+      setIsPresent(false);
+      return undefined;
+    }
+
+    if (isExitingRef.current) return undefined;
+
+    isExitingRef.current = true;
+    setIsExiting(true);
+    dragStateRef.current = idleDragState;
+    dragOffsetRef.current = 0;
+    setDragOffset(0);
+    setIsDragging(false);
+
+    const generation = exitGenerationRef.current + 1;
+    exitGenerationRef.current = generation;
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) {
+      completeExit(generation);
+      return undefined;
+    }
+
+    const fallbackTimer = window.setTimeout(() => completeExit(generation), 240);
+    exitTimerRef.current = fallbackTimer;
+
+    return () => {
+      if (exitTimerRef.current === fallbackTimer) clearExitTimer();
+    };
+  }, [clearExitTimer, completeExit, isPresent, open]);
+
+  useEffect(
+    () => () => {
+      exitGenerationRef.current += 1;
+      isExitingRef.current = false;
+      clearExitTimer();
+    },
+    [clearExitTimer],
+  );
+
+  useEffect(() => {
+    if (!isPresent) return undefined;
 
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
@@ -142,7 +221,7 @@ export function BottomSheet({
 
       if (event.key === 'Escape' && !event.isComposing) {
         event.preventDefault();
-        onDismissRef.current();
+        if (!isExitingRef.current) onDismissRef.current();
         return;
       }
 
@@ -181,13 +260,20 @@ export function BottomSheet({
       const dialogIndex = openDialogStack.lastIndexOf(dialog);
       if (dialogIndex >= 0) openDialogStack.splice(dialogIndex, 1);
 
-      const restoreTarget = restoreFocusRef.current;
-      if (restoreTarget?.isConnected) {
-        restoreTarget.focus({ preventScroll: true });
+      const remainingTopDialog = openDialogStack.at(-1);
+      if (remainingTopDialog?.isConnected) {
+        (getFocusableElements(remainingTopDialog)[0] ?? remainingTopDialog).focus({
+          preventScroll: true,
+        });
+      } else {
+        const restoreTarget = restoreFocusRef.current;
+        if (restoreTarget?.isConnected) {
+          restoreTarget.focus({ preventScroll: true });
+        }
       }
       restoreFocusRef.current = null;
     };
-  }, [open]);
+  }, [isPresent]);
 
   useEffect(() => {
     if (open) return;
@@ -197,7 +283,7 @@ export function BottomSheet({
     setIsDragging(false);
   }, [open]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if ((!open && !onAfterClose) || !isPresent || typeof document === 'undefined') return null;
 
   const resetDrag = () => {
     dragStateRef.current = idleDragState;
@@ -207,13 +293,13 @@ export function BottomSheet({
   };
 
   const handleOverlayPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!dismissOnOverlay || event.target !== event.currentTarget) return;
+    if (isExitingRef.current || !dismissOnOverlay || event.target !== event.currentTarget) return;
     event.preventDefault();
     onDismissRef.current();
   };
 
   const handleSheetPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!swipeToDismiss || event.button !== 0) return;
+    if (isExitingRef.current || !swipeToDismiss || event.button !== 0) return;
 
     const dialog = dialogRef.current;
     const target = event.target instanceof Element ? event.target : null;
@@ -229,6 +315,7 @@ export function BottomSheet({
   };
 
   const handleSheetPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (isExitingRef.current) return;
     const drag = dragStateRef.current;
     if (!drag.eligible || drag.pointerId !== event.pointerId) return;
 
@@ -260,6 +347,7 @@ export function BottomSheet({
   };
 
   const handleSheetPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+    if (isExitingRef.current) return;
     const drag = dragStateRef.current;
     if (drag.pointerId !== event.pointerId) return;
 
@@ -272,18 +360,34 @@ export function BottomSheet({
     if (shouldDismiss) onDismissRef.current();
   };
 
+  const handleSheetTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
+    if (
+      event.target !== event.currentTarget ||
+      event.propertyName !== 'transform' ||
+      !isExitingRef.current
+    ) {
+      return;
+    }
+
+    completeExit(exitGenerationRef.current);
+  };
+
   const resolvedTopOffset = typeof topOffset === 'number' ? `${Math.max(0, topOffset)}px` : topOffset;
   const overlayStyle: CSSProperties = {
     zIndex: `calc(var(--z-overlay) + ${Math.max(0, stackLevel)} * var(--z-overlay-step))`,
   };
   const dialogStyle: CSSProperties = {
     maxHeight: `calc(100dvh - ${resolvedTopOffset})`,
-    transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+    transform: isExiting ? 'translateY(100%)' : (dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined),
   };
 
   return createPortal(
     <div
-      className={cn('fixed inset-0 bg-overlay', overlayClassName)}
+      className={cn(
+        'fixed inset-0 bg-overlay transition-opacity duration-base ease-standard motion-reduce:transition-none',
+        isExiting && 'pointer-events-none opacity-0',
+        overlayClassName,
+      )}
       style={overlayStyle}
       onPointerDown={handleOverlayPointerDown}
     >
@@ -297,6 +401,7 @@ export function BottomSheet({
         tabIndex={-1}
         className={cn(
           'absolute inset-x-0 bottom-0 overflow-y-auto overscroll-contain rounded-b-none rounded-t-[32px] bg-surface px-[var(--space-mobile-rail)] pb-[max(var(--space-8),env(safe-area-inset-bottom))] pt-3 shadow-overlay outline-none transition-transform duration-base ease-standard motion-reduce:transition-none max-md:shadow-none',
+          isExiting && 'translate-y-full',
           isDragging && 'select-none duration-0',
           className,
         )}
@@ -305,6 +410,7 @@ export function BottomSheet({
         onPointerMove={handleSheetPointerMove}
         onPointerUp={handleSheetPointerEnd}
         onPointerCancel={handleSheetPointerEnd}
+        onTransitionEnd={handleSheetTransitionEnd}
       >
         <span
           aria-hidden="true"

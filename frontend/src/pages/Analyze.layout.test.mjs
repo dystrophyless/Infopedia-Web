@@ -44,13 +44,13 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /<PageContainer\s+width="full"\s+gutter="none"\s+className=\{showUploadForm \? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing \? ANALYZE_PROCESSING_PAGE_CLASS : ANALYZE_PAGE_CLASS\}/,
+  /<PageContainer\s+width="full"\s+gutter="none"\s+className=\{showUploadForm \? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing \? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult \? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS\}/,
   'Analyze page should use the shared page container while keeping upload and processing layouts',
 );
 
 assert.match(
   analyzeSource,
-  /<PageHeader\s+className=\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\}/,
+  /<PageHeader\s+className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\}`\}/,
   'Analyze upload header should use the shared header while processing uses the mobile Figma spacing and results keep the standard rhythm',
 );
 
@@ -110,7 +110,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /<div className="mt-12 hidden max-md:block">[\s\S]*<h2 className="text-\[20px\] font-medium leading-5 text-\[#572d9f\]">[\s\S]*\{t\('analyze\.benefitsTitle'\)\}[\s\S]*<AnalyzeBenefitCards \/>/,
+  /<div className="mt-12 hidden max-md:block">[\s\S]*<h2 className="text-\[20px\] font-medium leading-none text-\[#572d9f\]">[\s\S]*\{t\('analyze\.benefitsTitle'\)\}[\s\S]*<AnalyzeBenefitCards \/>/,
   'Analyze upload screen should introduce the Figma benefits section after the mobile CTA',
 );
 

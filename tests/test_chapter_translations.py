@@ -6,6 +6,7 @@ from pathlib import Path
 import src.models  # noqa: F401 - register all SQLAlchemy relationships for model construction
 from src.analyze.models import AnalyzeResultItem  # noqa: F401
 from src.database import Base
+from src.analyze.repository import get_chapter_model_by_title
 from src.topics.chapter_catalog import load_chapter_catalog, normalize_chapter
 from src.topics.models import Chapter, ChapterTranslation
 from src.topics.repository import resolve_chapter_by_title, resolve_chapter_title
@@ -136,9 +137,267 @@ class ChapterCatalogTests(unittest.TestCase):
             asyncio.run(resolve_chapter_by_title(session, extended_title))
 
         match = asyncio.run(
-            resolve_chapter_by_title(session, extended_title, allow_extensions=True)
+            resolve_chapter_by_title(
+                session,
+                extended_title,
+                allow_extensions=True,
+            )
         )
         self.assertIs(match, chapter)
+
+    def test_resolver_matches_dot_prefix_with_opt_in_flag(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "computer-networks",
+            kk=(
+                "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру. "
+                "Ақпараттық қауіпсіздік"
+            ),
+            ru="Компьютерные сети. Организация компьютерных сетей. Информационная безопасность",
+        )
+        session = _FakeSession(rows)
+        input_title = "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру"
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(resolve_chapter_by_title(session, input_title))
+
+        match = asyncio.run(
+            resolve_chapter_by_title(
+                session,
+                input_title,
+                allow_extensions=True,
+            )
+        )
+        self.assertIs(match, chapter)
+
+    def test_resolver_allow_extensions_false_rejects_extended_title(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "computer-devices",
+            kk="Компьютердің құрылғылары",
+            ru="Устройства компьютера",
+        )
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(
+                resolve_chapter_by_title(
+                    _FakeSession(rows),
+                    "Устройства компьютера: дополнительный раздел",
+                    allow_extensions=False,
+                )
+            )
+        self.assertIsNotNone(chapter)
+
+    def test_resolver_extension_normalizes_case_and_spaces(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "computer-networks",
+            kk=(
+                "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру. "
+                "Ақпараттық қауіпсіздік"
+            ),
+            ru="Компьютерные сети",
+        )
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(
+                resolve_chapter_by_title(
+                    _FakeSession(rows),
+                    "  КОМПЬЮТЕРЛІК   ЖЕЛІЛЕР . компьютерлік   желілерді ұйымдастыру ",
+                )
+            )
+
+        match = asyncio.run(
+            resolve_chapter_by_title(
+                _FakeSession(rows),
+                "  КОМПЬЮТЕРЛІК   ЖЕЛІЛЕР . компьютерлік   желілерді ұйымдастыру ",
+                allow_extensions=True,
+            )
+        )
+        self.assertIs(match, chapter)
+
+    def test_resolver_boundary_aware_substring_fallback(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "computer-networks",
+            kk="Компьютерлік желілер",
+            ru="Компьютерные сети",
+        )
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(
+                resolve_chapter_by_title(
+                    _FakeSession(rows),
+                    "Бөлім: компьютерлік желілер (9 сынып)",
+                )
+            )
+
+        match = asyncio.run(
+            resolve_chapter_by_title(
+                _FakeSession(rows),
+                "Бөлім: компьютерлік желілер (9 сынып)",
+                allow_extensions=True,
+            )
+        )
+        self.assertIs(match, chapter)
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(
+                resolve_chapter_by_title(
+                    _FakeSession(rows),
+                    "Компьютерлік желілерді",
+                )
+            )
+
+    def test_analyze_lookup_fuzzy_matches_one_kazakh_letter_difference(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "databases-and-queries",
+            kk="Мәліметтер қорын жасау. Құрылымдалған сұраныстар.",
+            ru="Создание баз данных. Структурированные запросы.",
+        )
+        document_title = "Мәліметтер қорын жасау. Құрылымданған сұраныстар."
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(resolve_chapter_by_title(_FakeSession(rows), document_title))
+
+        match = asyncio.run(
+            get_chapter_model_by_title(_FakeSession(rows), value=document_title)
+        )
+        self.assertIs(match, chapter)
+
+    def test_analyze_fuzzy_lookup_rejects_no_match_with_reason(self):
+        _, rows = _chapter_with_translations(
+            1,
+            "databases-and-queries",
+            kk="Мәліметтер қорын жасау. Құрылымдалған сұраныстар.",
+            ru="Создание баз данных. Структурированные запросы.",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unknown chapter title.*lookup_reason=no_fuzzy_candidate.*fuzzy_threshold=0\.92.*candidates=0",
+        ):
+            asyncio.run(
+                get_chapter_model_by_title(
+                    _FakeSession(rows),
+                    value="Мүлдем басқа тақырып",
+                )
+            )
+
+    def test_analyze_fuzzy_lookup_rejects_ambiguous_top_score(self):
+        _, first_rows = _chapter_with_translations(
+            1,
+            "database-a",
+            kk="Мәліметтер қорын жасау A",
+            ru="Первая глава",
+        )
+        _, second_rows = _chapter_with_translations(
+            2,
+            "database-b",
+            kk="Мәліметтер қорын жасау B",
+            ru="Вторая глава",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Ambiguous chapter title.*lookup_reason=ambiguous_fuzzy_top_score.*fuzzy_threshold=0\.92",
+        ):
+            asyncio.run(
+                get_chapter_model_by_title(
+                    _FakeSession(first_rows + second_rows),
+                    value="Мәліметтер қорын жасау C",
+                )
+            )
+
+    def test_resolver_substring_rejects_combining_mark_but_accepts_separator(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "cafe",
+            kk="cafe",
+            ru="coffee",
+        )
+        session = _FakeSession(rows)
+
+        with self.assertRaisesRegex(ValueError, "Unknown chapter title"):
+            asyncio.run(
+                resolve_chapter_by_title(
+                    session,
+                    "cafe\u0301",
+                )
+            )
+
+        match = asyncio.run(
+            resolve_chapter_by_title(
+                session,
+                "cafe: extra",
+                allow_extensions=True,
+            )
+        )
+        self.assertIs(match, chapter)
+
+    def test_resolver_fallback_deduplicates_translations_by_chapter_id(self):
+        chapter, rows = _chapter_with_translations(
+            1,
+            "computer-networks",
+            kk="Компьютерлік желілер. Ақпараттық қауіпсіздік",
+            ru="Компьютерлік желілер: Ақпараттық қауіпсіздік",
+        )
+
+        match = asyncio.run(
+            resolve_chapter_by_title(
+                _FakeSession(rows),
+                "Компьютерлік желілер",
+                allow_extensions=True,
+            )
+        )
+        self.assertIs(match, chapter)
+
+    def test_resolver_fallback_is_ambiguous_for_two_dot_prefix_chapters(self):
+        first_chapter, first_rows = _chapter_with_translations(
+            1,
+            "computer-networks-security",
+            kk=(
+                "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру. "
+                "Ақпараттық қауіпсіздік"
+            ),
+            ru="Компьютерные сети: Информационная безопасность",
+        )
+        second_chapter, second_rows = _chapter_with_translations(
+            2,
+            "computer-networks-management",
+            kk=(
+                "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру. "
+                "Желілерді басқару"
+            ),
+            ru="Компьютерные сети: Управление сетями",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Ambiguous chapter title.*lookup_reason=ambiguous_fallback_match",
+        ):
+            asyncio.run(
+                resolve_chapter_by_title(
+                    _FakeSession(first_rows + second_rows),
+                    "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру",
+                    allow_extensions=True,
+                )
+            )
+        self.assertIsNot(first_chapter, second_chapter)
+
+    def test_resolver_fallback_contracts_are_explicit_at_boundaries(self):
+        repository_source = (ROOT / "src/topics/repository.py").read_text(encoding="utf-8")
+        analyze_source = (ROOT / "src/analyze/repository.py").read_text(encoding="utf-8")
+        loader_source = (ROOT / "src/loader.py").read_text(encoding="utf-8")
+
+        self.assertIn("allow_extensions: bool = False", repository_source)
+        self.assertIn(
+            "allow_extensions=True,",
+            analyze_source,
+        )
+        self.assertIn("allow_fuzzy=True", analyze_source)
+        self.assertIn("resolve_chapter_by_title(session, chapter_name)", loader_source)
 
     def test_resolver_rejects_unknown_and_ambiguous_titles(self):
         chapter, rows = _chapter_with_translations(

@@ -14,4 +14,5 @@ def decode_file_content(content_b64: str) -> bytes:
     except (binascii.Error, UnicodeEncodeError) as exc:
         raise InvalidAnalyzeDocumentError(
             message="Analyze task payload contains invalid file content.",
+            reason="invalid_file_content",
         ) from exc

@@ -16,6 +16,13 @@ class AnalyzeBookCoverage(BaseModel):
     percentage: int = Field(ge=0, le=100)
 
 
+class AnalyzeTopicCode(BaseModel):
+    """Stable topic-code identifier paired with its localized display title."""
+
+    name: str = Field(min_length=1, max_length=512)
+    title: str = Field(min_length=1)
+
+
 class AnalyzeChapterResult(BaseModel):
     chapter_id: int = Field(ge=1)
     code: str = Field(min_length=1)
@@ -25,6 +32,9 @@ class AnalyzeChapterResult(BaseModel):
     score: int = Field(ge=0)
     percentage: int = Field(ge=0, le=100)
     books: list[AnalyzeBookCoverage] = Field(default_factory=list)
+    topic_count: int = Field(default=0, ge=0)
+    material_grades: list[int] = Field(default_factory=list)
+    topic_codes: list[AnalyzeTopicCode] = Field(default_factory=list)
 
 
 class AnalyzeTaskResponse(BaseModel):

@@ -266,7 +266,9 @@ assert.ok(
 
 for (const codePattern of [
   /const \[testSession, setTestSession\]/,
-  /getTestSession\(testMode \?\? 'default'\)/,
+  /useSearchParams/,
+  /const topicCode = searchParams\.get\('topicCode'\) \?\? undefined/,
+  /getTestSession\(testMode \?\? 'default', topicCode\)/,
   /const questions = testSession\?\.questions \?\? \[\];/,
   /const correctAnswerCount = state\.answerRecords\.filter\(\(record\) => record\.correct\)\.length;/,
   /const scorePercent =[\s\S]*\(correctAnswerCount \/ totalQuestions\) \* 100/,
@@ -286,6 +288,22 @@ for (const codePattern of [
     `Question page should expose reusable quiz behavior: ${codePattern}`,
   );
 }
+
+assert.match(
+  testsApiSource,
+  /getTestSession\(testMode: string, topicCode\?: string\)/,
+  'Test API should accept an optional topic code for topic practice',
+);
+assert.match(
+  testsApiSource,
+  /params: topicCode \? \{ topicCode \} : undefined/,
+  'Remote test requests should forward topicCode as a query parameter',
+);
+assert.match(
+  testsApiSource,
+  /cloneTestSession\(testSessionFixtures\[testMode\] \?\? testSessionFixtures\.default, topicCode\)/,
+  'Fixture flow should preserve the selected topic code instead of ignoring it',
+);
 
 assert.match(
   answerToneModelSource,

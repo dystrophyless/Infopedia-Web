@@ -40,7 +40,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         ref={ref}
         aria-invalid={isInvalid || undefined}
         className={cn(
-          'min-h-[120px] w-full resize-y rounded-control border px-4 py-3 text-body text-text outline-none transition-[color,background-color,border-color,box-shadow] duration-fast ease-standard focus-visible:ring-2 focus-visible:ring-focus/25 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-60',
+          'min-h-[120px] w-full resize-y rounded-control border px-4 py-3 text-body leading-none text-text outline-none transition-[color,background-color,border-color,box-shadow] duration-fast ease-standard focus-visible:ring-2 focus-visible:ring-focus/25 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-60',
           variantClasses[variant],
           placeholderClasses[placeholderTone],
           isInvalid

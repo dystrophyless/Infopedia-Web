@@ -104,7 +104,7 @@ function TermDetailTestCta({ isAuthenticated }: { isAuthenticated: boolean }) {
   const { t } = useTranslation();
   return (
     <button type="button" aria-disabled="true" className={`fixed left-6 right-6 ${isAuthenticated ? 'bottom-[128px]' : 'bottom-10'} z-30 flex min-h-[68px] items-center justify-between rounded-[8px] bg-[#6a37c3] px-6 py-4 text-left text-[#f6f5f7]`}>
-      <span className="min-w-0"><span className="block truncate text-[16px] font-medium leading-4">{t('termDetail.testCta')}</span><span className="mt-1 block truncate text-[12px] leading-4 text-[#c5b1e7]">{t('termDetail.testMeta')}</span></span>
+      <span className="min-w-0"><span className="block truncate text-[16px] font-medium leading-4">{t('termDetail.testCta')}</span><span className="mt-1 block truncate text-[12px] leading-3 text-[#c5b1e7]">{t('termDetail.testMeta')}</span></span>
       <HugeiconsIcon icon={ArrowRight02Icon} size={24} strokeWidth={1.8} className="shrink-0" />
     </button>
   );
@@ -130,11 +130,11 @@ export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms 
         {isLoading && <p className="py-20 text-center text-action-selected">{t('termDetail.loading')}</p>}
         {hasError && <p className="py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
         {term && <>
-          {total === 0 && <p className="py-12 text-center text-[16px] leading-5 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
+          {total === 0 && <p className="py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
           {current && <>
             <section className="mt-2"><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{term.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
             <TermDetailStatPanel />
-            {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
+            {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] leading-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
             <TermDetailSourcePanel definition={current} />
             <TermDetailRelatedPanel relatedTerms={relatedTerms} backTo={backTo} />
             <TermDetailTestCta isAuthenticated={isAuthenticated} />
@@ -142,11 +142,11 @@ export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms 
         </>}
       </div>
       <div className="max-md:hidden">
-        <Link to={backTo} className="mb-6 inline-flex items-center gap-2 text-[14px] font-medium text-primary/70 hover:text-accent"><HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.7} />{t('termDetail.back')}</Link>
+        <Link to={backTo} className="mb-6 inline-flex items-center gap-2 text-[14px] font-medium leading-[14px] text-primary/70 hover:text-accent"><HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.7} />{t('termDetail.back')}</Link>
         {(isLoading || hasError) && <p className="py-12 text-center text-muted">{isLoading ? t('termDetail.loading') : t('termDetail.loadFailed')}</p>}
-        {term && total === 0 && <><h1 className="mb-8 text-[44px] font-medium text-text">{term.name}</h1><p className="py-8 text-center text-muted">{t('termDetail.noDefinitions')}</p></>}
-        {term && current && <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature"><h1 className="mb-4 text-[30px] font-medium leading-tight text-text">{term.name}</h1><p className="max-w-[760px] whitespace-pre-line text-[18px] leading-relaxed text-text-body">{current.text}</p><DefinitionMetadata definition={current} variant="detail" showIcons /></article>}
-        {term && total > 1 && <div className="mt-8 flex items-center justify-between"><button type="button" onClick={goPrevious} disabled={index === 0} className="flex items-center gap-2 rounded-[10px] border border-border px-5 py-3 text-text-body transition-colors hover:bg-surface disabled:opacity-40"><HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.7} />{t('common.previous')}</button><span className="text-[16px] text-muted">{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="flex items-center gap-2 rounded-[10px] border border-border px-5 py-3 text-text-body transition-colors hover:bg-surface disabled:opacity-40">{t('common.next')}<HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.7} /></button></div>}
+        {term && total === 0 && <><h1 className="mb-8 text-[44px] font-medium leading-[44px] text-text">{term.name}</h1><p className="py-8 text-center text-muted">{t('termDetail.noDefinitions')}</p></>}
+        {term && current && <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature"><h1 className="mb-4 text-[30px] font-medium leading-[30px] text-text">{term.name}</h1><p className="max-w-[760px] whitespace-pre-line text-[18px] leading-[18px] text-text-body">{current.text}</p><DefinitionMetadata definition={current} variant="detail" showIcons /></article>}
+        {term && total > 1 && <div className="mt-8 flex items-center justify-between text-[16px] leading-4"><button type="button" onClick={goPrevious} disabled={index === 0} className="flex items-center gap-2 rounded-[10px] border border-border px-5 py-3 text-text-body transition-colors hover:bg-surface disabled:opacity-40"><HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.7} />{t('common.previous')}</button><span className="text-[16px] text-muted">{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="flex items-center gap-2 rounded-[10px] border border-border px-5 py-3 text-text-body transition-colors hover:bg-surface disabled:opacity-40">{t('common.next')}<HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.7} /></button></div>}
       </div>
     </div>
   );

@@ -16,11 +16,11 @@ export function FeatureCard({ icon, title, description, to }: FeatureCardProps) 
         <div className="flex size-[45px] shrink-0 items-center justify-center rounded-[10px] bg-bg text-accent transition-all duration-200 ease-out group-hover:scale-110 group-hover:bg-accent group-hover:text-surface group-focus-visible:scale-110 group-focus-visible:bg-accent group-focus-visible:text-surface">
           {icon}
         </div>
-        <h3 className="min-w-0 flex-1 whitespace-normal text-[24px] font-medium leading-[1.15] text-accent transition-transform duration-200 ease-out group-hover:translate-x-1 group-focus-visible:translate-x-1 max-md:text-[20px]">
+        <h3 className="min-w-0 flex-1 whitespace-normal text-[24px] font-medium leading-none text-accent transition-transform duration-200 ease-out group-hover:translate-x-1 group-focus-visible:translate-x-1 max-md:text-[20px]">
           {title}
         </h3>
       </header>
-      <p className="text-[16px] leading-[1] text-muted max-md:text-[14px]">
+      <p className="text-[16px] leading-none text-muted max-md:text-[14px]">
         {description}
       </p>
     </Surface>

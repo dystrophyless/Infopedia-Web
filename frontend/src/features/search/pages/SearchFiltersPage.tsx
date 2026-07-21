@@ -259,13 +259,13 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
           className="mx-auto block h-1 w-8 rounded-[4px] bg-[#ded2f1]"
         />
 
-        <h1 className="mt-[14px] text-center text-[20px] font-normal leading-5 text-[#6a37c3]">
+        <h1 className="mt-[14px] text-center text-[20px] font-normal leading-none text-[#6a37c3]">
           {t('searchFilters.title')}
         </h1>
 
         <div className="mt-9 flex flex-col gap-5 max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:pb-6">
           <div className="flex flex-col gap-[10px]">
-            <p className="text-[16px] font-normal leading-6 text-[#7a43bb]">
+            <p className="text-[16px] font-normal leading-none text-[#7a43bb]">
               {t('searchFilters.entLabel')}
             </p>
             <button
@@ -274,7 +274,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
               aria-pressed={entOnly}
               aria-label={t('searchFilters.toggleEntAria')}
               onClick={() => setEntOnlyFilterActive(!entOnly)}
-              className="search-filter-control flex h-12 w-full items-center justify-between rounded-[8px] border border-[#a585db] bg-white px-4 py-2 text-left text-[16px] font-normal leading-6 text-[#44237d]"
+              className="search-filter-control flex h-12 w-full items-center justify-between rounded-[8px] border border-[#a585db] bg-white px-4 py-2 text-left text-[16px] font-normal leading-none text-[#44237d]"
             >
               <span>{t('searchFilters.entToggleLabel')}</span>
               <span
@@ -385,10 +385,10 @@ export function SelectedFilterControl({
 
   return (
     <div className="flex flex-col gap-[10px]">
-      <p className="text-[16px] font-normal leading-6 text-[#7a43bb]">{label}</p>
+      <p className="text-[16px] font-normal leading-none text-[#7a43bb]">{label}</p>
       <div
         data-search-filter-select={filterId}
-        className={`search-filter-control flex min-h-12 w-full items-center rounded-[8px] border border-[#a585db] bg-white text-left text-[16px] font-normal leading-6 ${
+        className={`search-filter-control flex min-h-12 w-full items-center rounded-[8px] border border-[#a585db] bg-white text-left text-[16px] font-normal leading-none ${
           selectedOptions.length > 0
             ? 'gap-2 p-2'
             : 'justify-between gap-3 px-4 py-2 text-[#7650b4]'
@@ -400,7 +400,7 @@ export function SelectedFilterControl({
               <span
                 key={option.id}
                 data-search-filter-chip={option.id}
-                className="flex h-8 max-w-full shrink-0 items-center justify-center gap-1 rounded-[16px] bg-[#6a37c3] px-4 py-2 text-[14px] font-normal leading-[14px] text-[#f8f5fc]"
+                className="flex h-8 max-w-full shrink-0 items-center justify-center gap-1 rounded-[16px] bg-[#6a37c3] px-4 py-2 text-[14px] font-normal leading-none text-[#f8f5fc]"
               >
                 <button
                   type="button"
@@ -667,7 +667,7 @@ export function SearchFilterOptionsDialog({
 
         <h2
           id="search-filter-dialog-title"
-          className="mt-4 text-center text-[20px] font-normal leading-5 text-[#6a37c3]"
+          className="mt-4 text-center text-[20px] font-normal leading-none text-[#6a37c3]"
         >
           {title}
         </h2>
@@ -678,13 +678,13 @@ export function SearchFilterOptionsDialog({
           className="mt-8 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-6"
         >
           {isLoading && options.length === 0 && (
-            <p className="py-6 text-center text-[16px] leading-6 text-[#514b5c]" role="status">
+            <p className="py-6 text-center text-[16px] leading-none text-[#514b5c]" role="status">
               {t('common.loading')}
             </p>
           )}
 
           {!isLoading && options.length === 0 && (
-            <p className="py-6 text-center text-[16px] leading-6 text-[#514b5c]" role="status">
+            <p className="py-6 text-center text-[16px] leading-none text-[#514b5c]" role="status">
               {error ?? t('searchFilters.emptyOptions')}
             </p>
           )}
@@ -696,7 +696,7 @@ export function SearchFilterOptionsDialog({
               <label
                 key={option.id}
                 data-search-filter-option={option.id}
-                className={`search-filter-option flex h-12 w-full cursor-pointer select-none items-center justify-between gap-4 rounded-[8px] border border-[#a585db] border-solid bg-white px-4 text-[16px] font-normal leading-6 text-[#44237d] ${
+                className={`search-filter-option flex h-12 w-full cursor-pointer select-none items-center justify-between gap-4 rounded-[8px] border border-[#a585db] border-solid bg-white px-4 text-[16px] font-normal leading-none text-[#44237d] ${
                   selected ? 'search-filter-option-active border-[#6a37c3]' : ''
                 }`}
               >

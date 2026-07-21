@@ -6,9 +6,9 @@ export type HeadingSize = 'screen' | 'section' | 'card';
 export type HeadingTone = 'default' | 'inherit';
 
 const sizeClasses: Record<HeadingSize, string> = {
-  screen: 'text-[var(--type-screen-title-size)] leading-tight',
-  section: 'text-[var(--type-section-title-size)] leading-snug',
-  card: 'text-[var(--type-card-title-size)] leading-snug',
+  screen: 'text-[var(--type-screen-title-size)] leading-none',
+  section: 'text-[var(--type-section-title-size)] leading-none',
+  card: 'text-[var(--type-card-title-size)] leading-none',
 };
 
 export interface HeadingProps extends HTMLAttributes<HTMLHeadingElement> {

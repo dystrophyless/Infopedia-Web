@@ -70,7 +70,7 @@ export function TestQuestionView({
         </section>
 
         <fieldset className="mt-6 flex flex-col gap-2">
-          <legend className="sr-only">{t('tests.answerOptions', { defaultValue: 'Варианты ответа' })}</legend>
+          <legend className="sr-only leading-none">{t('tests.answerOptions', { defaultValue: 'Варианты ответа' })}</legend>
           {question.options.map((option) => {
             const selected = option.id === selectedOptionId;
             const optionTone = getOptionTone({

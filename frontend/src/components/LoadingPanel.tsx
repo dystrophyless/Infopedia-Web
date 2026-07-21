@@ -11,9 +11,9 @@ export function LoadingPanel({ messages }: { messages: SearchTask[] }) {
       <div className="text-accent animate-pulse">
         <HugeiconsIcon icon={Brain01Icon} size={48} strokeWidth={1.5} />
       </div>
-      <p className="text-[18px] text-text font-medium">{t('semanticSearch.loading')}</p>
+      <p className="text-[18px] leading-none text-text font-medium">{t('semanticSearch.loading')}</p>
       {messages.length > 0 && (
-        <ul className="w-full max-w-md space-y-1 text-[14px] text-muted">
+        <ul className="w-full max-w-md space-y-1 text-[14px] leading-none text-muted">
           {messages.slice(-5).map((m, idx) => (
             <li key={idx} className="truncate">
               {t('semanticSearch.step')} {idx + 1}: {m.step ?? m.status}

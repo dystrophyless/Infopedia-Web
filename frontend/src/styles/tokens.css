@@ -188,22 +188,22 @@
 
   /* Typography roles: size, line height and weight are separate ingredients. */
   --type-screen-title-size: 30px;
-  --type-screen-title-line-height: 1.15;
+  --type-screen-title-line-height: 1;
   --type-screen-title-weight: 500;
   --type-section-title-size: 22px;
-  --type-section-title-line-height: 1.2;
+  --type-section-title-line-height: 1;
   --type-section-title-weight: 500;
   --type-card-title-size: 20px;
-  --type-card-title-line-height: 1.25;
+  --type-card-title-line-height: 1;
   --type-card-title-weight: 500;
   --type-body-size: 16px;
-  --type-body-line-height: 1.5;
+  --type-body-line-height: 1;
   --type-body-weight: 400;
   --type-helper-size: 14px;
-  --type-helper-line-height: 1.4;
+  --type-helper-line-height: 1;
   --type-helper-weight: 400;
   --type-caption-size: 12px;
-  --type-caption-line-height: 1.35;
+  --type-caption-line-height: 1;
   --type-caption-weight: 400;
 
   /* Shape and control sizing */

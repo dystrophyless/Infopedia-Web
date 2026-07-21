@@ -70,7 +70,7 @@ export function ResetPassword() {
       }
     >
       <form onSubmit={handleSubmit} noValidate>
-        <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body">
+        <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body">
           {t('auth.resetPasswordHelper')}
         </p>
         <AuthPasswordInput

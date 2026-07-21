@@ -116,7 +116,7 @@ export function Login() {
       }
     >
       <form onSubmit={handleSubmit} noValidate>
-        <p className="mb-5 max-w-full break-words text-[15px] leading-snug text-text-body">
+        <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body">
           {t('auth.loginHelper')}
         </p>
         <AuthEmailInput
@@ -147,12 +147,12 @@ export function Login() {
         />
         {error && (
           <div className="-mt-1 mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-[14px]">
-            <p className="min-w-0 leading-snug text-danger" role="alert">
+            <p className="min-w-0 leading-none text-danger" role="alert">
               {error}
             </p>
             <Link
               to="/forgot-password"
-              className="whitespace-nowrap text-[14px] font-medium leading-snug text-accent hover:underline"
+              className="whitespace-nowrap text-[14px] font-medium leading-none text-accent hover:underline"
             >
               {t('auth.forgotPasswordLink')}
             </Link>

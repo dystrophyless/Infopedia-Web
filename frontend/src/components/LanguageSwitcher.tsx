@@ -60,7 +60,7 @@ export function LanguageSwitcher() {
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-[5px] px-2 py-2 text-[16px] text-muted transition-colors hover:text-accent"
+        className="flex items-center gap-[5px] px-2 py-2 text-[16px] leading-none text-muted transition-colors hover:text-accent"
         aria-haspopup="menu"
         aria-controls="lang-menu"
         aria-expanded={open}
@@ -81,7 +81,7 @@ export function LanguageSwitcher() {
                 type="button"
                 onClick={() => selectLang(l)}
                 onKeyDown={(e) => handleOptionKeyDown(e, i)}
-                className={`flex w-full items-center gap-3 px-4 py-2 text-left text-[15px] hover:bg-bg focus:outline-none focus-visible:bg-bg ${
+                className={`flex w-full items-center gap-3 px-4 py-2 text-left text-[15px] leading-none hover:bg-bg focus:outline-none focus-visible:bg-bg ${
                   lang === l ? 'font-medium text-accent' : 'text-text-body'
                 }`}
                 role="menuitem"

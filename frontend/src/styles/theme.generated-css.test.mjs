@@ -28,6 +28,7 @@ const representativeClasses = [
   'bg-status-excellent-progress',
   'p-ui-6',
   'text-screen-title',
+  'text-body',
   'rounded-control',
   'h-control-md',
   'shadow-card',
@@ -163,6 +164,9 @@ assertDeclaration(
 );
 assertDeclaration('p-ui-6', 'padding', 'var(--space-6)');
 assertDeclaration('text-screen-title', 'font-size', 'var(--type-screen-title-size)');
+assertDeclaration('text-screen-title', 'line-height', 'var(--type-screen-title-line-height)');
+assertDeclaration('text-body', 'font-size', 'var(--type-body-size)');
+assertDeclaration('text-body', 'line-height', 'var(--type-body-line-height)');
 assertDeclaration('rounded-control', 'border-radius', 'var(--radius-control)');
 assertDeclaration('h-control-md', 'height', 'var(--control-height-md)');
 assertDeclaration('shadow-card', '--tw-shadow', 'var(--elevation-card)');

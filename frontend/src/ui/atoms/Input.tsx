@@ -6,9 +6,9 @@ export type InputVariant = 'outlined' | 'surface';
 export type InputPlaceholderTone = 'accessible' | 'reference';
 
 const sizeClasses: Record<InputSize, string> = {
-  sm: 'h-control-sm px-3 text-helper',
-  md: 'h-control-md px-4 text-body',
-  lg: 'h-control-lg px-4 text-body',
+  sm: 'h-control-sm px-3 text-helper leading-none',
+  md: 'h-control-md px-4 text-body leading-none',
+  lg: 'h-control-lg px-4 text-body leading-none',
 };
 
 const variantClasses: Record<InputVariant, string> = {

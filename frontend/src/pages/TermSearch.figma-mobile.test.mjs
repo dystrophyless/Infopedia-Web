@@ -89,7 +89,7 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultHeader[\s\S]*h-10 w-full rounded-\[8px\] bg-white py-2 pl-14 pr-4 text-\[16px\] leading-6 text-\[#161519\]/,
+  /function MobileSearchResultHeader[\s\S]*h-10 w-full rounded-\[8px\] bg-white py-2 pl-14 pr-4 text-\[16px\] leading-none text-\[#161519\]/,
   'Typed/result search query text should use the updated dark Figma input color',
 );
 
@@ -427,13 +427,13 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /search\.resultsCount[\s\S]*count: resultCount[\s\S]*resultCount > 0 && \([\s\S]*mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]/,
+  /search\.resultsCount[\s\S]*count: resultCount[\s\S]*resultCount > 0 && \([\s\S]*mb-4 text-\[16px\] font-normal leading-none text-\[#514b5c\]/,
   'Typed/result search should render the Figma result count row only when terms are present',
 );
 
 assert.match(
   termSearchSource,
-  /resultCount > 0 && \([\s\S]*className="-mx-\[2px\] mb-4 text-\[16px\] font-normal leading-4 text-\[#514b5c\]"/,
+  /resultCount > 0 && \([\s\S]*className="-mx-\[2px\] mb-4 text-\[16px\] font-normal leading-none text-\[#514b5c\]"/,
   'Positive typed/result count should align to the Figma x=22 rail',
 );
 
@@ -457,13 +457,13 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-empty-icon[\s\S]*<\/div>\s*<h2 className="mt-4 text-\[20px\] font-medium leading-5 text-\[#161519\]"[\s\S]*search\.emptyTitle/,
+  /data-mobile-search-empty-icon[\s\S]*<\/div>\s*<h2 className="mt-4 text-\[20px\] font-medium leading-none text-\[#161519\]"[\s\S]*search\.emptyTitle/,
   'Mobile zero-terms empty-state title should begin 16px below the icon',
 );
 
 assert.match(
   termSearchSource,
-  /search\.emptyTitle[\s\S]*<\/h2>\s*<p className="mt-4 max-w-\[284px\] text-center text-\[14px\] leading-\[14px\] text-\[#514b5c\]"[\s\S]*search\.emptyDescription[\s\S]*query/,
+  /search\.emptyTitle[\s\S]*<\/h2>\s*<p className="mt-4 max-w-\[284px\] text-center text-\[14px\] leading-none text-\[#514b5c\]"[\s\S]*search\.emptyDescription[\s\S]*query/,
   'Mobile zero-terms description should begin 16px below the title and retain its query-aware copy',
 );
 

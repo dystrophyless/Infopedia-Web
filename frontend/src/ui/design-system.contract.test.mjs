@@ -86,9 +86,26 @@ for (const tokenName of [
   '--control-height-lg',
   '--space-mobile-rail',
   '--type-body-size',
+  '--type-body-line-height',
   '--type-helper-size',
+  '--type-helper-line-height',
 ]) {
   assert.match(tokensSource, new RegExp(`${tokenName}:`), `tokens.css should define ${tokenName}`);
+}
+
+for (const tokenName of [
+  '--type-screen-title-line-height',
+  '--type-section-title-line-height',
+  '--type-card-title-line-height',
+  '--type-body-line-height',
+  '--type-helper-line-height',
+  '--type-caption-line-height',
+]) {
+  assert.match(
+    tokensSource,
+    new RegExp(`${tokenName}:\\s*1;`),
+    `${tokenName} should enforce exact typography line-height`,
+  );
 }
 
 const uiIndexSource = readSource(path.join(uiDir, 'index.ts'));

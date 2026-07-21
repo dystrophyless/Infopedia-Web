@@ -1,4 +1,6 @@
 import logging
+import unicodedata
+from difflib import SequenceMatcher
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +20,8 @@ from src.topics.models import (
 logger = logging.getLogger(__name__)
 
 CHAPTER_NAME_EXTENSION_SEPARATORS = (".", ":", ";", ",", "(", "-", "—")
+CHAPTER_FUZZY_THRESHOLD = 0.92
+_CHAPTER_FUZZY_TIE_EPSILON = 1e-9
 
 
 def resolve_topic_code_title(topic_code: TopicCode, locale: str) -> str:
@@ -45,10 +49,51 @@ def _is_chapter_name_extension(shorter_name: str, longer_name: str) -> bool:
     return bool(suffix) and suffix.startswith(CHAPTER_NAME_EXTENSION_SEPARATORS)
 
 
+def _chapter_segments(value: str) -> list[str]:
+    return [segment.strip() for segment in value.split(".") if segment.strip()]
+
+
+def _is_dot_segment_extension(shorter_name: str, longer_name: str) -> bool:
+    shorter_segments = _chapter_segments(shorter_name)
+    longer_segments = _chapter_segments(longer_name)
+    if not shorter_segments or len(shorter_segments) >= len(longer_segments):
+        return False
+
+    segment_count = len(shorter_segments)
+    return any(
+        longer_segments[index : index + segment_count] == shorter_segments
+        for index in range(len(longer_segments) - segment_count + 1)
+    )
+
+
+def _is_boundary_aware_substring(shorter_name: str, longer_name: str) -> bool:
+    if not shorter_name or shorter_name == longer_name:
+        return False
+
+    start = 0
+    while True:
+        index = longer_name.find(shorter_name, start)
+        if index == -1:
+            return False
+
+        end = index + len(shorter_name)
+        left_boundary = index == 0 or not _is_word_continuation(longer_name[index - 1])
+        right_boundary = end == len(longer_name) or not _is_word_continuation(longer_name[end])
+        if left_boundary and right_boundary:
+            return True
+
+        start = index + 1
+
+
+def _is_word_continuation(char: str) -> bool:
+    return char.isalnum() or unicodedata.category(char).startswith("M")
+
+
 async def resolve_chapter_by_title(
     session: AsyncSession,
     value: str,
     allow_extensions: bool = False,
+    allow_fuzzy: bool = False,
 ) -> Chapter:
     normalized = normalize_chapter(value)
     rows = (
@@ -67,23 +112,70 @@ async def resolve_chapter_by_title(
     if len(exact_matches) == 1:
         return next(iter(exact_matches.values()))
     if len(exact_matches) > 1:
-        raise ValueError(f"Ambiguous chapter title {value!r}")
+        raise ValueError(
+            f"Ambiguous chapter title {value!r} "
+            "(lookup_reason=ambiguous_exact_match)"
+        )
 
     if allow_extensions:
-        extension_matches = {
-            chapter.id: chapter
-            for translation, chapter in rows
-            if _is_chapter_name_extension(
-                normalize_chapter(translation.title), normalized
+        fallback_matches = {}
+        for translation, chapter in rows:
+            translation_title = normalize_chapter(translation.title)
+            if (
+                _is_chapter_name_extension(translation_title, normalized)
+                or _is_chapter_name_extension(normalized, translation_title)
+                or _is_dot_segment_extension(translation_title, normalized)
+                or _is_dot_segment_extension(normalized, translation_title)
+                or _is_boundary_aware_substring(translation_title, normalized)
+                or _is_boundary_aware_substring(normalized, translation_title)
+            ):
+                fallback_matches[chapter.id] = chapter
+
+        if len(fallback_matches) == 1:
+            return next(iter(fallback_matches.values()))
+        if len(fallback_matches) > 1:
+            raise ValueError(
+                f"Ambiguous chapter title {value!r} "
+                "(lookup_reason=ambiguous_fallback_match)"
             )
-            or _is_chapter_name_extension(
-                normalized, normalize_chapter(translation.title)
+
+    if allow_fuzzy:
+        scores_by_chapter: dict[int, tuple[float, Chapter]] = {}
+        for translation, chapter in rows:
+            translation_title = normalize_chapter(translation.title)
+            score = SequenceMatcher(None, normalized, translation_title).ratio()
+            if score < CHAPTER_FUZZY_THRESHOLD:
+                continue
+            previous = scores_by_chapter.get(chapter.id)
+            if previous is None or score > previous[0]:
+                scores_by_chapter[chapter.id] = (score, chapter)
+
+        if scores_by_chapter:
+            ranked_matches = sorted(
+                scores_by_chapter.values(),
+                key=lambda item: (-item[0], item[1].id),
             )
-        }
-        if len(extension_matches) == 1:
-            return next(iter(extension_matches.values()))
-        if len(extension_matches) > 1:
-            raise ValueError(f"Ambiguous chapter title {value!r}")
+            top_score = ranked_matches[0][0]
+            top_matches = [
+                item for item in ranked_matches
+                if abs(item[0] - top_score) <= _CHAPTER_FUZZY_TIE_EPSILON
+            ]
+            if len(top_matches) == 1:
+                return top_matches[0][1]
+
+            raise ValueError(
+                f"Ambiguous chapter title {value!r} "
+                "(lookup_reason=ambiguous_fuzzy_top_score; "
+                f"fuzzy_threshold={CHAPTER_FUZZY_THRESHOLD:.2f}; "
+                f"top_score={top_score:.6f}; candidates={len(top_matches)})"
+            )
+
+        raise ValueError(
+            f"Unknown chapter title {value!r} "
+            "(lookup_reason=no_fuzzy_candidate; "
+            f"fuzzy_threshold={CHAPTER_FUZZY_THRESHOLD:.2f}; "
+            f"candidates={len(scores_by_chapter)})"
+        )
 
     raise ValueError(f"Unknown chapter title {value!r}")
 

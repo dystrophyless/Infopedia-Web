@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getTestSession, type TestSession } from '../api/tests';
 import {
@@ -13,6 +13,7 @@ import {
 export function TestQuestionPage() {
   const navigate = useNavigate();
   const { testMode } = useParams();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const [testSession, setTestSession] = useState<TestSession | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,13 +24,14 @@ export function TestQuestionPage() {
     selectOption,
     runPrimaryAction,
   } = useTestRunner();
+  const topicCode = searchParams.get('topicCode') ?? undefined;
 
   useEffect(() => {
     let active = true;
 
     setLoading(true);
     setLoadError(false);
-    getTestSession(testMode ?? 'default')
+    getTestSession(testMode ?? 'default', topicCode)
       .then((session) => {
         if (!active) return;
         setTestSession(session);
@@ -47,7 +49,7 @@ export function TestQuestionPage() {
     return () => {
       active = false;
     };
-  }, [resetTestState, testMode]);
+  }, [resetTestState, testMode, topicCode]);
 
   const questions = testSession?.questions ?? [];
   const metrics = getTestRunnerMetrics(runnerState, questions, Date.now());

@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
+  ArrowLeft01Icon,
   BookOpen01Icon,
   Cancel01Icon,
   DocumentAttachmentIcon,
+  StarIcon,
   UserAiIcon,
 } from '@hugeicons/core-free-icons';
 import { buildAnalyzeSseUrl, createAnalyzeTask, getAnalyzeTask } from '../api/analyze';
@@ -13,9 +16,11 @@ import { useSSE } from '../hooks/useSSE';
 import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
 import { clampScorePercent, getScoreStatus } from '../utils/scoreStatus';
 import type { AnalyzeBookCoverage, AnalyzeChapterResult, AnalyzeTask } from '../types';
+import { selectAnalyzeResultAccess, type AnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import {
   Button,
   EmptyState,
+  MobileAppBar,
   PageContainer,
   PageHeader,
   Progress,
@@ -38,11 +43,12 @@ const ANALYZE_STAGE_ALIASES: Record<string, string> = {
   llmwhisperer_processed: 'extraction_completed',
 };
 const ANALYZE_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:px-4';
+const ANALYZE_RESULTS_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0';
 const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:pt-[88px] max-md:px-6`;
 const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:bg-[#efebf6] max-md:px-6';
 const ANALYZE_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5';
-const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-6 max-md:[&>div>div>h1]:text-[#000000]';
-const ANALYZE_PROCESSING_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5 max-md:mb-6 max-md:[&>div>div>div]:hidden max-md:[&>div>div>p]:hidden max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-6 max-md:[&>div>div>h1]:text-[#000000]';
+const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
+const ANALYZE_PROCESSING_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5 max-md:mb-6 max-md:[&>div>div>div]:hidden max-md:[&>div>div>p]:hidden max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
 
 type AnalyzeSortDirection = 'weakFirst' | 'strongFirst';
 
@@ -84,6 +90,11 @@ export function Analyze() {
     [uniqueSuccessResults, sortDirection],
   );
   const summary = useMemo(() => getAnalyzeSummary(uniqueSuccessResults), [uniqueSuccessResults]);
+  const resultAccess = useMemo(
+    () => selectAnalyzeResultAccess(uniqueSuccessResults),
+    [uniqueSuccessResults],
+  );
+  const isMobileResult = !isProcessing && currentTask?.status === 'success';
 
   useEffect(() => {
     if (!taskId || !sseError || sseResult) return;
@@ -173,10 +184,10 @@ export function Analyze() {
     <PageContainer
       width="full"
       gutter="none"
-      className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing ? ANALYZE_PROCESSING_PAGE_CLASS : ANALYZE_PAGE_CLASS}
+      className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing ? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult ? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS}
     >
       <PageHeader
-        className={showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS}
+        className={`${showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS} ${isMobileResult ? 'max-md:hidden' : ''}`}
         eyebrow={!showUploadForm ? t('analyze.eyebrow') : undefined}
         eyebrowClassName={isProcessing ? 'max-md:hidden' : undefined}
         title={t('analyze.title')}
@@ -187,14 +198,14 @@ export function Analyze() {
 
       {showUploadForm && (
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
-          <p className="mt-8 hidden text-[20px] font-medium leading-5 text-[#572d9f] max-md:block">{t('analyze.uploadTitle')}</p>
+          <p className="mt-8 hidden text-[20px] font-medium leading-none text-[#572d9f] max-md:block">{t('analyze.uploadTitle')}</p>
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1 max-md:mt-6">
             <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4 max-md:hidden">
               <div>
-                <h2 className="text-[21px] font-medium leading-tight text-primary">
+                <h2 className="text-[21px] font-medium leading-none text-primary">
                   {t('analyze.uploadInstructionTitle')}
                 </h2>
-                <p className="mt-1.5 text-[14px] leading-5 text-text-body">
+                <p className="mt-1.5 text-[14px] leading-none text-text-body">
                   {t('analyze.description')}
                 </p>
               </div>
@@ -233,10 +244,10 @@ export function Analyze() {
               <span className={`flex size-14 items-center justify-center rounded-full transition-colors ${file ? 'size-16 bg-[#6a37c3] text-[#ffffff]' : 'bg-bg text-primary group-hover:bg-surface max-md:size-16 max-md:!bg-[#ded2f1] max-md:hover:!bg-[#ded2f1] max-md:focus-within:!bg-[#ded2f1] max-md:text-[#572d9f]'}`}>
                 <HugeiconsIcon icon={DocumentAttachmentIcon} size={32} strokeWidth={1.5} />
               </span>
-              <span className="mt-4 text-[24px] font-medium leading-tight text-primary max-md:text-[16px] max-md:leading-4 max-md:text-[#161519]">
+              <span className="mt-4 text-[24px] font-medium leading-none text-primary max-md:text-[16px] max-md:leading-none max-md:text-[#161519]">
                 {file ? file.name : t('analyze.uploadHint')}
               </span>
-              <span className="mt-1.5 text-[15px] leading-6 text-text-body max-md:mt-2 max-md:text-[14px] max-md:leading-[14px] max-md:text-[#a585db]">
+              <span className="mt-1.5 text-[15px] leading-none text-text-body max-md:mt-2 max-md:text-[14px] max-md:leading-[14px] max-md:text-[#a585db]">
                 {file ? (
                   t('analyze.selectedFileHint')
                 ) : (
@@ -246,13 +257,13 @@ export function Analyze() {
                   </>
                 )}
               </span>
-              <span className="mt-2 hidden max-w-[420px] text-[14px] leading-5 text-muted md:block">{t('analyze.uploadTitle')}</span>
+              <span className="mt-2 hidden max-w-[420px] text-[14px] leading-none text-muted md:block">{t('analyze.uploadTitle')}</span>
             </label>
           </div>
 
           {file && !taskId && (
             <div className="mt-4 hidden md:flex flex-wrap items-center justify-between gap-3 rounded-[8px] bg-bg px-4 py-3">
-              <span className="min-w-0 truncate text-[15px] text-primary">{file.name}</span>
+              <span className="min-w-0 truncate text-[15px] leading-none text-primary">{file.name}</span>
               <Button
                 onClick={() => handleFileChange(null)}
                 aria-label={t('analyze.clearFile')}
@@ -268,7 +279,7 @@ export function Analyze() {
           {failureMessage && <StatusPanel className="mt-4" tone="danger" announce="assertive" title={failureMessage} headingLevel={3} />}
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-            <p className="max-w-[580px] text-[14px] leading-6 text-muted max-md:hidden">
+            <p className="max-w-[580px] text-[14px] leading-none text-muted max-md:hidden">
               {t('analyze.privacyNote')}
             </p>
             <Button
@@ -290,7 +301,7 @@ export function Analyze() {
           </div>
 
           <div className="mt-12 hidden max-md:block">
-            <h2 className="text-[20px] font-medium leading-5 text-[#572d9f]">
+            <h2 className="text-[20px] font-medium leading-none text-[#572d9f]">
               {t('analyze.benefitsTitle')}
             </h2>
             <AnalyzeBenefitCards />
@@ -310,12 +321,19 @@ export function Analyze() {
       )}
 
       {!isProcessing && currentTask?.status === 'success' && (
-        <AnalyzeResults
-          results={sortedResults}
-          summary={summary}
-          sortDirection={sortDirection}
-          onSortDirectionChange={setSortDirection}
-        />
+        <>
+          <div className="hidden md:block">
+            <AnalyzeResults
+              results={sortedResults}
+              summary={summary}
+              sortDirection={sortDirection}
+              onSortDirectionChange={setSortDirection}
+            />
+          </div>
+          <div className="md:hidden">
+            <AnalyzeMobileResults access={resultAccess} onReset={reset} />
+          </div>
+        </>
       )}
     </PageContainer>
   );
@@ -375,14 +393,14 @@ function InstructionStep({
 }) {
   return (
     <li className="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
-      <span className="flex size-9 items-center justify-center rounded-[8px] bg-surface text-[15px] font-medium text-primary">
+        <span className="flex size-9 items-center justify-center rounded-[8px] bg-surface text-[15px] font-medium leading-none text-primary">
         {number}
       </span>
       <span className="min-w-0">
-        <span className="block min-w-0 break-words text-[15px] font-medium leading-tight text-text">
+        <span className="block min-w-0 break-words text-[15px] font-medium leading-none text-text">
           {title}
         </span>
-        <span className="mt-1 block min-w-0 break-words text-[13px] leading-5 text-muted">
+        <span className="mt-1 block min-w-0 break-words text-[13px] leading-none text-muted">
           {body}
         </span>
       </span>
@@ -422,16 +440,16 @@ export function AnalyzeProgress({
           <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
             {t('analyze.progressCurrentStage')}
           </p>
-          <h2 className="mt-3 text-[30px] font-medium leading-tight text-primary max-md:text-[24px]">
+          <h2 className="mt-3 text-[30px] font-medium leading-none text-primary max-md:text-[24px] max-md:leading-none">
             {t('analyze.progressTitle')}
           </h2>
-          <p className="mt-3 text-[15px] leading-6 text-text-body">
+          <p className="mt-3 text-[15px] leading-none text-text-body">
             {t('analyze.progressSubtitle')}
           </p>
         </div>
 
         <div className="mt-7">
-          <div className="mb-2 flex items-center justify-between gap-4 text-[14px] font-medium text-primary">
+          <div className="mb-2 flex items-center justify-between gap-4 text-[14px] font-medium leading-none text-primary">
             <span>{getStageLabel(currentStage, t)}</span>
             <span>{t('analyze.progressPercent', { percent: progressPercent })}</span>
           </div>
@@ -478,7 +496,7 @@ export function AnalyzeProgress({
               <span className="text-[32px] font-medium leading-none text-[#000000]">{progressPercent}%</span>
             </div>
           </div>
-          <p className="mt-6 text-center text-[16px] leading-5 text-[#524d5b]">
+          <p className="mt-6 text-center text-[16px] leading-none text-[#524d5b]">
             {mobileProgressCaption}
           </p>
         </div>
@@ -554,7 +572,7 @@ export function AnalyzeResults({
       </section>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[15px] font-medium text-primary">{t('analyze.sortLabel')}</p>
+        <p className="text-[15px] font-medium leading-none text-primary">{t('analyze.sortLabel')}</p>
         <SegmentedControl
           name="analyze-sort-direction"
           label={t('analyze.sortLabel')}
@@ -574,6 +592,237 @@ export function AnalyzeResults({
         ))}
       </section>
     </div>
+  );
+}
+
+export function AnalyzeMobileResults({
+  access,
+  onReset,
+}: {
+  access: AnalyzeResultAccess;
+  onReset: () => void;
+}) {
+  const { t } = useTranslation();
+  const totalScore = access.allChapters.reduce((sum, chapter) => sum + chapter.score, 0);
+  const totalMaxScore = access.allChapters.reduce((sum, chapter) => sum + chapter.max_score, 0);
+  const lostPoints = Math.max(0, totalMaxScore - totalScore);
+
+  return (
+    <section className="w-full overflow-x-hidden bg-[#efebf6] text-[#161519]">
+      <MobileAppBar
+        title={t('analyze.mobileResultTitle')}
+        headingLevel={2}
+        titleAlign="start"
+        safeArea
+        className="mt-16 h-16 min-h-16 px-4 text-[#252329] [&>h2]:text-[16px] [&>h2]:leading-4 [&>h2]:text-[#252329]"
+        leading={(
+          <button
+            type="button"
+            onClick={onReset}
+            aria-label={t('analyze.mobileResultBack')}
+            className="flex size-10 items-center justify-center rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
+          </button>
+        )}
+      />
+
+      <div className="mx-auto w-full max-w-[430px] px-6 pb-8">
+      <h1 className="pt-6 text-[20px] font-medium leading-none text-[#572d9f]">
+          {t('analyze.mobileResultHeading')}
+        </h1>
+
+        {access.orderedChapters.length === 0 ? (
+          <Surface tone="plain" variant="mobile-flat" className="mt-6 rounded-[8px] p-6 shadow-none">
+            <EmptyState title={t('analyze.noResults')} />
+          </Surface>
+        ) : (
+          <>
+            <article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">
+              <div className="flex items-center gap-6">
+                <HugeiconsIcon icon={StarIcon} size={32} strokeWidth={1.7} className="shrink-0 text-[#6a37c3]" aria-hidden="true" />
+                <div className="min-w-0">
+            <p className="text-[12px] font-medium leading-none text-[#6a37c3]">{t('analyze.mobileScoreLabel')}</p>
+            <p className="mt-1 flex items-baseline font-medium leading-none">
+              <span className="text-[32px] leading-none text-[#252329]">{totalScore}</span>
+            <span className="ml-1 text-[20px] leading-none text-[#858188]">/{totalMaxScore}</span>
+                  </p>
+                </div>
+              </div>
+            </article>
+
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <article className="min-w-0 rounded-[8px] bg-[#ffffff] p-4">
+              <p className="break-words text-[12px] font-medium leading-none text-[#6a37c3]">
+                  {t('analyze.mobileLostPointsLabel')}
+                </p>
+              <p className="mt-1 break-words text-[16px] font-normal leading-none text-[#252329]">
+                  {t('analyze.mobileLostPointsValue', { count: lostPoints })}
+                </p>
+              <p className="mt-2 break-words text-[12px] leading-none text-[#858188]">
+                  {t('analyze.mobileLostPointsHelper')}
+                </p>
+              </article>
+              <article className="min-w-0 rounded-[8px] bg-[#ffffff] p-4">
+              <p className="break-words text-[12px] font-medium leading-none text-[#6a37c3]">
+                  {t('analyze.mobileFreeSummaryLabel')}
+                </p>
+              <p className="mt-1 break-words text-[16px] font-normal leading-none text-[#252329]">
+                  {t('analyze.mobileFreeSummaryValue', { count: access.freeChapter ? 1 : 0 })}
+                </p>
+              <p className="mt-2 break-words text-[12px] leading-none text-[#858188]">
+                  {t('analyze.mobileFreeSummaryHelper')}
+                </p>
+              </article>
+            </div>
+
+            <h2 className="mt-8 text-[20px] font-medium leading-none text-[#572d9f]">
+              {t('analyze.mobileWeakSectionTitle')}
+            </h2>
+
+            <div className="mt-4 grid gap-3">
+              {access.freeChapter && (
+                <AnalyzeMobileChapterCard chapter={access.freeChapter} locked={false} />
+              )}
+              {access.lockedChapters.map((chapter) => (
+                <AnalyzeMobileChapterCard key={getAnalyzeChapterKey(chapter)} chapter={chapter} locked />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AnalyzeMobileChapterCard({
+  chapter,
+  locked,
+}: {
+  chapter: AnalyzeChapterResult;
+  locked: boolean;
+}) {
+  const { i18n, t } = useTranslation();
+  const lostPoints = Math.max(0, chapter.max_score - chapter.score);
+  const topics = locked ? [] : chapter.topic_codes ?? [];
+  const topicCount = locked
+    ? chapter.topic_count ?? 0
+    : chapter.topic_count ?? chapter.books.reduce((sum, book) => sum + book.topic_count, 0);
+  const materialGrades = Array.from(new Set(chapter.material_grades ?? [])).sort(
+    (left, right) => left - right,
+  );
+  const formattedGrades = new Intl.ListFormat(i18n.language.startsWith('kk') ? 'kk' : 'ru', {
+    type: 'conjunction',
+  }).format(materialGrades.map(String));
+  const previewLabelKeys = [
+    'analyze.mobileHiddenTopicPreview1',
+    'analyze.mobileHiddenTopicPreview2',
+    'analyze.mobileHiddenTopicPreview3',
+    'analyze.mobileHiddenTopicPreview4',
+    'analyze.mobileHiddenTopicPreview5',
+    'analyze.mobileHiddenTopicPreview6',
+    'analyze.mobileHiddenTopicPreview7',
+  ];
+  const fakePreviewRows = Array.from(
+    { length: topicCount },
+    (_, previewIndex) => {
+      const previewBaseLabel = t(previewLabelKeys[previewIndex % previewLabelKeys.length]);
+      const label = previewIndex < previewLabelKeys.length
+        ? previewBaseLabel
+        : `${previewBaseLabel} ${t('analyze.mobileHiddenTopicPreviewIndex', { index: previewIndex + 1 })}`;
+
+      return {
+        id: `fake-preview-${previewIndex}`,
+        label,
+      };
+    },
+  );
+
+  return (
+    <article className="min-w-0 rounded-[8px] bg-[#ffffff] p-6">
+      <div className="flex min-w-0 items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="break-words text-[16px] font-medium leading-none text-[#252329]">
+            {chapter.title}
+          </h3>
+          <p className="mt-1 break-words text-[12px] leading-none text-[#858188]">
+            {t('analyze.mobileChapterScoreSummary', {
+              score: chapter.score,
+              maxScore: chapter.max_score,
+              percentage: chapter.percentage,
+            })}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="font-normal text-[12px] leading-none text-[#dc2626]">
+            {t('analyze.mobileChapterLost', { count: lostPoints })}
+          </p>
+        </div>
+      </div>
+
+      <div className="my-5 h-px bg-[#e9e4ef]" aria-hidden="true" />
+
+      <div className="min-w-0 px-2">
+        <h4 className="break-words text-[14px] font-medium leading-none text-[#6a37c3]">
+          {t('analyze.mobileTopicsTitle')}
+        </h4>
+        <p className="mt-1 break-words text-[12px] leading-none text-[#a585db]">
+          {materialGrades.length > 0
+            ? t('analyze.mobileTopicsHelper', { grades: formattedGrades })
+            : t('analyze.mobileTopicsFallbackHelper')}
+        </p>
+
+        {locked ? (
+          <div className="relative mt-4 min-h-[64px] rounded-[8px]" aria-hidden="true">
+            <div className="grid gap-2">
+              {fakePreviewRows.map((previewRow) => (
+                <div key={previewRow.id} className="flex min-h-4 min-w-0 items-center gap-2 blur-[4px] opacity-100" aria-hidden="true">
+                  <HugeiconsIcon icon={BookOpen01Icon} size={16} strokeWidth={1.7} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                  <span className="block min-w-0 w-full flex-1 break-words text-[12px] leading-3 text-[#6e6779]">
+                    {previewRow.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+              <p className="text-[14px] font-medium leading-none text-[#161519]">
+                {t('analyze.mobileHiddenTopics', { count: topicCount })}
+              </p>
+              <p className="mt-1 text-[12px] leading-none text-[#6e6779]">
+                {t('analyze.mobilePremiumMessage')}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <ul className="mt-4 grid gap-2">
+            {topics.length > 0 ? topics.map((topic) => (
+              <li key={topic.name} className="flex min-w-0 items-center gap-2 text-[12px] leading-3 text-[#858188]">
+                <HugeiconsIcon icon={BookOpen01Icon} size={16} strokeWidth={1.7} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                <span className="min-w-0 flex-1 break-words text-[12px] leading-3">{topic.title}</span>
+              </li>
+            )) : (
+              <li className="text-[12px] leading-none text-[#858188]">{t('analyze.mobileNoTopics')}</li>
+            )}
+          </ul>
+        )}
+      </div>
+
+      {locked ? (
+        <Link
+          to="/profile"
+          className="mt-6 flex h-10 w-full items-center justify-center rounded-[8px] border border-[#6a37c3] px-4 text-[16px] font-medium leading-none text-[#6a37c3] outline-none transition-colors hover:bg-[#f4effb] focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        >
+          {t('analyze.mobilePremiumCta')}
+        </Link>
+      ) : (
+        <Link
+          to={`/practice-by-topic?chapterId=${encodeURIComponent(String(chapter.chapter_id))}`}
+          className="mt-6 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-[#ffffff] outline-none transition-colors hover:bg-[#572d9f] focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        >
+          {t('analyze.mobilePracticeCta')}
+        </Link>
+      )}
+    </article>
   );
 }
 
@@ -603,7 +852,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
     <article className="rounded-[8px] border border-border bg-surface p-6 shadow-feature max-md:shadow-none">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="min-w-0">
-          <h2 className="text-[24px] font-medium leading-tight text-primary max-md:text-[20px]">
+          <h2 className="text-[24px] font-medium leading-none text-primary max-md:text-[20px] max-md:leading-none">
             {chapter.title}
           </h2>
         </div>
@@ -621,7 +870,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
 
       <div className="mt-5 grid grid-cols-[minmax(0,1fr)_190px] gap-3 max-md:grid-cols-1">
         <div className="rounded-[8px] bg-bg px-4 py-3">
-          <p className="text-[13px] font-medium uppercase tracking-[0.08em] text-muted">
+          <p className="text-[13px] font-medium uppercase leading-none tracking-[0.08em] text-muted">
             {t('analyze.chapterScoreLabel')}
           </p>
           <p className="mt-1 text-[30px] font-medium leading-none text-primary">
@@ -632,10 +881,10 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
           </p>
         </div>
         <div className="rounded-[8px] bg-bg px-4 py-3">
-          <p className="text-[13px] font-medium uppercase tracking-[0.08em] text-muted">
+          <p className="text-[13px] font-medium uppercase leading-none tracking-[0.08em] text-muted">
             {t('analyze.chapterQuestionsLabel')}
           </p>
-          <p className="mt-2 text-[18px] font-medium leading-tight text-text">
+          <p className="mt-2 text-[18px] font-medium leading-none text-text">
             {t('analyze.chapterQuestionsValue', { count: chapter.question_count })}
           </p>
         </div>
@@ -649,7 +898,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
       </div>
 
       <div className="mt-6">
-        <div className="mb-3 flex items-center gap-2 text-[16px] font-medium text-primary">
+        <div className="mb-3 flex items-center gap-2 text-[16px] font-medium leading-none text-primary">
           <HugeiconsIcon icon={BookOpen01Icon} size={20} strokeWidth={1.7} />
           <span>{t('analyze.booksTitle')}</span>
         </div>
@@ -658,7 +907,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
             <MobileBookCoverageList books={visibleBooks} />
             <div className="overflow-x-auto rounded-[8px] border border-border/60 max-md:hidden">
               <table className="w-full min-w-[560px] border-collapse">
-                <thead className="bg-bg text-left text-[12px] font-medium uppercase tracking-[0.08em] text-muted">
+      <thead className="bg-bg text-left text-[12px] font-medium uppercase leading-none tracking-[0.08em] text-muted">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       {t('analyze.bookEditionHeader')}
@@ -678,7 +927,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
                       className="border-t border-border/40"
                     >
                       <td className="px-4 py-4">
-                        <span className="min-w-0 text-[15px] font-medium text-text">
+                    <span className="min-w-0 text-[15px] font-medium leading-none text-text">
                           {book.publisher}
                           <sup
                             className="ml-1 whitespace-nowrap align-super text-[10px] font-medium leading-none text-muted"
@@ -689,10 +938,10 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
                           </sup>
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-right text-[14px] text-text-body">
+                    <td className="px-4 py-4 text-right text-[14px] leading-none text-text-body">
                         {t('analyze.bookTopicsValue', { count: book.topic_count })}
                       </td>
-                      <td className="px-4 py-4 text-right text-[15px] font-medium text-primary">
+                    <td className="px-4 py-4 text-right text-[15px] font-medium leading-none text-primary">
                         {book.percentage}%
                       </td>
                     </tr>
@@ -704,7 +953,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
               <button
                 type="button"
                 onClick={() => setBooksExpanded((value) => !value)}
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-[8px] border border-border px-4 text-[14px] font-medium text-primary transition-colors hover:bg-bg"
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-[8px] border border-border px-4 text-[14px] font-medium leading-none text-primary transition-colors hover:bg-bg"
               >
                 {booksExpanded
                   ? t('analyze.hideBooks')
@@ -713,7 +962,7 @@ function ChapterCard({ chapter }: { chapter: AnalyzeChapterResult }) {
             )}
           </>
         ) : (
-          <p className="rounded-[8px] bg-bg px-4 py-3 text-[14px] text-muted">
+          <p className="rounded-[8px] bg-bg px-4 py-3 text-[14px] leading-none text-muted">
             {t('analyze.noBooks')}
           </p>
         )}
@@ -733,7 +982,7 @@ function MobileBookCoverageList({ books }: { books: AnalyzeBookCoverage[] }) {
           className="rounded-[8px] border border-border/45 bg-bg px-3.5 py-3"
         >
           <div className="flex min-w-0 items-start justify-between gap-3">
-            <p className="min-w-0 break-words text-[15px] font-medium leading-tight text-text">
+            <p className="min-w-0 break-words text-[15px] font-medium leading-none text-text">
               {book.publisher}
               <sup
                 className="ml-1 whitespace-nowrap align-super text-[10px] font-medium leading-none text-muted"
@@ -747,7 +996,7 @@ function MobileBookCoverageList({ books }: { books: AnalyzeBookCoverage[] }) {
               {book.percentage}%
             </span>
           </div>
-          <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-text-body">
+          <div className="mt-3 flex items-center justify-between gap-3 text-[13px] leading-none text-text-body">
             <span>{t('analyze.bookTopicsValue', { count: book.topic_count })}</span>
             <span>{t('analyze.bookCoverageHeader')}</span>
           </div>

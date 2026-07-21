@@ -1,9 +1,13 @@
 import json
 import logging
+from typing import Any
 
 from celery.result import AsyncResult
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 
+from src.analyze.projection import select_free_chapter_id
+from src.analyze.schemas import AnalyzeChapterResult
 from src.config import settings
 from src.redis_client import build_analyze_task_owner_key, get_async_redis_client
 
@@ -11,6 +15,56 @@ logger = logging.getLogger(__name__)
 
 TERMINAL_TASK_STATUSES = {"success", "failure"}
 TASK_STATUSES = {"pending", "started", "success", "failure"}
+
+
+def sanitize_analyze_result(result: Any) -> list[dict]:
+    """Return a fail-closed Analyze projection with topic payload only for free chapter."""
+
+    if not isinstance(result, list):
+        return []
+
+    try:
+        validated_results = [
+            AnalyzeChapterResult.model_validate(item) for item in result
+        ]
+    except (TypeError, ValueError, ValidationError):
+        return []
+
+    free_chapter_id = select_free_chapter_id(validated_results)
+    sanitized_results = []
+    for item in validated_results:
+        payload = item.model_dump()
+        payload["material_grades"] = sorted(
+            {
+                grade
+                for grade in payload.get("material_grades", [])
+                if 7 <= grade <= 11
+            }
+        )
+        if item.chapter_id != free_chapter_id:
+            payload["topic_codes"] = []
+        sanitized_results.append(payload)
+
+    return sanitized_results
+
+
+def sanitize_analyze_task_payload(payload: Any) -> dict:
+    """Keep only the public task envelope and sanitize its result before serialization."""
+
+    if not isinstance(payload, dict):
+        return {}
+
+    return {
+        "task_id": payload.get("task_id"),
+        "status": payload.get("status"),
+        "stage": payload.get("stage"),
+        "result": (
+            None
+            if payload.get("result") is None
+            else sanitize_analyze_result(payload.get("result"))
+        ),
+        "error": payload.get("error"),
+    }
 
 
 def normalize_celery_status(raw_status: str) -> str:
@@ -32,10 +86,9 @@ async def assert_task_owner(*, task_id: str, user_id: int) -> None:
 
     if owner_id != str(user_id):
         logger.warning(
-            "Проверка владельца задачи анализа документа не пройдена для task_id=%s user_id=%s owner_id=%s",
-            task_id,
-            user_id,
-            owner_id,
+            "Проверка владельца задачи анализа документа не пройдена "
+            "code=analyze_task_forbidden stage=authorization_failed "
+            "reason=task_owner_mismatch",
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -52,13 +105,13 @@ def build_task_response(task_id: str, result: AsyncResult) -> dict:
             if payload_status in TASK_STATUSES
             else normalize_celery_status(result.status)
         )
-        return {
+        return sanitize_analyze_task_payload({
             "task_id": task_id,
             "status": status_value,
             "stage": payload.get("stage"),
             "result": payload.get("result"),
             "error": payload.get("error"),
-        }
+        })
 
     if result.status == "FAILURE":
         return {
@@ -82,6 +135,7 @@ def build_task_response(task_id: str, result: AsyncResult) -> dict:
 
 
 def build_sse_message(payload: dict) -> str:
+    payload = sanitize_analyze_task_payload(payload)
     event_name_by_status = {
         "pending": "task.pending",
         "started": "task.started",

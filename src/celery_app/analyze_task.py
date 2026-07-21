@@ -88,10 +88,14 @@ async def run_analyze_task(
             result=result,
         )
     except AnalyzeError as exc:
-        logger.info(
-            "Задача анализа завершилась ожидаемой ошибкой task_id=%s code=%s",
+        logger.warning(
+            "Задача анализа завершилась ошибкой "
+            "task_id=%s code=%s stage=%s reason=%s context=%s",
             task_id,
             exc.code,
+            exc.stage,
+            exc.reason,
+            exc.safe_context,
         )
         payload = build_analyze_task_payload(
             task_id,
@@ -100,7 +104,12 @@ async def run_analyze_task(
             error=exc.to_payload(),
         )
     except Exception:
-        logger.exception("Ошибка при выполнении задачи анализа документа")
+        logger.error(
+            "Ошибка при выполнении задачи анализа "
+            "task_id=%s code=analyze_execution_failed stage=failed "
+            "reason=unexpected_exception",
+            task_id,
+        )
         payload = build_analyze_task_payload(
             task_id,
             status="failure",

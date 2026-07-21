@@ -46,7 +46,7 @@ export function StatCard({
           <Text id={labelId} as="span" tone="inherit" size="helper" className="block">
             {label}
           </Text>
-          <Text as="div" tone="inherit" className="mt-1 text-card-title font-medium leading-tight">
+          <Text as="div" tone="inherit" className="mt-1 text-card-title font-medium leading-none">
             {value}
           </Text>
         </div>

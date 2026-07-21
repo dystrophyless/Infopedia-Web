@@ -20,7 +20,7 @@ export function Chip({ tone = 'neutral', selected = false, className, children, 
   return (
     <span
       className={cn(
-        'inline-flex min-h-8 items-center rounded-[var(--radius-control)] px-3 text-[var(--type-helper-size)] font-medium',
+        'inline-flex min-h-8 items-center rounded-[var(--radius-control)] px-3 text-[var(--type-helper-size)] font-medium leading-none',
         toneClasses[tone],
         selected && 'bg-accent text-surface',
         className,

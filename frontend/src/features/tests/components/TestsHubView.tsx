@@ -38,7 +38,7 @@ export function TestsHubView({
             </h3>
             {loading ? (
               <div className="mt-4 flex flex-col gap-2" role="status" aria-live="polite">
-                <span className="sr-only">{t('common.loading', { defaultValue: 'Загрузка' })}</span>
+                <span className="sr-only leading-none">{t('common.loading', { defaultValue: 'Загрузка' })}</span>
                 {[0, 1, 2].map((item) => (
                   <Skeleton key={item} className="h-3 w-full bg-[rgba(134,91,207,0.25)]" />
                 ))}

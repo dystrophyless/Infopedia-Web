@@ -71,10 +71,10 @@ export function SemanticSearch() {
         <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
           {t('semanticSearch.eyebrow')}
         </p>
-        <h1 className="mt-2 text-[36px] font-medium leading-tight text-text max-md:text-[26px]">
+        <h1 className="mt-2 text-[36px] font-medium leading-none text-text max-md:text-[26px]">
           {t('search.title')}
         </h1>
-        <p className="mt-3 max-w-[720px] text-[16px] leading-6 text-text-body">
+        <p className="mt-3 max-w-[720px] text-[16px] leading-none text-text-body">
           {t('semanticSearch.description')}
         </p>
       </header>
@@ -90,10 +90,10 @@ export function SemanticSearch() {
           placeholder={t('semanticSearch.placeholder')}
           rows={5}
           aria-describedby="semantic-query-hint"
-          className="min-h-[140px] rounded-[15px] p-5 text-[16px] shadow-feature focus-visible:border-accent max-md:shadow-none"
+          className="min-h-[140px] rounded-[15px] p-5 text-[16px] leading-none shadow-feature focus-visible:border-accent max-md:shadow-none"
         />
         <div className="mt-3 flex items-center justify-between">
-          <span id="semantic-query-hint" className="text-[13px] text-muted">
+          <span id="semantic-query-hint" className="text-[13px] leading-none text-muted">
             {query.trim().length < MIN_CHARS
               ? t('semanticSearch.minChars')
               : t('semanticSearch.charCount', { count: query.trim().length })}
@@ -101,7 +101,7 @@ export function SemanticSearch() {
           <button
             type="submit"
             disabled={submitDisabled}
-            className="bg-primary text-surface rounded-[10px] px-6 py-3 text-[16px] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-primary text-surface rounded-[10px] px-6 py-3 text-[16px] leading-none hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? t('common.loading') : t('semanticSearch.submit')}
           </button>
@@ -123,11 +123,11 @@ export function SemanticSearch() {
           <p className="text-text font-medium mb-2">
             {t('semanticSearch.errorTitle')}
           </p>
-          <p className="text-muted text-[14px] mb-4">{failureMessage}</p>
+          <p className="text-muted text-[14px] leading-none mb-4">{failureMessage}</p>
           <button
             type="button"
             onClick={reset}
-            className="bg-primary text-surface rounded-[10px] px-5 py-2 text-[14px] hover:opacity-90 transition-opacity"
+            className="bg-primary text-surface rounded-[10px] px-5 py-2 text-[14px] leading-none hover:opacity-90 transition-opacity"
           >
             {t('common.tryAgain')}
           </button>

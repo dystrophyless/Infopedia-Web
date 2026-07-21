@@ -42,7 +42,7 @@ export function DefinitionMetadata({
       {items.map((item) => (
         <div
           key={item.key}
-          className="inline-flex min-h-[34px] min-w-0 max-w-full items-center gap-1.5 rounded-full border border-border/25 bg-bg/45 px-3 py-2 text-[13px] leading-[1.35]"
+          className="inline-flex min-h-[34px] min-w-0 max-w-full items-center gap-1.5 rounded-full border border-border/25 bg-bg/45 px-3 py-2 text-[13px] leading-[13px]"
         >
           {shouldShowIcons && (
             <HugeiconsIcon
@@ -53,10 +53,10 @@ export function DefinitionMetadata({
               aria-hidden="true"
             />
           )}
-          <dt className="shrink-0 leading-[1.35] text-muted">{item.label}:</dt>
+          <dt className="shrink-0 leading-[13px] text-muted">{item.label}:</dt>
           <dd
             className={[
-              'min-w-0 font-medium leading-[1.35] text-text-body',
+              'min-w-0 font-medium leading-[13px] text-text-body',
               item.key === 'page' ? 'whitespace-nowrap' : variant === 'detail' ? 'break-words' : 'truncate',
               item.key === 'topic' ? topicValueClassName : '',
             ].filter(Boolean).join(' ')}

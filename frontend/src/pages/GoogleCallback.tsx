@@ -94,7 +94,7 @@ export function GoogleCallback() {
   return (
     <AuthShell title={t('auth.googleCallbackTitle')}>
       <div role={hasError ? 'alert' : 'status'}>
-        <p className={`text-[15px] leading-snug ${hasError ? 'text-danger' : 'text-text-body'}`}>
+        <p className={`text-[15px] leading-none ${hasError ? 'text-danger' : 'text-text-body'}`}>
           {hasError ? t('auth.googleAuthFailed') : t('auth.googleCallbackHelper')}
         </p>
       </div>

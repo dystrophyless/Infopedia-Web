@@ -53,13 +53,13 @@ export function SearchChoiceModal({
           <div className="min-w-0">
             <h2
               id="search-choice-title"
-              className="text-[28px] font-medium leading-tight text-primary max-sm:text-[24px]"
+              className="text-[28px] font-medium leading-none text-primary max-sm:text-[24px]"
             >
               {t('searchChoice.title')}
             </h2>
             <p
               id="search-choice-description"
-              className="mt-2 max-w-[455px] text-[15px] leading-6 text-text-body max-sm:text-[14px] max-sm:leading-5"
+              className="mt-2 max-w-[455px] text-[15px] leading-none text-text-body max-sm:text-[14px]"
             >
               {t('searchChoice.description')}
             </p>
@@ -95,10 +95,10 @@ export function SearchChoiceModal({
                 />
               </span>
               <span className="min-w-0">
-                <span className="block text-[18px] font-medium leading-tight text-primary max-sm:text-[16px]">
+                <span className="block text-[18px] font-medium leading-none text-primary max-sm:text-[16px]">
                   {option.title}
                 </span>
-                <span className="mt-1 block text-[14px] leading-5 text-text-body max-sm:text-[13px] max-sm:leading-[1.35]">
+                <span className="mt-1 block text-[14px] leading-none text-text-body max-sm:text-[13px]">
                   {option.description}
                 </span>
               </span>

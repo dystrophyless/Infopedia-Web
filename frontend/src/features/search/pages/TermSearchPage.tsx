@@ -101,7 +101,7 @@ export function MobileSearchBrowseHeader({
             onFocus={onSearchInputFocus}
             placeholder={t('search.placeholderShort')}
             readOnly
-            className="h-10 rounded-[8px] bg-white w-full py-2 pl-[52px] pr-3 text-[16px] leading-6 text-[#44237d] outline-none placeholder:text-[#7650b4]"
+            className="h-10 rounded-[8px] bg-white w-full py-2 pl-[52px] pr-3 text-[16px] leading-none text-[#44237d] outline-none placeholder:text-[#7650b4]"
           />
         </label>
 
@@ -141,7 +141,7 @@ function MobileSearchResultAppBar({ onBack }: { onBack: () => void }) {
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
       </button>
-      <h1 className="mt-1 text-[16px] font-medium leading-4 text-[#252329]">
+      <h1 className="mt-1 text-[16px] font-medium leading-none text-[#252329]">
         {t('search.resultsTitle')}
       </h1>
     </header>
@@ -210,7 +210,7 @@ export function MobileSearchResultHeader({
             onFocus={onSearchInputFocus}
             placeholder={t('search.placeholderShort')}
             readOnly
-            className="h-10 w-full rounded-[8px] bg-white py-2 pl-14 pr-4 text-[16px] leading-6 text-[#161519] outline-none placeholder:text-[#7650b4]"
+            className="h-10 w-full rounded-[8px] bg-white py-2 pl-14 pr-4 text-[16px] leading-none text-[#161519] outline-none placeholder:text-[#7650b4]"
           />
         </label>
       </div>
@@ -274,7 +274,7 @@ export function MobileSearchResultHeader({
       </div>
 
       {resultCount > 0 && (
-        <p className="-mx-[2px] mb-4 text-[16px] font-normal leading-4 text-[#514b5c]">
+        <p className="-mx-[2px] mb-4 text-[16px] font-normal leading-none text-[#514b5c]">
           {resultsCountLabel}
         </p>
       )}
@@ -296,16 +296,16 @@ export function MobileSearchEmptyState({ query }: { query: string }) {
       >
         <HugeiconsIcon icon={Search01Icon} size={32} strokeWidth={1.6} />
       </div>
-      <h2 className="mt-4 text-[20px] font-medium leading-5 text-[#161519]">
+      <h2 className="mt-4 text-[20px] font-medium leading-none text-[#161519]">
         {t('search.emptyTitle')}
       </h2>
-      <p className="mt-4 max-w-[284px] text-center text-[14px] leading-[14px] text-[#514b5c]">
+      <p className="mt-4 max-w-[284px] text-center text-[14px] leading-none text-[#514b5c]">
         {t('search.emptyDescription', { query })}
       </p>
       <Link
         to="/search/filters"
         data-mobile-search-empty-action
-        className="mt-6 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-4 text-white"
+        className="mt-6 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-white"
       >
         {t('search.emptyChangeParameters')}
       </Link>
@@ -507,7 +507,7 @@ export function MobileSearchInputSheet({
 
         <h2
           id="mobile-search-sheet-title"
-          className="mb-[17px] text-[20px] font-normal leading-5 text-[#6a37c3] [text-align:center]"
+          className="mb-[17px] text-[20px] font-normal leading-none text-[#6a37c3] [text-align:center]"
         >
           {t('search.sheetTitle')}
         </h2>
@@ -535,7 +535,7 @@ export function MobileSearchInputSheet({
             enterKeyHint="search"
             inputMode="search"
             placeholder={t('search.placeholderShort')}
-            className="mobile-search-sheet-field h-12 w-full rounded-[12px] border border-[#a585db] bg-white py-3 pl-[52px] pr-[52px] text-[16px] leading-6 text-[#44237d] outline-none placeholder:text-[#7650b4]"
+            className="mobile-search-sheet-field h-12 w-full rounded-[12px] border border-[#a585db] bg-white py-3 pl-[52px] pr-[52px] text-[16px] leading-none text-[#44237d] outline-none placeholder:text-[#7650b4]"
           />
           {query && (
             <button
@@ -579,7 +579,7 @@ export function MobileSearchTermCard({
     <article className="rounded-[16px] bg-white px-6 py-8 text-[#161519]">
       <div className="px-2">
         <div className="relative min-h-6 pr-10">
-          <h2 className="max-w-[274px] text-[20px] font-medium leading-5">
+          <h2 className="max-w-[274px] text-[20px] font-medium leading-none">
             {term.name}
           </h2>
           <button
@@ -593,7 +593,7 @@ export function MobileSearchTermCard({
 
         {definition && (
           <div className="relative mt-6 h-24 overflow-hidden">
-            <p className="line-clamp-6 whitespace-pre-line text-[16px] leading-4 text-[#6e6779]">
+            <p className="line-clamp-6 whitespace-pre-line text-[16px] leading-none text-[#6e6779]">
               {normalizeDefinitionPreviewText(definition.text)}
             </p>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white to-transparent" />
@@ -659,10 +659,10 @@ export function TermSearchPage() {
           <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
             {t('search.eyebrow')}
           </p>
-          <h1 className="mt-2 text-[36px] font-medium leading-tight text-text max-md:text-[26px]">
+          <h1 className="mt-2 text-[36px] font-medium leading-none text-text max-md:text-[26px]">
             {t('search.title')}
           </h1>
-          <p className="mt-3 max-w-[680px] text-[16px] leading-6 text-text-body">
+          <p className="mt-3 max-w-[680px] text-[16px] leading-none text-text-body">
             {t('search.description')}
           </p>
         </header>
@@ -676,7 +676,7 @@ export function TermSearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('search.placeholder')}
-            className="w-full rounded-[15px] border border-border bg-surface py-4 pl-14 pr-5 text-[18px] text-text shadow-feature outline-none transition-colors focus:border-accent max-md:shadow-none"
+            className="w-full rounded-[15px] border border-border bg-surface py-4 pl-14 pr-5 text-[18px] leading-none text-text shadow-feature outline-none transition-colors focus:border-accent max-md:shadow-none"
           />
         </div>
       </div>
@@ -713,14 +713,14 @@ export function TermSearchPage() {
         <>
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
             <HugeiconsIcon icon={HelpCircleIcon} size={48} strokeWidth={1.4} />
-            <p className="text-[16px]">{t('search.empty')}</p>
+            <p className="text-[16px] leading-none">{t('search.empty')}</p>
           </div>
           <MobileSearchEmptyState query={debounced.trim()} />
         </>
       )}
 
       {!pageIsLoading && !showingSearchResults && displayResults.length === 0 && (
-        <p className="py-12 text-center text-muted">{t('search.startTyping')}</p>
+        <p className="py-12 text-center leading-none text-muted">{t('search.startTyping')}</p>
       )}
 
       {!pageIsLoading && displayResults.length > 0 && (

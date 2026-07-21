@@ -319,7 +319,7 @@ export function Onboarding() {
   if (applyingDraft) {
     return (
       <AuthShell title={t('onboarding.title')}>
-        <p className="text-[15px] leading-snug text-text-body max-md:text-[16px] max-md:leading-[1.25] max-md:text-[#8c8698]" role="status">
+        <p className="text-[15px] leading-none text-text-body max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]" role="status">
           {t('onboarding.applyingDraft')}
         </p>
       </AuthShell>
@@ -330,7 +330,7 @@ export function Onboarding() {
     <AuthShell title={step === 'grade' ? t('onboarding.gradeQuestionTitle') : t('onboarding.usernameQuestionTitle')}>
       {step === 'grade' ? (
         <form onSubmit={handleGradeSubmit} noValidate>
-          <p className="mb-6 text-[15px] leading-snug text-text-body max-md:mb-5 max-md:text-[16px] max-md:leading-[1.25] max-md:text-[#8c8698]">
+          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-5 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
             {t('onboarding.gradeQuestionHelper')}
           </p>
           <div className="space-y-2">
@@ -355,7 +355,7 @@ export function Onboarding() {
         </form>
       ) : (
         <form onSubmit={handleUsernameSubmit} noValidate>
-          <p className="mb-8 text-[15px] leading-snug text-text-body max-md:mb-8 max-md:text-[16px] max-md:leading-[1.25] max-md:text-[#8c8698]">
+          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-8 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
             {t('onboarding.usernameQuestionHelper')}
           </p>
           <AuthUsernameInput

@@ -27,7 +27,10 @@ export const Default: Story = {
 };
 
 export const WithHelperText: Story = {
-  args: { helperText: 'Название будет видно в результатах поиска.' },
+  args: {
+    helperText: 'Название будет видно в результатах поиска.',
+    messageClassName: '!text-[14px] !leading-[14px]',
+  },
   render: Default.render,
 };
 

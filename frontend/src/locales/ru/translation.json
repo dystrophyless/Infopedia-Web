@@ -355,7 +355,7 @@
     "progressPercent": "{{percent}}%",
     "errorTitle": "Не удалось выполнить анализ",
     "noResults": "Результаты анализа не найдены.",
-    "mobileResultTitle": "Результаты анализа",
+    "mobileResultTitle": "Слабые темы",
     "mobileResultBack": "Вернуться к загрузке",
     "mobileResultHeading": "Результаты",
     "mobileScoreLabel": "Ваш балл",

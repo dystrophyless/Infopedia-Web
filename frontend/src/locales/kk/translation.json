@@ -355,7 +355,7 @@
     "progressPercent": "{{percent}}%",
     "errorTitle": "Талдауды орындау мүмкін болмады",
     "noResults": "Талдау нәтижелері табылмады.",
-    "mobileResultTitle": "Талдау нәтижелері",
+    "mobileResultTitle": "Әлсіз тақырыптар",
     "mobileResultBack": "Жүктеу күйіне оралу",
     "mobileResultHeading": "Нәтижелер",
     "mobileScoreLabel": "Сіздің балыңыз",

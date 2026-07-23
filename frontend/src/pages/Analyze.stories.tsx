@@ -200,7 +200,7 @@ export const MobileResultsFigma430: Story = {
   },
   render: () => (
     <MemoryRouter>
-      <AnalyzeMobileResults access={selectAnalyzeResultAccess(mobileResults)} onReset={() => undefined} />
+      <AnalyzeMobileResults access={selectAnalyzeResultAccess(mobileResults)} onBack={() => undefined} />
     </MemoryRouter>
   ),
 };
@@ -211,7 +211,7 @@ export const MobileSingleKazakh: Story = {
     <MemoryRouter>
       <AnalyzeMobileResults
         access={selectAnalyzeResultAccess([mobileResults[3]])}
-        onReset={() => undefined}
+        onBack={() => undefined}
       />
     </MemoryRouter>
   ),

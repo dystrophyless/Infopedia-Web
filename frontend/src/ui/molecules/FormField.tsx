@@ -15,6 +15,7 @@ export interface FormFieldProps {
   error?: ReactNode;
   helperText?: ReactNode;
   helperTone?: 'muted' | 'success';
+  messageClassName?: string;
   className?: string;
   children: (controlProps: FormFieldControlProps) => ReactNode;
 }
@@ -26,6 +27,7 @@ export function FormField({
   error,
   helperText,
   helperTone = 'muted',
+  messageClassName,
   className,
   children,
 }: FormFieldProps) {
@@ -51,7 +53,13 @@ export function FormField({
         'aria-invalid': error ? true : undefined,
       })}
       {error && (
-        <Text id={messageId} tone="danger" size="helper" role="alert" className="font-normal">
+        <Text
+          id={messageId}
+          tone="danger"
+          size="helper"
+          role="alert"
+          className={cn('font-normal', messageClassName)}
+        >
           {error}
         </Text>
       )}
@@ -60,7 +68,7 @@ export function FormField({
           id={messageId}
           tone={helperTone === 'success' ? 'success' : 'muted'}
           size="helper"
-          className="font-normal"
+          className={cn('font-normal', messageClassName)}
         >
           {helperText}
         </Text>

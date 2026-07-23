@@ -34,6 +34,8 @@ const representativeClasses = [
   'shadow-card',
   'duration-fast',
   'z-overlay',
+  '!text-[14px]',
+  '!leading-[14px]',
 ];
 
 const result = await postcss([
@@ -44,7 +46,11 @@ const result = await postcss([
 ]).process('@tailwind utilities;', { from: undefined });
 
 function findRule(className) {
-  const selector = `.${className.replaceAll('/', '\\/')}`;
+  const selector = `.${className
+    .replaceAll('/', '\\/')
+    .replaceAll('!', '\\!')
+    .replaceAll('[', '\\[')
+    .replaceAll(']', '\\]')}`;
   let matchingRule;
 
   result.root.walkRules((rule) => {
@@ -64,6 +70,18 @@ function assertDeclaration(className, property, expectedValue) {
   assert.ok(
     declaration,
     `${className} must emit ${property}: ${expectedValue}; received: ${rule.toString()}`,
+  );
+}
+
+function assertImportantDeclaration(className, property, expectedValue) {
+  const rule = findRule(className);
+  const declaration = rule.nodes.find(
+    (node) => node.type === 'decl' && node.prop === property && node.value === expectedValue && node.important,
+  );
+
+  assert.ok(
+    declaration,
+    `${className} must emit ${property}: ${expectedValue} !important; received: ${rule.toString()}`,
   );
 }
 
@@ -172,3 +190,5 @@ assertDeclaration('h-control-md', 'height', 'var(--control-height-md)');
 assertDeclaration('shadow-card', '--tw-shadow', 'var(--elevation-card)');
 assertDeclaration('duration-fast', 'transition-duration', 'var(--motion-duration-fast)');
 assertDeclaration('z-overlay', 'z-index', 'var(--z-overlay)');
+assertImportantDeclaration('!text-[14px]', 'font-size', '14px');
+assertImportantDeclaration('!leading-[14px]', 'line-height', '14px');

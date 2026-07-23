@@ -185,13 +185,39 @@ assert.match(
 );
 
 for (const [routeName, routePattern] of [
-  ['analyze', "location.pathname === '/analyze'"],
-  ['profile', "location.pathname === '/profile'"],
+  ['analyze', 'analyzeIsActive'],
+  ['profile', 'profileIsActive'],
 ]) {
   assert.match(
     bottomNavSource,
     new RegExp(`getItemClass\\(${routePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`),
     `Mobile bottom navigation should apply the active visual state to the ${routeName} route`,
+  );
+}
+
+assert.match(
+  bottomNavSource,
+  /const isWeakTopicsView =\s*location\.pathname === '\/analyze' && new URLSearchParams\(location\.search\)\.get\('view'\) === 'latest';/,
+  'Weak topics should activate only for the exact analyze latest-view query',
+);
+
+assert.match(
+  bottomNavSource,
+  /const analyzeIsActive = location\.pathname === '\/analyze' && !isWeakTopicsView;/,
+  'Analyze active state should exclude the weak topics view',
+);
+
+assert.match(
+  bottomNavSource,
+  /const profileIsActive = location\.pathname === '\/profile' \|\| isWeakTopicsView;/,
+  'Profile active state should include the weak topics view',
+);
+
+for (const flag of ['analyzeIsActive', 'profileIsActive']) {
+  assert.match(bottomNavSource, new RegExp(`getItemClass\\(${flag}\\)`));
+  assert.match(
+    bottomNavSource,
+    new RegExp(`aria-current=\\{${flag} \\? 'page' : undefined\\}`),
   );
 }
 

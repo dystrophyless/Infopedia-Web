@@ -17,6 +17,7 @@ export interface PasswordFieldProps extends Omit<
   error?: string;
   invalid?: boolean;
   className?: string;
+  messageClassName?: string;
   inputClassName?: string;
   leadingIconClassName?: string;
   toggleClassName?: string;
@@ -32,6 +33,7 @@ export function PasswordField({
   error,
   invalid,
   className,
+  messageClassName,
   inputClassName,
   leadingIconClassName,
   toggleClassName,
@@ -49,6 +51,7 @@ export function PasswordField({
       describedBy={describedBy}
       error={error}
       className={className}
+      messageClassName={messageClassName}
     >
       {(controlProps) => (
         <span className="relative block">

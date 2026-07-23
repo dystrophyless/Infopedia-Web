@@ -20,6 +20,7 @@ import {
   savePendingOnboardingDraft,
 } from '../utils/onboardingDraft';
 import type { User, UserGrade } from '../types';
+import { validateUsername } from '../features/users/model/usernameValidation';
 
 type OnboardingStep = 'grade' | 'username';
 type SelectableGrade = UserGrade;
@@ -27,7 +28,6 @@ type UsernameAvailabilityStatus = 'idle' | 'checking' | 'available' | 'taken' | 
 
 const gradeOptions: SelectableGrade[] = ['10', '11', 'undefined'];
 const USERNAME_CHECK_DELAY_MS = 450;
-const USERNAME_ALLOWED_PATTERN = /^[a-zA-Z0-9_.]+$/;
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (axios.isAxiosError(err) && err.response?.data) {
@@ -64,26 +64,12 @@ function getUsernameValidationError(
   t: (key: string) => string,
   { required }: { required: boolean },
 ) {
-  if (!username) return required ? t('onboarding.usernameRequired') : null;
-  if (username.length < 3 || username.length > 20) return t('onboarding.usernameLength');
-  if (!USERNAME_ALLOWED_PATTERN.test(username)) return t('onboarding.usernameInvalid');
-  if (
-    username[0] === '.' ||
-    username[0] === '_' ||
-    username.at(-1) === '.' ||
-    username.at(-1) === '_'
-  ) {
-    return t('onboarding.usernameInvalidEdge');
-  }
-  if (
-    username.includes('..') ||
-    username.includes('__') ||
-    username.includes('._') ||
-    username.includes('_.')
-  ) {
-    return t('onboarding.usernameInvalidRepeated');
-  }
-
+  const code = validateUsername(username, { required });
+  if (code === 'required') return t('onboarding.usernameRequired');
+  if (code === 'length') return t('onboarding.usernameLength');
+  if (code === 'invalid') return t('onboarding.usernameInvalid');
+  if (code === 'edge') return t('onboarding.usernameInvalidEdge');
+  if (code === 'repeated') return t('onboarding.usernameInvalidRepeated');
   return null;
 }
 

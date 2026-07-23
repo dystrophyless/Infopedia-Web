@@ -872,12 +872,14 @@ export function AnalyzeMobileResults({
           <>
             <article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">
               <div className="flex items-center gap-6">
-                <HugeiconsIcon icon={StarIcon} size={32} strokeWidth={1.7} className="shrink-0 text-[#6a37c3]" aria-hidden="true" />
+                <HugeiconsIcon icon={StarIcon} size={32} strokeWidth={1.7} className="shrink-0 text-[#865bcf]" aria-hidden="true" />
                 <div className="min-w-0">
-            <p className="text-[12px] font-medium leading-none text-[#6a37c3]">{t('analyze.mobileScoreLabel')}</p>
-            <p className="mt-1 flex items-baseline font-medium leading-none">
-              <span className="text-[32px] leading-none text-[#252329]">{totalScore}</span>
-            <span className="ml-1 text-[20px] leading-none text-[#858188]">/{totalMaxScore}</span>
+            <p className="text-[12px] font-medium leading-3 text-[#865bcf]">{t('analyze.mobileScoreLabel')}</p>
+            <p className="mt-1 flex items-end font-medium leading-none">
+              <span className="text-[32px] leading-8 text-[#161519]">{totalScore}</span>
+            <span className="ml-1 pb-[4px]">
+              <span className="text-[20px] font-normal leading-5 text-[#524d5b]">/{totalMaxScore}</span>
+            </span>
                   </p>
                 </div>
               </div>

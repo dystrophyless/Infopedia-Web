@@ -29,7 +29,15 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
 import { getLatestAnalyzeResult } from '../api/analyze';
-import { changeMyPassword, deleteMyAccount, getMe } from '../api/users';
+import {
+  createMyPassword,
+  changeMyPassword,
+  checkUsernameAvailability,
+  deleteMyAccount,
+  getMe,
+  updateMyUsername,
+  verifyMyCurrentPassword,
+} from '../api/users';
 import type { AnalyzeBookCoverage, AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
@@ -40,6 +48,19 @@ import { getPasswordValidationError } from '../utils/passwordValidation';
 import { shouldShowProfileLogout, type ProfileTabId } from '../utils/profileTabs';
 import { clampScorePercent, getScoreStatus, type ScoreStatus } from '../utils/scoreStatus';
 import { BottomSheet } from '../ui/molecules/BottomSheet';
+import { Button, FormField, Input, PasswordField } from '../ui';
+import { validateUsername, type UsernameValidationErrorCode } from '../features/users/model/usernameValidation';
+import {
+  isUsernameConflictErrorResponse,
+  resolveUsernameAvailability,
+} from '../features/users/model/usernameChange';
+import {
+  classifyPasswordChangeError,
+  createInitialMobilePasswordState,
+  transitionMobilePassword,
+  type MobilePasswordAction,
+  type MobilePasswordState,
+} from '../features/users/model/passwordChange';
 import {
   buildWeakTopicInsights,
   type WeakTopicInsight,
@@ -141,6 +162,10 @@ export function Profile() {
             onSelectTab={setActiveTab}
             onLogout={handleLogout}
             profile={profile}
+            onProfileUpdated={(nextProfile) => {
+              setProfile(nextProfile);
+              setUser(nextProfile);
+            }}
           />
         )}
       </div>
@@ -246,13 +271,16 @@ function MobileProfileDashboard({
   onSelectTab,
   onLogout,
   profile,
+  onProfileUpdated,
 }: {
   activeTab: ProfileTabId;
   onSelectTab: (tab: ProfileTabId) => void;
   onLogout: () => void;
   profile: User;
+  onProfileUpdated: (profile: User) => void;
 }) {
-  const [settingsView, setSettingsView] = useState<'home' | 'account' | 'email'>('home');
+  const [settingsView, setSettingsView] = useState<'home' | 'account' | 'email' | 'username' | 'password'>('home');
+  const [passwordConflict, setPasswordConflict] = useState(false);
 
   useEffect(() => {
     if (activeTab !== 'settings') setSettingsView('home');
@@ -267,8 +295,44 @@ function MobileProfileDashboard({
       return <MobileEmail email={profile.email} onBack={() => setSettingsView('account')} />;
     }
 
+    if (settingsView === 'username') {
+      return (
+        <MobileUsername
+          profile={profile}
+          onBack={() => setSettingsView('account')}
+          onSaved={onProfileUpdated}
+        />
+      );
+    }
+
+    if (settingsView === 'password') {
+      return (
+        <MobilePassword
+          hasPassword={profile.has_password}
+          onBack={() => setSettingsView('account')}
+          onPasswordCreated={() => onProfileUpdated({ ...profile, has_password: true })}
+          onPasswordConflict={(nextProfile) => {
+            onProfileUpdated(nextProfile);
+            setPasswordConflict(true);
+            setSettingsView('account');
+          }}
+        />
+      );
+    }
+
     if (settingsView === 'account') {
-      return <MobileAccount onBack={() => setSettingsView('home')} onOpenEmail={() => setSettingsView('email')} onLogout={onLogout} />;
+      return (
+        <MobileAccount
+          onBack={() => setSettingsView('home')}
+          onOpenEmail={() => setSettingsView('email')}
+          onOpenUsername={() => setSettingsView('username')}
+          onOpenPassword={() => setSettingsView('password')}
+          hasPassword={profile.has_password}
+          passwordConflict={passwordConflict}
+          onDismissPasswordConflict={() => setPasswordConflict(false)}
+          onLogout={onLogout}
+        />
+      );
     }
 
     return <MobileSettingsHome onBack={() => onSelectTab('profile')} onOpenAccount={() => setSettingsView('account')} />;
@@ -575,10 +639,20 @@ function MobileSettingsHome({
 function MobileAccount({
   onBack,
   onOpenEmail,
+  onOpenUsername,
+  onOpenPassword,
+  hasPassword,
+  passwordConflict,
+  onDismissPasswordConflict,
   onLogout,
 }: {
   onBack: () => void;
   onOpenEmail: () => void;
+  onOpenUsername: () => void;
+  onOpenPassword: () => void;
+  hasPassword?: boolean;
+  passwordConflict: boolean;
+  onDismissPasswordConflict: () => void;
   onLogout: () => void;
 }) {
   const { t } = useTranslation();
@@ -591,8 +665,8 @@ function MobileAccount({
     },
     {
       icon: ResetPasswordIcon,
-      title: t('profile.mobileAccountPasswordTitle'),
-      helper: t('profile.mobileAccountPasswordHelper'),
+      title: t(hasPassword === false ? 'profile.mobileAccountPasswordCreateTitle' : 'profile.mobileAccountPasswordTitle'),
+      helper: t(hasPassword === false ? 'profile.mobileAccountPasswordCreateHelper' : 'profile.mobileAccountPasswordHelper'),
     },
   ];
 
@@ -632,7 +706,29 @@ function MobileAccount({
         <div className="h-px w-full rounded-[1px] bg-[#f6f5f7]" />
         {accountRows.map((row, index) => (
           <div key={row.title} className="contents">
-            <div className="flex min-h-[40px] items-center gap-4">
+            {row.icon === UserEdit01Icon ? (
+              <button
+                type="button"
+                onClick={onOpenUsername}
+                aria-label={row.title}
+                className="flex min-h-[40px] w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+              >
+                <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
+                  <HugeiconsIcon icon={row.icon} size={24} strokeWidth={1.5} />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="text-[16px] font-medium leading-[16px] text-[#252329]">{row.title}</span>
+                  <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">{row.helper}</span>
+                </span>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#252329]" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenPassword}
+                aria-label={row.title}
+                className="flex min-h-[40px] w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+              >
               <span className="flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[#efeaf8] text-[#6a37c3]">
                 <HugeiconsIcon icon={row.icon} size={24} strokeWidth={1.5} />
               </span>
@@ -640,11 +736,24 @@ function MobileAccount({
                 <span className="text-[16px] font-medium leading-[16px] text-[#252329]">{row.title}</span>
                 <span className="text-[12px] font-normal leading-[12px] text-[#8c8698]">{row.helper}</span>
               </span>
-            </div>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#252329]" />
+              </button>
+            )}
             {index < accountRows.length - 1 && <div className="h-px w-full rounded-[1px] bg-[#f6f5f7]" />}
           </div>
         ))}
       </section>
+
+      {passwordConflict && (
+        <button
+          type="button"
+          onClick={onDismissPasswordConflict}
+          className="mx-6 mt-4 w-[calc(100%-48px)] rounded-[8px] bg-[#fff5f5] px-4 py-3 text-left text-[14px] leading-[14px] text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+          role="alert"
+        >
+          {t('profile.mobilePasswordCreateConflict')}
+        </button>
+      )}
 
       <section className="mx-6 mt-4 rounded-[8px] bg-white px-6 py-4">
         <button
@@ -692,6 +801,469 @@ function MobileEmail({ email, onBack }: { email: string; onBack: () => void }) {
       </section>
     </section>
   );
+}
+
+function MobilePassword({
+  hasPassword,
+  onBack,
+  onPasswordCreated,
+  onPasswordConflict,
+}: {
+  hasPassword?: boolean;
+  onBack: () => void;
+  onPasswordCreated: () => void;
+  onPasswordConflict: (profile: User) => void;
+}) {
+  const { t } = useTranslation();
+  const mode = hasPassword === false ? 'create' : 'change';
+  const currentErrorId = useId();
+  const nextErrorId = useId();
+  const confirmErrorId = useId();
+  const statusId = useId();
+  const [flowMode] = useState<'create' | 'change'>(() => mode);
+  const [state, setState] = useState<MobilePasswordState>(() => createInitialMobilePasswordState(flowMode));
+  const setAuthUser = useAuthStore((authState) => authState.setUser);
+  const authUser = useAuthStore((authState) => authState.user);
+  const { step, currentPassword, newPassword, confirmPassword, showCurrent, showNew, showConfirm, errors, apiError, success, verifying, submitting } = state;
+
+  const currentMessage = errors.current
+    ? t(errors.current === 'required' ? 'auth.passwordRequired' : 'auth.passwordTooShort')
+    : undefined;
+  const newMessage = errors.next
+    ? t(
+        errors.next === 'required'
+          ? 'auth.passwordRequired'
+          : errors.next === 'too-short'
+            ? 'auth.passwordTooShort'
+            : errors.next === 'too-long'
+              ? 'auth.passwordTooLong'
+              : 'auth.passwordLatinOnly',
+      )
+    : undefined;
+  const confirmMessage = errors.confirm ? t('auth.passwordsDontMatch') : undefined;
+
+  async function executeCommand(command: NonNullable<ReturnType<typeof transitionMobilePassword>['command']>) {
+    try {
+      if (command.type === 'close') {
+        onBack();
+        return;
+      }
+      if (command.type === 'verify-current') {
+        await verifyMyCurrentPassword(command.currentPassword);
+        setState((current) => transitionMobilePassword(current, { type: 'verify-succeeded', requestId: command.requestId }).state);
+        return;
+      }
+      if (command.type === 'create-password') {
+        await createMyPassword(command.newPassword);
+        const nextUser = authUser ? { ...authUser, has_password: true } : null;
+        if (nextUser) setAuthUser(nextUser);
+        onPasswordCreated();
+        setState((current) => transitionMobilePassword(current, { type: 'submit-success', requestId: command.requestId }).state);
+        return;
+      }
+      if (command.type !== 'change-password') return;
+      await changeMyPassword(command.currentPassword, command.newPassword);
+      setState((current) => transitionMobilePassword(current, { type: 'submit-success', requestId: command.requestId }).state);
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      const detail = axios.isAxiosError(err) ? (err.response?.data as { detail?: unknown } | undefined)?.detail : undefined;
+      if (command.type === 'verify-current') {
+        setState((current) => transitionMobilePassword(current, { type: 'verify-failed', requestId: command.requestId, status, detail }).state);
+      } else if (command.type === 'create-password' && classifyPasswordChangeError(status, detail) === 'password-already-configured') {
+        try {
+          const refreshedProfile = await getMe();
+          onPasswordConflict(refreshedProfile);
+          return;
+        } catch {
+          // Keep the create form and localized conflict message when refresh is unavailable.
+        }
+        setState((current) => transitionMobilePassword(current, { type: 'submit-failure', requestId: command.requestId, status, detail }).state);
+      } else if (command.type === 'change-password') {
+        setState((current) => transitionMobilePassword(current, { type: 'submit-failure', requestId: command.requestId, status, detail }).state);
+      }
+    }
+  }
+
+  function dispatch(action: MobilePasswordAction) {
+    const result = transitionMobilePassword(state, action);
+    setState(result.state);
+    if (result.command?.type === 'close') {
+      onBack();
+    } else if (result.command?.type === 'change-password' || result.command?.type === 'create-password' || result.command?.type === 'verify-current') {
+      void executeCommand(result.command);
+    }
+  }
+
+  function handleCurrentSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    dispatch({ type: 'continue' });
+  }
+
+  function handleNewSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    dispatch({ type: 'submit' });
+  }
+
+  const fieldClassName = 'h-12 w-full rounded-[8px] border border-border bg-white py-0 pl-[52px] pr-12 text-[16px] leading-none text-[#252329] outline-none placeholder:text-[#c5b1e7] focus-visible:border-[#6a37c3]';
+  const titleKey = flowMode === 'create' ? 'profile.mobilePasswordCreateTitle' : 'profile.mobilePasswordTitle';
+  const cardTitleKey = flowMode === 'create' ? 'profile.mobilePasswordCreateCardTitle' : 'profile.mobilePasswordCardTitle';
+  const bodyKey = flowMode === 'create' ? 'profile.mobilePasswordCreateBody' : 'profile.mobilePasswordBody';
+  const submitKey = flowMode === 'create' ? 'profile.mobilePasswordCreateSubmit' : 'profile.mobilePasswordSubmit';
+  const successKey = flowMode === 'create' ? 'profile.mobilePasswordCreateSaved' : 'profile.mobilePasswordSaved';
+
+  return (
+    <section data-figma-node="286:password" className="min-h-screen bg-[#efebf6] pb-8 pt-[80px]">
+      <header className="flex h-[24px] items-center gap-4 px-4">
+        <button
+          type="button"
+          onClick={() => dispatch({ type: flowMode === 'create' || step === 'current' ? 'close' : 'back-to-current' })}
+          disabled={verifying || submitting}
+          aria-label={t(flowMode === 'create' || step === 'current' ? 'profile.mobilePasswordBackAriaLabel' : 'profile.mobilePasswordBackToCurrentAriaLabel')}
+          className="flex size-[24px] shrink-0 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3] disabled:opacity-50"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
+        </button>
+        <h1 className="text-[16px] font-medium leading-[16px] text-[#252329]">{t(titleKey)}</h1>
+      </header>
+
+      <section className="mx-6 mt-8 rounded-[8px] bg-white p-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-[18px] font-medium leading-[18px] text-[#161519]">{t(cardTitleKey)}</h2>
+          <p className="text-[14px] font-normal leading-[14px] text-[#8c8698]">{t(bodyKey)}</p>
+        </div>
+
+        {step === 'current' && flowMode === 'change' ? (
+          <form className="mt-6" onSubmit={handleCurrentSubmit} noValidate aria-busy={verifying}>
+            <PasswordField
+              id="mobile-current-password"
+              label={t('auth.password')}
+              value={currentPassword}
+              visible={showCurrent}
+              onChange={(value) => dispatch({ type: 'current-change', value })}
+              onToggle={() => dispatch({ type: 'toggle-current-visibility' })}
+              toggleLabel={showCurrent ? t('auth.hidePassword') : t('auth.showPassword')}
+              autoComplete="current-password"
+              disabled={verifying}
+              error={currentMessage}
+              invalid={Boolean(currentMessage)}
+              messageClassName="!text-[14px] !leading-[14px]"
+              aria-describedby={currentMessage ? currentErrorId : undefined}
+              className="gap-2"
+              inputClassName={fieldClassName}
+              aria-invalid={Boolean(currentMessage)}
+            />
+            <span id={currentErrorId} className="sr-only">{currentMessage ?? (apiError === 'wrong-current' ? t('profile.mobilePasswordWrongCurrent') : '')}</span>
+            {apiError === 'wrong-current' && <p className="mt-3 text-[14px] leading-[14px] text-danger" role="alert">{t('profile.mobilePasswordWrongCurrent')}</p>}
+            {apiError === 'password-not-configured' && <p className="mt-3 rounded-[8px] bg-[#fff5f5] px-3 py-2 text-[14px] leading-[14px] text-danger" role="alert">{t('profile.mobilePasswordNotConfigured')}</p>}
+            {apiError === 'generic' && <p className="mt-3 text-[14px] leading-[14px] text-danger" role="alert">{t('profile.mobilePasswordVerifyFailed')}</p>}
+            {success && <p className="mt-3 rounded-[8px] bg-[#eaf8ef] px-3 py-2 text-[14px] leading-[14px] text-[#16803a]" role="status">{t(successKey)}</p>}
+            <span id={statusId} className="sr-only" role="status" aria-live="polite">{success ? t('profile.mobilePasswordSaved') : ''}</span>
+            {success ? (
+              <Button type="button" fullWidth size="lg" onClick={onBack} className="mt-6 h-12 rounded-[8px] bg-[#6a37c3] text-[16px] leading-none">
+                {t('profile.mobilePasswordContinue')}
+              </Button>
+            ) : (
+              <Button type="submit" fullWidth size="lg" loading={verifying} disabled={verifying} className="mt-6 h-12 rounded-[8px] enabled:!bg-[#6a37c3] text-[16px] leading-none disabled:!bg-[#ded2f1] disabled:!text-[#a585db] disabled:!opacity-100">
+                {t('profile.mobilePasswordContinue')}
+              </Button>
+            )}
+          </form>
+        ) : (
+          <form className="mt-6" onSubmit={handleNewSubmit} noValidate aria-busy={submitting}>
+            <div className="flex flex-col gap-4">
+              <PasswordField id="mobile-new-password" label={t('auth.newPassword')} value={newPassword} visible={showNew} onChange={(value) => dispatch({ type: 'new-change', value })} onToggle={() => dispatch({ type: 'toggle-new-visibility' })} toggleLabel={showNew ? t('auth.hidePassword') : t('auth.showPassword')} autoComplete="new-password" autoFocus disabled={submitting} error={newMessage} invalid={Boolean(newMessage)} messageClassName="!text-[14px] !leading-[14px]" aria-describedby={newMessage ? nextErrorId : undefined} className="gap-2" inputClassName={fieldClassName} aria-invalid={Boolean(newMessage)} />
+              <PasswordField id="mobile-confirm-password" label={t('auth.confirmPassword')} value={confirmPassword} visible={showConfirm} onChange={(value) => dispatch({ type: 'confirm-change', value })} onToggle={() => dispatch({ type: 'toggle-confirm-visibility' })} toggleLabel={showConfirm ? t('auth.hidePassword') : t('auth.showPassword')} autoComplete="new-password" disabled={submitting} error={confirmMessage} invalid={Boolean(confirmMessage)} messageClassName="!text-[14px] !leading-[14px]" aria-describedby={confirmMessage ? confirmErrorId : undefined} className="gap-2" inputClassName={fieldClassName} aria-invalid={Boolean(confirmMessage)} />
+            </div>
+            {apiError === 'generic' && <p className="mt-3 text-[14px] leading-[14px] text-danger" role="alert">{t(flowMode === 'create' ? 'profile.mobilePasswordCreateFailed' : 'profile.mobilePasswordFailed')}</p>}
+            {apiError === 'password-already-configured' && <p className="mt-3 rounded-[8px] bg-[#fff5f5] px-3 py-2 text-[14px] leading-[14px] text-danger" role="alert">{t('profile.mobilePasswordCreateConflict')}</p>}
+            {success && <p className="mt-3 rounded-[8px] bg-[#eaf8ef] px-3 py-2 text-[14px] leading-[14px] text-[#16803a]" role="status">{t(successKey)}</p>}
+            {success ? (
+              <Button type="button" fullWidth size="lg" onClick={onBack} className="mt-6 h-12 rounded-[8px] bg-[#6a37c3] text-[16px] leading-none">{t('profile.mobilePasswordContinue')}</Button>
+            ) : (
+              <Button type="submit" fullWidth size="lg" loading={submitting} disabled={submitting} className="mt-6 h-12 rounded-[8px] enabled:!bg-[#6a37c3] text-[16px] leading-none disabled:!bg-[#ded2f1] disabled:!text-[#a585db] disabled:!opacity-100">{t(submitKey)}</Button>
+            )}
+          </form>
+        )}
+      </section>
+    </section>
+  );
+}
+
+type MobileUsernameAvailability = 'idle' | 'checking' | 'available' | 'taken' | 'error';
+
+const MOBILE_USERNAME_CHECK_DELAY_MS = 450;
+
+function MobileUsername({
+  profile,
+  onBack,
+  onSaved,
+}: {
+  profile: User;
+  onBack: () => void;
+  onSaved: (profile: User) => void;
+}) {
+  const { t } = useTranslation();
+  const setAuthUser = useAuthStore((state) => state.setUser);
+  const statusId = useId();
+  const [username, setUsername] = useState('');
+  const [savedUsername, setSavedUsername] = useState(profile.username ?? '');
+  const [availability, setAvailability] = useState<MobileUsernameAvailability>('idle');
+  const [checkedUsername, setCheckedUsername] = useState('');
+  const [touched, setTouched] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const availabilityRequestRef = useRef(0);
+  const normalizedUsername = username.trim();
+  const validationCode = validateUsername(normalizedUsername, { required: true });
+  const baselineUsername = savedUsername.trim();
+
+  useEffect(() => {
+    const requestId = ++availabilityRequestRef.current;
+    const validation = validateUsername(normalizedUsername, { required: true });
+    setAvailability('idle');
+    setCheckedUsername('');
+    setError(null);
+    if (normalizedUsername !== baselineUsername) setSuccess(null);
+
+    if (!normalizedUsername || validation || normalizedUsername === baselineUsername) return;
+
+    setAvailability('checking');
+    const timer = window.setTimeout(() => {
+      void checkUsernameAvailability(normalizedUsername)
+        .then((result) => {
+          if (requestId !== availabilityRequestRef.current) return;
+          const checked = result.username.trim();
+          setCheckedUsername(checked);
+          const available = resolveUsernameAvailability(
+            baselineUsername,
+            normalizedUsername,
+            result.available,
+          );
+          setAvailability(available ? 'available' : 'taken');
+        })
+        .catch(() => {
+          if (requestId !== availabilityRequestRef.current) return;
+          setCheckedUsername(normalizedUsername);
+          setAvailability('error');
+        });
+    }, MOBILE_USERNAME_CHECK_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      availabilityRequestRef.current += 1;
+    };
+  }, [baselineUsername, normalizedUsername]);
+
+  const validationMessage =
+    (touched || submitAttempted) && validationCode
+      ? getMobileUsernameValidationMessage(validationCode, t)
+      : null;
+  const availabilityMessage =
+    availability === 'taken' && checkedUsername === normalizedUsername
+      ? t('profile.mobileUsernameTaken')
+      : null;
+  const fieldError = error ?? validationMessage ?? availabilityMessage;
+  const helperMessage =
+    fieldError
+      ? undefined
+      : availability === 'checking'
+        ? t('profile.mobileUsernameChecking')
+        : availability === 'available' && checkedUsername === normalizedUsername
+          ? t('profile.mobileUsernameAvailable')
+          : availability === 'error' && checkedUsername === normalizedUsername
+            ? t('profile.mobileUsernameCheckFailed')
+            : undefined;
+  const statusMessage =
+    availability === 'checking'
+      ? t('profile.mobileUsernameChecking')
+      : availability === 'available' && checkedUsername === normalizedUsername
+        ? t('profile.mobileUsernameAvailable')
+        : availability === 'taken' && checkedUsername === normalizedUsername
+          ? t('profile.mobileUsernameTaken')
+          : availability === 'error' && checkedUsername === normalizedUsername
+            ? t('profile.mobileUsernameCheckFailed')
+            : success ?? '';
+  const canSubmit =
+    !submitting &&
+    Boolean(normalizedUsername) &&
+    !validationCode &&
+    normalizedUsername !== baselineUsername &&
+    availability !== 'checking' &&
+    availability !== 'taken';
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitAttempted(true);
+    setError(null);
+    setSuccess(null);
+
+    if (!canSubmit) return;
+
+    setSubmitting(true);
+    let available = availability === 'available' && checkedUsername === normalizedUsername;
+    if (!available) {
+      try {
+        const result = await checkUsernameAvailability(normalizedUsername);
+        available = resolveUsernameAvailability(
+          baselineUsername,
+          normalizedUsername,
+          result.available,
+        );
+        if (!available) {
+          setCheckedUsername(normalizedUsername);
+          setAvailability('taken');
+          setSubmitting(false);
+          return;
+        }
+        setCheckedUsername(normalizedUsername);
+        setAvailability('available');
+      } catch {
+        setCheckedUsername(normalizedUsername);
+        setAvailability('error');
+        setError(t('profile.mobileUsernameCheckFailed'));
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    if (!available) {
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const nextProfile = await updateMyUsername(profile.id, normalizedUsername);
+      const nextUsername = nextProfile.username?.trim() || normalizedUsername;
+      setUsername(nextUsername);
+      setSavedUsername(nextUsername);
+      setCheckedUsername(nextUsername);
+      setAvailability('available');
+      setSuccess(t('profile.mobileUsernameSaved'));
+      setAuthUser(nextProfile);
+      onSaved(nextProfile);
+    } catch (err) {
+      const detail = axios.isAxiosError(err) ? err.response?.data && (err.response.data as { detail?: unknown }).detail : undefined;
+      if (
+        axios.isAxiosError(err) &&
+        isUsernameConflictErrorResponse(err.response?.status, detail)
+      ) {
+        setCheckedUsername(normalizedUsername);
+        setAvailability('taken');
+        setError(t('profile.mobileUsernameTaken'));
+      } else {
+        setError(t('profile.mobileUsernameSaveFailed'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section data-figma-node="286:username" className="min-h-screen bg-[#efebf6] pb-8 pt-[80px]">
+      <header className="flex h-[24px] items-center gap-4 px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={t('profile.mobileUsernameBackAriaLabel')}
+          className="flex size-[24px] shrink-0 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
+        </button>
+        <h1 className="text-[16px] font-medium leading-[16px] text-[#252329]">
+          {t('profile.mobileUsernameTitle')}
+        </h1>
+      </header>
+
+      <section className="mx-6 mt-8 rounded-[8px] bg-white p-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-[18px] font-medium leading-[18px] text-[#161519]">
+            {t('profile.mobileUsernameCardTitle')}
+          </h2>
+          <p className="text-[14px] font-normal leading-[14px] text-[#8c8698]">
+            {t('profile.mobileUsernameBody')}
+          </p>
+        </div>
+
+        <form className="mt-6" onSubmit={handleSubmit} noValidate>
+          <FormField
+            error={fieldError}
+            helperText={helperMessage}
+            helperTone={availability === 'available' ? 'success' : 'muted'}
+            messageClassName="!text-[14px] !leading-[14px]"
+            describedBy={statusId}
+            className="gap-2"
+          >
+            {(controlProps) => (
+              <span className="relative block">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-[#c5b1e7]"
+                >
+                  <HugeiconsIcon icon={UserIcon} size={18} strokeWidth={1.7} />
+                </span>
+                <Input
+                  {...controlProps}
+                  type="text"
+                  value={username}
+                  onChange={(event) => {
+                    setUsername(event.target.value);
+                    setTouched(true);
+                    setSubmitAttempted(false);
+                  }}
+                  onBlur={() => setTouched(true)}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  maxLength={20}
+                  spellCheck={false}
+                  disabled={submitting}
+                  invalid={Boolean(fieldError)}
+                  placeholder={t('auth.username')}
+                  aria-label={t('auth.username')}
+                  className="h-12 w-full rounded-[8px] border border-border bg-white py-0 pl-[52px] pr-4 text-[16px] leading-none text-[#252329] outline-none placeholder:text-[#c5b1e7] focus-visible:border-[#6a37c3]"
+                />
+              </span>
+            )}
+          </FormField>
+          <span id={statusId} className="sr-only text-[14px] leading-[14px]" role="status" aria-live="polite">
+            {statusMessage}
+          </span>
+          {success && (
+            <p className="mt-4 rounded-[8px] bg-[#eaf8ef] px-3 py-2 text-[14px] leading-[14px] text-[#16803a]" role="status">
+              {success}
+            </p>
+          )}
+          <Button
+            type="submit"
+            fullWidth
+            size="lg"
+            loading={submitting}
+            disabled={!canSubmit}
+            className={`mt-6 h-12 rounded-[8px] enabled:!bg-[#6a37c3] text-[16px] leading-none ${
+              !canSubmit ? '!bg-[#ded2f1] !text-[#a585db] disabled:!opacity-100' : ''
+            }`}
+          >
+            {t('profile.mobileUsernameSaveButton')}
+          </Button>
+        </form>
+      </section>
+    </section>
+  );
+}
+
+function getMobileUsernameValidationMessage(
+  code: UsernameValidationErrorCode,
+  t: (key: string) => string,
+) {
+  const keys: Record<UsernameValidationErrorCode, string> = {
+    required: 'profile.mobileUsernameRequired',
+    length: 'profile.mobileUsernameLength',
+    invalid: 'profile.mobileUsernameInvalid',
+    edge: 'profile.mobileUsernameInvalidEdge',
+    repeated: 'profile.mobileUsernameInvalidRepeated',
+  };
+  return t(keys[code]);
 }
 
 function MobileProfileDetail({

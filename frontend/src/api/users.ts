@@ -25,6 +25,13 @@ export async function setMyUsername(username: string): Promise<User> {
   return data;
 }
 
+export async function updateMyUsername(userId: number, username: string): Promise<User> {
+  const { data } = await apiClient.patch<User>(`/api/users/${userId}`, {
+    username,
+  });
+  return data;
+}
+
 export async function setMyGrade(grade: UserGrade): Promise<User> {
   const { data } = await apiClient.patch<User>('/api/users/me/grade', {
     grade,
@@ -39,6 +46,23 @@ export async function changeMyPassword(
   await apiClient.patch('/api/users/me/password', {
     current_password: currentPassword,
     new_password: newPassword,
+  });
+}
+
+export interface PasswordCreationResult {
+  created: boolean;
+}
+
+export async function createMyPassword(newPassword: string): Promise<PasswordCreationResult> {
+  const { data } = await apiClient.post<PasswordCreationResult>('/api/users/me/password', {
+    new_password: newPassword,
+  });
+  return data;
+}
+
+export async function verifyMyCurrentPassword(currentPassword: string): Promise<void> {
+  await apiClient.post('/api/users/me/password/verify', {
+    current_password: currentPassword,
   });
 }
 

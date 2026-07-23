@@ -83,6 +83,7 @@ export interface User {
   role: UserRole;
   banned?: boolean;
   onboarding_completed?: boolean;
+  has_password?: boolean;
   created_at?: string;
 }
 

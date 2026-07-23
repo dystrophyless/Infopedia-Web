@@ -1,9 +1,11 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, delete, func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.auth.constants import PASSWORD_PROVIDER
 from src.auth.models import AuthIdentity, PasswordResetToken, PendingUser, RefreshToken
 from src.users.models import User
 
@@ -28,6 +30,43 @@ async def add_auth_identity(
     session.add(auth_identity)
 
     return auth_identity
+
+
+async def create_password_identity_if_missing_or_empty(
+    session: AsyncSession,
+    *,
+    user_id: int,
+    provider_subject: str,
+    email: str,
+    password_hash: str,
+) -> AuthIdentity | None:
+    """Atomically create or fill this user's password identity.
+
+    The unique provider/subject constraint serializes concurrent attempts.  A
+    conflicting identity is updated only while its password is still NULL and
+    it belongs to the same user; otherwise PostgreSQL returns no row.
+    """
+    stmt = (
+        pg_insert(AuthIdentity)
+        .values(
+            user_id=user_id,
+            provider=PASSWORD_PROVIDER,
+            provider_subject=provider_subject,
+            email=email,
+            password_hash=password_hash,
+        )
+        .on_conflict_do_update(
+            index_elements=[AuthIdentity.provider, AuthIdentity.provider_subject],
+            set_={"password_hash": password_hash},
+            where=and_(
+                AuthIdentity.password_hash.is_(None),
+                AuthIdentity.user_id == user_id,
+            ),
+        )
+        .returning(AuthIdentity)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().first()
 
 
 async def get_user_by_auth_identity(

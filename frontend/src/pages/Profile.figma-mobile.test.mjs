@@ -130,7 +130,7 @@ assert.match(mobileHomeSource, /border-2 border-\[#8c8698\]/);
 assert.match(mobileHomeSource, /bg-\[#f6f5f7\]/);
 assert.match(mobileHomeSource, /onSelectTab\('settings'\)/);
 assert.match(mobileHomeSource, /onSelectTab\('favorites'\)/);
-assert.match(mobileHomeSource, /onSelectTab\('weakTopics'\)/);
+assert.match(mobileHomeSource, /onClick=\{\(\) => navigate\('\/analyze\?view=latest'\)\}/);
 assert.match(profileSource, /onBack=\{\(\) => onSelectTab\('profile'\)\}/);
 assert.match(
   profileSource,

@@ -15,6 +15,24 @@ function sliceBetween(source, start, end) {
   return source.slice(startIndex, endIndex);
 }
 
+const mobileProfileHomeSource = sliceBetween(
+  profileSource,
+  'function MobileProfileHome(',
+  'function MobileProfileStat(',
+);
+
+assert.match(
+  mobileProfileHomeSource,
+  /title=\{t\('profile\.navWeakTopics'\)\}[\s\S]*helper=\{t\('profile\.mobileWeakTopicsHelper'\)\}[\s\S]*onClick=\{\(\) => navigate\('\/analyze\?view=latest'\)\}/,
+  'Mobile Weak Topics action should navigate to the latest Analyze view',
+);
+
+assert.doesNotMatch(
+  mobileProfileHomeSource,
+  /onClick=\{\(\) => onSelectTab\('weakTopics'\)\}/,
+  'Mobile Weak Topics action should not switch to the local Profile tab',
+);
+
 const weakTopicListSource = sliceBetween(
   profileSource,
   'function WeakTopicList(',

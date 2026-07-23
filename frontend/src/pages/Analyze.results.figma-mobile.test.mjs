@@ -1,15 +1,47 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import loadConfig from 'tailwindcss/loadConfig.js';
 
 const pageSource = readFileSync(path.resolve(import.meta.dirname, 'Analyze.tsx'), 'utf8');
 const storiesSource = readFileSync(path.resolve(import.meta.dirname, 'Analyze.stories.tsx'), 'utf8');
 const ruSource = readFileSync(path.resolve(import.meta.dirname, '../locales/ru/translation.json'), 'utf8');
 const kkSource = readFileSync(path.resolve(import.meta.dirname, '../locales/kk/translation.json'), 'utf8');
 
+const tailwindConfig = loadConfig(path.resolve(import.meta.dirname, '../../tailwind.config.ts'));
+const scoreUtilities = await postcss([
+  tailwindcss({
+    ...tailwindConfig,
+    content: [{ raw: '<div class="items-end pb-[4px]"></div>', extension: 'html' }],
+  }),
+]).process('@tailwind utilities;', { from: undefined });
+
+function assertTailwindDeclaration(selector, property, expectedValue) {
+  let matchingRule;
+  scoreUtilities.root.walkRules((rule) => {
+    if (rule.selector === selector) matchingRule = rule;
+  });
+  assert.ok(matchingRule, `Tailwind did not generate ${selector}`);
+  assert.ok(
+    matchingRule.nodes.some(
+      (node) => node.type === 'decl' && node.prop === property && node.value === expectedValue,
+    ),
+    `${selector} must emit ${property}: ${expectedValue}`,
+  );
+}
+
+assertTailwindDeclaration('.items-end', 'align-items', 'flex-end');
+assertTailwindDeclaration('.pb-\\[4px\\]', 'padding-bottom', '4px');
+
 const mobileSource = pageSource.slice(
   pageSource.indexOf('export function AnalyzeMobileResults'),
   pageSource.indexOf('function SummaryStat'),
+);
+const scoreCardSource = mobileSource.slice(
+  mobileSource.indexOf('<article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">'),
+  mobileSource.indexOf('</article>', mobileSource.indexOf('<article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">')) + '</article>'.length,
 );
 const lockedSource = mobileSource.slice(
   mobileSource.indexOf('{locked ? ('),
@@ -31,10 +63,15 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /<div className="hidden md:block">[\s\S]*<AnalyzeResults[\s\S]*<\/div>[\s\S]*<div className="md:hidden">[\s\S]*<AnalyzeMobileResults access=\{resultAccess\}/,
+  /<div className="hidden md:block">[\s\S]*<AnalyzeResults[\s\S]*<\/div>[\s\S]*<div className="md:hidden">[\s\S]*<AnalyzeMobileResults[\s\S]*access=\{resultAccess\}/,
   'Desktop and mobile result renderers should be separated at md',
 );
-assert.match(mobileSource, /title=\{t\('analyze\.mobileResultTitle'\)\}/, 'Mobile app bar should keep the navigation title key');
+assert.match(mobileSource, /mobileResultTitle/, 'Mobile app bar should keep the navigation title key');
+assert.match(mobileSource, /onBack: \(\) => void;[\s\S]*onTitleClick\?: \(\) => void;/, 'Mobile results should expose a back callback and optional title callback');
+assert.match(mobileSource, /title=\{onTitleClick \? \(/, 'Mobile app-bar title should branch on the optional title callback');
+assert.match(mobileSource, /<button[\s\S]*onClick=\{onTitleClick\}[\s\S]*mobileResultTitle/, 'Latest mobile app-bar title should use a native button');
+assert.match(mobileSource, /\) : t\('analyze\.mobileResultTitle'\)\}/, 'Ordinary mobile results should keep the title as plain translation text');
+assert.match(mobileSource, /<button[\s\S]*onClick=\{onBack\}[\s\S]*mobileResultBack/, 'Mobile app-bar arrow should use the back callback');
 assert.match(mobileSource, /<h1[^>]*>\s*\{t\('analyze\.mobileResultHeading'\)\}/, 'Mobile h1 should keep the separate results heading key');
 assert.match(mobileSource, /mobileLostPointsValue', \{ count: lostPoints \}/, 'Lost-points summary should stay dynamic');
 assert.match(mobileSource, /mobileFreeSummaryValue', \{ count: access\.freeChapter \? 1 : 0 \}/, 'Free-summary count should stay derived from access');
@@ -78,6 +115,15 @@ assert.match(
 );
 assert.match(mobileSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\}/, 'Mobile app bar should use HugeIcons for back');
 assert.match(mobileSource, /HugeiconsIcon icon=\{StarIcon\} size=\{32\}/, 'Score card should use the 32px HugeIcons star');
+assert.match(scoreCardSource, /rounded-\[8px\] bg-\[#ffffff\] px-6 py-4/, 'Score card should use white 8px card with 24px horizontal and 16px vertical padding');
+assert.match(scoreCardSource, /<div className="flex items-center gap-6">/, 'Score card icon and copy should use a 24px row gap');
+assert.match(scoreCardSource, /text-\[12px\] font-medium leading-3 text-\[#865bcf\]/, 'Score label should use #865bcf at 12px/12px medium');
+assert.match(scoreCardSource, /text-\[32px\] leading-8 text-\[#161519\]/, 'Score value should use #161519 at 32px/32px');
+assert.match(scoreCardSource, /<p className="mt-1 flex items-end font-medium leading-none">[\s\S]*<span className="text-\[32px\] leading-8 text-\[#161519\]">\{totalScore\}<\/span>[\s\S]*<span className="ml-1 pb-\[4px\]">[\s\S]*<span className="text-\[20px\] font-normal leading-5 text-\[#524d5b\]">\/\{totalMaxScore\}<\/span>/, 'Score row should align items to flex-end with a 32px score and nested 20px denominator wrapper');
+assert.doesNotMatch(scoreCardSource, /items-baseline/, 'Score row must not use baseline alignment');
+assert.doesNotMatch(scoreCardSource, /pb-4/, 'Score card must use exact 4px denominator padding, not Tailwind pb-4');
+assert.doesNotMatch(scoreCardSource, /<span className="[^"]*py-4[^"]*">\/[^{<]+/, 'Denominator wrapper should not use vertical padding');
+assert.doesNotMatch(scoreCardSource, /#6a37c3|#252329|#858188/, 'Score card should not retain legacy score-block colors');
 assert.match(mobileSource, /HugeiconsIcon icon=\{BookOpen01Icon\} size=\{16\}/, 'Topic rows should use the 16px HugeIcons book icon');
 assert.doesNotMatch(mobileSource, /<svg\b/, 'Mobile results should not introduce fake inline SVG icons');
 assert.match(mobileSource, /topic_codes \?\? \[\]/, 'Mobile chapters should read the optional topic_codes contract');
@@ -236,7 +282,7 @@ for (const [locale, source] of [['RU', ruSource], ['KK', kkSource]]) {
 
 for (const [locale, source, expected] of [
   ['RU', ruSource, {
-    mobileResultTitle: 'Результаты анализа',
+    mobileResultTitle: 'Слабые темы',
     mobileResultHeading: 'Результаты',
     mobileScoreLabel: 'Ваш балл',
     mobileLostPointsLabel: 'Потеряно',
@@ -247,7 +293,7 @@ for (const [locale, source, expected] of [
     mobileFreeSummaryHelper: 'Хотите получить больше? Оформите подписку',
   }],
   ['KK', kkSource, {
-    mobileResultTitle: 'Талдау нәтижелері',
+    mobileResultTitle: 'Әлсіз тақырыптар',
     mobileResultHeading: 'Нәтижелер',
     mobileScoreLabel: 'Сіздің балыңыз',
     mobileLostPointsLabel: 'Жоғалғаны',

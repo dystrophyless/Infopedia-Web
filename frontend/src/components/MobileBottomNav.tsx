@@ -36,6 +36,10 @@ export function MobileBottomNav() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const searchIsActive = SEARCH_NAV_PATHS.has(location.pathname);
   const testsIsActive = location.pathname.startsWith('/tests');
+  const isWeakTopicsView =
+    location.pathname === '/analyze' && new URLSearchParams(location.search).get('view') === 'latest';
+  const analyzeIsActive = location.pathname === '/analyze' && !isWeakTopicsView;
+  const profileIsActive = location.pathname === '/profile' || isWeakTopicsView;
 
   return (
     <>
@@ -66,8 +70,8 @@ export function MobileBottomNav() {
 
           <Link
             to="/analyze"
-            className={getItemClass(location.pathname === '/analyze')}
-            aria-current={location.pathname === '/analyze' ? 'page' : undefined}
+            className={getItemClass(analyzeIsActive)}
+            aria-current={analyzeIsActive ? 'page' : undefined}
           >
             <HugeiconsIcon icon={ChartAnalysisIcon} size={24} strokeWidth={1.5} />
             <span className={labelClass}>{t('nav.analyze')}</span>
@@ -75,8 +79,8 @@ export function MobileBottomNav() {
 
           <Link
             to="/profile"
-            className={getItemClass(location.pathname === '/profile')}
-            aria-current={location.pathname === '/profile' ? 'page' : undefined}
+            className={getItemClass(profileIsActive)}
+            aria-current={profileIsActive ? 'page' : undefined}
           >
             <HugeiconsIcon icon={UserIcon} size={24} strokeWidth={1.5} />
             <span className={labelClass}>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
@@ -11,7 +11,12 @@ import {
   StarIcon,
   UserAiIcon,
 } from '@hugeicons/core-free-icons';
-import { buildAnalyzeSseUrl, createAnalyzeTask, getAnalyzeTask } from '../api/analyze';
+import {
+  buildAnalyzeSseUrl,
+  createAnalyzeTask,
+  getAnalyzeTask,
+  getLatestAnalyzeResult,
+} from '../api/analyze';
 import { useSSE } from '../hooks/useSSE';
 import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
 import { clampScorePercent, getScoreStatus } from '../utils/scoreStatus';
@@ -25,6 +30,7 @@ import {
   PageHeader,
   Progress,
   SegmentedControl,
+  Skeleton,
   StatCard,
   StatusPanel,
   Surface,
@@ -54,6 +60,9 @@ type AnalyzeSortDirection = 'weakFirst' | 'strongFirst';
 
 export function Analyze() {
   const { i18n, t } = useTranslation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isLatestView = searchParams.get('view') === 'latest';
   const [file, setFile] = useState<File | null>(null);
   const [createdTask, setCreatedTask] = useState<AnalyzeTask | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -63,24 +72,71 @@ export function Analyze() {
   const [pollError, setPollError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [sortDirection, setSortDirection] = useState<AnalyzeSortDirection>('weakFirst');
+  const [latestResults, setLatestResults] = useState<AnalyzeChapterResult[] | null | undefined>(undefined);
+  const [latestError, setLatestError] = useState<string | null>(null);
+  const [latestRetryKey, setLatestRetryKey] = useState(0);
 
-  const sseUrl = taskId ? buildAnalyzeSseUrl(taskId) : null;
+  const sseUrl = !isLatestView && taskId ? buildAnalyzeSseUrl(taskId) : null;
   const {
     messages,
     result: sseResult,
     error: sseError,
   } = useSSE<AnalyzeTask>(sseUrl);
 
-  const currentTask = sseResult ?? pollTask ?? messages.at(-1) ?? createdTask;
-  const isTerminal = currentTask ? TERMINAL_STATUSES.has(currentTask.status) : false;
-  const isProcessing = submitting || Boolean(taskId && !isTerminal && !pollError);
-  const showUploadForm = !isTerminal && !isProcessing;
-  const failureMessage =
-    submitError ??
-    pollError ??
-    (currentTask?.status === 'failure' ? getTaskErrorMessage(currentTask.error) : null) ??
-    (sseError && !polling ? sseError : null);
-  const successResults = currentTask?.status === 'success' ? currentTask.result ?? [] : [];
+  useEffect(() => {
+    if (!isLatestView) {
+      setLatestResults(undefined);
+      setLatestError(null);
+      return;
+    }
+
+    let active = true;
+    setLatestResults(undefined);
+    setLatestError(null);
+
+    getLatestAnalyzeResult(i18n.language)
+      .then((results) => {
+        if (!active) return;
+        const normalizedResults = Array.isArray(results) && results.length > 0 ? results : [];
+        setLatestResults(normalizedResults);
+        if (normalizedResults.length === 0) {
+          setSearchParams((params) => {
+            params.delete('view');
+            return params;
+          }, { replace: true });
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        setLatestResults(null);
+        setLatestError(getApiErrorMessage(err, t('common.error')));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [i18n.language, isLatestView, latestRetryKey, setSearchParams, t]);
+
+  // A latest-result deep link is an independent read-only flow. Ignore any
+  // task/SSE/poll state left over from a previous upload while it is active.
+  const currentTask = isLatestView ? undefined : sseResult ?? pollTask ?? messages.at(-1) ?? createdTask;
+  const hasLatestResult = isLatestView && Array.isArray(latestResults) && latestResults.length > 0;
+  const hasLatestError = isLatestView && latestResults === null && latestError !== null;
+  const isLatestLoading = isLatestView && latestResults === undefined && latestError === null;
+  const isTerminal = currentTask ? TERMINAL_STATUSES.has(currentTask.status) : hasLatestResult || hasLatestError;
+  const isProcessing = !isLatestView && (submitting || Boolean(taskId && !isTerminal && !pollError));
+  const showUploadForm = !isLatestView && !isTerminal && !isProcessing;
+  const failureMessage = isLatestView
+    ? null
+    : submitError ??
+      pollError ??
+      (currentTask?.status === 'failure' ? getTaskErrorMessage(currentTask.error) : null) ??
+      (sseError && !polling ? sseError : null);
+  const successResults = currentTask?.status === 'success'
+    ? currentTask.result ?? []
+    : hasLatestResult
+      ? latestResults
+      : [];
   const uniqueSuccessResults = useMemo(
     () => getUniqueAnalyzeChapterResults(successResults),
     [successResults],
@@ -94,10 +150,16 @@ export function Analyze() {
     () => selectAnalyzeResultAccess(uniqueSuccessResults),
     [uniqueSuccessResults],
   );
-  const isMobileResult = !isProcessing && currentTask?.status === 'success';
+  const isMobileResult = !isProcessing && (currentTask?.status === 'success' || hasLatestResult);
+
+  function retryLatest() {
+    setLatestResults(undefined);
+    setLatestError(null);
+    setLatestRetryKey((value) => value + 1);
+  }
 
   useEffect(() => {
-    if (!taskId || !sseError || sseResult) return;
+    if (isLatestView || !taskId || !sseError || sseResult) return;
 
     const activeTaskId = taskId;
     let cancelled = false;
@@ -135,7 +197,7 @@ export function Analyze() {
       if (timer !== undefined) window.clearTimeout(timer);
       setPolling(false);
     };
-  }, [sseError, sseResult, taskId, t]);
+  }, [isLatestView, sseError, sseResult, taskId, t]);
 
   function handleFileChange(nextFile: File | null) {
     setFile(nextFile);
@@ -178,6 +240,18 @@ export function Analyze() {
     setPollError(null);
     setPollTask(null);
     setSortDirection('weakFirst');
+    if (isLatestView) {
+      navigate({ pathname: '/analyze', search: '' }, { replace: true });
+    }
+  }
+
+  function handleMobileResultBack() {
+    if (isLatestView) {
+      navigate('/profile', { replace: true });
+      return;
+    }
+
+    reset();
   }
 
   return (
@@ -186,15 +260,17 @@ export function Analyze() {
       gutter="none"
       className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing ? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult ? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS}
     >
-      <PageHeader
-        className={`${showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS} ${isMobileResult ? 'max-md:hidden' : ''}`}
-        eyebrow={!showUploadForm ? t('analyze.eyebrow') : undefined}
-        eyebrowClassName={isProcessing ? 'max-md:hidden' : undefined}
-        title={t('analyze.title')}
-        description={!showUploadForm ? t('analyze.description') : undefined}
-        descriptionClassName={isProcessing ? 'max-md:hidden' : undefined}
-        trailing={isTerminal ? <Button onClick={reset}>{t('analyze.newUpload')}</Button> : undefined}
-      />
+      {!isLatestLoading && (
+        <PageHeader
+          className={`${showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS} ${isMobileResult ? 'max-md:hidden' : ''}`}
+          eyebrow={!showUploadForm ? t('analyze.eyebrow') : undefined}
+          eyebrowClassName={isProcessing ? 'max-md:hidden' : undefined}
+          title={t('analyze.title')}
+          description={!showUploadForm ? t('analyze.description') : undefined}
+          descriptionClassName={isProcessing ? 'max-md:hidden' : undefined}
+          trailing={isTerminal && !hasLatestError ? <Button onClick={reset}>{t('analyze.newUpload')}</Button> : undefined}
+        />
+      )}
 
       {showUploadForm && (
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
@@ -309,6 +385,8 @@ export function Analyze() {
         </form>
       )}
 
+      {isLatestLoading && <AnalyzeLatestResultSkeleton onBack={handleMobileResultBack} />}
+
       {isProcessing && (
         <AnalyzeProgress
           currentTask={currentTask}
@@ -320,7 +398,11 @@ export function Analyze() {
         <AnalyzeFailure message={failureMessage ?? t('common.error')} onReset={reset} />
       )}
 
-      {!isProcessing && currentTask?.status === 'success' && (
+      {!isProcessing && hasLatestError && (
+        <AnalyzeFailure message={latestError ?? t('common.error')} onReset={retryLatest} />
+      )}
+
+      {!isProcessing && !hasLatestError && (currentTask?.status === 'success' || hasLatestResult) && (
         <>
           <div className="hidden md:block">
             <AnalyzeResults
@@ -331,11 +413,150 @@ export function Analyze() {
             />
           </div>
           <div className="md:hidden">
-            <AnalyzeMobileResults access={resultAccess} onReset={reset} />
+            <AnalyzeMobileResults
+              access={resultAccess}
+              onBack={handleMobileResultBack}
+              onTitleClick={isLatestView ? handleMobileResultBack : undefined}
+            />
           </div>
         </>
       )}
     </PageContainer>
+  );
+}
+
+export function AnalyzeLatestResultSkeleton({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <div role="status" aria-live="polite" aria-busy="true">
+      <span className="sr-only">{t('common.loading')}</span>
+
+      <section className="hidden md:block mt-8" aria-hidden="true">
+        <div className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <Skeleton shape="text" className="h-4 w-40" />
+          <Skeleton className="h-10 w-56" />
+        </div>
+
+        <div className="mt-6 grid gap-4">
+          <AnalyzeLatestResultDesktopChapterSkeleton />
+          <AnalyzeLatestResultDesktopChapterSkeleton />
+          <AnalyzeLatestResultDesktopChapterSkeleton />
+        </div>
+      </section>
+
+      <section className="w-full overflow-x-hidden bg-[#efebf6] text-[#161519] md:hidden max-md:-mx-4 max-md:-mt-14 max-md:w-[calc(100%+2rem)]">
+        <MobileAppBar
+          title={(
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label={t('analyze.mobileResultTitle')}
+              className="w-full truncate border-0 bg-transparent p-0 text-left text-inherit outline-none focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+            >
+              {t('analyze.mobileResultTitle')}
+            </button>
+          )}
+          headingLevel={2}
+          titleAlign="start"
+          safeArea
+          className="mt-16 h-16 min-h-16 px-4 text-[#252329] [&>h2]:text-[16px] [&>h2]:leading-4 [&>h2]:text-[#252329]"
+          leading={(
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label={t('analyze.mobileResultBack')}
+              className="flex size-10 items-center justify-center rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+          )}
+        />
+
+        <div className="mx-auto w-full max-w-[430px] px-6 pb-8" aria-hidden="true">
+          <Skeleton shape="text" className="mt-6 h-5 w-40" />
+
+          <article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">
+            <div className="flex items-center gap-6">
+              <Skeleton shape="circle" className="size-8 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <Skeleton shape="text" className="h-3 w-24" />
+                <Skeleton shape="text" className="mt-2 h-8 w-20" />
+              </div>
+            </div>
+          </article>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <AnalyzeLatestResultMobileSummarySkeleton />
+            <AnalyzeLatestResultMobileSummarySkeleton />
+          </div>
+
+          <Skeleton shape="text" className="mt-8 h-5 w-48" />
+
+          <div className="mt-4 grid gap-3">
+            <AnalyzeLatestResultMobileChapterSkeleton />
+            <AnalyzeLatestResultMobileChapterSkeleton />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AnalyzeLatestResultDesktopChapterSkeleton() {
+  return (
+    <article className="rounded-surface border border-border bg-surface p-6" aria-hidden="true">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <Skeleton shape="text" className="h-5 w-64 max-w-full" />
+          <Skeleton shape="text" className="mt-3 h-4 w-44 max-w-full" />
+        </div>
+        <Skeleton shape="text" className="h-4 w-20" />
+      </div>
+      <Skeleton className="mt-6 h-2 w-full" />
+      <div className="mt-6 grid gap-3">
+        <Skeleton shape="text" className="h-4 w-3/4" />
+        <Skeleton shape="text" className="h-4 w-2/3" />
+      </div>
+    </article>
+  );
+}
+
+function AnalyzeLatestResultMobileSummarySkeleton() {
+  return (
+    <article className="min-w-0 rounded-[8px] bg-[#ffffff] p-4" aria-hidden="true">
+      <Skeleton shape="text" className="h-3 w-24 max-w-full" />
+      <Skeleton shape="text" className="mt-2 h-4 w-28 max-w-full" />
+      <Skeleton shape="text" className="mt-3 h-3 w-20 max-w-full" />
+    </article>
+  );
+}
+
+function AnalyzeLatestResultMobileChapterSkeleton() {
+  return (
+    <article className="min-w-0 rounded-[8px] bg-[#ffffff] p-6" aria-hidden="true">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <Skeleton shape="text" className="h-4 w-44 max-w-full" />
+          <Skeleton shape="text" className="mt-2 h-3 w-32 max-w-full" />
+        </div>
+        <Skeleton shape="text" className="h-3 w-16" />
+      </div>
+      <Skeleton className="my-5 h-px w-full" />
+      <Skeleton shape="text" className="h-4 w-28 max-w-full" />
+      <Skeleton shape="text" className="mt-2 h-3 w-40 max-w-full" />
+      <div className="mt-4 grid gap-2">
+        <Skeleton shape="text" className="h-3 w-4/5" />
+        <Skeleton shape="text" className="h-3 w-3/5" />
+        <Skeleton shape="text" className="h-3 w-2/3" />
+      </div>
+    </article>
   );
 }
 
@@ -597,10 +818,12 @@ export function AnalyzeResults({
 
 export function AnalyzeMobileResults({
   access,
-  onReset,
+  onBack,
+  onTitleClick,
 }: {
   access: AnalyzeResultAccess;
-  onReset: () => void;
+  onBack: () => void;
+  onTitleClick?: () => void;
 }) {
   const { t } = useTranslation();
   const totalScore = access.allChapters.reduce((sum, chapter) => sum + chapter.score, 0);
@@ -610,7 +833,16 @@ export function AnalyzeMobileResults({
   return (
     <section className="w-full overflow-x-hidden bg-[#efebf6] text-[#161519]">
       <MobileAppBar
-        title={t('analyze.mobileResultTitle')}
+        title={onTitleClick ? (
+          <button
+            type="button"
+            onClick={onTitleClick}
+            aria-label={t('analyze.mobileResultTitle')}
+            className="w-full truncate border-0 bg-transparent p-0 text-left text-inherit outline-none focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+          >
+            {t('analyze.mobileResultTitle')}
+          </button>
+        ) : t('analyze.mobileResultTitle')}
         headingLevel={2}
         titleAlign="start"
         safeArea
@@ -618,7 +850,7 @@ export function AnalyzeMobileResults({
         leading={(
           <button
             type="button"
-            onClick={onReset}
+            onClick={onBack}
             aria-label={t('analyze.mobileResultBack')}
             className="flex size-10 items-center justify-center rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
           >

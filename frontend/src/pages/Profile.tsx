@@ -351,6 +351,7 @@ function MobileProfileHome({
   onSelectTab: (tab: ProfileTabId) => void;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const lang = useLangStore((state) => state.lang);
   const setLang = useLangStore((state) => state.setLang);
   const [isLanguageSheetOpen, setIsLanguageSheetOpen] = useState(false);
@@ -447,7 +448,7 @@ function MobileProfileHome({
           icon={MentorIcon}
           title={t('profile.navWeakTopics')}
           helper={t('profile.mobileWeakTopicsHelper')}
-          onClick={() => onSelectTab('weakTopics')}
+          onClick={() => navigate('/analyze?view=latest')}
         />
       </section>
 

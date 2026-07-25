@@ -49,8 +49,32 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /max-md:pb-\[88px\]/,
-  'Layout should reserve exactly the Figma 88px bottom-navigation height on mobile',
+  /max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
+  'Layout should reserve the semantic mobile bottom-navigation height on mobile',
+);
+
+assert.match(
+  layoutSource,
+  /className="min-h-dvh flex flex-col bg-bg md:min-h-screen"/,
+  'Layout should use the dynamic mobile viewport and desktop screen-height roots',
+);
+
+assert.match(
+  layoutSource,
+  /className=\{`flex-1 w-full max-md:min-h-0 max-md:min-w-0/,
+  'Layout main should allow mobile flex children to shrink without horizontal overflow',
+);
+
+assert.match(
+  layoutSource,
+  /isAuthenticated\s*\?\s*'max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\] max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]'/,
+  'Authenticated mobile main should expose the available-height variable and semantic bottom-nav reserve',
+);
+
+assert.match(
+  layoutSource,
+  /max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
+  'Authenticated mobile main should use one semantic bottom-nav clearance token',
 );
 
 assert.match(

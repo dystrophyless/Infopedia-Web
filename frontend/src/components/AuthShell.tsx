@@ -27,12 +27,11 @@ export function AuthShell({
         </Link>
       </header>
 
-      <header className="relative flex h-[112px] w-full justify-center px-8 lg:hidden">
-        <AuthMobileStatusBar />
-        <Link to="/" className="absolute top-16 left-1/2 -translate-x-1/2">
+      <header className="relative flex h-16 w-full justify-center px-8 lg:hidden">
+        <Link to="/" className="absolute top-4 left-1/2 -translate-x-1/2">
           <img src="/logo.svg" alt="Infopedia" className="h-8 w-auto" />
         </Link>
-        <div className="absolute right-8 top-16">
+        <div className="absolute right-8 top-4">
           <AuthMobileLanguageToggle />
         </div>
         <div className="absolute bottom-0 left-0 h-px w-full bg-[#eae9ec]" />
@@ -48,33 +47,6 @@ export function AuthShell({
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function AuthMobileStatusBar() {
-  return (
-    <div className="absolute left-0 top-0 h-12 w-full text-[#161519]" aria-hidden="true">
-      <span className="absolute left-[57px] top-[25px] text-[16px] font-medium leading-none">
-        20:31
-      </span>
-      <div className="absolute right-[43px] top-[22px] flex h-4 items-center gap-[6px]">
-        <span className="flex h-[12px] w-[18px] items-end gap-[2px]">
-          <span className="h-[4px] w-[3px] rounded-sm bg-[#161519]" />
-          <span className="h-[6px] w-[3px] rounded-sm bg-[#161519]" />
-          <span className="h-[8px] w-[3px] rounded-sm bg-[#161519]" />
-          <span className="h-[10px] w-[3px] rounded-sm bg-[#161519]" />
-        </span>
-        <span className="relative h-[12px] w-[16px]">
-          <span className="absolute bottom-0 left-0 h-[4px] w-[16px] rounded-t-full border-t-2 border-[#161519]" />
-          <span className="absolute bottom-[3px] left-[3px] h-[5px] w-[10px] rounded-t-full border-t-2 border-[#161519]" />
-          <span className="absolute bottom-[6px] left-[6px] h-[4px] w-[4px] rounded-t-full border-t-2 border-[#161519]" />
-        </span>
-        <span className="relative h-[12px] w-[24px] rounded-[4px] border-2 border-[#161519]">
-          <span className="absolute -right-[4px] top-[3px] h-[4px] w-[2px] rounded-r-sm bg-[#161519]" />
-          <span className="absolute left-[2px] top-[2px] h-[4px] w-[16px] rounded-sm bg-[#161519]" />
-        </span>
       </div>
     </div>
   );

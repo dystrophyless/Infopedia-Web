@@ -24,8 +24,14 @@ assert.match(
 
 assert.match(
   authShellSource,
-  /<header className="[^"]*lg:hidden[\s\S]*AuthMobileStatusBar[\s\S]*\/logo\.svg[\s\S]*AuthMobileLanguageToggle/,
-  'AuthShell should render the Figma-style mobile logo and language control header',
+  /<header className="[^\"]*lg:hidden[\s\S]*\/logo\.svg[\s\S]*AuthMobileLanguageToggle[\s\S]*h-px w-full bg-\[#eae9ec\]/,
+  'AuthShell should render the Figma-style mobile logo, language control, and divider header',
+);
+
+assert.doesNotMatch(
+  authShellSource,
+  new RegExp(`${['AuthMobile', 'StatusBar'].join('')}|${['20', '31'].join(':')}`),
+  'AuthShell should not render a simulated mobile status bar',
 );
 
 assert.match(
@@ -36,14 +42,14 @@ assert.match(
 
 assert.match(
   authShellSource,
-  /h-\[112px\][\s\S]*className="absolute top-16 left-1\/2[\s\S]*h-px w-full bg-\[#eae9ec\]/,
-  'AuthShell mobile header should match the Figma 112px prototype header and 64px logo offset',
+  /h-16[\s\S]*className="absolute top-4 left-1\/2[\s\S]*right-8 top-4[\s\S]*h-px w-full bg-\[#eae9ec\]/,
+  'AuthShell mobile header should use the 64px height and 16px logo/language offsets',
 );
 
 assert.match(
   authShellSource,
   /max-lg:pt-\[65px\]/,
-  'AuthShell mobile content should start at the Figma 177px title offset',
+  'AuthShell mobile content should start at the Figma 129px title offset (64px header + 65px padding)',
 );
 
 assert.match(

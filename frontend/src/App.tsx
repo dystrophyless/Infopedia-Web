@@ -18,6 +18,7 @@ import { Tests } from './pages/Tests';
 import { TestQuestionPage } from './pages/TestQuestionPage';
 import { PracticeByTopicPage } from './pages/PracticeByTopicPage';
 import { Profile } from './pages/Profile';
+import { Favorites } from './pages/Favorites';
 import { useAuthStore } from './stores/authStore';
 import { useFavoritesStore } from './features/favorites/model';
 
@@ -136,6 +137,15 @@ export default function App() {
           element={
             <Protected>
               <Profile />
+            </Protected>
+          }
+        />
+
+        <Route
+          path="/favorites"
+          element={
+            <Protected>
+              <Favorites />
             </Protected>
           }
         />

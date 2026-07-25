@@ -167,7 +167,8 @@ function scanClassString(filePath, source, content, offset) {
 
   for (const token of tokens) {
     const { utility, scope } = responsiveScope(token);
-    if (utility.startsWith('leading-')) {
+    // `leading-only` is an app-bar layout enum, not a Tailwind line-height utility.
+    if (utility.startsWith('leading-') && utility !== 'leading-only') {
       const resolved = resolveLineHeight(utility);
       lineHeights.set(scope, { resolved, token });
       if (resolved.kind === 'forbidden') {
@@ -217,7 +218,7 @@ function scanClassStrings(filePath, source) {
     const content = match[1] ?? match[2] ?? match[3] ?? '';
     const hasTypographyClass = classTokens(content).some((token) => {
       const { utility } = responsiveScope(token);
-      return utility.startsWith('leading-') || utility.startsWith('text-');
+      return (utility.startsWith('leading-') && utility !== 'leading-only') || utility.startsWith('text-');
     });
     if (!hasTypographyClass) continue;
     const offset = match.index ?? 0;

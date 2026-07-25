@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
@@ -17,6 +18,8 @@ import { Tests } from './pages/Tests';
 import { TestQuestionPage } from './pages/TestQuestionPage';
 import { PracticeByTopicPage } from './pages/PracticeByTopicPage';
 import { Profile } from './pages/Profile';
+import { useAuthStore } from './stores/authStore';
+import { useFavoritesStore } from './features/favorites/model';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +34,21 @@ function Public({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const ownerUserId = useAuthStore((state) => state.user?.id ?? null);
+  const favoritesOwnerUserId = useFavoritesStore((state) => state.ownerUserId);
+  const setOwnerUserId = useFavoritesStore((state) => state.setOwnerUserId);
+
+  useEffect(() => {
+    setOwnerUserId(ownerUserId);
+  }, [ownerUserId, setOwnerUserId]);
+
+  // Keep every route, including public term details, from mounting against
+  // another user's cached favorite state while ownership is synchronized.
+  // Both values start as null for an unauthenticated/loading session, so the
+  // initial render is not blocked and the effect can establish the next owner.
+  const ownerReady = favoritesOwnerUserId === ownerUserId;
+  if (!ownerReady) return null;
+
   return (
     <BrowserRouter>
       <Routes>
@@ -121,7 +139,6 @@ export default function App() {
             </Protected>
           }
         />
-
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

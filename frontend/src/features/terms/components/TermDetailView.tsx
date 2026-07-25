@@ -10,6 +10,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { Definition, Term } from '../../../types';
 import { useAuthStore } from '../../../stores/authStore';
+import { FavoriteToggle } from '../../favorites/components';
+import { useFavoritesStore } from '../../favorites/model';
 import { buildDefinitionMetadataItems, getDefinitionIndex } from '../model';
 import { DefinitionMetadata } from './DefinitionMetadata';
 
@@ -31,17 +33,19 @@ function getSourceRows(definition: Definition | undefined, t: TFunction) {
   }).map((item) => ({ ...item, icon: sourceIcons[item.key] }));
 }
 
-export function TermDetailHeader({ backTo }: { backTo: string }) {
+export function TermDetailHeader({ backTo, term }: { backTo: string; term?: Term | null }) {
   const { t } = useTranslation();
   return (
-    <header className="flex h-[72px] items-center justify-between px-4 md:hidden">
-      <Link to={backTo} aria-label={t('termDetail.back')} className="flex items-center gap-4 text-[#252329]">
-        <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
-        <span className="text-[16px] font-medium leading-4">{t('termDetail.title')}</span>
-      </Link>
-      <div className="flex items-center gap-4 text-[#252329]">
-        <button type="button" aria-label={t('termDetail.saveAria')} className="flex size-6 items-center justify-center"><HugeiconsIcon icon={Bookmark02Icon} size={24} strokeWidth={1.6} /></button>
-        <button type="button" aria-label={t('termDetail.moreAria')} className="flex size-6 items-center justify-center"><HugeiconsIcon icon={MoreHorizontalIcon} size={24} strokeWidth={1.7} /></button>
+    <header className="mx-4 grid h-6 min-h-6 grid-cols-[24px_minmax(0,1fr)_88px] items-center gap-4 overflow-visible md:hidden">
+      <div className="relative size-6 overflow-visible">
+        <Link to={backTo} aria-label={t('termDetail.back')} className="absolute left-1/2 top-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[#252329]">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
+        </Link>
+      </div>
+      <h1 className="truncate text-[16px] font-medium leading-4 text-[#252329]">{t('termDetail.title')}</h1>
+      <div className="flex items-center justify-end gap-0 text-[#252329]">
+        {term && <FavoriteToggle termRef={term.public_id} termName={term.name} ensureStatus={false} appearance="mobile-header" />}
+        <button type="button" aria-label={t('termDetail.moreAria')} className="flex size-11 items-center justify-center border-0 bg-transparent p-0 text-[#252329]"><HugeiconsIcon icon={MoreHorizontalIcon} size={24} strokeWidth={1.7} /></button>
       </div>
     </header>
   );
@@ -113,6 +117,7 @@ function TermDetailTestCta({ isAuthenticated }: { isAuthenticated: boolean }) {
 export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
   const definitions = term?.definitions ?? [];
   const [index, setIndex] = useState(() => getDefinitionIndex(definitions, selectedDefinitionPublicId));
   useEffect(() => { setIndex(getDefinitionIndex(term?.definitions ?? [], selectedDefinitionPublicId)); }, [term, selectedDefinitionPublicId]);
@@ -122,17 +127,21 @@ export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms 
   const hasError = loadState === 'error' && !term;
   const goPrevious = () => setIndex((value) => Math.max(0, value - 1));
   const goNext = () => setIndex((value) => Math.min(total - 1, value + 1));
+  useEffect(() => {
+    if (!isAuthenticated || !term) return;
+    void ensureStatuses([term.public_id]).catch(() => undefined);
+  }, [ensureStatuses, isAuthenticated, term]);
 
   return (
-    <div className="mx-auto max-w-[860px] px-6 py-14 max-md:max-w-none max-md:bg-canvas max-md:px-0 max-md:pb-8 max-md:pt-[calc(56px+env(safe-area-inset-top))]">
-      <TermDetailHeader backTo={backTo} />
-      <div className="hidden max-md:block max-md:px-6 max-md:pb-[108px]">
+    <div className="mx-auto max-w-[860px] px-6 py-14 max-md:max-w-none max-md:bg-canvas max-md:px-0 max-md:pb-8 max-md:pt-[var(--mobile-page-app-bar-offset)]">
+      <TermDetailHeader backTo={backTo} term={term} />
+      <div className="hidden max-md:block max-md:px-6 max-md:pb-[108px] max-md:pt-[42px]">
         {isLoading && <p className="py-20 text-center text-action-selected">{t('termDetail.loading')}</p>}
         {hasError && <p className="py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
         {term && <>
           {total === 0 && <p className="py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
           {current && <>
-            <section className="mt-2"><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{term.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
+            <section><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{term.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
             <TermDetailStatPanel />
             {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] leading-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
             <TermDetailSourcePanel definition={current} />
@@ -144,8 +153,8 @@ export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms 
       <div className="max-md:hidden">
         <Link to={backTo} className="mb-6 inline-flex items-center gap-2 text-[14px] font-medium leading-[14px] text-primary/70 hover:text-accent"><HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.7} />{t('termDetail.back')}</Link>
         {(isLoading || hasError) && <p className="py-12 text-center text-muted">{isLoading ? t('termDetail.loading') : t('termDetail.loadFailed')}</p>}
-        {term && total === 0 && <><h1 className="mb-8 text-[44px] font-medium leading-[44px] text-text">{term.name}</h1><p className="py-8 text-center text-muted">{t('termDetail.noDefinitions')}</p></>}
-        {term && current && <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature"><h1 className="mb-4 text-[30px] font-medium leading-[30px] text-text">{term.name}</h1><p className="max-w-[760px] whitespace-pre-line text-[18px] leading-[18px] text-text-body">{current.text}</p><DefinitionMetadata definition={current} variant="detail" showIcons /></article>}
+        {term && total === 0 && <><div className="mb-8 flex items-start justify-between gap-4"><h1 className="text-[44px] font-medium leading-[44px] text-text">{term.name}</h1><FavoriteToggle termRef={term.public_id} termName={term.name} ensureStatus={false} /></div><p className="py-8 text-center text-muted">{t('termDetail.noDefinitions')}</p></>}
+        {term && current && <article className="rounded-[15px] border border-border bg-surface p-8 shadow-feature"><div className="mb-4 flex items-start justify-between gap-4"><h1 className="text-[30px] font-medium leading-[30px] text-text">{term.name}</h1><FavoriteToggle termRef={term.public_id} termName={term.name} ensureStatus={false} /></div><p className="max-w-[760px] whitespace-pre-line text-[18px] leading-[18px] text-text-body">{current.text}</p><DefinitionMetadata definition={current} variant="detail" showIcons /></article>}
         {term && total > 1 && <div className="mt-8 flex items-center justify-between text-[16px] leading-4"><button type="button" onClick={goPrevious} disabled={index === 0} className="flex items-center gap-2 rounded-[10px] border border-border px-5 py-3 text-text-body transition-colors hover:bg-surface disabled:opacity-40"><HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.7} />{t('common.previous')}</button><span className="text-[16px] text-muted">{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="flex items-center gap-2 rounded-[10px] border border-border px-5 py-3 text-text-body transition-colors hover:bg-surface disabled:opacity-40">{t('common.next')}<HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.7} /></button></div>}
       </div>
     </div>

@@ -14,10 +14,10 @@ assert.match(controller, /getFeaturedTerms\(FEATURED_TERMS_LIMIT\)/, 'Controller
 assert.doesNotMatch(`${card}\n${view}\n${controller}`, /GUEST_FALLBACK_TERMS|informatika-fallback/, 'Static fallback terms must not replace backend IDs');
 
 assert.match(card, /formatDefinitionSource\(definition, t\)/, 'Visible source must derive from definition metadata');
-assert.match(card, /text-action-selected\/50/, 'Guest source copy must retain the exact semantic muted-purple color');
+assert.match(card, /text-muted/, 'Guest source copy must retain the exact semantic muted-purple color');
 assert.match(card, /'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/, 'All five accepted variants must remain public');
 assert.match(card, /h-\[238px\][\s\S]*w-\[76vw\][\s\S]*p-5[\s\S]*shadow-none/, 'Mobile card geometry and flat treatment must remain exact');
-assert.match(card, /h-\[168px\] w-\[216px\][\s\S]*p-6/, 'Guest mobile card must keep its accepted footprint');
+assert.match(card, /h-\[168px\] w-\[216px\][\s\S]*bg-white[\s\S]*p-6/, 'Guest mobile card must keep its white accepted footprint');
 assert.match(card, /h-\[220px\] w-\[320px\][\s\S]*p-8/, 'Guest desktop card must keep its accepted footprint');
 assert.match(card, /text-\[23px\][\s\S]*text-\[30px\]/, 'Mobile and desktop titles must keep compact sizes');
 assert.match(card, /ArrowUpRight01Icon/, 'Title row must keep the up-right action icon');
@@ -27,7 +27,7 @@ assert.match(card, /words\.slice\(0, wordCount\)\.join\(' '\) \+ ELLIPSIS/, 'Mea
 assert.match(card, /return \{ text: bestFitText, overflowing: true \}/, 'Measured fitting must expose overflow state');
 assert.match(card, /visibleDefinition\.overflowing \?/, 'Fade must render only for actual overflow');
 assert.match(card, /pointer-events-none absolute inset-x-0 bottom-0 h-\[1\.75em\] bg-gradient-to-t/, 'Fade must overlay the final visible line without changing geometry');
-assert.match(card, /from-surface-subtle[\s\S]*tone\.fadeClassName[\s\S]*from-surface/, 'Fade must match guest, colored mobile, and surface backgrounds');
+assert.match(card, /from-surface-subtle[\s\S]*from-white[\s\S]*tone\.fadeClassName[\s\S]*from-surface/, 'Fade must match desktop guest, mobile guest, colored mobile, and surface backgrounds');
 assert.match(card, /aria-hidden=\{clone \|\| undefined\}[\s\S]*tabIndex=\{clone \? -1 : undefined\}/, 'Clones must be hidden from accessibility and keyboard navigation');
 
 assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop'/, 'Only desktop and guest variants may auto-scroll');

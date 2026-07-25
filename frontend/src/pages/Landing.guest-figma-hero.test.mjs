@@ -98,6 +98,16 @@ assert.match(
   /id="mobile-proof"[\s\S]*flex flex-col gap-7[\s\S]*landing\.termExamples[\s\S]*<TermCardCarousel variant="guest" \/>/,
   'Guest mobile proof section should use a gap stack around the real term examples carousel',
 );
+assert.match(
+  guestSectionsSource,
+  /id="mobile-proof"[^>]*pt-12 pb-\[72px\]/,
+  'Guest mobile proof section should preserve the 48px top and 72px bottom Figma spacing',
+);
+assert.match(
+  guestSectionsSource,
+  /text-\[#6e6779\][\s\S]*landing\.termExamples/,
+  'Guest mobile term examples label should use the exact muted-purple color',
+);
 
 assert.match(
   guestSectionsSource,
@@ -237,8 +247,18 @@ assert.match(
 
 assert.match(
   featuredTermCardSource,
-  /h-\[168px\] w-\[216px\] rounded-\[16px\] border-0 bg-surface-subtle/,
-  'Guest term cards should use the taller 216px mobile footprint',
+  /h-\[168px\] w-\[216px\] rounded-\[16px\] border-0 bg-white/,
+  'Guest term cards should use the white 216px mobile footprint',
+);
+assert.match(
+  featuredTermCardSource,
+  /variant === 'guest' \? 'from-white' : isMobileVariant/,
+  'Guest mobile term card fades should match the white card surface',
+);
+assert.match(
+  featuredTermCardSource,
+  /isGuestDesktopVariant \? 'from-surface-subtle'/,
+  'Guest desktop term card fades should retain the subtle desktop surface',
 );
 
 assert.match(

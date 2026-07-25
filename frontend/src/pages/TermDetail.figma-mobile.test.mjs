@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import loadConfig from 'tailwindcss/loadConfig.js';
 
 const pagesDir = import.meta.dirname;
 const srcDir = path.resolve(pagesDir, '..');
@@ -19,11 +22,20 @@ assert.match(container, /state\?\.backTo \?\? \(isAuthenticated \? '\/search' : 
 assert.match(container, /<TermDetailView/, 'Route must delegate rendering to the feature view');
 
 assert.match(view, /max-md:bg-canvas/, 'Mobile detail must use the semantic token exactly matching the Figma canvas');
-assert.match(view, /<header className="flex h-\[72px\] items-center justify-between px-4 md:hidden">/, 'Mobile app bar must keep Figma\'s independent 16px rail');
-assert.match(view, /ArrowLeft01Icon[\s\S]*termDetail\.title[\s\S]*Bookmark02Icon[\s\S]*MoreHorizontalIcon/, 'Header must retain back, save, and overflow controls');
+assert.match(view, /<header className="mx-4 grid h-6 min-h-6 grid-cols-\[24px_minmax\(0,1fr\)_88px\] items-center gap-4 overflow-visible md:hidden">/, 'Mobile detail header must use the canonical compact-compatible grid');
+assert.match(view, /relative size-6 overflow-visible[\s\S]*absolute left-1\/2 top-1\/2 flex size-11[\s\S]*ArrowLeft01Icon/, 'Back action must provide a 44px target around the 24px visual slot');
+assert.match(view, /ArrowLeft01Icon[\s\S]*termDetail\.title[\s\S]*FavoriteToggle[\s\S]*appearance="mobile-header"[\s\S]*MoreHorizontalIcon/, 'Header must retain back, save, and overflow controls');
+assert.match(view, /flex items-center justify-end gap-0[\s\S]*FavoriteToggle[\s\S]*size-11 items-center justify-center border-0 bg-transparent/, 'Trailing actions must remain independently sized, borderless, and right aligned');
 assert.doesNotMatch(view, /\n\s*\.\.\.\s*\n/, 'Overflow control must not regress to literal dots');
 assert.doesNotMatch(view, /max-md:pb-\[calc\(112px\+env\(safe-area-inset-bottom\)\)\][\s\S]*<h1 className="mt-4 text-\[24px\]/, 'Mobile detail content should not render a duplicate term heading before the definition section');
-assert.match(view, /max-md:pt-\[calc\(56px\+env\(safe-area-inset-top\)\)\][\s\S]*<section className="mt-2">[\s\S]*<h2 className="text-\[20px\][\s\S]*termDetail\.definition[\s\S]*<div className="mt-4 min-h-\[124px\] rounded-\[8px\] bg-surface p-6[\s\S]*term\.name[\s\S]*current\.text/, 'Mobile app bar icons must begin at Figma y=80 and the definition heading/card at y=136/y=172');
+assert.match(view, /max-md:pt-\[var\(--mobile-page-app-bar-offset\)\][\s\S]*max-md:pt-\[42px\][\s\S]*<section><h2 className="text-\[20px\][\s\S]*termDetail\.definition[\s\S]*<div className="mt-4 min-h-\[124px\] rounded-\[8px\] bg-surface p-6[\s\S]*term\.name[\s\S]*current\.text/, 'Source/CSS geometry must place the mobile app-bar rail at y=80, definition heading at y=146, and card top at y=182');
+assert.doesNotMatch(view, /safe-area-inset-top|<section className="mt-2">/, 'Mobile detail must not retain legacy safe-area or margin offsets');
+assert.match(view, /<header className="mx-4 grid h-6 min-h-6/, 'Mobile detail header must retain the 24px visual row');
+assert.doesNotMatch(view, /(?:^|[\s"])h-11(?:[\s"])/, 'Mobile detail must not add an in-flow h-11 row');
+assert.doesNotMatch(view, /-mt-(?:\[|\d)/, 'Mobile detail must not compensate with a negative margin');
+assert.equal(80 + 24 + 10, 114, '44px target overflow must end at y=114 when centered on the 24px row');
+assert.equal(114 + 32, 146, 'Definition content must begin at y=146 after the interactive boundary');
+assert.equal(146 - 114, 32, 'Definition anchor gap must remain 32px after the target bottom');
 assert.match(view, /termDetail\.knownStatValue[\s\S]*termDetail\.knownStatLabel[\s\S]*UserCheck01Icon/, 'Known stat and its exact icon must remain');
 assert.match(view, /termDetail\.testedStatValue[\s\S]*termDetail\.testedStatLabel[\s\S]*UserMultiple03Icon/, 'Tested stat and its exact icon must remain');
 assert.match(view, /className="mt-4 grid grid-cols-2 gap-2"[\s\S]*flex[^\"]* items-start justify-between overflow-hidden rounded-\[8px\] bg-\[#ded2f1\] px-4 py-2/, 'Stats must use the Figma intrinsic 48px flex-card geometry without a synthetic minimum height');
@@ -41,6 +53,22 @@ assert.match(view, /function TermDetailTestCta\(\{ isAuthenticated \}[^)]*\)[\s\
 assert.match(view, /max-md:bg-canvas max-md:px-0[\s\S]*max-md:px-6 max-md:pb-\[108px\]/, 'Mobile detail must have one explicit 24px content rail and reserve the CTA height plus its 32px separation');
 assert.match(view, /getDefinitionIndex[\s\S]*goPrevious[\s\S]*goNext/, 'Multiple-definition selection and bounded navigation must remain in the view');
 assert.match(view, /max-md:hidden[\s\S]*shadow-feature/, 'Desktop card geometry must remain separately rendered');
+
+const frontendRoot = path.resolve(srcDir, '..');
+const config = loadConfig(path.join(frontendRoot, 'tailwind.config.ts'));
+const css = await postcss([
+  tailwindcss({
+    ...config,
+    content: [{ raw: '<div class="max-md:pt-[42px]"></div>', extension: 'html' }],
+  }),
+]).process('@tailwind utilities;', { from: undefined });
+let mobileOffsetRule;
+css.root.walkRules((rule) => {
+  if (rule.selector.includes('.max-md\\:pt-\\[42px\\]')) mobileOffsetRule = rule;
+});
+assert.ok(mobileOffsetRule, 'Tailwind must generate the responsive max-md:pt-[42px] utility');
+assert.match(mobileOffsetRule.toString(), /padding-top:\s*42px/, 'Responsive mobile detail offset must compile to padding-top: 42px');
+assert.match(mobileOffsetRule.parent?.params ?? '', /max-width|not all and \(min-width:/, 'Responsive mobile detail offset must remain breakpoint-scoped');
 
 assert.match(search, /relatedTerms=\{getRelatedTerms\(term, displayResults\)\}/, 'Search must keep passing nearby terms into detail state');
 assert.match(termCard, /relatedTerms\?: Pick<Term, 'public_id' \| 'name'>\[\]/, 'Term cards must accept related terms');

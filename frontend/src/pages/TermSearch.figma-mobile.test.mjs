@@ -9,6 +9,10 @@ const termSearchSource = readFileSync(
   path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'),
   'utf8',
 );
+const mobileCardSource = readFileSync(
+  path.resolve(srcDir, 'features/terms/components/MobileSearchTermCard.tsx'),
+  'utf8',
+);
 const indexCssSource = readFileSync(path.resolve(srcDir, 'index.css'), 'utf8');
 const searchFeatureDir = path.resolve(srcDir, 'features/search');
 const searchControllerSource = readFileSync(
@@ -38,6 +42,18 @@ const ruLocale = JSON.parse(
 const kkLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'),
 );
+const canonicalResultContentY = 80 + 24 + 32;
+
+assert.equal(
+  canonicalResultContentY,
+  136,
+  'Compact frame geometry must place the first search-result content at y=136',
+);
+assert.notEqual(
+  canonicalResultContentY,
+  168,
+  'Search results must not retain the old 80px + 56px + 32px content-origin assumption',
+);
 
 assert.match(
   termSearchSource,
@@ -45,21 +61,32 @@ assert.match(
   'Term search mobile route should use the Figma pale purple page background',
 );
 
+assert.doesNotMatch(
+  termSearchSource,
+  /max-md:min-h-\[100dvh\]/,
+  'Term search should defer mobile viewport height ownership to MobilePageFrame',
+);
 assert.match(
   termSearchSource,
-  /max-md:min-h-\[100dvh\][\s\S]*max-md:bg-\[#efebf6\]/,
-  'Term search mobile route should keep the pale purple background through the full viewport',
+  /max-md:bg-\[#efebf6\]/,
+  'Term search mobile route should keep the pale purple page background',
 );
 
 assert.match(
   termSearchSource,
-  /max-md:px-\[24px\][\s\S]*max-md:pt-\[80px\]/,
-  'Term search mobile route should start at the exact 80px Figma canvas origin',
+  /searchResultViewActive \? '' : 'max-md:pt-\[80px\]'/,
+  'Term search should keep the browse 80px canvas origin while result mode adds no local top compensation',
+);
+
+assert.doesNotMatch(
+  termSearchSource,
+  /max-md:pt-0/,
+  'Search results should let MobilePageFrame place the first main content at y=136 without a local padding reset',
 );
 
 assert.match(
   termSearchSource,
-  /max-md:px-\[24px\][\s\S]*max-md:pb-8[\s\S]*max-md:pt-\[80px\]/,
+  /max-md:px-\[24px\][\s\S]*max-md:pb-8/,
   'Term search mobile route should retain the Figma 32px clearance between the load-more CTA and fixed navigation',
 );
 
@@ -113,20 +140,36 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultAppBar[\s\S]*h-14[\s\S]*-mx-\[24px\][\s\S]*w-\[calc\(100%\+48px\)\][\s\S]*items-start[\s\S]*px-4[\s\S]*className="flex size-6[\s\S]*ArrowLeft01Icon[\s\S]*className="mt-1 text-\[16px\][\s\S]*search\.resultsTitle/,
-  'Typed/result search app bar should keep its 56px frame while aligning its arrow and title to the Figma top offsets',
+  /<MobilePageFrame[\s\S]*appBar=\{mobileSearchResultAppBar\}[\s\S]*contentId="term-search-content"/,
+  'Typed/result search should render inside the canonical MobilePageFrame app-bar rail',
 );
 
 assert.match(
   termSearchSource,
-  /function MobileSearchResultHeader\(\{[\s\S]*resultCount[\s\S]*onBack[\s\S]*\}/,
-  'Typed/result search header should receive result count and back behavior',
+  /const mobileSearchResultAppBar = searchResultViewActive[\s\S]*title: t\('search\.resultsTitle'\)[\s\S]*titleAlign: 'start'[\s\S]*compactLayout: 'leading-only'[\s\S]*className="text-\[#252329\]"[\s\S]*onClick=\{handleMobileResultsBack\}[\s\S]*ArrowLeft01Icon\} size=\{24\}/,
+  'Typed/result search app bar should left-align its localized title in the compact leading-only rail while preserving the 24px ArrowLeft back glyph',
 );
 
-assert.match(
+const mobileSearchResultAppBarSource = termSearchSource.match(
+  /const mobileSearchResultAppBar = searchResultViewActive[\s\S]*?: undefined;/,
+)?.[0];
+
+assert.ok(mobileSearchResultAppBarSource, 'Typed/result search app-bar config should be present');
+assert.doesNotMatch(
+  mobileSearchResultAppBarSource,
+  /\b(?:size-6|size-10|h-14|min-h-14|gap-\d+|p[xy]-\d+)\b/,
+  'Search app-bar config must not add local action sizing or header spacing over compact frame geometry',
+);
+assert.doesNotMatch(
+  mobileSearchResultAppBarSource,
+  /\btrailing\s*:/,
+  'Search result app-bar config must remain back-only without a trailing action slot',
+);
+
+assert.doesNotMatch(
   termSearchSource,
-  /<MobileSearchResultAppBar onBack=\{onBack\} \/>[\s\S]*mt-0 mb-4 -mx-\[2px\] grid w-\[calc\(100%\+4px\)\] grid-cols-\[minmax\(0,1fr\)\]/,
-  'Typed/result search input should begin directly after the app bar at the Figma position',
+  /function MobileSearchResultAppBar|<MobileSearchResultAppBar/,
+  'Typed/result search should not keep a local app-bar implementation',
 );
 
 for (const mode of ['random', 'forYou', 'popular']) {
@@ -187,14 +230,49 @@ assert.doesNotMatch(
 
 assert.match(
   termSearchSource,
-  /to="\/profile"[\s\S]*search\.favoritesAria/,
-  'Term search bookmark control should route to the profile favorites area',
+  /to="\/favorites"[\s\S]*search\.favoritesAria/,
+  'Term search bookmark control should route to the favorites page',
 );
 
 assert.match(
   termSearchSource,
-  /className="rounded-\[16px\] bg-white px-6 py-8/,
+  /MobileSearchTermCard[\s\S]*from '..\/..\/terms\/components\/MobileSearchTermCard'/,
+  'Term search should consume the shared mobile term card while preserving its page export',
+);
+
+assert.match(
+  mobileCardSource,
+  /className="flex flex-col gap-8 rounded-\[16px\] bg-white px-6 py-8/,
   'Mobile term result cards should match the Figma rounded white card shell',
+);
+
+assert.match(
+  mobileCardSource,
+  /className="flex flex-col gap-6 px-2"[\s\S]*w-\[274px\] max-w-\[274px\] text-\[20px\] font-medium leading-\[20px\] text-\[#161519\]/,
+  'Mobile term card inner rail and title must match the Figma 24px gap, width, type, and ink',
+);
+
+assert.doesNotMatch(
+  mobileCardSource,
+  /relative min-h-6 pr-10/,
+  'Mobile term card title row must not add extra height before the 24px inner gap',
+);
+
+assert.match(
+  mobileCardSource,
+  /appearance="mobile-card"[\s\S]*className="-right-\[10px\] -top-\[10px\]"/,
+  'Mobile bookmark target must compensate its 44px hit area so the 24px glyph remains at the Figma top-right origin',
+);
+
+assert.match(
+  mobileCardSource,
+  /relative h-24 overflow-hidden[\s\S]*flex h-6 flex-wrap/,
+  'Mobile term card must preserve the exact 96px preview and metadata chip geometry',
+);
+assert.match(
+  mobileCardSource,
+  /text-\[16px\] leading-none text-\[#8c8698\]/,
+  'Mobile term preview text must use the exact Figma muted lavender color',
 );
 
 assert.match(
@@ -204,7 +282,7 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  mobileCardSource,
   /line-clamp-6[\s\S]*bg-gradient-to-t from-white/,
   'Mobile term cards should clamp long definitions and fade the last visible line',
 );
@@ -228,13 +306,13 @@ assert.match(
 );
 
 assert.match(
-  termSearchSource,
+  mobileCardSource,
   /search\.detailsCta/,
   'Term search result cards should use the localized Figma details CTA',
 );
 
 assert.match(
-  termSearchSource,
+  mobileCardSource,
   /to=\{`\/terms\/\$\{term\.public_id\}`\}[\s\S]*h-10 w-full items-center justify-center rounded-\[8px\] bg-\[#6a37c3\][\s\S]*text-\[#efeaf8\][\s\S]*search\.detailsCta/,
   'Mobile term-card CTA should preserve the exact Figma purple, dimensions, radius, and text color',
 );
@@ -493,8 +571,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /resultCount=\{displayResults\.length\}[\s\S]*onBack=\{handleMobileResultsBack\}/,
-  'Typed/result search header should receive the current result total and clear back action',
+  /resultCount=\{displayResults\.length\}[\s\S]*onQueryChange=\{setQuery\}/,
+  'Typed/result search header should receive the current result total and query behavior',
 );
 
 assert.match(

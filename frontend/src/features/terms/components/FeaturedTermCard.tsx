@@ -121,7 +121,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
     return () => { cancelled = true; observer.disconnect(); };
   }, [fullDefinitionText]);
 
-  const definitionFadeClass = isGuestLikeVariant ? 'from-surface-subtle' : isMobileVariant ? tone.fadeClassName : 'from-surface';
+  const definitionFadeClass = isGuestDesktopVariant ? 'from-surface-subtle' : variant === 'guest' ? 'from-white' : isMobileVariant ? tone.fadeClassName : 'from-surface';
   const definitionFade = visibleDefinition.overflowing ? (
     <span aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-[1.75em] bg-gradient-to-t ${definitionFadeClass} to-transparent`} />
   ) : null;
@@ -129,7 +129,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
   const shellClass = isHomeVariant
     ? 'h-[134px] w-[204px] rounded-[8px] border border-[#e8e1ee] bg-surface p-4 shadow-none'
     : variant === 'guest'
-      ? 'h-[168px] w-[216px] rounded-[16px] border-0 bg-surface-subtle p-6 shadow-none'
+      ? 'h-[168px] w-[216px] rounded-[16px] border-0 bg-white p-6 shadow-none'
       : isGuestDesktopVariant
         ? 'h-[220px] w-[320px] rounded-[20px] border-0 bg-surface-subtle p-8 shadow-none'
         : isMobileVariant

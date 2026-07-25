@@ -363,9 +363,9 @@ function MobileFigmaGuestSections() {
 
   return (
     <>
-      <section id="mobile-proof" className="box-border w-screen max-w-full overflow-hidden bg-[#efebf6] py-8">
+      <section id="mobile-proof" className="box-border w-screen max-w-full overflow-hidden bg-[#efebf6] pt-12 pb-[72px]">
         <div className="flex flex-col gap-7">
-          <p className="text-center text-[14px] font-medium uppercase leading-none text-text-body">
+          <p className="text-center text-[14px] font-medium uppercase leading-none text-[#6e6779]">
             {t('landing.termExamples')}
           </p>
           <div className="w-full overflow-hidden">

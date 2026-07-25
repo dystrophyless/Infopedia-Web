@@ -68,10 +68,17 @@ assert.match(
 );
 assert.match(mobileSource, /mobileResultTitle/, 'Mobile app bar should keep the navigation title key');
 assert.match(mobileSource, /onBack: \(\) => void;[\s\S]*onTitleClick\?: \(\) => void;/, 'Mobile results should expose a back callback and optional title callback');
-assert.match(mobileSource, /title=\{onTitleClick \? \(/, 'Mobile app-bar title should branch on the optional title callback');
+assert.match(mobileSource, /<MobilePageFrame[\s\S]*className="md:hidden"[\s\S]*appBar=\{\{/, 'Mobile results should use the canonical MobilePageFrame app-bar configuration');
+assert.doesNotMatch(mobileSource, /(?:mt-16|h-16|min-h-16|safeArea)/, 'Canonical frame should own mobile app-bar geometry without local overrides');
+assert.match(mobileSource, /titleAlign: 'start'/, 'Mobile result navigation title should use leading alignment');
+assert.match(mobileSource, /compactLayout: 'leading-only'/, 'Mobile result app bar should use leading-only compact layout');
+assert.match(mobileSource, /title: onTitleClick \? \(/, 'Mobile app-bar title should branch on the optional title callback');
 assert.match(mobileSource, /<button[\s\S]*onClick=\{onTitleClick\}[\s\S]*mobileResultTitle/, 'Latest mobile app-bar title should use a native button');
-assert.match(mobileSource, /\) : t\('analyze\.mobileResultTitle'\)\}/, 'Ordinary mobile results should keep the title as plain translation text');
+assert.match(mobileSource, /<button[\s\S]*onClick=\{onTitleClick\}[\s\S]*className="[^"]*text-left[^"]*"/, 'Interactive mobile result title should align its text to the leading edge');
+assert.match(mobileSource, /\) : t\('analyze\.mobileResultTitle'\),/, 'Ordinary mobile results should keep the title as plain translation text');
 assert.match(mobileSource, /<button[\s\S]*onClick=\{onBack\}[\s\S]*mobileResultBack/, 'Mobile app-bar arrow should use the back callback');
+assert.doesNotMatch(mobileSource, /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/, 'Mobile result back action should inherit the frame-owned 44px target');
+assert.match(mobileSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/, 'Mobile result back action should retain the exact 24px glyph');
 assert.match(mobileSource, /<h1[^>]*>\s*\{t\('analyze\.mobileResultHeading'\)\}/, 'Mobile h1 should keep the separate results heading key');
 assert.match(mobileSource, /mobileLostPointsValue', \{ count: lostPoints \}/, 'Lost-points summary should stay dynamic');
 assert.match(mobileSource, /mobileFreeSummaryValue', \{ count: access\.freeChapter \? 1 : 0 \}/, 'Free-summary count should stay derived from access');
@@ -80,7 +87,7 @@ assert.match(pageSource, /<div className="md:hidden">/, 'Mobile results should r
 assert.match(
   pageSource,
   /\$\{isMobileResult \? 'max-md:hidden' : ''\}/,
-  'Only the successful mobile result state should hide the desktop page header',
+  'Mobile result states should hide the desktop page header while the canonical frame owns navigation',
 );
 assert.match(
   pageSource,
@@ -98,6 +105,8 @@ assert.match(
   /<div className="mx-auto w-full max-w-\[430px\] px-6 pb-8">/,
   'Mobile results inner wrapper should keep the 32px page-end gap',
 );
+assert.match(mobileSource, /<h1 className="text-\[20px\] font-medium leading-none text-\[#572d9f\]">/, 'Canonical main should begin directly with the mobile results heading');
+assert.equal(80 + 24 + 32, 136, 'Mobile result heading should begin at canonical y=136');
 assert.equal(
   (pageSource.match(/function AnalyzeMobileChapterCard\(/g) ?? []).length,
   1,

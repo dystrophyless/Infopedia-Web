@@ -38,8 +38,8 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-\[calc\(100dvh-80px\)\] w-full max-w-\[1180px\] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-\[calc\(100dvh-80px\)\] max-lg:overflow-visible max-md:bg-\[#efebf6\] max-md:px-6';/,
-  'Analyze upload screen should use Figma canvas and 24px mobile rail while fitting inside the post-navbar viewport on desktop',
+  /const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-\[calc\(100dvh-80px\)\] w-full max-w-\[1180px\] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-\[calc\(100dvh-80px\)\] max-lg:overflow-visible max-md:bg-\[#efebf6\] max-md:px-6 max-md:pt-\[var\(--mobile-page-app-bar-offset\)\]';/,
+  'Analyze upload screen should preserve desktop 56px padding while using the semantic 80px mobile app-bar offset',
 );
 
 assert.match(
@@ -141,7 +141,7 @@ assert.doesNotMatch(
 assert.doesNotMatch(
   analyzeSource,
   /ANALYZE_UPLOAD_PAGE_CLASS = '[^']*py-12|ANALYZE_UPLOAD_PAGE_CLASS = '[^']*py-8 /,
-  'Analyze upload page should keep the Figma 56px top rhythm',
+  'Analyze upload page should keep desktop py-14 (56px) padding instead of legacy py-12 or py-8 values',
 );
 
 assert.doesNotMatch(

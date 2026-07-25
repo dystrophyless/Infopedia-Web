@@ -10,6 +10,18 @@ const storiesSource = readFileSync(
   path.resolve(import.meta.dirname, 'Analyze.stories.tsx'),
   'utf8',
 );
+const frameSource = readFileSync(
+  path.resolve(import.meta.dirname, '../ui/patterns/MobilePageFrame.tsx'),
+  'utf8',
+);
+const appBarSource = readFileSync(
+  path.resolve(import.meta.dirname, '../ui/molecules/MobileAppBar.tsx'),
+  'utf8',
+);
+const tokensSource = readFileSync(
+  path.resolve(import.meta.dirname, '../styles/tokens.css'),
+  'utf8',
+);
 
 assert.match(
   analyzeSource,
@@ -23,8 +35,18 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /const ANALYZE_PROCESSING_PAGE_CLASS = `\$\{ANALYZE_PAGE_CLASS\} max-md:pt-\[88px\] max-md:px-6`;/,
-  'Analyze processing page should scope the 24px mobile rail and 88px title offset to the waiting state',
+  /const ANALYZE_PROCESSING_PAGE_CLASS = `\$\{ANALYZE_PAGE_CLASS\} max-md:max-w-none max-md:bg-\[#efebf6\] max-md:px-0 max-md:py-0`;/,
+  'Analyze processing page should use the full mobile canvas for the canonical frame',
+);
+assert.doesNotMatch(
+  analyzeSource,
+  /ANALYZE_PROCESSING_PAGE_CLASS = `[^`]*max-md:pt-\[88px\][^`]*`/,
+  'Analyze processing page must not retain the obsolete 88px mobile title offset',
+);
+assert.doesNotMatch(
+  analyzeSource,
+  /ANALYZE_PROCESSING_PAGE_CLASS = `[^`]*max-md:px-6[^`]*`/,
+  'Analyze processing page must not retain the obsolete 24px mobile horizontal compensation',
 );
 assert.match(
   analyzeSource,
@@ -33,8 +55,37 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /export function AnalyzeProgress\(\{[\s\S]*file\?: File \| null/,
-  'AnalyzeProgress should accept optional file metadata without breaking existing consumers',
+  /export function AnalyzeProgress\(\{[\s\S]*file\?: File \| null[\s\S]*onBack\?: \(\) => void/,
+  'AnalyzeProgress should accept optional file metadata and a mobile back callback',
+);
+assert.match(
+  analyzeSource,
+  /export function AnalyzeProgress\([\s\S]*const content = \([\s\S]*if \(!onBack\) return content;[\s\S]*<MobilePageFrame[\s\S]*appBar=\{\{[\s\S]*title: t\('analyze\.mobileResultTitle'\)[\s\S]*titleAlign: 'start'[\s\S]*compactLayout: 'leading-only'[\s\S]*leading:/,
+  'AnalyzeProgress should wrap mobile processing content in a leading-only structured frame app bar',
+);
+assert.match(
+  frameSource,
+  /pt-\[var\(--mobile-page-app-bar-offset\)\] md:hidden[\s\S]*MobileAppBar \{\.\.\.canonicalAppBarProps\} size="compact" safeArea=\{false\} sticky=\{false\}/,
+  'MobilePageFrame should own the mobile top rail and app-bar configuration',
+);
+assert.match(
+  frameSource,
+  /showCanonicalAppBar && 'pt-8 md:pt-0'/,
+  'MobilePageFrame should own the canonical 32px main-content gap',
+);
+assert.match(tokensSource, /--mobile-page-app-bar-offset:\s*80px;/, 'Canonical mobile app-bar rail must remain 80px');
+assert.match(appBarSource, /grid h-6 min-h-6 grid-cols-\[24px_minmax\(0,1fr\)_24px\]/, 'Compact app bar should own the 24px visual row');
+assert.match(appBarSource, /absolute left-1\/2 top-1\/2 flex size-11/, 'Compact app bar should own the centered 44px action target');
+assert.equal(80 + 24 + 32, 136, 'Processing content should begin at canonical y=136');
+assert.match(
+  analyzeSource,
+  /<section className="overflow-hidden[^\"]*md:mt-6[^\"]*max-md:overflow-visible/,
+  'Processing content should have no mobile margin while retaining desktop spacing',
+);
+assert.doesNotMatch(
+  analyzeSource,
+  /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/,
+  'Analyze frame leading actions must not override the compact action-slot geometry',
 );
 assert.match(
   analyzeSource,

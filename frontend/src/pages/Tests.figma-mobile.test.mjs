@@ -45,6 +45,17 @@ const testEntryLinkSource = readFileSync(testEntryLinkPath, 'utf8');
 const testsHubStorySource = readFileSync(testsHubStoryPath, 'utf8');
 const testsViewSource = `${testsHubSource}\n${weakTopicProgressSource}\n${testEntryLinkSource}`;
 
+assert.match(
+  testsHubSource,
+  /max-md:pt-\[var\(--mobile-page-app-bar-offset\)\]/,
+  'Tests hub should use the semantic mobile page app-bar offset token',
+);
+assert.doesNotMatch(
+  testsHubSource,
+  /max-md:pt-\[(?:90|64)px\]/,
+  'Tests hub should not hardcode the legacy 90px or 64px top offset',
+);
+
 assert.doesNotMatch(
   testsHubSource,
   /max-md:min-h-\[100dvh\]/,

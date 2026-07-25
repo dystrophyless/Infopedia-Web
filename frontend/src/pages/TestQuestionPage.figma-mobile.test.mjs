@@ -37,6 +37,10 @@ const questionViewSource = readFileSync(
   path.resolve(srcDir, 'features/tests/components/TestQuestionView.tsx'),
   'utf8',
 );
+const statusViewSource = readFileSync(
+  path.resolve(srcDir, 'features/tests/components/TestStatusView.tsx'),
+  'utf8',
+);
 const answerOptionSource = readFileSync(
   path.resolve(srcDir, 'features/tests/components/TestAnswerOption.tsx'),
   'utf8',
@@ -66,6 +70,23 @@ const questionBehaviorSource = [
   answerToneModelSource,
   resultsModelSource,
 ].join('\n');
+
+for (const [viewSource, label] of [
+  [questionViewSource, 'Question'],
+  [statusViewSource, 'Status'],
+  [resultViewSource, 'Result'],
+]) {
+  assert.match(
+    viewSource,
+    /max-md:pt-\[var\(--mobile-page-app-bar-offset\)\]/,
+    `${label} view should use the semantic mobile page app-bar offset token`,
+  );
+  assert.doesNotMatch(
+    viewSource,
+    /max-md:pt-\[(?:90|64)px\]/,
+    `${label} view should not hardcode the legacy 90px or 64px top offset`,
+  );
+}
 
 assert.match(
   appSource,
@@ -223,11 +244,6 @@ for (const viewSource of [questionViewSource, resultViewSource]) {
     viewSource,
     /max-md:min-h-\[calc\(100dvh-88px\)\]/,
     'Test screens should occupy the exact 844px Figma area above the 88px bottom nav',
-  );
-  assert.match(
-    viewSource,
-    /max-md:pt-\[64px\]/,
-    'Test screens should start their mobile content at the 64px Figma top origin',
   );
   assert.match(
     viewSource,
@@ -492,6 +508,19 @@ assert.match(
   /className="h-10 min-h-10 translate-y-2 p-0 text-\[#252329\]"/,
   'Result app bar contents should move 8px down without shifting the Results heading',
 );
+
+for (const [viewSource, label] of [
+  [statusViewSource, 'Status'],
+  [resultViewSource, 'Result'],
+  [questionViewSource, 'Question'],
+]) {
+  assert.match(viewSource, /titleAlign="start"[\s\S]*size="compact"[\s\S]*compactLayout="leading-only"/, `${label} app bar should use compact leading-only layout`);
+  assert.doesNotMatch(viewSource, /<MobileAppBar[\s\S]*trailing=/, `${label} back-only app bar should not render a trailing action`);
+}
+
+assert.match(statusViewSource, /className="h-10 min-h-10 p-0 text-\[#252329\]"/, 'Status app bar should preserve its 40px outer height');
+assert.match(resultViewSource, /className="h-10 min-h-10 translate-y-2 p-0 text-\[#252329\]"/, 'Result app bar should preserve its 40px outer height');
+assert.match(questionViewSource, /test-question-mobile-header h-14 w-full/, 'Question app bar should preserve its 56px outer height');
 
 assert.match(
   resultViewSource,

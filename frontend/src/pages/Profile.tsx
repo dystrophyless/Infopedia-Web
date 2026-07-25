@@ -194,7 +194,13 @@ export function Profile() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    if (item.id === 'favorites') {
+                      navigate('/favorites');
+                      return;
+                    }
+                    setActiveTab(item.id);
+                  }}
                   className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] leading-none text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:shadow-none ${
                     isActive
                       ? 'border-transparent bg-surface shadow-sm'
@@ -256,7 +262,6 @@ export function Profile() {
               {activeTab === 'profile' && <ProfileOverview profile={profile} />}
               {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
               {activeTab === 'weakTopics' && <WeakTopicsPanel />}
-              {activeTab === 'favorites' && <PlaceholderPanel type="favorites" />}
               {activeTab === 'settings' && <SettingsPanel profile={profile} />}
             </>
           )}
@@ -441,7 +446,7 @@ function MobileProfileHome({
           icon={AllBookmarkIcon}
           title={t('profile.navFavorites')}
           helper={t('profile.mobileFavoritesHelper')}
-          onClick={() => onSelectTab('favorites')}
+          onClick={() => navigate('/favorites')}
         />
         <div className="h-px w-full bg-[#f6f5f7]" />
         <MobileProfileAction
@@ -1300,7 +1305,6 @@ function MobileProfileDetail({
       <div className="mt-4 overflow-hidden rounded-[8px] bg-white">
         {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
         {activeTab === 'weakTopics' && <WeakTopicsPanel />}
-        {activeTab === 'favorites' && <PlaceholderPanel type="favorites" />}
         {activeTab === 'settings' && <SettingsPanel profile={profile} />}
       </div>
     </section>

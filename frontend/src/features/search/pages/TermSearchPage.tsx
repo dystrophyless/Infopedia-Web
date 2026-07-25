@@ -6,7 +6,6 @@ import type {
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
-import type { TFunction } from 'i18next';
 import {
   ArrowLeft01Icon,
   Bookmark02Icon,
@@ -24,11 +23,14 @@ import {
   type SearchFilterSelections,
   getSearchResultFilterChips,
 } from '../model';
-import { normalizeDefinitionPreviewText } from '../../terms/model';
+import { useFavoritesStore } from '../../favorites/model';
+import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
+export { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
 import { TermCard } from '../../../components/TermCard';
 import { SkeletonCard } from '../../../components/SkeletonCard';
-import { SegmentedControl } from '../../../ui';
-import type { Definition, Term } from '../../../types';
+import { MobilePageFrame, SegmentedControl } from '../../../ui';
+import type { Term } from '../../../types';
+import { useAuthStore } from '../../../stores/authStore';
 import { SearchFilters } from './SearchFiltersPage';
 
 const DRAG_CLOSE_THRESHOLD = 72;
@@ -41,13 +43,6 @@ function getRelatedTerms(term: Term, terms: Term[]): Pick<Term, 'public_id' | 'n
     .filter((candidate) => candidate.public_id !== term.public_id)
     .slice(0, 2)
     .map(({ public_id, name }) => ({ public_id, name }));
-}
-
-function bookChip(definition: Definition | undefined, t: TFunction): string | null {
-  const book = definition?.topic?.book;
-  if (!book?.publisher) return null;
-  if (!book.grade) return book.publisher;
-  return t('metadata.bookWithGrade', { publisher: book.publisher, grade: book.grade });
 }
 
 export function MobileSearchModePills() {
@@ -115,7 +110,7 @@ export function MobileSearchBrowseHeader({
         </button>
 
         <Link
-          to="/profile"
+          to="/favorites"
           aria-label={t('search.favoritesAria')}
           className="flex size-10 items-center justify-center rounded-[8px] bg-[#572d9f] text-[#f8f5fc]"
         >
@@ -128,33 +123,12 @@ export function MobileSearchBrowseHeader({
   );
 }
 
-function MobileSearchResultAppBar({ onBack }: { onBack: () => void }) {
-  const { t } = useTranslation();
-
-  return (
-    <header className="flex h-14 -mx-[24px] w-[calc(100%+48px)] items-start gap-4 px-4 text-[#252329]">
-      <button
-        type="button"
-        className="flex size-6 items-center justify-center text-[#252329]"
-        aria-label={t('common.previous')}
-        onClick={onBack}
-      >
-        <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
-      </button>
-      <h1 className="mt-1 text-[16px] font-medium leading-none text-[#252329]">
-        {t('search.resultsTitle')}
-      </h1>
-    </header>
-  );
-}
-
 export function MobileSearchResultHeader({
   query,
   resultCount,
   entOnlyFilterActive,
   searchFilterSelections,
   searchFilterSelectionLabels,
-  onBack,
   onQueryChange,
   onSearchInputFocus,
   onEntOnlyFilterToggle,
@@ -165,7 +139,8 @@ export function MobileSearchResultHeader({
   entOnlyFilterActive: boolean;
   searchFilterSelections: SearchFilterSelections;
   searchFilterSelectionLabels: SearchFilterSelectionLabels;
-  onBack: () => void;
+  /** @deprecated Result navigation is owned by MobilePageFrame's app bar. */
+  onBack?: () => void;
   onQueryChange: (query: string) => void;
   onSearchInputFocus: () => void;
   onEntOnlyFilterToggle: () => void;
@@ -194,8 +169,6 @@ export function MobileSearchResultHeader({
 
   return (
     <>
-      <MobileSearchResultAppBar onBack={onBack} />
-
       <div className="mt-0 mb-4 -mx-[2px] grid w-[calc(100%+4px)] grid-cols-[minmax(0,1fr)]">
         <label className="relative block">
           <span className="sr-only">{t('search.title')}</span>
@@ -559,72 +532,6 @@ export function MobileSearchInputSheet({
   );
 }
 
-export function MobileSearchTermCard({
-  term,
-  relatedTerms = [],
-}: {
-  term: Term;
-  relatedTerms?: Pick<Term, 'public_id' | 'name'>[];
-}) {
-  const { t } = useTranslation();
-  const definition = term.definitions?.[0];
-  const source = bookChip(definition, t);
-  const page =
-    definition?.page !== undefined && definition.page !== null
-      ? t('search.pageChip', { page: definition.page })
-      : null;
-  const chips = [source, page].filter(Boolean);
-
-  return (
-    <article className="rounded-[16px] bg-white px-6 py-8 text-[#161519]">
-      <div className="px-2">
-        <div className="relative min-h-6 pr-10">
-          <h2 className="max-w-[274px] text-[20px] font-medium leading-none">
-            {term.name}
-          </h2>
-          <button
-            type="button"
-            className="absolute right-0 top-0 flex size-6 items-center justify-center rounded-[6px] text-[#161519]"
-            aria-label={t('search.saveTermAria', { term: term.name })}
-          >
-            <HugeiconsIcon icon={Bookmark02Icon} size={24} strokeWidth={1.6} />
-          </button>
-        </div>
-
-        {definition && (
-          <div className="relative mt-6 h-24 overflow-hidden">
-            <p className="line-clamp-6 whitespace-pre-line text-[16px] leading-none text-[#6e6779]">
-              {normalizeDefinitionPreviewText(definition.text)}
-            </p>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white to-transparent" />
-          </div>
-        )}
-
-        {chips.length > 0 && (
-          <div className="mt-4 flex h-6 flex-wrap items-center gap-2 overflow-hidden">
-            {chips.map((chip) => (
-              <span
-                key={chip}
-                className="inline-flex h-6 max-w-full items-center rounded-[8px] bg-[#eae9ec] px-3 text-[12px] leading-none text-[#b1acb9]"
-              >
-                <span className="truncate">{chip}</span>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Link
-        to={`/terms/${term.public_id}`}
-        state={{ backTo: '/search', term, relatedTerms }}
-        className="mt-8 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-[#efeaf8] transition-opacity hover:opacity-90"
-      >
-        {t('search.detailsCta')}
-      </Link>
-    </article>
-  );
-}
-
 export function TermSearchPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -651,9 +558,47 @@ export function TermSearchPage() {
     searchResultViewActive,
     handleMobileResultsBack,
   } = useTermSearchController(initialQuery);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
+  const favoriteRefs = useMemo(
+    () => displayResults.map((term) => term.public_id),
+    [displayResults],
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated || favoriteRefs.length === 0) return;
+    void ensureStatuses(favoriteRefs).catch(() => undefined);
+  }, [ensureStatuses, favoriteRefs, isAuthenticated]);
+
+  const mobileSearchResultAppBar = searchResultViewActive
+    ? {
+        title: t('search.resultsTitle'),
+        tone: 'canvas' as const,
+        titleAlign: 'start' as const,
+        compactLayout: 'leading-only' as const,
+        leading: (
+          <button
+            type="button"
+            className="text-[#252329]"
+            aria-label={t('common.previous')}
+            onClick={handleMobileResultsBack}
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
+          </button>
+        ),
+      }
+    : undefined;
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-14 max-md:max-w-none max-md:min-h-[100dvh] max-md:bg-[#efebf6] max-md:px-[24px] max-md:pb-8 max-md:pt-[80px]">
+    <MobilePageFrame
+      tone="canvas"
+      appBar={mobileSearchResultAppBar}
+      contentId="term-search-content"
+      contentLabel={t('search.title')}
+    >
+      <div
+        className={`mx-auto max-w-[900px] px-6 pb-14 md:pt-14 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-[24px] max-md:pb-8 ${searchResultViewActive ? '' : 'max-md:pt-[80px]'}`}
+      >
       <div className="max-md:hidden">
         <header className="mb-8 text-left">
           <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
@@ -685,11 +630,10 @@ export function TermSearchPage() {
         {searchResultViewActive ? <MobileSearchResultHeader
           query={query}
           resultCount={displayResults.length}
-          entOnlyFilterActive={entOnlyFilterActive}
-          searchFilterSelections={searchFilterSelections}
-          searchFilterSelectionLabels={searchFilterSelectionLabels}
-          onBack={handleMobileResultsBack}
-          onQueryChange={setQuery}
+           entOnlyFilterActive={entOnlyFilterActive}
+           searchFilterSelections={searchFilterSelections}
+           searchFilterSelectionLabels={searchFilterSelectionLabels}
+           onQueryChange={setQuery}
           onSearchInputFocus={() => setMobileSearchSheetOpen(true)}
           onEntOnlyFilterToggle={() => setEntOnlyFilterActive(!entOnlyFilterActive)}
           onOpenFilters={() => setFiltersOverlayOpen(true)}
@@ -713,7 +657,7 @@ export function TermSearchPage() {
         <>
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
             <HugeiconsIcon icon={HelpCircleIcon} size={48} strokeWidth={1.4} />
-            <p className="text-[16px] leading-none">{t('search.empty')}</p>
+            <p className="text-[16px] leading-none" children={t('search.empty')} />
           </div>
           <MobileSearchEmptyState query={debounced.trim()} />
         </>
@@ -768,6 +712,7 @@ export function TermSearchPage() {
         />
       )}
       {filtersOverlayOpen && <SearchFilters overlay onDismiss={() => setFiltersOverlayOpen(false)} />}
-    </div>
+      </div>
+    </MobilePageFrame>
   );
 }

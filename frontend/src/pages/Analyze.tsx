@@ -25,7 +25,7 @@ import { selectAnalyzeResultAccess, type AnalyzeResultAccess } from '../features
 import {
   Button,
   EmptyState,
-  MobileAppBar,
+  MobilePageFrame,
   PageContainer,
   PageHeader,
   Progress,
@@ -50,8 +50,8 @@ const ANALYZE_STAGE_ALIASES: Record<string, string> = {
 };
 const ANALYZE_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:px-4';
 const ANALYZE_RESULTS_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0';
-const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:pt-[88px] max-md:px-6`;
-const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:bg-[#efebf6] max-md:px-6';
+const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0`;
+const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:bg-[#efebf6] max-md:px-6 max-md:pt-[var(--mobile-page-app-bar-offset)]';
 const ANALYZE_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5';
 const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
 const ANALYZE_PROCESSING_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5 max-md:mb-6 max-md:[&>div>div>div]:hidden max-md:[&>div>div>p]:hidden max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
@@ -150,7 +150,7 @@ export function Analyze() {
     () => selectAnalyzeResultAccess(uniqueSuccessResults),
     [uniqueSuccessResults],
   );
-  const isMobileResult = !isProcessing && (currentTask?.status === 'success' || hasLatestResult);
+  const isMobileResult = !showUploadForm;
 
   function retryLatest() {
     setLatestResults(undefined);
@@ -391,15 +391,16 @@ export function Analyze() {
         <AnalyzeProgress
           currentTask={currentTask}
           file={file}
+          onBack={handleMobileResultBack}
         />
       )}
 
       {!isProcessing && currentTask?.status === 'failure' && (
-        <AnalyzeFailure message={failureMessage ?? t('common.error')} onReset={reset} />
+        <AnalyzeFailure message={failureMessage ?? t('common.error')} onReset={reset} onBack={handleMobileResultBack} />
       )}
 
       {!isProcessing && hasLatestError && (
-        <AnalyzeFailure message={latestError ?? t('common.error')} onReset={retryLatest} />
+        <AnalyzeFailure message={latestError ?? t('common.error')} onReset={retryLatest} onBack={handleMobileResultBack} />
       )}
 
       {!isProcessing && !hasLatestError && (currentTask?.status === 'success' || hasLatestResult) && (
@@ -451,9 +452,10 @@ export function AnalyzeLatestResultSkeleton({ onBack }: { onBack: () => void }) 
         </div>
       </section>
 
-      <section className="w-full overflow-x-hidden bg-[#efebf6] text-[#161519] md:hidden max-md:-mx-4 max-md:-mt-14 max-md:w-[calc(100%+2rem)]">
-        <MobileAppBar
-          title={(
+      <MobilePageFrame
+        className="md:hidden"
+        appBar={{
+          title: (
             <button
               type="button"
               onClick={onBack}
@@ -462,25 +464,25 @@ export function AnalyzeLatestResultSkeleton({ onBack }: { onBack: () => void }) 
             >
               {t('analyze.mobileResultTitle')}
             </button>
-          )}
-          headingLevel={2}
-          titleAlign="start"
-          safeArea
-          className="mt-16 h-16 min-h-16 px-4 text-[#252329] [&>h2]:text-[16px] [&>h2]:leading-4 [&>h2]:text-[#252329]"
-          leading={(
+          ),
+          headingLevel: 2,
+          titleAlign: 'start',
+          compactLayout: 'leading-only',
+          tone: 'canvas',
+          leading: (
             <button
               type="button"
               onClick={onBack}
               aria-label={t('analyze.mobileResultBack')}
-              className="flex size-10 items-center justify-center rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+              className="rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
             </button>
-          )}
-        />
-
+          ),
+        }}
+      >
         <div className="mx-auto w-full max-w-[430px] px-6 pb-8" aria-hidden="true">
-          <Skeleton shape="text" className="mt-6 h-5 w-40" />
+          <Skeleton shape="text" className="h-5 w-40" />
 
           <article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">
             <div className="flex items-center gap-6">
@@ -504,7 +506,7 @@ export function AnalyzeLatestResultSkeleton({ onBack }: { onBack: () => void }) 
             <AnalyzeLatestResultMobileChapterSkeleton />
           </div>
         </div>
-      </section>
+      </MobilePageFrame>
     </div>
   );
 }
@@ -633,10 +635,12 @@ export function AnalyzeProgress({
   currentTask,
   file,
   progressOverride,
+  onBack,
 }: {
   currentTask: AnalyzeTask | null | undefined;
   file?: File | null;
   progressOverride?: number;
+  onBack?: () => void;
 }) {
   const { t } = useTranslation();
   const currentStage = currentTask?.stage ?? currentTask?.status ?? 'pending';
@@ -650,8 +654,8 @@ export function AnalyzeProgress({
       ? t('analyze.stages.parsing')
       : t('analyze.mobileProgressCaption');
 
-  return (
-    <section className="mt-6 overflow-hidden rounded-[8px] border border-border bg-surface shadow-feature max-md:mt-12 max-md:overflow-visible max-md:rounded-[8px] max-md:border-0 max-md:bg-transparent max-md:shadow-none">
+  const content = (
+    <section className="overflow-hidden rounded-[8px] border border-border bg-surface shadow-feature md:mt-6 max-md:overflow-visible max-md:rounded-[8px] max-md:border-0 max-md:bg-transparent max-md:shadow-none">
       <div className="h-1 bg-bg max-md:hidden" aria-hidden>
         <div className="h-full w-1/3 animate-[analyze-scan_1.8s_ease-in-out_infinite] bg-accent" />
       </div>
@@ -735,19 +739,51 @@ export function AnalyzeProgress({
       </div>
     </section>
   );
+
+  if (!onBack) return content;
+
+  return (
+    <>
+      <div className="hidden md:block">{content}</div>
+      <MobilePageFrame
+        className="md:hidden"
+        appBar={{
+          title: t('analyze.mobileResultTitle'),
+          headingLevel: 2,
+          titleAlign: 'start',
+          compactLayout: 'leading-only',
+          tone: 'canvas',
+          leading: (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label={t('analyze.mobileResultBack')}
+              className="rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+          ),
+        }}
+      >
+        {content}
+      </MobilePageFrame>
+    </>
+  );
 }
 
 export function AnalyzeFailure({
   message,
   onReset,
+  onBack,
 }: {
   message: string;
   onReset: () => void;
+  onBack?: () => void;
 }) {
   const { t } = useTranslation();
 
-  return (
-    <Surface tone="plain" variant="mobile-flat" className="mt-6 border border-danger/40 p-8 shadow-feature">
+  const content = (
+    <Surface tone="plain" variant="mobile-flat" className="border border-danger/40 p-8 shadow-feature md:mt-6">
       <EmptyState
         icon={<HugeiconsIcon icon={AlertCircleIcon} size={30} strokeWidth={1.6} />}
         title={t('analyze.errorTitle')}
@@ -755,6 +791,36 @@ export function AnalyzeFailure({
         action={<Button onClick={onReset}>{t('common.tryAgain')}</Button>}
       />
     </Surface>
+  );
+
+  if (!onBack) return content;
+
+  return (
+    <>
+      <div className="hidden md:block">{content}</div>
+      <MobilePageFrame
+        className="md:hidden"
+        appBar={{
+          title: t('analyze.mobileResultTitle'),
+          headingLevel: 2,
+          titleAlign: 'start',
+          compactLayout: 'leading-only',
+          tone: 'canvas',
+          leading: (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label={t('analyze.mobileResultBack')}
+              className="rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+          ),
+        }}
+      >
+        {content}
+      </MobilePageFrame>
+    </>
   );
 }
 
@@ -831,9 +897,10 @@ export function AnalyzeMobileResults({
   const lostPoints = Math.max(0, totalMaxScore - totalScore);
 
   return (
-    <section className="w-full overflow-x-hidden bg-[#efebf6] text-[#161519]">
-      <MobileAppBar
-        title={onTitleClick ? (
+    <MobilePageFrame
+      className="md:hidden"
+      appBar={{
+        title: onTitleClick ? (
           <button
             type="button"
             onClick={onTitleClick}
@@ -842,25 +909,26 @@ export function AnalyzeMobileResults({
           >
             {t('analyze.mobileResultTitle')}
           </button>
-        ) : t('analyze.mobileResultTitle')}
-        headingLevel={2}
-        titleAlign="start"
-        safeArea
-        className="mt-16 h-16 min-h-16 px-4 text-[#252329] [&>h2]:text-[16px] [&>h2]:leading-4 [&>h2]:text-[#252329]"
-        leading={(
+        ) : t('analyze.mobileResultTitle'),
+        headingLevel: 2,
+        titleAlign: 'start',
+        compactLayout: 'leading-only',
+        tone: 'canvas',
+        leading: (
           <button
             type="button"
             onClick={onBack}
             aria-label={t('analyze.mobileResultBack')}
-            className="flex size-10 items-center justify-center rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+            className="rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
           </button>
-        )}
-      />
+        ),
+      }}
+    >
 
       <div className="mx-auto w-full max-w-[430px] px-6 pb-8">
-      <h1 className="pt-6 text-[20px] font-medium leading-none text-[#572d9f]">
+      <h1 className="text-[20px] font-medium leading-none text-[#572d9f]">
           {t('analyze.mobileResultHeading')}
         </h1>
 
@@ -925,7 +993,7 @@ export function AnalyzeMobileResults({
           </>
         )}
       </div>
-    </section>
+    </MobilePageFrame>
   );
 }
 

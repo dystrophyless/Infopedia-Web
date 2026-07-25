@@ -4,6 +4,7 @@ import logging.config
 
 from sqlalchemy.exc import SQLAlchemyError
 
+import src.favorites.models  # noqa: F401 - register model before create_all
 from src.database import (
     AsyncSessionMaker,
     async_engine,
@@ -18,6 +19,7 @@ from src.loader import (
     refresh_book_chapter_coverage,
 )
 from src.migrations.chapter_migration import migrate_chapter_schema
+from src.migrations.favorites_migration import migrate_favorites_schema
 from src.logging_settings import logging_config
 from src.models import Base
 from src.terms.service import get_embedder
@@ -34,6 +36,7 @@ async def create_tables() -> None:
             await conn.run_sync(Base.metadata.create_all)
 
         await migrate_chapter_schema(async_engine)
+        await migrate_favorites_schema(async_engine)
 
         logger.debug("Схема базы данных успешно инициализирована.")
     except SQLAlchemyError:

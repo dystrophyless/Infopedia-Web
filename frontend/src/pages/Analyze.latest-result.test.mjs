@@ -6,6 +6,14 @@ const analyzeSource = readFileSync(
   path.resolve(import.meta.dirname, 'Analyze.tsx'),
   'utf8',
 );
+const skeletonSource = analyzeSource.slice(
+  analyzeSource.indexOf('export function AnalyzeLatestResultSkeleton'),
+  analyzeSource.indexOf('function AnalyzeLatestResultDesktopChapterSkeleton'),
+);
+const failureSource = analyzeSource.slice(
+  analyzeSource.indexOf('export function AnalyzeFailure'),
+  analyzeSource.indexOf('export function AnalyzeResults'),
+);
 
 assert.match(
   analyzeSource,
@@ -104,8 +112,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /<section className="hidden md:block mt-8" aria-hidden="true">[\s\S]*<section className="w-full overflow-x-hidden bg-\[\#efebf6\][\s\S]*<div className="mx-auto w-full max-w-\[430px\] px-6 pb-8" aria-hidden="true">/,
-  'Latest result skeleton placeholder regions should remain hidden from assistive technology',
+  /<section className="hidden md:block mt-8" aria-hidden="true">[\s\S]*<MobilePageFrame[\s\S]*className="md:hidden"[\s\S]*<div className="mx-auto w-full max-w-\[430px\] px-6 pb-8" aria-hidden="true">/,
+  'Latest result skeleton should keep desktop placeholders separate from the canonical mobile frame',
 );
 assert.match(
   analyzeSource,
@@ -134,9 +142,19 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /<MobileAppBar[\s\S]*title=\{\([\s\S]*<button[\s\S]*onClick=\{onBack\}[\s\S]*mobileResultTitle[\s\S]*\}\)[\s\S]*leading=/,
-  'Latest skeleton title should be a native button that uses the same back handler',
+  /<MobilePageFrame[\s\S]*appBar=\{\{[\s\S]*title:[\s\S]*<button[\s\S]*onClick=\{onBack\}[\s\S]*mobileResultTitle[\s\S]*leading:/,
+  'Latest skeleton should configure a canonical frame with a native title button and shared back handler',
 );
+assert.match(skeletonSource, /titleAlign: 'start'/, 'Latest skeleton title should use leading alignment');
+assert.match(skeletonSource, /compactLayout: 'leading-only'/, 'Latest skeleton app bar should use leading-only compact layout');
+assert.match(skeletonSource, /<button[\s\S]*className="[^"]*text-left[^"]*"[\s\S]*mobileResultTitle/, 'Latest skeleton interactive title should align its text to the leading edge');
+assert.doesNotMatch(skeletonSource, /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/, 'Latest skeleton back action should inherit the frame-owned 44px target');
+assert.match(skeletonSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/, 'Latest skeleton back action should retain the exact 24px glyph');
+assert.match(skeletonSource, /<Skeleton shape="text" className="h-5 w-40" \/>/, 'Latest skeleton first mobile placeholder should have no local margin');
+assert.match(failureSource, /className="border border-danger\/40 p-8 shadow-feature md:mt-6"/, 'Latest error content should have desktop-only margin and begin directly at mobile main');
+assert.match(failureSource, /titleAlign: 'start'/, 'Latest error title should use leading alignment');
+assert.match(failureSource, /compactLayout: 'leading-only'/, 'Latest error app bar should use leading-only compact layout');
+assert.equal(80 + 24 + 32, 136, 'Latest loading and error content should begin at canonical y=136');
 assert.match(
   analyzeSource,
   /!hasLatestError && \(currentTask\?\.status === 'success' \|\| hasLatestResult\)/,
@@ -144,6 +162,16 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /<AnalyzeFailure message=\{latestError \?\? t\('common\.error'\)\} onReset=\{retryLatest\} \/>/,
+  /<AnalyzeFailure message=\{latestError \?\? t\('common\.error'\)\} onReset=\{retryLatest\} onBack=\{handleMobileResultBack\} \/>/,
   'Latest-fetch errors should use the existing retry failure state',
+);
+assert.match(
+  analyzeSource,
+  /const ANALYZE_PROCESSING_PAGE_CLASS = `[^`]*max-md:max-w-none[^`]*max-md:py-0`/,
+  'Ordinary processing should use the full mobile canvas around the canonical frame',
+);
+assert.match(
+  analyzeSource,
+  /<AnalyzeProgress[\s\S]*onBack=\{handleMobileResultBack\}/,
+  'Ordinary processing should expose the canonical mobile back action',
 );

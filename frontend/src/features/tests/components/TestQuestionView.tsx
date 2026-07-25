@@ -38,11 +38,13 @@ export function TestQuestionView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px)] max-md:px-6 max-md:pb-12 max-md:pt-[64px]">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px)] max-md:px-6 max-md:pb-12 max-md:pt-[var(--mobile-page-app-bar-offset)]">
       <main className="test-question-content mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
         <MobileAppBar
           title={title}
           titleAlign="start"
+          size="compact"
+          compactLayout="leading-only"
           safeArea={false}
           className="test-question-mobile-header h-14 w-full px-4 text-[#252329] max-md:-mx-6 max-md:w-[calc(100%+48px)] md:px-0"
           leading={(

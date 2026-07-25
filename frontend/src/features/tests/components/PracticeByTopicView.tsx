@@ -48,6 +48,8 @@ export function PracticeByTopicView({ data, onBack, onTopicStart }: PracticeByTo
         <MobileAppBar
           title={t('practiceByTopic.appBarTitle', { defaultValue: 'Практика по разделу' })}
           titleAlign="start"
+          size="compact"
+          compactLayout="leading-only"
           safeArea={false}
           leading={
             <button
@@ -59,7 +61,7 @@ export function PracticeByTopicView({ data, onBack, onTopicStart }: PracticeByTo
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.8} aria-hidden />
             </button>
           }
-          className="mt-16 gap-x-4 px-4 md:mt-0 [&>h1]:!text-[16px] [&>h1]:!leading-4 [&>h2]:!text-[16px] [&>h2]:!leading-4"
+          className="mt-16 h-14 min-h-14 px-4 md:mt-0 [&>h1]:!text-[16px] [&>h1]:!leading-4 [&>h2]:!text-[16px] [&>h2]:!leading-4"
         />
 
         <main className="mt-4 px-6" aria-labelledby="practice-by-topic-title">

@@ -129,7 +129,7 @@ assert.match(mobileHomeSource, /bg-\[#6a37c3\] text-white[\s\S]*Tick02Icon/);
 assert.match(mobileHomeSource, /border-2 border-\[#8c8698\]/);
 assert.match(mobileHomeSource, /bg-\[#f6f5f7\]/);
 assert.match(mobileHomeSource, /onSelectTab\('settings'\)/);
-assert.match(mobileHomeSource, /onSelectTab\('favorites'\)/);
+assert.match(mobileHomeSource, /navigate\('\/favorites'\)/);
 assert.match(mobileHomeSource, /onClick=\{\(\) => navigate\('\/analyze\?view=latest'\)\}/);
 assert.match(profileSource, /onBack=\{\(\) => onSelectTab\('profile'\)\}/);
 assert.match(

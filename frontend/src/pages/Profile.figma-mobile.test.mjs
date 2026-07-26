@@ -74,10 +74,23 @@ assert.doesNotMatch(profileSource, /figma\.com\/api\/mcp\/asset/);
 assert.ok(existsSync(path.resolve(srcDir, 'assets/figma-profile/profile-1.svg')));
 assert.ok(existsSync(path.resolve(srcDir, 'assets/figma-profile/ai-co-editing.svg')));
 
-assert.match(profileSource, /export const MOBILE_PROFILE_DESIGN_SAMPLE_STATS[\s\S]*terms: 24[\s\S]*points: 38/);
-assert.match(profileSource, /Display-only Figma samples[\s\S]*User\/API expose no profile stats/);
-assert.match(mobileHomeSource, /MOBILE_PROFILE_DESIGN_SAMPLE_STATS\.terms/);
-assert.match(mobileHomeSource, /MOBILE_PROFILE_DESIGN_SAMPLE_STATS\.points/);
+assert.match(profileSource, /import \{ getFavorites \} from ['"]\.\.\/features\/favorites\/api\/favorites['"]/);
+assert.match(mobileHomeSource, /const \[favoriteTermsCount, setFavoriteTermsCount\] = useState<number \| null>\(null\)/);
+assert.match(mobileHomeSource, /const \[latestAnalyzePoints, setLatestAnalyzePoints\] = useState<number \| null>\(null\)/);
+assert.match(mobileHomeSource, /getFavorites\(0, 1\)/);
+assert.match(mobileHomeSource, /getLatestAnalyzeResult\(i18n\.language\)/);
+assert.match(mobileHomeSource, /Number\.isFinite\(page\.total\)/);
+assert.match(mobileHomeSource, /Array\.isArray\(results\)[\s\S]*results\.length > 0[\s\S]*Number\.isFinite\(result\.score\)/);
+assert.match(mobileHomeSource, /results\.reduce\(\(sum, result\) => sum \+ result\.score, 0\)/);
+assert.match(mobileHomeSource, /statsGenerationRef\.current/);
+assert.match(mobileHomeSource, /const isCurrent = \(\) => !cancelled && statsGenerationRef\.current === generation/);
+assert.match(mobileHomeSource, /return \(\) => \{\s*cancelled = true;/);
+assert.match(mobileHomeSource, /\}, \[i18n\.language, profile\.id\]\);/);
+assert.doesNotMatch(profileSource, /MOBILE_PROFILE_DESIGN_SAMPLE_STATS|terms: 24|points: 38/);
+assert.match(mobileHomeSource, /count=\{favoriteTermsCount\}/);
+assert.match(mobileHomeSource, /count=\{latestAnalyzePoints\}/);
+assert.match(statSource, /count: number \| null/);
+assert.match(statSource, /count === null \? '—' : t\(labelKey, \{ count \}\)/);
 
 assert.match(mobileHomeSource, /lang === 'kk' \? 'KZ' : 'RU'/);
 assert.match(profileSource, /import \{ BottomSheet \} from ['"]\.\.\/ui\/molecules\/BottomSheet['"]/);

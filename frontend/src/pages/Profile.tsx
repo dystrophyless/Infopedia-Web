@@ -29,6 +29,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
 import { getLatestAnalyzeResult } from '../api/analyze';
+import { getFavorites } from '../features/favorites/api/favorites';
 import {
   createMyPassword,
   changeMyPassword,
@@ -69,12 +70,6 @@ import {
 const INITIAL_VISIBLE_BOOKS_LIMIT = 3;
 const WEAK_TOPICS_PANEL_SECTION_CLASS = 'px-8 py-12 max-md:px-5';
 const WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS = 'grid gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]';
-
-// Display-only Figma samples: User/API expose no profile stats, subscription, or favorites contracts.
-export const MOBILE_PROFILE_DESIGN_SAMPLE_STATS = {
-  terms: 24,
-  points: 38,
-} as const;
 
 const profileNavItems: Array<{
   id: ProfileTabId;
@@ -355,18 +350,61 @@ function MobileProfileHome({
   profile: User;
   onSelectTab: (tab: ProfileTabId) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const lang = useLangStore((state) => state.lang);
   const setLang = useLangStore((state) => state.setLang);
   const [isLanguageSheetOpen, setIsLanguageSheetOpen] = useState(false);
   const pendingLanguageRef = useRef<Language | null>(null);
   const languageSheetTitleId = useId();
+  const statsGenerationRef = useRef(0);
+  const [favoriteTermsCount, setFavoriteTermsCount] = useState<number | null>(null);
+  const [latestAnalyzePoints, setLatestAnalyzePoints] = useState<number | null>(null);
   const statusKey = profile.banned ? 'profile.mobileStatusBanned' : 'profile.mobileStatusActive';
   const languageOptions: Array<{ value: Language; labelKey: 'common.kazakh' | 'common.russian' }> = [
     { value: 'kk', labelKey: 'common.kazakh' },
     { value: 'ru', labelKey: 'common.russian' },
   ];
+
+  useEffect(() => {
+    const generation = statsGenerationRef.current + 1;
+    statsGenerationRef.current = generation;
+    let cancelled = false;
+    const isCurrent = () => !cancelled && statsGenerationRef.current === generation;
+
+    if (isCurrent()) {
+      setFavoriteTermsCount(null);
+      setLatestAnalyzePoints(null);
+    }
+
+    void getFavorites(0, 1)
+      .then((page) => {
+        if (!isCurrent()) return;
+        const total = page && typeof page.total === 'number' && Number.isFinite(page.total) ? page.total : null;
+        setFavoriteTermsCount(total);
+      })
+      .catch(() => {
+        if (isCurrent()) setFavoriteTermsCount(null);
+      });
+
+    void getLatestAnalyzeResult(i18n.language)
+      .then((results) => {
+        if (!isCurrent()) return;
+        const pointsTotal = Array.isArray(results) && results.length > 0 && results.every(
+          (result) => result && typeof result.score === 'number' && Number.isFinite(result.score),
+        )
+          ? results.reduce((sum, result) => sum + result.score, 0)
+          : null;
+        setLatestAnalyzePoints(typeof pointsTotal === 'number' && Number.isFinite(pointsTotal) ? pointsTotal : null);
+      })
+      .catch(() => {
+        if (isCurrent()) setLatestAnalyzePoints(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [i18n.language, profile.id]);
 
   function handleLanguageSelect(value: Language) {
     pendingLanguageRef.current = value;
@@ -428,8 +466,8 @@ function MobileProfileHome({
         </div>
         <div className="h-px w-full bg-[#efeaf8]" />
         <div className="flex w-full gap-2">
-          <MobileProfileStat icon={AllBookmarkIcon} count={MOBILE_PROFILE_DESIGN_SAMPLE_STATS.terms} labelKey="profile.mobileTermsStat" helperKey="profile.mobileTermsStatHelper" />
-          <MobileProfileStat icon={Coins02Icon} count={MOBILE_PROFILE_DESIGN_SAMPLE_STATS.points} labelKey="profile.mobilePointsStat" helperKey="profile.mobilePointsStatHelper" />
+          <MobileProfileStat icon={AllBookmarkIcon} count={favoriteTermsCount} labelKey="profile.mobileTermsStat" helperKey="profile.mobileTermsStatHelper" />
+          <MobileProfileStat icon={Coins02Icon} count={latestAnalyzePoints} labelKey="profile.mobilePointsStat" helperKey="profile.mobilePointsStatHelper" />
         </div>
       </section>
 
@@ -513,7 +551,7 @@ function MobileProfileStat({
   helperKey,
 }: {
   icon: typeof AllBookmarkIcon;
-  count: number;
+  count: number | null;
   labelKey: string;
   helperKey: string;
 }) {
@@ -523,7 +561,7 @@ function MobileProfileStat({
     <div className="flex min-w-0 flex-1 items-center gap-4 rounded-[4px] bg-[#efeaf8] px-4 py-2">
       <HugeiconsIcon icon={icon} size={20} strokeWidth={1.7} className="shrink-0 text-[#6a37c3]" />
       <div className="min-w-0">
-        <p className="text-[14px] font-medium leading-[14px] text-[#865bcf]">{t(labelKey, { count })}</p>
+        <p className="text-[14px] font-medium leading-[14px] text-[#865bcf]">{count === null ? '—' : t(labelKey, { count })}</p>
         <p className="mt-0.5 text-[12px] font-normal leading-[12px] text-[#a585db]">{t(helperKey)}</p>
       </div>
     </div>

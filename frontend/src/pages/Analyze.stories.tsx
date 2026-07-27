@@ -176,7 +176,99 @@ export const ProcessingUploadedFileMobile430: Story = {
 };
 
 export const Error: Story = {
-  render: () => <AnalyzeFailure message="Unable to analyze this file." onReset={() => undefined} />,
+  render: () => (
+    <AnalyzeFailure
+      kind="generic"
+      action="retry"
+      onAction={() => undefined}
+      onBack={() => undefined}
+    />
+  ),
+};
+
+export const UnsupportedPdfMobile430: Story = {
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => (
+    <AnalyzeFailure
+      kind="unsupportedDocument"
+      action="uploadAnother"
+      onAction={() => undefined}
+      onBack={() => undefined}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const visibleElement = <ElementType extends Element>(selector: string) =>
+      Array.from(canvasElement.querySelectorAll<ElementType>(selector)).find((element) => element.getClientRects().length > 0);
+    const failureGroup = visibleElement<HTMLElement>('[data-analyze-failure-group]');
+    const failureIcon = visibleElement<HTMLElement>('[data-analyze-failure-icon]');
+    const failureTitle = visibleElement<HTMLElement>('[data-analyze-failure-title]');
+    const failureDescription = visibleElement<HTMLElement>('[data-analyze-failure-description]');
+    const failureAction = visibleElement<HTMLButtonElement>('[data-analyze-failure-action]');
+    const failureIconSvg = visibleElement<SVGSVGElement>('[data-analyze-failure-icon] svg');
+
+    await expect(failureGroup).not.toBeNull();
+    await expect(failureIcon).not.toBeNull();
+    await expect(failureTitle).not.toBeNull();
+    await expect(failureDescription).not.toBeNull();
+    await expect(failureAction).not.toBeNull();
+    await expect(failureIconSvg).not.toBeNull();
+
+    if (!failureGroup || !failureIcon || !failureTitle || !failureDescription || !failureAction || !failureIconSvg) return;
+
+    const groupRect = failureGroup.getBoundingClientRect();
+    const iconRect = failureIcon.getBoundingClientRect();
+    const iconSvgRect = failureIconSvg.getBoundingClientRect();
+    const titleRect = failureTitle.getBoundingClientRect();
+    const descriptionRect = failureDescription.getBoundingClientRect();
+    const actionRect = failureAction.getBoundingClientRect();
+    const iconStyle = getComputedStyle(failureIcon);
+    const titleStyle = getComputedStyle(failureTitle);
+    const descriptionStyle = getComputedStyle(failureDescription);
+
+    await expect(groupRect.x).toBe(24);
+    await expect(groupRect.y).toBe(366);
+    await expect(groupRect.width).toBeCloseTo(382, 0);
+    await expect(iconRect.width).toBe(64);
+    await expect(iconRect.height).toBe(64);
+    await expect(iconSvgRect.width).toBe(32);
+    await expect(iconSvgRect.height).toBe(32);
+    await expect(iconStyle.backgroundColor).toBe('rgb(222, 210, 241)');
+    await expect(iconStyle.color).toBe('rgb(106, 55, 195)');
+    await expect(titleRect.y).toBe(446);
+    await expect(titleStyle.fontFamily).toContain('Mabry');
+    await expect(titleStyle.fontSize).toBe('20px');
+    await expect(titleStyle.lineHeight).toBe('20px');
+    await expect(titleStyle.fontWeight).toBe('500');
+    await expect(titleStyle.color).toBe('rgb(0, 0, 0)');
+    await expect(descriptionRect.y).toBe(482);
+    await expect(descriptionStyle.fontSize).toBe('14px');
+    await expect(descriptionStyle.lineHeight).toBe('14px');
+    await expect(descriptionStyle.fontWeight).toBe('400');
+    await expect(descriptionStyle.color).toBe('rgb(110, 103, 121)');
+    await expect(actionRect.x).toBe(24);
+    await expect(actionRect.y).toBe(descriptionRect.bottom + 24);
+    await expect(actionRect.width).toBeCloseTo(382, 0);
+    await expect(actionRect.height).toBe(40);
+
+    const assertActionStyle = async () => {
+      const actionStyle = getComputedStyle(failureAction);
+      await expect(actionStyle.backgroundColor).toBe('rgb(106, 55, 195)');
+      await expect(actionStyle.borderRadius).toBe('8px');
+      await expect(actionStyle.fontSize).toBe('16px');
+      await expect(actionStyle.lineHeight).toBe('16px');
+      await expect(actionStyle.fontWeight).toBe('500');
+      await expect(actionStyle.color).toBe('rgb(255, 255, 255)');
+    };
+
+    await assertActionStyle();
+    await userEvent.hover(failureAction);
+    await assertActionStyle();
+    failureAction.focus();
+    await assertActionStyle();
+    await userEvent.pointer([{ keys: '[MouseLeft>]', target: failureAction }]);
+    await assertActionStyle();
+    await userEvent.pointer([{ keys: '[/MouseLeft]', target: failureAction }]);
+  },
 };
 
 export const EmptySuccess: Story = {

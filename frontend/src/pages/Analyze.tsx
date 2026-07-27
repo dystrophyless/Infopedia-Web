@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  AlertCircleIcon,
   ArrowLeft01Icon,
   BookOpen01Icon,
   Cancel01Icon,
   DocumentAttachmentIcon,
+  FileSearchIcon,
+  FileCorruptIcon,
   StarIcon,
   UserAiIcon,
 } from '@hugeicons/core-free-icons';
@@ -18,9 +19,14 @@ import {
   getLatestAnalyzeResult,
 } from '../api/analyze';
 import { useSSE } from '../hooks/useSSE';
-import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
+import { getApiErrorClassificationDetail } from '../utils/apiError';
 import { clampScorePercent, getScoreStatus } from '../utils/scoreStatus';
 import type { AnalyzeBookCoverage, AnalyzeChapterResult, AnalyzeTask } from '../types';
+import {
+  getAnalyzeFailureKind,
+  getAnalyzeFileFailureKind,
+  type AnalyzeFailureKind,
+} from '../features/analyze/model/failurePresentation';
 import { selectAnalyzeResultAccess, type AnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import {
   Button,
@@ -32,12 +38,10 @@ import {
   SegmentedControl,
   Skeleton,
   StatCard,
-  StatusPanel,
   Surface,
 } from '../ui';
 
 const MAX_ANALYZE_UPLOAD_BYTES = 2 * 1024 * 1024;
-const PDF_CONTENT_TYPES = new Set(['application/pdf', 'application/x-pdf']);
 const POLL_INTERVAL_MS = 2500;
 const TERMINAL_STATUSES = new Set(['success', 'failure']);
 const BOOKS_COLLAPSED_LIMIT = 3;
@@ -66,14 +70,14 @@ export function Analyze() {
   const [file, setFile] = useState<File | null>(null);
   const [createdTask, setCreatedTask] = useState<AnalyzeTask | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitFailureKind, setSubmitFailureKind] = useState<AnalyzeFailureKind | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pollTask, setPollTask] = useState<AnalyzeTask | null>(null);
-  const [pollError, setPollError] = useState<string | null>(null);
+  const [pollError, setPollError] = useState(false);
   const [polling, setPolling] = useState(false);
   const [sortDirection, setSortDirection] = useState<AnalyzeSortDirection>('weakFirst');
   const [latestResults, setLatestResults] = useState<AnalyzeChapterResult[] | null | undefined>(undefined);
-  const [latestError, setLatestError] = useState<string | null>(null);
+  const [latestError, setLatestError] = useState(false);
   const [latestRetryKey, setLatestRetryKey] = useState(0);
 
   const sseUrl = !isLatestView && taskId ? buildAnalyzeSseUrl(taskId) : null;
@@ -86,13 +90,13 @@ export function Analyze() {
   useEffect(() => {
     if (!isLatestView) {
       setLatestResults(undefined);
-      setLatestError(null);
+      setLatestError(false);
       return;
     }
 
     let active = true;
     setLatestResults(undefined);
-    setLatestError(null);
+    setLatestError(false);
 
     getLatestAnalyzeResult(i18n.language)
       .then((results) => {
@@ -106,32 +110,33 @@ export function Analyze() {
           }, { replace: true });
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (!active) return;
         setLatestResults(null);
-        setLatestError(getApiErrorMessage(err, t('common.error')));
+        setLatestError(true);
       });
 
     return () => {
       active = false;
     };
-  }, [i18n.language, isLatestView, latestRetryKey, setSearchParams, t]);
+  }, [i18n.language, isLatestView, latestRetryKey, setSearchParams]);
 
   // A latest-result deep link is an independent read-only flow. Ignore any
   // task/SSE/poll state left over from a previous upload while it is active.
   const currentTask = isLatestView ? undefined : sseResult ?? pollTask ?? messages.at(-1) ?? createdTask;
   const hasLatestResult = isLatestView && Array.isArray(latestResults) && latestResults.length > 0;
-  const hasLatestError = isLatestView && latestResults === null && latestError !== null;
-  const isLatestLoading = isLatestView && latestResults === undefined && latestError === null;
+  const hasLatestError = isLatestView && latestResults === null && latestError;
+  const isLatestLoading = isLatestView && latestResults === undefined && !latestError;
   const isTerminal = currentTask ? TERMINAL_STATUSES.has(currentTask.status) : hasLatestResult || hasLatestError;
   const isProcessing = !isLatestView && (submitting || Boolean(taskId && !isTerminal && !pollError));
-  const showUploadForm = !isLatestView && !isTerminal && !isProcessing;
-  const failureMessage = isLatestView
+  const taskFailureKind = currentTask?.status === 'failure'
+    ? getAnalyzeFailureKind(currentTask.error, currentTask.stage)
+    : null;
+  const hasGenericFailure = Boolean(pollError || (sseError && !polling));
+  const failureKind: AnalyzeFailureKind | null = isLatestView
     ? null
-    : submitError ??
-      pollError ??
-      (currentTask?.status === 'failure' ? getTaskErrorMessage(currentTask.error) : null) ??
-      (sseError && !polling ? sseError : null);
+    : taskFailureKind ?? submitFailureKind ?? (hasGenericFailure ? 'generic' : null);
+  const showUploadForm = !isLatestView && !isTerminal && !isProcessing && !failureKind;
   const successResults = currentTask?.status === 'success'
     ? currentTask.result ?? []
     : hasLatestResult
@@ -154,7 +159,7 @@ export function Analyze() {
 
   function retryLatest() {
     setLatestResults(undefined);
-    setLatestError(null);
+    setLatestError(false);
     setLatestRetryKey((value) => value + 1);
   }
 
@@ -167,7 +172,7 @@ export function Analyze() {
 
     async function poll() {
       setPolling(true);
-      setPollError(null);
+      setPollError(false);
       timer = undefined;
 
       try {
@@ -182,9 +187,9 @@ export function Analyze() {
         }
 
         setPolling(false);
-      } catch (err) {
+      } catch {
         if (!cancelled) {
-          setPollError(getApiErrorMessage(err, t('common.error')));
+          setPollError(true);
           setPolling(false);
         }
       }
@@ -197,25 +202,25 @@ export function Analyze() {
       if (timer !== undefined) window.clearTimeout(timer);
       setPolling(false);
     };
-  }, [isLatestView, sseError, sseResult, taskId, t]);
+  }, [isLatestView, sseError, sseResult, taskId]);
 
   function handleFileChange(nextFile: File | null) {
     setFile(nextFile);
-    setSubmitError(null);
-    setPollError(null);
+    setSubmitFailureKind(null);
+    setPollError(false);
   }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    const validationError = validateAnalyzeFile(file, t);
-    if (validationError) {
-      setSubmitError(validationError);
+    const validationFailureKind = getAnalyzeFileFailureKind(file, MAX_ANALYZE_UPLOAD_BYTES);
+    if (validationFailureKind) {
+      setSubmitFailureKind(validationFailureKind);
       return;
     }
 
-    setSubmitError(null);
-    setPollError(null);
+    setSubmitFailureKind(null);
+    setPollError(false);
     setCreatedTask(null);
     setPollTask(null);
     setTaskId(null);
@@ -226,7 +231,8 @@ export function Analyze() {
       setCreatedTask(task);
       setTaskId(task.task_id);
     } catch (err) {
-      setSubmitError(getApiErrorMessage(err, t('common.error')));
+      const detail = getApiErrorClassificationDetail(err);
+      setSubmitFailureKind(getAnalyzeFailureKind(detail, detail?.stage));
     } finally {
       setSubmitting(false);
     }
@@ -236,8 +242,8 @@ export function Analyze() {
     setFile(null);
     setCreatedTask(null);
     setTaskId(null);
-    setSubmitError(null);
-    setPollError(null);
+    setSubmitFailureKind(null);
+    setPollError(false);
     setPollTask(null);
     setSortDirection('weakFirst');
     if (isLatestView) {
@@ -268,7 +274,7 @@ export function Analyze() {
           title={t('analyze.title')}
           description={!showUploadForm ? t('analyze.description') : undefined}
           descriptionClassName={isProcessing ? 'max-md:hidden' : undefined}
-          trailing={isTerminal && !hasLatestError ? <Button onClick={reset}>{t('analyze.newUpload')}</Button> : undefined}
+          trailing={(currentTask?.status === 'success' || hasLatestResult) ? <Button onClick={reset}>{t('analyze.newUpload')}</Button> : undefined}
         />
       )}
 
@@ -352,8 +358,6 @@ export function Analyze() {
             </div>
           )}
 
-          {failureMessage && <StatusPanel className="mt-4" tone="danger" announce="assertive" title={failureMessage} headingLevel={3} />}
-
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
             <p className="max-w-[580px] text-[14px] leading-none text-muted max-md:hidden">
               {t('analyze.privacyNote')}
@@ -395,12 +399,22 @@ export function Analyze() {
         />
       )}
 
-      {!isProcessing && currentTask?.status === 'failure' && (
-        <AnalyzeFailure message={failureMessage ?? t('common.error')} onReset={reset} onBack={handleMobileResultBack} />
+      {!isProcessing && failureKind && (
+        <AnalyzeFailure
+          kind={failureKind}
+          action="uploadAnother"
+          onAction={reset}
+          onBack={handleMobileResultBack}
+        />
       )}
 
       {!isProcessing && hasLatestError && (
-        <AnalyzeFailure message={latestError ?? t('common.error')} onReset={retryLatest} onBack={handleMobileResultBack} />
+        <AnalyzeFailure
+          kind="generic"
+          action="retry"
+          onAction={retryLatest}
+          onBack={handleMobileResultBack}
+        />
       )}
 
       {!isProcessing && !hasLatestError && (currentTask?.status === 'success' || hasLatestResult) && (
@@ -772,36 +786,65 @@ export function AnalyzeProgress({
 }
 
 export function AnalyzeFailure({
-  message,
-  onReset,
+  kind,
+  action,
+  onAction,
   onBack,
 }: {
-  message: string;
-  onReset: () => void;
-  onBack?: () => void;
+  kind: AnalyzeFailureKind;
+  action: AnalyzeFailureAction;
+  onAction: () => void;
+  onBack: () => void;
 }) {
   const { t } = useTranslation();
 
   const content = (
-    <Surface tone="plain" variant="mobile-flat" className="border border-danger/40 p-8 shadow-feature md:mt-6">
-      <EmptyState
-        icon={<HugeiconsIcon icon={AlertCircleIcon} size={30} strokeWidth={1.6} />}
-        title={t('analyze.errorTitle')}
-        description={message}
-        action={<Button onClick={onReset}>{t('common.tryAgain')}</Button>}
-      />
-    </Surface>
+    <div
+      role="alert"
+      data-analyze-failure-group
+      className="fixed inset-x-6 top-[366px] flex w-auto flex-col items-center px-0 pb-8 text-center md:static md:inset-auto md:mx-auto md:w-full md:max-w-[520px] md:px-0 md:pb-0"
+    >
+      <span
+        data-analyze-failure-icon
+        className="flex size-16 items-center justify-center rounded-full bg-[#ded2f1] text-[#6A37C3] md:text-action-emphasized"
+        aria-hidden="true"
+      >
+        <HugeiconsIcon icon={FileCorruptIcon} size={32} strokeWidth={1.6} className="md:hidden" />
+        <HugeiconsIcon icon={FileSearchIcon} size={32} strokeWidth={1.5} className="hidden md:block" />
+      </span>
+      <h2
+        data-analyze-failure-title
+        className="mt-4 text-[20px] font-medium leading-[20px] text-black md:mt-6 md:text-text-strong"
+      >
+        {t(`analyze.failure.${kind}.title`)}
+      </h2>
+      <p
+        data-analyze-failure-description
+        className="mt-4 max-w-[330px] text-[14px] font-normal leading-[14px] text-[#6e6779] md:mt-3 md:leading-[1.35] md:text-muted"
+      >
+        {t(`analyze.failure.${kind}.description`)}
+      </p>
+      <Button
+        data-analyze-failure-action
+        fullWidth
+        size="sm"
+        onClick={onAction}
+        className="mt-6 h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] text-[16px] font-medium leading-[16px] !text-[#ffffff] hover:!bg-[#6a37c3] hover:opacity-100 focus:!bg-[#6a37c3] focus:opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:opacity-100 active:!bg-[#6a37c3] active:opacity-100 md:text-[var(--type-helper-size)] md:leading-none md:mt-8 md:w-auto md:min-w-[180px]"
+      >
+        {t(`analyze.failure.${action}`)}
+      </Button>
+    </div>
   );
-
-  if (!onBack) return content;
 
   return (
     <>
-      <div className="hidden md:block">{content}</div>
+      <Surface tone="plain" className="hidden p-8 shadow-feature md:mt-6 md:block">
+        {content}
+      </Surface>
       <MobilePageFrame
         className="md:hidden"
         appBar={{
-          title: t('analyze.mobileResultTitle'),
+          title: t('analyze.title'),
           headingLevel: 2,
           titleAlign: 'start',
           compactLayout: 'leading-only',
@@ -823,6 +866,8 @@ export function AnalyzeFailure({
     </>
   );
 }
+
+type AnalyzeFailureAction = 'uploadAnother' | 'retry';
 
 export function AnalyzeResults({
   results,
@@ -1313,20 +1358,6 @@ interface AnalyzeSummary {
   maxScore: number;
   percentage: number;
   chapterCount: number;
-}
-
-function validateAnalyzeFile(file: File | null, t: (key: string, values?: Record<string, unknown>) => string) {
-  if (!file) return t('analyze.errors.fileRequired');
-  if (file.size === 0) return t('analyze.errors.emptyFile');
-  if (file.size > MAX_ANALYZE_UPLOAD_BYTES) {
-    return t('analyze.errors.fileTooLarge');
-  }
-
-  const hasPdfExtension = file.name.toLowerCase().endsWith('.pdf');
-  const hasPdfType = file.type ? PDF_CONTENT_TYPES.has(file.type) : false;
-  if (!hasPdfExtension && !hasPdfType) return t('analyze.errors.invalidType');
-
-  return null;
 }
 
 function formatAnalyzeFileSize(bytes: number) {

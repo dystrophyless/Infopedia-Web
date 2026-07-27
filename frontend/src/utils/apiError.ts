@@ -1,5 +1,10 @@
 import axios from 'axios';
 
+export interface ApiErrorClassificationDetail {
+  code?: unknown;
+  stage?: unknown;
+}
+
 function detailToMessage(detail: unknown): string | null {
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) {
@@ -43,4 +48,19 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
 
 export function getTaskErrorMessage(value: unknown): string | null {
   return detailToMessage(value);
+}
+
+export function getApiErrorClassificationDetail(
+  err: unknown,
+): ApiErrorClassificationDetail | null {
+  if (!axios.isAxiosError(err) || !err.response?.data) return null;
+
+  const data = err.response.data as { detail?: unknown };
+  if (!data.detail || typeof data.detail !== 'object' || Array.isArray(data.detail)) return null;
+
+  const detail = data.detail as Record<string, unknown>;
+  return {
+    code: detail.code,
+    stage: detail.stage,
+  };
 }

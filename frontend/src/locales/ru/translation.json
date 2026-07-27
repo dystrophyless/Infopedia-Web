@@ -355,6 +355,26 @@
     "progressSubtitle": "PDF проходит распознавание, разбор тем и подбор подходящих изданий.",
     "progressPercent": "{{percent}}%",
     "errorTitle": "Не удалось выполнить анализ",
+    "failure": {
+      "invalidDocument": {
+        "title": "Не удалось открыть PDF",
+        "description": "Загрузите корректный PDF-файл и попробуйте снова."
+      },
+      "unsupportedDocument": {
+        "title": "Этот PDF не подходит",
+        "description": "Загрузите официальный PDF результата ЕНТ по информатике."
+      },
+      "extractionFailed": {
+        "title": "Не удалось распознать PDF",
+        "description": "Загрузите более чёткий, незапароленный официальный файл."
+      },
+      "generic": {
+        "title": "Не удалось выполнить анализ",
+        "description": "Попробуйте снова."
+      },
+      "uploadAnother": "Загрузить другой PDF",
+      "retry": "Повторить"
+    },
     "noResults": "Результаты анализа не найдены.",
     "mobileResultTitle": "Слабые темы",
     "mobileResultBack": "Вернуться к загрузке",

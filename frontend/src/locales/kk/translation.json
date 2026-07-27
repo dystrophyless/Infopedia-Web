@@ -355,6 +355,26 @@
     "progressSubtitle": "PDF танылып, тақырыптар талданып, сәйкес басылымдар таңдалып жатыр.",
     "progressPercent": "{{percent}}%",
     "errorTitle": "Талдауды орындау мүмкін болмады",
+    "failure": {
+      "invalidDocument": {
+        "title": "PDF файлын ашу мүмкін болмады",
+        "description": "Дұрыс PDF файлын жүктеп, қайта көріңіз."
+      },
+      "unsupportedDocument": {
+        "title": "Бұл PDF сәйкес келмейді",
+        "description": "Информатикадан ҰБТ нәтижесінің ресми PDF файлын жүктеңіз."
+      },
+      "extractionFailed": {
+        "title": "PDF файлын тану мүмкін болмады",
+        "description": "Анығырақ, құпиясөзбен қорғалмаған ресми файлды жүктеңіз."
+      },
+      "generic": {
+        "title": "Талдауды орындау мүмкін болмады",
+        "description": "Қайтадан көріңіз."
+      },
+      "uploadAnother": "Басқа PDF жүктеу",
+      "retry": "Қайталау"
+    },
     "noResults": "Талдау нәтижелері табылмады.",
     "mobileResultTitle": "Әлсіз тақырыптар",
     "mobileResultBack": "Жүктеу күйіне оралу",

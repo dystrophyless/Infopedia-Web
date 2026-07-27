@@ -233,8 +233,8 @@ assert.match(
 
 assert.match(
   bottomNavSource,
-  /const profileIsActive = location\.pathname === '\/profile' \|\| isWeakTopicsView;/,
-  'Profile active state should include the weak topics view',
+  /const profileIsActive = location\.pathname === '\/profile' \|\| location\.pathname === '\/subscription' \|\| isWeakTopicsView;/,
+  'Profile active state should include subscription and weak topics views',
 );
 
 for (const flag of ['analyzeIsActive', 'profileIsActive']) {
@@ -244,6 +244,7 @@ for (const flag of ['analyzeIsActive', 'profileIsActive']) {
     new RegExp(`aria-current=\\{${flag} \\? 'page' : undefined\\}`),
   );
 }
+assert.match(bottomNavSource, /aria-current=\{profileIsActive \? 'page' : undefined\}/);
 
 assert.doesNotMatch(
   bottomNavSource,

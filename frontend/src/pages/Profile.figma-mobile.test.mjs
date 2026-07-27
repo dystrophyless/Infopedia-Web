@@ -445,6 +445,8 @@ assert.equal('mobileUsernameHelper' in kkLocale.profile, false);
 assert.doesNotMatch(premiumSource, /<button|onClick|href=|to=/);
 assert.match(mobileHomeSource, /aria-label=\{t\('profile\.mobileLanguageAriaLabel'\)\}/);
 assert.match(mobileHomeSource, /aria-label=\{t\('profile\.mobileSettingsAriaLabel'\)\}/);
+assert.match(mobileHomeSource, /<button[^>]*onClick=\{\(\) => navigate\('\/subscription'\)\}/);
+assert.match(profileSource, /navigate\('\/subscription'\)/);
 assert.match(mobileHomeSource, /focus-visible:outline-2/);
 assert.match(profileSource, /aria-label=\{t\('profile\.mobileBackToProfile'\)\}/);
 assert.match(mobileDetailSource, /<section[^>]*aria-labelledby="mobile-profile-detail-title"/);

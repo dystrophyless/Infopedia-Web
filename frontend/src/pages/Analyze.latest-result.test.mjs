@@ -47,8 +47,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /setLatestResults\(null\);[\s\S]*?setLatestError\(getApiErrorMessage\(err, t\('common\.error'\)\)\)/,
-  'Latest-fetch errors should remain distinct from an empty latest result',
+  /setLatestResults\(null\);[\s\S]*?setLatestError\(true\)/,
+  'Latest-fetch errors should remain distinct from an empty latest result without retaining transport copy',
 );
 assert.match(
   analyzeSource,
@@ -77,7 +77,7 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /const isLatestLoading = isLatestView && latestResults === undefined && latestError === null/,
+  /const isLatestLoading = isLatestView && latestResults === undefined && !latestError/,
   'Latest fetch pending must have an explicit loading state',
 );
 assert.match(
@@ -151,10 +151,11 @@ assert.match(skeletonSource, /<button[\s\S]*className="[^"]*text-left[^"]*"[\s\S
 assert.doesNotMatch(skeletonSource, /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/, 'Latest skeleton back action should inherit the frame-owned 44px target');
 assert.match(skeletonSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/, 'Latest skeleton back action should retain the exact 24px glyph');
 assert.match(skeletonSource, /<Skeleton shape="text" className="h-5 w-40" \/>/, 'Latest skeleton first mobile placeholder should have no local margin');
-assert.match(failureSource, /className="border border-danger\/40 p-8 shadow-feature md:mt-6"/, 'Latest error content should have desktop-only margin and begin directly at mobile main');
+assert.match(failureSource, /<Surface tone="plain" className="hidden p-8 shadow-feature md:mt-6 md:block">/, 'Latest error content should retain a centered desktop surface separate from the canonical mobile frame');
 assert.match(failureSource, /titleAlign: 'start'/, 'Latest error title should use leading alignment');
 assert.match(failureSource, /compactLayout: 'leading-only'/, 'Latest error app bar should use leading-only compact layout');
-assert.equal(80 + 24 + 32, 136, 'Latest loading and error content should begin at canonical y=136');
+assert.equal(80 + 24 + 32, 136, 'Latest loading should retain the canonical y=136 content anchor');
+assert.equal(366, 366, 'Latest failure uses the explicit Figma node 110:2268 y=366 exception');
 assert.match(
   analyzeSource,
   /!hasLatestError && \(currentTask\?\.status === 'success' \|\| hasLatestResult\)/,
@@ -162,8 +163,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /<AnalyzeFailure message=\{latestError \?\? t\('common\.error'\)\} onReset=\{retryLatest\} onBack=\{handleMobileResultBack\} \/>/,
-  'Latest-fetch errors should use the existing retry failure state',
+  /<AnalyzeFailure[\s\S]*?kind="generic"[\s\S]*?action="retry"[\s\S]*?onAction=\{retryLatest\}[\s\S]*?onBack=\{handleMobileResultBack\}/,
+  'Latest-fetch errors should use the localized generic retry failure state',
 );
 assert.match(
   analyzeSource,

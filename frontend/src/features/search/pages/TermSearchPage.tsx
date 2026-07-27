@@ -265,7 +265,7 @@ export function MobileSearchEmptyState({ query }: { query: string }) {
     >
       <div
         data-mobile-search-empty-icon
-        className="flex size-16 items-center justify-center rounded-[64px] bg-[#ded2f1] text-[#5a3688]"
+        className="flex size-16 items-center justify-center rounded-[64px] bg-[#ded2f1] text-[#6A37C3]"
       >
         <HugeiconsIcon icon={Search01Icon} size={32} strokeWidth={1.6} />
       </div>

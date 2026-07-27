@@ -471,13 +471,13 @@ function MobileProfileHome({
         </div>
       </section>
 
-      <section className="mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[8px] bg-[#ded2f1] px-6 py-4" aria-label={t('profile.mobilePremiumTitle')}>
+      <button type="button" onClick={() => navigate('/subscription')} className="mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[8px] bg-[#ded2f1] px-6 py-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]" aria-label={t('profile.mobilePremiumTitle')}>
         <img src={mobilePremiumAsset} alt="" className="size-[32px] shrink-0" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">{t('profile.mobilePremiumTitle')}</p>
           <p className="text-[12px] font-normal leading-[12px] text-[#865bcf]">{t('profile.mobilePremiumSubtitle')}</p>
         </div>
-      </section>
+      </button>
 
       <section className="mt-4 flex flex-col gap-4 rounded-[8px] bg-white px-6 py-4" aria-label={t('profile.mobileActionsLabel')}>
         <MobileProfileAction

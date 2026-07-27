@@ -39,7 +39,7 @@ export function MobileBottomNav() {
   const isWeakTopicsView =
     location.pathname === '/analyze' && new URLSearchParams(location.search).get('view') === 'latest';
   const analyzeIsActive = location.pathname === '/analyze' && !isWeakTopicsView;
-  const profileIsActive = location.pathname === '/profile' || isWeakTopicsView;
+  const profileIsActive = location.pathname === '/profile' || location.pathname === '/subscription' || isWeakTopicsView;
 
   return (
     <>

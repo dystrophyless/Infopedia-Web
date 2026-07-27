@@ -529,8 +529,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-empty-icon[\s\S]*size-16[\s\S]*rounded-\[64px\][\s\S]*bg-\[#ded2f1\][\s\S]*<HugeiconsIcon icon=\{Search01Icon\} size=\{32\}/,
-  'Mobile zero-terms empty state should render the Figma 64px lavender circle with a 32px search icon',
+  /data-mobile-search-empty-icon[\s\S]*className="flex size-16 items-center justify-center rounded-\[64px\] bg-\[#ded2f1\] text-\[#6A37C3\]"[\s\S]*<HugeiconsIcon icon=\{Search01Icon\} size=\{32\} strokeWidth=\{1\.6\}/,
+  'Mobile zero-terms empty state should render the Figma 64px lavender circle with an exact purple 32px search icon',
 );
 
 assert.match(

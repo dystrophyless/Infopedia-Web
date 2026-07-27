@@ -128,6 +128,22 @@ export const ResultsAndFilters: Story = {
 };
 
 export const Empty: Story = {
+  play: async ({ canvasElement }) => {
+    const icon = canvasElement.querySelector<HTMLElement>('[data-mobile-search-empty-icon]');
+    const iconSvg = icon?.querySelector<SVGSVGElement>('svg');
+
+    await expect(icon).not.toBeNull();
+    await expect(iconSvg).not.toBeNull();
+    if (!icon || !iconSvg) return;
+
+    const iconRect = icon.getBoundingClientRect();
+    const iconSvgRect = iconSvg.getBoundingClientRect();
+    await expect(iconRect.width).toBe(64);
+    await expect(iconRect.height).toBe(64);
+    await expect(iconSvgRect.width).toBe(32);
+    await expect(iconSvgRect.height).toBe(32);
+    await expect(getComputedStyle(icon).color).toBe('rgb(106, 55, 195)');
+  },
   render: () => <MobileSearchEmptyState query="жоқ термин" />,
 };
 

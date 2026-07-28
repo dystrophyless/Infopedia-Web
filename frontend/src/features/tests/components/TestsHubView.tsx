@@ -21,7 +21,7 @@ export function TestsHubView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[calc(100dvh-88px)] max-md:px-6 max-md:pb-0 max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-0 max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
       <main className="w-full max-w-[382px]" aria-busy={loading}>
         <h1 className="text-[24px] font-medium leading-[24px] text-black">
           {t('tests.title', { defaultValue: 'Тесты' })}

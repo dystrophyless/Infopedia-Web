@@ -40,6 +40,7 @@ import {
   StatCard,
   Surface,
 } from '../ui';
+import { useMobileBottomNavOverride } from '../features/navigation';
 
 const MAX_ANALYZE_UPLOAD_BYTES = 2 * 1024 * 1024;
 const POLL_INTERVAL_MS = 2500;
@@ -129,6 +130,8 @@ export function Analyze() {
   const isLatestLoading = isLatestView && latestResults === undefined && !latestError;
   const isTerminal = currentTask ? TERMINAL_STATUSES.has(currentTask.status) : hasLatestResult || hasLatestError;
   const isProcessing = !isLatestView && (submitting || Boolean(taskId && !isTerminal && !pollError));
+  const mobileNavHidden = !isLatestView && (submitting || Boolean(taskId && !isTerminal));
+  useMobileBottomNavOverride({ visibility: mobileNavHidden ? 'hide' : 'show' });
   const taskFailureKind = currentTask?.status === 'failure'
     ? getAnalyzeFailureKind(currentTask.error, currentTask.stage)
     : null;

@@ -58,14 +58,14 @@ assert.doesNotMatch(
 
 assert.doesNotMatch(
   testsHubSource,
-  /max-md:min-h-\[100dvh\]/,
-  'Tests hub should not reserve the full viewport in addition to the fixed mobile navigation',
+  /max-md:min-h-\[calc\(100dvh-88px\)\]/,
+  'Tests hub should not subtract a fixed shell height locally',
 );
 
 assert.match(
   testsHubSource,
-  /max-md:min-h-\[calc\(100dvh-88px\)\]/,
-  'Tests hub should occupy only the mobile viewport area available above the navigation',
+  /max-md:min-h-\[var\(--mobile-page-available-height,100dvh\)\]/,
+  'Tests hub should consume the shared mobile viewport available-height variable',
 );
 
 assert.doesNotMatch(

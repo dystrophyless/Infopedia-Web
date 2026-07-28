@@ -9,6 +9,10 @@ const bottomNavSource = readFileSync(
   path.resolve(srcDir, 'components/MobileBottomNav.tsx'),
   'utf8',
 );
+const navigationPolicySource = readFileSync(
+  path.resolve(srcDir, 'features/navigation/model/mobileBottomNavPolicy.ts'),
+  'utf8',
+);
 const testsSource = readFileSync(path.resolve(pagesDir, 'Tests.tsx'), 'utf8');
 const testsHubSource = readFileSync(
   path.resolve(srcDir, 'features/tests/components/TestsHubView.tsx'),
@@ -107,9 +111,21 @@ assert.match(
 );
 
 assert.match(
+  navigationPolicySource,
+  /pathname === '\/tests'/,
+  'The navigation policy should keep Tests active for the exact hub route',
+);
+
+assert.match(
+  navigationPolicySource,
+  /pathname\.startsWith\('\/tests\/'\)/,
+  'The navigation policy should classify nested question routes separately from the hub',
+);
+
+assert.doesNotMatch(
   bottomNavSource,
   /location\.pathname\.startsWith\('\/tests'\)/,
-  'Bottom nav should keep Tests active for nested question routes',
+  'Bottom nav should consume the policy active item instead of deriving nested route activity',
 );
 
 assert.match(
@@ -242,8 +258,8 @@ assert.match(
 for (const viewSource of [questionViewSource, resultViewSource]) {
   assert.match(
     viewSource,
-    /max-md:min-h-\[calc\(100dvh-88px\)\]/,
-    'Test screens should occupy the exact 844px Figma area above the 88px bottom nav',
+    /max-md:min-h-\[var\(--mobile-page-available-height,100dvh\)\]/,
+    'Test screens should consume the shared mobile viewport available-height variable',
   );
   assert.match(
     viewSource,

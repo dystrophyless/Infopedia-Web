@@ -43,14 +43,26 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /isAuthenticated\s*&&\s*<MobileBottomNav\s*\/>/,
-  'Layout should render bottom navigation only for authenticated users',
+  /MobileShellProvider/,
+  'Layout should mount the feature-level mobile shell provider',
 );
 
 assert.match(
   layoutSource,
-  /max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
-  'Layout should reserve the semantic mobile bottom-navigation height on mobile',
+  /useMobileBottomNavDecision/,
+  'Layout should consume the shared mobile shell decision',
+);
+
+assert.match(
+  layoutSource,
+  /decision\.visible\s*&&\s*<MobileBottomNav\s+activeItem=\{decision\.activeItem\}\s*\/>/,
+  'Layout should render navigation from the shared decision and active item',
+);
+
+assert.match(
+  layoutSource,
+  /max-md:\[--mobile-page-available-height:100dvh\]/,
+  'Hidden shell should expose the full mobile viewport',
 );
 
 assert.match(
@@ -67,14 +79,14 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /isAuthenticated\s*\?\s*'max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\] max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]'/,
-  'Authenticated mobile main should expose the available-height variable and semantic bottom-nav reserve',
+  /max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\]/,
+  'Visible shell should expose the available-height variable and semantic bottom-nav reserve',
 );
 
 assert.match(
   layoutSource,
-  /max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
-  'Authenticated mobile main should use one semantic bottom-nav clearance token',
+  /decision\.visible\s*\?\s*'[^']*max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]'\s*:\s*'[^']*max-md:pb-0'/,
+  'One decision should switch the mobile bottom-nav reserve atomically',
 );
 
 assert.match(
@@ -158,7 +170,7 @@ for (const labelKey of ['nav.search', 'nav.tests', 'nav.analyze', 'profile.navPr
   );
 }
 
-for (const route of ["'/tests'", "'/analyze'", "'/profile'"]) {
+for (const route of ['"/tests"', '"/analyze"', '"/profile"']) {
   assert.match(
     bottomNavSource,
     new RegExp(route),
@@ -190,23 +202,6 @@ assert.doesNotMatch(
   'Mobile bottom navigation active state should not add a purple background fill',
 );
 
-assert.match(
-  bottomNavSource,
-  /getItemClass\(searchIsActive\)/,
-  'Mobile bottom navigation should apply the active visual state to the search tab route group',
-);
-
-assert.match(
-  bottomNavSource,
-  /const testsIsActive = location\.pathname\.startsWith\('\/tests'\);/,
-  'Mobile bottom navigation should keep the tests tab active for nested test-question routes',
-);
-
-assert.match(
-  bottomNavSource,
-  /getItemClass\(testsIsActive\)/,
-  'Mobile bottom navigation should apply the active visual state to the tests route group',
-);
 
 for (const [routeName, routePattern] of [
   ['analyze', 'analyzeIsActive'],
@@ -221,20 +216,14 @@ for (const [routeName, routePattern] of [
 
 assert.match(
   bottomNavSource,
-  /const isWeakTopicsView =\s*location\.pathname === '\/analyze' && new URLSearchParams\(location\.search\)\.get\('view'\) === 'latest';/,
-  'Weak topics should activate only for the exact analyze latest-view query',
+  /const analyzeIsActive = activeItem === 'analyze';/,
+  'Analyze active state should come from the shared active item',
 );
 
 assert.match(
   bottomNavSource,
-  /const analyzeIsActive = location\.pathname === '\/analyze' && !isWeakTopicsView;/,
-  'Analyze active state should exclude the weak topics view',
-);
-
-assert.match(
-  bottomNavSource,
-  /const profileIsActive = location\.pathname === '\/profile' \|\| location\.pathname === '\/subscription' \|\| isWeakTopicsView;/,
-  'Profile active state should include subscription and weak topics views',
+  /const profileIsActive = activeItem === 'profile';/,
+  'Profile active state should come from the shared active item',
 );
 
 for (const flag of ['analyzeIsActive', 'profileIsActive']) {

@@ -38,7 +38,7 @@ export function TestQuestionView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[calc(100dvh-88px)] max-md:px-6 max-md:pb-12 max-md:pt-[var(--mobile-page-app-bar-offset)]">
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-12 max-md:pt-[var(--mobile-page-app-bar-offset)]">
       <main className="test-question-content mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
         <MobileAppBar
           title={title}

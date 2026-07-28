@@ -4,6 +4,7 @@ import { getTerm } from '../api/terms';
 import { TermDetailView, type RelatedTerm, type TermDetailLoadState } from '../features/terms/components/TermDetailView';
 import { useAuthStore } from '../stores/authStore';
 import type { Term } from '../types';
+import { useMobileBottomNavDecision } from '../features/navigation';
 
 interface TermDetailState {
   backTo?: string;
@@ -17,6 +18,7 @@ export function TermDetail() {
   const { termRef } = useParams<{ termRef: string }>();
   const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const decision = useMobileBottomNavDecision();
   const state = (location.state as TermDetailState | null) ?? null;
   const routeStateTerm = state?.term;
   const stateTerm = routeStateTerm?.public_id === termRef ? routeStateTerm : null;
@@ -46,6 +48,7 @@ export function TermDetail() {
       term={stateTerm ?? fetchedTerm}
       loadState={loadState}
       backTo={state?.backTo ?? (isAuthenticated ? '/search' : '/')}
+      bottomNavVisible={decision.visible}
       relatedTerms={state?.relatedTerms}
       selectedDefinitionPublicId={state?.selectedDefinitionPublicId}
     />

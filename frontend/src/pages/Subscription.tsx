@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon, CheckIcon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { MobilePageFrame } from '../ui';
+import { useMobileBottomNavOverride } from '../features/navigation';
 import premiumAsset from '../assets/figma-profile/ai-co-editing.svg';
 import timelineToday from '../assets/figma-subscription/timeline-today.svg';
 import timelineDay6 from '../assets/figma-subscription/timeline-day-6.svg';
@@ -21,7 +22,9 @@ function SubscriptionPlanCard({ value, selected, onSelect, indicator, price, met
 
 export function Subscription() {
   const { t } = useTranslation(); const navigate = useNavigate();
-  const [plan, setPlan] = useState<Plan>('annual'); const [paymentMessage, setPaymentMessage] = useState(false);
+  const [plan, setPlan] = useState<Plan>('annual'); const [planTouched, setPlanTouched] = useState(false); const [paymentMessage, setPaymentMessage] = useState(false);
+  const mobileNavHidden = planTouched || paymentMessage;
+  useMobileBottomNavOverride({ visibility: mobileNavHidden ? 'hide' : 'show' });
   const timeline = [[timelineToday, 'subscriptionTimelineToday', 'subscriptionTimelineTodayBody'], [timelineDay6, 'subscriptionTimelineDay6', 'subscriptionTimelineDay6Body'], [timelineDay7, 'subscriptionTimelineDay7', 'subscriptionTimelineDay7Body']] as const;
   const benefits = ['subscriptionBenefitPlan', 'subscriptionBenefitTests', 'subscriptionBenefitTopics'] as const;
   return <MobilePageFrame className="bg-[#EFEBF6] md:hidden" tone="canvas" scrollMode="content" safeAreaBottom={false} contentClassName="!pt-[26px]"
@@ -29,7 +32,7 @@ export function Subscription() {
     <section data-figma-node="425:3479" className="mx-6 flex flex-col gap-4 rounded-[8px] bg-white p-6">
       <header className="flex items-center gap-6 pb-2"><img src={premiumAsset} alt="" className="size-8 shrink-0" /><div className="min-w-0"><p className="text-[14px] font-medium leading-[14px] text-[#6A37C3]">{t('profile.subscriptionPurchase')}</p><h1 className="mt-1 text-[18px] leading-[18px] text-black">{t('profile.subscriptionPremiumTitle')}</h1><p className="mt-1 text-[12px] leading-[12px] text-[#8C8698]">{t('profile.subscriptionBody')}</p></div></header>
       <div className="h-px w-full bg-[#EFEAF8]" />
-      <fieldset className="grid min-w-0 grid-cols-2 gap-4 border-0 p-0"><legend className="sr-only">{t('profile.subscriptionPlanLabel')}</legend><SubscriptionPlanCard value="monthly" selected={plan === 'monthly'} onSelect={() => setPlan('monthly')} price="2490₸" meta={t('profile.subscriptionMonthlyMeta')} /><SubscriptionPlanCard value="annual" selected={plan === 'annual'} onSelect={() => setPlan('annual')} price="9900₸" meta={t('profile.subscriptionAnnualMeta')} indicator={<span className="rounded-[4px] bg-[#DED2F1] px-2 py-1 text-[14px] font-medium leading-[14px] text-[#865BCF]">-67%</span>} /></fieldset>
+      <fieldset className="grid min-w-0 grid-cols-2 gap-4 border-0 p-0"><legend className="sr-only">{t('profile.subscriptionPlanLabel')}</legend><SubscriptionPlanCard value="monthly" selected={plan === 'monthly'} onSelect={() => { setPlanTouched(true); setPlan('monthly'); }} price="2490₸" meta={t('profile.subscriptionMonthlyMeta')} /><SubscriptionPlanCard value="annual" selected={plan === 'annual'} onSelect={() => { setPlanTouched(true); setPlan('annual'); }} price="9900₸" meta={t('profile.subscriptionAnnualMeta')} indicator={<span className="rounded-[4px] bg-[#DED2F1] px-2 py-1 text-[14px] font-medium leading-[14px] text-[#865BCF]">-67%</span>} /></fieldset>
       <div className="h-px w-full bg-[#EFEAF8]" />
       <div className="relative"><div className="absolute left-[11px] top-[26px] h-[67px] w-0.5 bg-[#C5B1E7]" /> <div className="relative flex flex-col gap-4">{timeline.map(([icon, title, body]) => <div key={title} className="flex min-w-0 items-center gap-2"><img src={icon} alt="" className="size-6 shrink-0" /><div className="min-w-0 text-[12px] leading-[12px]"><p className="font-medium text-[#6A37C3]">{t(`profile.${title}`)}</p><p className="mt-1 text-[#6E6779]">{t(`profile.${body}`)}</p></div></div>)}</div></div>
       <div className="h-px w-full bg-[#EFEAF8]" />

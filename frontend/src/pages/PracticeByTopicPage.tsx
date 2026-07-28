@@ -5,6 +5,7 @@ import { getLatestAnalyzeResult } from '../api/analyze';
 import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import type { AnalyzeChapterResult } from '../types';
 import { PracticeByTopicView, type PracticeByTopicData } from '../features/tests';
+import { useMobileBottomNavOverride } from '../features/navigation';
 
 const createUnavailableData = (state: PracticeByTopicData['state']): PracticeByTopicData => ({
   state,
@@ -78,6 +79,12 @@ export function PracticeByTopicPage() {
       ? toPracticeData(chapter)
       : createUnavailableData('unavailable');
   }, [requestedChapterId, results]);
+
+  useMobileBottomNavOverride(
+    data.state === 'ready'
+      ? { visibility: 'show', activeItem: 'tests' }
+      : { visibility: 'hide' },
+  );
 
   const handleBack = () => {
     if (window.history.length > 1) {

@@ -22,6 +22,7 @@ export interface TermDetailViewProps {
   term: Term | null;
   loadState?: TermDetailLoadState;
   backTo: string;
+  bottomNavVisible?: boolean;
   relatedTerms?: RelatedTerm[];
   selectedDefinitionPublicId?: string;
 }
@@ -104,17 +105,17 @@ export function TermDetailRelatedPanel({ relatedTerms, backTo }: { relatedTerms:
   );
 }
 
-function TermDetailTestCta({ isAuthenticated }: { isAuthenticated: boolean }) {
+function TermDetailTestCta({ bottomNavVisible }: { bottomNavVisible: boolean }) {
   const { t } = useTranslation();
   return (
-    <button type="button" aria-disabled="true" className={`fixed left-6 right-6 ${isAuthenticated ? 'bottom-[128px]' : 'bottom-10'} z-30 flex min-h-[68px] items-center justify-between rounded-[8px] bg-[#6a37c3] px-6 py-4 text-left text-[#f6f5f7]`}>
+    <button type="button" aria-disabled="true" className={`fixed left-6 right-6 ${bottomNavVisible ? 'bottom-[128px]' : 'bottom-10'} z-30 flex min-h-[68px] items-center justify-between rounded-[8px] bg-[#6a37c3] px-6 py-4 text-left text-[#f6f5f7]`}>
       <span className="min-w-0"><span className="block truncate text-[16px] font-medium leading-4">{t('termDetail.testCta')}</span><span className="mt-1 block truncate text-[12px] leading-3 text-[#c5b1e7]">{t('termDetail.testMeta')}</span></span>
       <HugeiconsIcon icon={ArrowRight02Icon} size={24} strokeWidth={1.8} className="shrink-0" />
     </button>
   );
 }
 
-export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
+export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
@@ -146,7 +147,7 @@ export function TermDetailView({ term, loadState = 'idle', backTo, relatedTerms 
             {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] leading-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
             <TermDetailSourcePanel definition={current} />
             <TermDetailRelatedPanel relatedTerms={relatedTerms} backTo={backTo} />
-            <TermDetailTestCta isAuthenticated={isAuthenticated} />
+            <TermDetailTestCta bottomNavVisible={bottomNavVisible} />
           </>}
         </>}
       </div>

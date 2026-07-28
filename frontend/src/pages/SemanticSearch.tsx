@@ -7,6 +7,7 @@ import { SemanticResultCard } from '../components/SemanticResultCard';
 import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
 import { Textarea } from '../ui';
 import type { Definition, SearchTask, SearchTaskError } from '../types';
+import { isSemanticSearchMobileNavHidden, useMobileBottomNavOverride } from '../features/navigation';
 
 const MIN_CHARS = 10;
 
@@ -19,6 +20,12 @@ export function SemanticSearch() {
 
   const sseUrl = taskId ? buildSseUrl(taskId) : null;
   const { messages, result, isLoading, error } = useSSE<SearchTask>(sseUrl);
+  const mobileNavHidden = isSemanticSearchMobileNavHidden({
+    submitting,
+    taskId,
+    terminalResult: result,
+  });
+  useMobileBottomNavOverride({ visibility: mobileNavHidden ? 'hide' : 'show' });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

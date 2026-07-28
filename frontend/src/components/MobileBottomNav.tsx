@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -9,9 +9,8 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
+import type { MobileBottomNavItem } from '../features/navigation';
 import { SearchChoiceModal } from './SearchChoiceModal';
-
-const SEARCH_NAV_PATHS = new Set(['/search', '/semantic-search']);
 
 function authTarget(path: string, isAuthenticated: boolean): string {
   if (isAuthenticated) return path;
@@ -29,17 +28,14 @@ function getItemClass(isActive: boolean): string {
   return `${itemBaseClass} ${isActive ? activeItemClass : inactiveItemClass}`;
 }
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ activeItem }: { activeItem: MobileBottomNavItem | null }) {
   const { t } = useTranslation();
-  const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const searchIsActive = SEARCH_NAV_PATHS.has(location.pathname);
-  const testsIsActive = location.pathname.startsWith('/tests');
-  const isWeakTopicsView =
-    location.pathname === '/analyze' && new URLSearchParams(location.search).get('view') === 'latest';
-  const analyzeIsActive = location.pathname === '/analyze' && !isWeakTopicsView;
-  const profileIsActive = location.pathname === '/profile' || location.pathname === '/subscription' || isWeakTopicsView;
+  const searchIsActive = activeItem === 'search';
+  const testsIsActive = activeItem === 'tests';
+  const analyzeIsActive = activeItem === 'analyze';
+  const profileIsActive = activeItem === 'profile';
 
   return (
     <>

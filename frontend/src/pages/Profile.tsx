@@ -66,6 +66,7 @@ import {
   buildWeakTopicInsights,
   type WeakTopicInsight,
 } from '../utils/weakTopics';
+import { useMobileBottomNavOverride } from '../features/navigation';
 
 const INITIAL_VISIBLE_BOOKS_LIMIT = 3;
 const WEAK_TOPICS_PANEL_SECTION_CLASS = 'px-8 py-12 max-md:px-5';
@@ -281,6 +282,11 @@ function MobileProfileDashboard({
 }) {
   const [settingsView, setSettingsView] = useState<'home' | 'account' | 'email' | 'username' | 'password'>('home');
   const [passwordConflict, setPasswordConflict] = useState(false);
+  const mobileNavHidden =
+    activeTab === 'settings' &&
+    (settingsView === 'account' || settingsView === 'username' || settingsView === 'password');
+
+  useMobileBottomNavOverride({ visibility: mobileNavHidden ? 'hide' : 'show' });
 
   useEffect(() => {
     if (activeTab !== 'settings') setSettingsView('home');

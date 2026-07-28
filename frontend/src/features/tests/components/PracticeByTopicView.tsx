@@ -43,7 +43,7 @@ export function PracticeByTopicView({ data, onBack, onTopicStart }: PracticeByTo
   const isReady = data.state === 'ready';
 
   return (
-    <div className="min-h-[calc(100dvh-88px)] bg-[#efebf6] pb-8 text-[#252329] md:min-h-[calc(100dvh-80px)] md:pt-10">
+    <div className="min-h-[var(--mobile-page-available-height,100dvh)] bg-[#efebf6] pb-8 text-[#252329] md:min-h-[calc(100dvh-80px)] md:pt-10">
       <div className="mx-auto w-full max-w-[430px]">
         <MobileAppBar
           title={t('practiceByTopic.appBarTitle', { defaultValue: 'Практика по разделу' })}

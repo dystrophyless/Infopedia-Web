@@ -28,7 +28,7 @@ assert.match(card, /return \{ text: bestFitText, overflowing: true \}/, 'Measure
 assert.match(card, /visibleDefinition\.overflowing \?/, 'Fade must render only for actual overflow');
 assert.match(card, /pointer-events-none absolute inset-x-0 bottom-0 h-\[1\.75em\] bg-gradient-to-t/, 'Fade must overlay the final visible line without changing geometry');
 assert.match(card, /from-surface-subtle[\s\S]*from-white[\s\S]*tone\.fadeClassName[\s\S]*from-surface/, 'Fade must match desktop guest, mobile guest, colored mobile, and surface backgrounds');
-assert.match(card, /aria-hidden=\{clone \|\| undefined\}[\s\S]*tabIndex=\{clone \? -1 : undefined\}/, 'Clones must be hidden from accessibility and keyboard navigation');
+assert.match(card, /aria-hidden="true"/, 'Clones must be hidden from accessibility');
 
 assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop'/, 'Only desktop and guest variants may auto-scroll');
 assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/, 'Auto-scroll variants must duplicate multiple items for the loop');

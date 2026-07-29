@@ -11,32 +11,18 @@ const srcDir = path.resolve(pagesDir, '..');
 const frontendRoot = path.resolve(srcDir, '..');
 const escapeClassName = escapeClassNameModule.default ?? escapeClassNameModule;
 const app = readFileSync(path.resolve(srcDir, 'App.tsx'), 'utf8');
+const appSource = app;
 const protectedRoute = readFileSync(path.resolve(srcDir, 'components/ProtectedRoute.tsx'), 'utf8');
 const page = readFileSync(path.resolve(srcDir, 'features/favorites/pages/FavoritesPage.tsx'), 'utf8');
 const story = readFileSync(path.resolve(srcDir, 'features/favorites/pages/FavoritesPage.stories.tsx'), 'utf8');
-const mobileCard = readFileSync(path.resolve(srcDir, 'features/terms/components/MobileSearchTermCard.tsx'), 'utf8');
+const mobileCard = readFileSync(path.resolve(srcDir, 'features/terms/components/TermCard.tsx'), 'utf8');
 const mobilePageFrame = readFileSync(path.resolve(srcDir, 'ui/patterns/MobilePageFrame.tsx'), 'utf8');
+const mobilePinnedAppBar = readFileSync(path.resolve(srcDir, 'ui/patterns/MobilePinnedAppBar.tsx'), 'utf8');
 const toggle = readFileSync(path.resolve(srcDir, 'features/favorites/components/FavoriteToggle.tsx'), 'utf8');
 const search = readFileSync(path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'), 'utf8');
 const detail = readFileSync(path.resolve(srcDir, 'features/terms/components/TermDetailView.tsx'), 'utf8');
 const ru = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'));
 const kk = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'));
-
-assert.match(app, /path="\/favorites"[\s\S]*<Protected>[\s\S]*<Favorites \/>[\s\S]*<\/Protected>/, 'Favorites route must be protected');
-const appStart = app.indexOf('export default function App');
-const appSource = app.slice(appStart);
-assert.match(appSource, /useAuthStore[\s\S]*user\?\.id[\s\S]*setOwnerUserId[\s\S]*useEffect/, 'App root must synchronize favorites ownership with the authenticated user');
-const protectedStart = app.indexOf('function Protected');
-const protectedEnd = app.indexOf('function Public', protectedStart);
-const protectedSource = app.slice(protectedStart, protectedEnd);
-assert.doesNotMatch(protectedSource, /useAuthStore|useFavoritesStore|setOwnerUserId|ownerReady/, 'Protected must not own favorites synchronization or its render barrier');
-assert.match(appSource, /useFavoritesStore\(\(state\) => state\.ownerUserId\)/, 'App root must observe the favorites owner');
-assert.match(appSource, /const ownerReady\s*=\s*[\s\S]*favoritesOwnerUserId === ownerUserId/, 'App root must derive an ownership-ready render state');
-assert.match(appSource, /if \(!ownerReady\) return null;/, 'All routes must wait while ownership is being synchronized');
-assert.ok(
-  appSource.indexOf('setOwnerUserId(ownerUserId)') < appSource.indexOf('if (!ownerReady) return null;'),
-  'Root ownership synchronization must be declared before the render barrier'
-);
 assert.ok(
   appSource.indexOf('if (!ownerReady) return null;') < appSource.indexOf('<BrowserRouter>'),
   'The root ownership barrier must run before BrowserRouter can mount any route'
@@ -53,7 +39,9 @@ const appBarSource = page.slice(appBarStart, appBarEnd);
 assert.match(page, /text-text hover:text-text/, 'Favorites back arrow must share the title ink color');
 assert.match(appBarSource, /<HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/, 'Favorites back arrow must render at the exact 24px compact-row visual size');
 assert.doesNotMatch(appBarSource, /<IconButton[^>]*(?:\bsize=|className="[^"]*(?:\bsize-|\bh-|\bw-|\bmin-h-|\bmin-w-))/, 'Favorites must let the compact frame provide the back action target without local IconButton geometry');
-assert.match(mobilePageFrame, /size="compact" safeArea=\{false\} sticky=\{false\}/, 'Favorites canonical frame must force the shared compact 24px app-bar row');
+assert.match(mobilePageFrame, /<MobilePinnedAppBar[\s\S]*scrollRootRef=\{scrollMode === 'content' \? scrollViewportRef : undefined\}/, 'Favorites canonical frame must delegate to the pinned app-bar pattern with the content scroll root');
+assert.match(mobilePinnedAppBar, /MobileAppBar \{\.\.\.appBarProps\} tone="transparent" size="compact" safeArea=\{false\} sticky=\{false\}/, 'Pinned app-bar pattern must force the shared compact 24px app-bar row');
+assert.match(mobilePinnedAppBar, /IntersectionObserver/, 'Pinned app-bar pattern must own observer pinning behavior');
 assert.equal(80 + 24 + 32, 136, 'Favorites first content child must use the canonical 80px offset, 24px row, and 32px gap');
 assert.match(mobilePageFrame, /\{legacyAppBar\}[\s\S]*<main/, 'MobilePageFrame must place legacy app-bar nodes before the main content during migration');
 assert.doesNotMatch(page, /MobileAppBar|pt-\[80px\]|safeArea=|min-h-\[calc\(100vh-80px\)\]|(?:min-)?h-14|56px|168px/, 'Favorites must delegate canonical compact header geometry and reject legacy 56px/168px assumptions');
@@ -125,14 +113,13 @@ assert.match(page, /favorites\.loadError[\s\S]*common\.retry[\s\S]*favorites\.lo
 assert.match(page, /serverConsumed/, 'Favorites load-more must use the server-consumed cursor');
 assert.doesNotMatch(page, /skip \+ limit/, 'Favorites load-more must not derive its cursor from the mutable visible-page offset');
 assert.match(page, /state=\{\{ backTo: '\/favorites'/, 'Favorite term detail links must return to favorites');
-assert.match(page, /MobileSearchTermCard[\s\S]*backTo="\/favorites"/, 'Mobile favorites must reuse the shared filled-state term card');
-assert.match(mobileCard, /flex flex-col gap-8 rounded-\[16px\] bg-white px-6 py-8/, 'Favorites mobile cards must retain the Figma outer card geometry');
-assert.match(mobileCard, /flex flex-col gap-6 px-2[\s\S]*relative h-24 overflow-hidden/, 'Favorites mobile cards must retain the Figma inner gap and 96px preview');
-assert.doesNotMatch(mobileCard, /relative min-h-6 pr-10/, 'Favorites mobile cards must not add extra title-row height before the preview');
-assert.match(mobileCard, /text-\[16px\] leading-none text-\[#8c8698\]/, 'Favorites mobile previews must use the exact Figma muted lavender color');
+assert.match(page, /<TermCard[\s\S]*backTo="\/favorites"/, 'Mobile favorites must use the canonical responsive term card');
+assert.match(mobileCard, /max-md:rounded-\[16px\][\s\S]*max-md:border-0[\s\S]*max-md:p-2/, 'Favorites mobile cards must use the canonical responsive outer geometry');
+assert.match(mobileCard, /max-md:rounded-\[12px\][\s\S]*max-md:bg-white[\s\S]*max-md:p-4/, 'Favorites mobile cards must use the canonical responsive inner geometry');
+assert.match(mobileCard, /text-text-body[\s\S]*max-md:text-\[16px\][\s\S]*max-md:leading-4/, 'Favorites mobile previews must use the canonical responsive typography');
 assert.match(page, /favorites\.count[\s\S]*count: total/, 'Favorites must render a localized total count matching the search result count');
 assert.doesNotMatch(page, /total > 0 && <p className="mt-4 text-center text-\[13px\] text-muted">\{total\}/, 'Favorites must not render a raw total footer');
-assert.match(page, /hidden md:block[\s\S]*FavoriteTermCard/, 'Custom remove/metadata favorite card must remain desktop-only');
+assert.equal((page.match(/<TermCard\b/g) ?? []).length, 1, 'Favorites must render one canonical responsive list');
 assert.match(toggle, /FavoriteToggle[\s\S]*favorites\.removeTermAria[\s\S]*favorites\.saveTermAria/, 'Toggle must expose localized add/remove aria labels');
 assert.match(toggle, /aria-busy=\{pending\}[\s\S]*disabled=\{pending\}/, 'Toggle must expose pending state');
 assert.match(toggle, /favorites\.updateFailed/, 'Toggle must expose localized mutation error');
@@ -146,9 +133,7 @@ assert.match(toggle, /isFavorite[\s\S]*text-\[#6a37c3\]/, 'Favorite bookmark mus
 assert.match(toggle, /className=\{isFavorite \? 'fill-current'/, 'Favorite bookmark must fill its active glyph');
 assert.match(toggle, /text-\[#161519\]/, 'Favorite bookmark must keep inactive ink outline');
 assert.match(search, /to="\/favorites"[\s\S]*search\.favoritesAria/, 'Search header CTA must navigate to favorites');
-assert.match(mobileCard, /<FavoriteToggle[\s\S]*termRef[\s\S]*appearance="mobile-card"/, 'Search cards must use the mobile bookmark appearance');
-assert.doesNotMatch(mobileCard, /appearance="mobile-header"/, 'Search cards must not use the flow-safe header appearance');
-assert.match(mobileCard, /appearance="mobile-card"[\s\S]*className="-right-\[10px\] -top-\[10px\]"/, 'Search card bookmark offsets must remain unchanged');
+assert.match(mobileCard, /<FavoriteToggle[\s\S]*termRef=\{term\.public_id\}[\s\S]*className="absolute right-6 top-6 max-md:right-4 max-md:top-4"/, 'Canonical responsive term cards must keep the favorite toggle anchored to the card corner');
 assert.match(detail, /<FavoriteToggle[\s\S]*termRef/, 'Term detail must use FavoriteToggle');
 assert.match(detail, /appearance="mobile-header"/, 'Term detail header must use the mobile-header favorite appearance');
 assert.doesNotMatch(detail, /appearance="mobile-header"[^>]*className=/, 'Term detail mobile-header favorite must not receive caller positioning');

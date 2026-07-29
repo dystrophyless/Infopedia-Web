@@ -43,7 +43,7 @@ export function SearchChoiceModal({
         descriptionId="search-choice-description"
         titleId="search-choice-title"
         overlayClassName="bg-[#12091f]/65 backdrop-blur-[2px] max-md:items-end max-md:p-0 max-md:backdrop-blur-none"
-        className="max-h-[calc(100dvh-32px)] max-w-[560px] overflow-y-auto rounded-[10px] border border-border/70 bg-surface shadow-[0_18px_54px_rgba(18,9,31,0.22)] max-md:max-h-[82dvh] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[22px] max-md:border-x-0 max-md:border-b-0 max-md:shadow-none"
+        className="max-h-[calc(100dvh-32px)] max-w-[560px] overflow-y-auto rounded-[10px] border border-border/70 bg-surface max-md:max-h-[82dvh] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[22px] max-md:border-x-0 max-md:border-b-0"
       >
         <span
           aria-hidden="true"

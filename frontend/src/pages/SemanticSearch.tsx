@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { createSearchTask, buildSseUrl } from '../api/search';
 import { useSSE } from '../hooks/useSSE';
 import { LoadingPanel } from '../components/LoadingPanel';
-import { SemanticResultCard } from '../components/SemanticResultCard';
+import { SemanticResultCard } from '../features/terms/components/SemanticResultCard';
 import { getApiErrorMessage, getTaskErrorMessage } from '../utils/apiError';
-import { Textarea } from '../ui';
+import { MobilePageFrame, Textarea } from '../ui';
 import type { Definition, SearchTask, SearchTaskError } from '../types';
 import { isSemanticSearchMobileNavHidden, useMobileBottomNavOverride } from '../features/navigation';
 
@@ -73,18 +73,24 @@ export function SemanticSearch() {
     submitError ?? (result?.status === 'failure' ? formatSearchTaskError(result.error) ?? error : error);
 
   return (
-    <div className="mx-auto max-w-[900px] px-6 py-14 max-md:px-4">
-      <header className="mb-8 text-left">
-        <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
-          {t('semanticSearch.eyebrow')}
-        </p>
-        <h1 className="mt-2 text-[36px] font-medium leading-none text-text max-md:text-[26px]">
-          {t('search.title')}
-        </h1>
-        <p className="mt-3 max-w-[720px] text-[16px] leading-none text-text-body">
-          {t('semanticSearch.description')}
-        </p>
-      </header>
+    <MobilePageFrame
+      tone="canvas"
+      contentId="semantic-search-content"
+      contentLabel={t('semanticSearch.title')}
+      appBar={{
+        title: t('semanticSearch.title'),
+        tone: 'canvas',
+        titleAlign: 'start',
+        compactLayout: 'leading-only',
+        desktopHeader: {
+          description: t('semanticSearch.description'),
+        },
+      }}
+    >
+    <div className="mx-auto max-w-[900px] px-6 py-14 pb-14 pt-2 md:pt-0 max-md:px-4">
+      <p className="mb-8 text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted md:hidden">
+        {t('semanticSearch.eyebrow')}
+      </p>
 
       <form onSubmit={handleSubmit} className="mb-8">
         <label htmlFor="semantic-query" className="sr-only">
@@ -97,7 +103,7 @@ export function SemanticSearch() {
           placeholder={t('semanticSearch.placeholder')}
           rows={5}
           aria-describedby="semantic-query-hint"
-          className="min-h-[140px] rounded-[15px] p-5 text-[16px] leading-none shadow-feature focus-visible:border-accent max-md:shadow-none"
+          className="min-h-[140px] rounded-[15px] p-5 text-[16px] leading-none focus-visible:border-accent"
         />
         <div className="mt-3 flex items-center justify-between">
           <span id="semantic-query-hint" className="text-[13px] leading-none text-muted">
@@ -141,5 +147,6 @@ export function SemanticSearch() {
         </div>
       )}
     </div>
+    </MobilePageFrame>
   );
 }

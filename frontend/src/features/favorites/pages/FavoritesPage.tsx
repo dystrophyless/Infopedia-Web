@@ -18,7 +18,7 @@ import {
   Text,
 } from '../../../ui';
 import { DefinitionMetadata } from '../../terms/components/DefinitionMetadata';
-import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
+import { TermCard } from '../../terms/components/TermCard';
 import { normalizeDefinitionPreviewText } from '../../terms/model';
 import { useFavoritesStore } from '../model';
 
@@ -92,6 +92,9 @@ function FavoriteTermCard({ term, terms }: { term: Term; terms: Term[] }) {
     </article>
   );
 }
+
+// Kept as a private behavior reference while the canonical TermCard owns rendering.
+void FavoriteTermCard;
 
 export function FavoritesEmptyAlert({
   title,
@@ -219,12 +222,9 @@ export function FavoritesPage() {
           <p className="mb-4 text-[16px] font-normal leading-none text-[#514b5c] md:hidden">
             {t('favorites.count', { count: total, defaultValue: `${total}` })}
           </p>
-          <div className="hidden flex-col gap-3 md:flex" aria-label={t('favorites.listLabel', { defaultValue: 'Favorite terms' })}>
-            {list.map((term) => <FavoriteTermCard key={term.public_id} term={term} terms={list} />)}
-          </div>
-          <div className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]" aria-label={t('favorites.listLabel', { defaultValue: 'Favorite terms' })}>
+          <div className="flex flex-col gap-4 max-md:-mx-[2px] max-md:w-[calc(100%+4px)]" aria-label={t('favorites.listLabel', { defaultValue: 'Favorite terms' })}>
             {list.map((term) => (
-              <MobileSearchTermCard
+              <TermCard
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, list)}

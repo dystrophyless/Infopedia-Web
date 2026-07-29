@@ -46,13 +46,13 @@ assert.ok(desktopAuthenticatedSource, 'Landing should keep the authenticated des
 
 assert.match(
   desktopAuthenticatedSource,
-  /<Hero \/>[\s\S]*<StatsBar \/>[\s\S]*<FeatureCard[\s\S]*id="books"/,
-  'Authenticated desktop users should keep the current desktop landing branch',
+  /<DesktopGuestLanding isAuthenticated=\{isAuthenticated\} \/>/,
+  'Authenticated desktop users should use the canonical responsive landing flow',
 );
 
 assert.match(
   desktopGuestSource,
-  /<DesktopGuestHero \/>[\s\S]*<DesktopGuestSections \/>/,
+  /<DesktopGuestHero(?: isAuthenticated=\{isAuthenticated\})? \/>[\s\S]*<DesktopGuestSections isAuthenticated=\{isAuthenticated\} \/>/,
   'Desktop guest landing should compose the hero and guest proof sections',
 );
 
@@ -118,8 +118,8 @@ assert.equal(
 
 assert.match(
   desktopHeroSource,
-  /to=\{ONBOARDING_TARGET\}[\s\S]*href="#tools"/,
-  'Desktop guest hero should send the primary CTA to onboarding and the secondary CTA to tools',
+  /to=\{landingCtaTarget\('\/search', isAuthenticated\)\}[\s\S]*href="#tools"/,
+  'Desktop hero should keep auth-aware search CTA and tools anchor',
 );
 
 assert.match(
@@ -136,7 +136,7 @@ assert.match(
 
 assert.match(
   desktopSectionsSource,
-  /<DesktopSourceProof \/>[\s\S]*<DesktopToolsFeature isAuthenticated=\{false\} \/>/,
+  /<DesktopSourceProof isAuthenticated=\{isAuthenticated\} \/>[\s\S]*<DesktopToolsFeature isAuthenticated=\{isAuthenticated\} \/>/,
   'Desktop guest sections should keep the order: term examples, source proof, then tools carousel',
 );
 
@@ -172,7 +172,7 @@ assert.match(
 
 assert.match(
   desktopSourceProofSource,
-  /<\/div>\s*<Link[\s\S]*to=\{ONBOARDING_TARGET\}[\s\S]*h-14[\s\S]*min-w-\[240px\][\s\S]*rounded-\[16px\][\s\S]*text-\[16px\][\s\S]*landing\.mobileHeroPrimaryCta/,
+  /<\/div>\s*<Link[\s\S]*to=\{landingCtaTarget\('\/search', isAuthenticated\)\}[\s\S]*h-14[\s\S]*min-w-\[240px\][\s\S]*rounded-\[16px\][\s\S]*text-\[16px\][\s\S]*landing\.mobileHeroPrimaryCta/,
   'Desktop source proof CTA should sit below the plaque and align to the left edge',
 );
 

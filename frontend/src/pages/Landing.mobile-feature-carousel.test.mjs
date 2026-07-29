@@ -24,9 +24,9 @@ const kkLocale = JSON.parse(
 );
 
 const mobileToolsFeatureSource =
-  landingSource.match(/function MobileToolsFeature[\s\S]*?\n\}\n\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
+  landingSource.match(/function MobileToolsFeature[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
 const desktopToolsFeatureSource =
-  landingSource.match(/function DesktopToolsFeature[\s\S]*?\n\}\n\nfunction MobileHome/)?.[0] ?? '';
+  landingSource.match(/function DesktopToolsFeature[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileHome/)?.[0] ?? '';
 
 function decodePngRgba(filePath) {
   const png = readFileSync(filePath);

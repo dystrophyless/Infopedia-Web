@@ -83,8 +83,8 @@ assert.match(
 
 assert.match(
   mobileGuestHeroSource,
-  /to=\{ONBOARDING_TARGET\}[\s\S]*href="#mobile-tools"/,
-  'Guest mobile secondary CTA should scroll to the tools section',
+  /to=\{landingCtaTarget\('\/search', isAuthenticated\)\}[\s\S]*href="#mobile-tools"/,
+  'Mobile hero should keep auth-aware search CTA and tools anchor',
 );
 
 assert.doesNotMatch(
@@ -111,7 +111,7 @@ assert.match(
 
 assert.match(
   guestSectionsSource,
-  /<MobileSourceProof \/>[\s\S]*<MobileToolsFeature isAuthenticated=\{false\} \/>/,
+  /<MobileSourceProof isAuthenticated=\{isAuthenticated\} \/>[\s\S]*<MobileToolsFeature isAuthenticated=\{isAuthenticated\} \/>/,
   'Guest mobile sections should keep the visible order: term examples, source proof, then tools card',
 );
 

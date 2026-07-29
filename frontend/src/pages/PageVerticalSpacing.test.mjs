@@ -22,26 +22,23 @@ const profileSource = readFileSync(
   path.resolve(import.meta.dirname, 'Profile.tsx'),
   'utf8',
 );
-const heroSource = readFileSync(
-  path.resolve(import.meta.dirname, '../components/Hero.tsx'),
-  'utf8',
-);
+const landingSource = readFileSync(path.resolve(import.meta.dirname, 'Landing.tsx'), 'utf8');
 
 assert.match(
   termSearchSource,
-  /mx-auto max-w-\[900px\] px-6 py-14/,
-  'Term search establishes the shared page top spacing',
+  /mx-auto max-w-\[900px\] px-6 pb-14 md:pt-14/,
+  'Term search establishes the shared desktop top spacing and mobile page-frame offset',
 );
 
 assert.match(
   semanticSearchSource,
-  /mx-auto max-w-\[900px\] px-6 py-14/,
+  /mx-auto max-w-\[900px\] px-6 py-14 pb-14 pt-2 md:pt-0/,
   'Semantic search should match term search page spacing',
 );
 
 assert.match(
   termDetailSource,
-  /mx-auto max-w-\[860px\] px-6 py-14/,
+  /mx-auto max-w-\[860px\] bg-canvas px-6 pb-8 pt-\[var\(--mobile-page-app-bar-offset\)\][\s\S]*md:py-14/,
   'Term detail should match term search page spacing',
 );
 
@@ -59,20 +56,15 @@ assert.match(
 
 assert.match(
   profileSource,
-  /min-h-\[calc\(100vh-80px\)\] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-4/,
+  /min-h-\[calc\(100vh-80px\)\] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pt-0/,
   'Profile should match term search top spacing',
 );
 
-assert.match(
-  heroSource,
-  /w-full bg-bg px-6 pb-\[72px\] pt-14/,
-  'Landing hero should match term search top spacing',
-);
+assert.match(landingSource, /bg-\[#efebf6\]/, 'Landing should keep the canonical guest surface');
 
 for (const [name, source] of [
   ['Analyze', analyzeSource],
   ['Profile', profileSource],
-  ['Hero', heroSource],
 ]) {
   assert.doesNotMatch(
     source,

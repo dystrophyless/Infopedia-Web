@@ -22,15 +22,16 @@ assert.match(container, /state\?\.backTo \?\? \(isAuthenticated \? '\/search' : 
 assert.match(container, /<TermDetailView/, 'Route must delegate rendering to the feature view');
 
 assert.match(view, /max-md:bg-canvas/, 'Mobile detail must use the semantic token exactly matching the Figma canvas');
-assert.match(view, /<header className="mx-4 grid h-6 min-h-6 grid-cols-\[24px_minmax\(0,1fr\)_88px\] items-center gap-4 overflow-visible md:hidden">/, 'Mobile detail header must use the canonical compact-compatible grid');
-assert.match(view, /relative size-6 overflow-visible[\s\S]*absolute left-1\/2 top-1\/2 flex size-11[\s\S]*ArrowLeft01Icon/, 'Back action must provide a 44px target around the 24px visual slot');
-assert.match(view, /ArrowLeft01Icon[\s\S]*termDetail\.title[\s\S]*FavoriteToggle[\s\S]*appearance="mobile-header"[\s\S]*MoreHorizontalIcon/, 'Header must retain back, save, and overflow controls');
-assert.match(view, /flex items-center justify-end gap-0[\s\S]*FavoriteToggle[\s\S]*size-11 items-center justify-center border-0 bg-transparent/, 'Trailing actions must remain independently sized, borderless, and right aligned');
+assert.match(view, /<MobilePinnedAppBar[\s\S]*title=\{t\('termDetail\.title'\)\}[\s\S]*leading=\{[\s\S]*ArrowLeft01Icon[\s\S]*trailing=\{[\s\S]*FavoriteToggle[\s\S]*appearance="mobile-header"/, 'Mobile detail header must use the shared pinned app-bar with back and save controls');
+assert.doesNotMatch(view, /IntersectionObserver|appBarPinned|fixed inset-x-0 top-0/, 'Term detail must not own a duplicate mobile header observer or fixed clone');
+assert.match(view, /<header className="mb-10 hidden items-center justify-between gap-6 md:flex">[\s\S]*Link to=\{backTo\}[\s\S]*termDetail\.back[\s\S]*<h1 className="truncate text-\[36px\][\s\S]*term\?\.name[\s\S]*FavoriteToggle/, 'Desktop detail header must expose back navigation, semantic term title, and favorite action');
+assert.match(view, /<MobilePinnedAppBar[\s\S]*<header className="mb-10 hidden[\s\S]*md:flex">/, 'Mobile and desktop headers must be mutually exclusive by breakpoint');
+assert.doesNotMatch(view, /<h1 className="mb-6 hidden[\s\S]*md:block">/, 'Detail body must not duplicate the desktop semantic title');
 assert.doesNotMatch(view, /\n\s*\.\.\.\s*\n/, 'Overflow control must not regress to literal dots');
 assert.doesNotMatch(view, /max-md:pb-\[calc\(112px\+env\(safe-area-inset-bottom\)\)\][\s\S]*<h1 className="mt-4 text-\[24px\]/, 'Mobile detail content should not render a duplicate term heading before the definition section');
-assert.match(view, /max-md:pt-\[var\(--mobile-page-app-bar-offset\)\][\s\S]*max-md:pt-\[42px\][\s\S]*<section><h2 className="text-\[20px\][\s\S]*termDetail\.definition[\s\S]*<div className="mt-4 min-h-\[124px\] rounded-\[8px\] bg-surface p-6[\s\S]*term\.name[\s\S]*current\.text/, 'Source/CSS geometry must place the mobile app-bar rail at y=80, definition heading at y=146, and card top at y=182');
+assert.match(view, /<MobilePinnedAppBar[\s\S]*max-md:pt-\[42px\][\s\S]*<section><h2 className="text-\[20px\][\s\S]*termDetail\.definition[\s\S]*<div className="mt-4 min-h-\[124px\] rounded-\[8px\] bg-surface p-6[\s\S]*term\.name[\s\S]*current\.text/, 'Source/CSS geometry must place the shared app-bar rail at y=80, definition heading at y=146, and card top at y=182');
 assert.doesNotMatch(view, /safe-area-inset-top|<section className="mt-2">/, 'Mobile detail must not retain legacy safe-area or margin offsets');
-assert.match(view, /<header className="mx-4 grid h-6 min-h-6/, 'Mobile detail header must retain the 24px visual row');
+assert.match(view, /<MobilePinnedAppBar/, 'Mobile detail header must retain the shared 24px visual row');
 assert.doesNotMatch(view, /(?:^|[\s"])h-11(?:[\s"])/, 'Mobile detail must not add an in-flow h-11 row');
 assert.doesNotMatch(view, /-mt-(?:\[|\d)/, 'Mobile detail must not compensate with a negative margin');
 assert.equal(80 + 24 + 10, 114, '44px target overflow must end at y=114 when centered on the 24px row');
@@ -49,10 +50,10 @@ assert.match(view, /function TermDetailRelatedPanel[\s\S]*className="mt-12"[\s\S
 assert.match(view, /<p className="mt-4 whitespace-pre-line text-\[14px\] leading-\[14px\] text-\[#39363f\]">\{current\.text\}<\/p>/, 'Definition body text must use Figma #39363F rather than the stronger semantic ink');
 assert.match(view, /data-term-related-chip className="flex h-\[30px\][\s\S]*bg-surface[\s\S]*text-\[#39363f\]/, 'Related-term chips must use Figma white surfaces and #39363F text');
 assert.match(view, /import \{ useAuthStore \} from '\.\.\/\.\.\/\.\.\/stores\/authStore'/, 'Mobile detail must know whether the fixed bottom navigation is present');
-assert.match(view, /function TermDetailTestCta\(\{ bottomNavVisible \}[^)]*\)[\s\S]*aria-disabled="true"[\s\S]*bottomNavVisible \? 'bottom-\[128px\]' : 'bottom-10'[\s\S]*rounded-\[8px\] bg-\[#6a37c3\][\s\S]*termDetail\.testCta[\s\S]*text-\[#c5b1e7\][\s\S]*termDetail\.testMeta[\s\S]*ArrowRight02Icon/, 'Mobile test CTA should derive its clearance from shared shell visibility and use Figma #C5B1E7 metadata text');
+assert.match(view, /function TermDetailTestCta[\s\S]*max-md:fixed[\s\S]*md:hidden[\s\S]*termDetail\.testCta[\s\S]*ArrowRight02Icon/, 'Mobile test CTA must be mobile-only and preserve its content');
 assert.match(view, /max-md:bg-canvas max-md:px-0[\s\S]*max-md:px-6 max-md:pb-\[108px\]/, 'Mobile detail must have one explicit 24px content rail and reserve the CTA height plus its 32px separation');
 assert.match(view, /getDefinitionIndex[\s\S]*goPrevious[\s\S]*goNext/, 'Multiple-definition selection and bounded navigation must remain in the view');
-assert.match(view, /max-md:hidden[\s\S]*shadow-feature/, 'Desktop card geometry must remain separately rendered');
+assert.doesNotMatch(view, /shadow-(?:feature|card)|hover:shadow/, 'Detail surfaces must remain flat');
 
 const frontendRoot = path.resolve(srcDir, '..');
 const config = loadConfig(path.join(frontendRoot, 'tailwind.config.ts'));

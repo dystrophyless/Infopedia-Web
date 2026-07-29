@@ -39,6 +39,14 @@ const mobileEmailSource = profileSource.slice(
   profileSource.indexOf('function MobileEmail('),
   profileSource.indexOf('function MobilePassword('),
 );
+const mobileSubscriptionSource = profileSource.slice(
+  profileSource.indexOf('function MobileSubscriptionInfo('),
+  profileSource.indexOf('function MobileAboutInfo('),
+);
+const mobileAboutSource = profileSource.slice(
+  profileSource.indexOf('function MobileAboutInfo('),
+  profileSource.indexOf('function MobilePassword('),
+);
 const mobilePasswordSource = profileSource.slice(
   profileSource.indexOf('function MobilePassword('),
   profileSource.indexOf('type MobileUsernameAvailability'),
@@ -147,7 +155,7 @@ assert.match(mobileHomeSource, /onClick=\{\(\) => navigate\('\/analyze\?view=lat
 assert.match(profileSource, /onBack=\{\(\) => onSelectTab\('profile'\)\}/);
 assert.match(
   profileSource,
-  /const \[settingsView, setSettingsView\] = useState<'home' \| 'account' \| 'email' \| 'username' \| 'password'>\('home'\)/,
+  /const \[settingsView, setSettingsView\] = useState<'home' \| 'account' \| 'email' \| 'username' \| 'password' \| 'subscription' \| 'about'>\('home'\)/,
 );
 assert.match(
   profileSource,
@@ -163,20 +171,22 @@ assert.match(
 );
 assert.match(
   profileSource,
-  /if \(settingsView === 'account'\) \{[\s\S]*<MobileAccount[\s\S]*onBack=\{\(\) => setSettingsView\('home'\)\}[\s\S]*onOpenEmail=\{\(\) => setSettingsView\('email'\)\}[\s\S]*onOpenUsername=\{\(\) => setSettingsView\('username'\)\}[\s\S]*onLogout=\{onLogout\}/,
+  /if \(settingsView === 'account'\) \{[\s\S]*<MobileAccount[\s\S]*onBack=\{\(\) => setSettingsView\('home'\)\}[\s\S]*onOpenEmail=\{\(\) => setSettingsView\('email'\)\}[\s\S]*onOpenUsername=\{\(\) => setSettingsView\('username'\)\}[\s\S]*onLogout=\{onLogout\}[\s\S]*userId=\{profile\.id\}/,
 );
+assert.match(profileSource, /if \(settingsView === 'subscription'\) \{[\s\S]*<MobileSubscriptionInfo onBack=\{\(\) => setSettingsView\('home'\)\} \/>/);
+assert.match(profileSource, /if \(settingsView === 'about'\) \{[\s\S]*<MobileAboutInfo onBack=\{\(\) => setSettingsView\('home'\)\} \/>/);
 assert.match(profileSource, /if \(settingsView === 'password'\) \{[\s\S]*<MobilePassword[\s\S]*hasPassword=\{profile\.has_password\}[\s\S]*onPasswordCreated[\s\S]*onPasswordConflict/);
 assert.match(profileSource, /onOpenPassword=\{\(\) => setSettingsView\('password'\)\}/);
 assert.match(
   profileSource,
-  /return <MobileSettingsHome onBack=\{\(\) => onSelectTab\('profile'\)\} onOpenAccount=\{\(\) => setSettingsView\('account'\)\} \/>/,
+  /<MobileSettingsHome[\s\S]*onBack=\{\(\) => onSelectTab\('profile'\)\}[\s\S]*onOpenAccount=\{\(\) => setSettingsView\('account'\)\}[\s\S]*onOpenSubscription=\{\(\) => setSettingsView\('subscription'\)\}[\s\S]*onOpenAbout=\{\(\) => setSettingsView\('about'\)\}/,
 );
 
 assert.match(mobileSettingsSource, /data-figma-node="286:2862"/);
-assert.match(mobileSettingsSource, /min-h-screen bg-\[#efebf6\][\s\S]*pt-\[80px\]/);
-assert.match(mobileSettingsSource, /flex h-\[24px\] items-center gap-4 px-4/);
-assert.match(mobileSettingsSource, /ArrowLeft01Icon[\s\S]*size=\{24\}/);
-assert.match(mobileSettingsSource, /onClick=\{onBack\}[\s\S]*mobileSettingsBackAriaLabel/);
+assert.match(mobileSettingsSource, /<MobilePinnedAppBar[\s\S]*title=\{t\('profile\.mobileSettingsTitle'\)\}[\s\S]*compactLayout="leading-only"/);
+assert.doesNotMatch(mobileSettingsSource, /pt-\[80px\]|<header/);
+assert.match(mobileSettingsSource, /leading=\{[\s\S]*onClick=\{onBack\}[\s\S]*mobileSettingsBackAriaLabel[\s\S]*size-11/);
+assert.match(mobileSettingsSource, /<HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/);
 assert.match(mobileSettingsSource, /mx-6 mt-8 flex flex-col gap-4 rounded-\[8px\] bg-white px-6 py-4/);
 assert.match(mobileSettingsSource, /size-\[40px\][\s\S]*rounded-\[4px\] bg-\[#efeaf8\]/);
 assert.match(mobileSettingsSource, /UserIcon[\s\S]*Invoice03Icon[\s\S]*InformationCircleIcon/);
@@ -203,11 +213,13 @@ assert.equal((mobileSettingsSource.match(/bg-\[#f6f5f7\]/g) ?? []).length, 2);
 assert.match(mobileSettingsSource, /text-\[16px\] font-medium leading-\[16px\] text-\[#252329\]/);
 assert.match(mobileSettingsSource, /text-\[12px\] font-normal leading-\[12px\] text-\[#8c8698\]/);
 assert.match(mobileSettingsRowsSource, /<button[\s\S]*onClick=\{onOpenAccount\}[\s\S]*mobileSettingsAccountTitle/);
+assert.match(mobileSettingsRowsSource, /<button[\s\S]*onClick=\{onOpenSubscription\}[\s\S]*mobileSettingsSubscriptionTitle/);
+assert.match(mobileSettingsRowsSource, /<button[\s\S]*onClick=\{onOpenAbout\}[\s\S]*mobileSettingsAboutTitle/);
 
 assert.match(mobileAccountSource, /data-figma-node="286:3079"/);
-assert.match(mobileAccountSource, /min-h-screen bg-\[#efebf6\][\s\S]*pt-\[80px\]/);
-assert.match(mobileAccountSource, /flex h-\[24px\] items-center gap-4 px-4/);
-assert.match(mobileAccountSource, /onClick=\{onBack\}[\s\S]*mobileAccountBackAriaLabel/);
+assert.match(mobileAccountSource, /<MobilePinnedAppBar[\s\S]*title=\{t\('profile\.mobileAccountTitle'\)\}[\s\S]*compactLayout="leading-only"/);
+assert.doesNotMatch(mobileAccountSource, /pt-\[80px\]|<header/);
+assert.match(mobileAccountSource, /leading=\{[\s\S]*onClick=\{onBack\}[\s\S]*mobileAccountBackAriaLabel[\s\S]*size-11/);
 assert.match(mobileAccountSource, /mx-6 mt-8 flex flex-col gap-4 rounded-\[8px\] bg-white px-6 py-4/);
 assert.match(mobileAccountSource, /mx-6 mt-4 rounded-\[8px\] bg-white px-6 py-4/);
 assert.match(mobileAccountSource, /UserEdit01Icon[\s\S]*ResetPasswordIcon/);
@@ -215,6 +227,10 @@ assert.match(mobileAccountSource, /Mail01Icon/);
 assert.equal((mobileAccountSource.match(/ArrowRight01Icon/g) ?? []).length, 3);
 assert.equal((mobileAccountSource.match(/rounded-\[1px\] bg-\[#f6f5f7\]/g) ?? []).length, 2);
 assert.match(mobileAccountSource, /onClick=\{onLogout\}[\s\S]*aria-label=\{t\('profile\.logout'\)\}[\s\S]*bg-\[#fce5e3\] text-\[#bc251a\][\s\S]*Logout01Icon[\s\S]*t\('profile\.logout'\)/);
+assert.match(mobileAccountSource, /onClick=\{\(\) => setDeleteConfirmOpen\(true\)\}[\s\S]*deleteAccountButton/);
+assert.match(mobileAccountSource, /deleteAccountWarning[\s\S]*deleteLoading[\s\S]*common\.cancel/);
+assert.match(mobileAccountSource, /function confirmDeleteAccount[\s\S]*deleteMyAccount\(userId\)[\s\S]*deleteAccountFailed/);
+assert.match(mobileAccountSource, /onClick=\{onLogout\}[\s\S]*onClick=\{\(\) => setDeleteConfirmOpen\(true\)\}/, 'Delete action must be directly below logout action');
 assert.doesNotMatch(mobileAccountSource, /MobileBottomNav/);
 const mobileAccountRowsSource = mobileAccountSource.slice(
   mobileAccountSource.indexOf('aria-label={t(\'profile.mobileAccountListLabel\')}'),
@@ -239,10 +255,10 @@ assert.match(mobileAccountRowsSource, /onClick=\{onOpenPassword\}[\s\S]*classNam
 assert.doesNotMatch(mobileUsernameRowSource, /onOpenPassword|ResetPasswordIcon/);
 
 assert.match(mobileEmailSource, /data-figma-node="286:3183"/);
-assert.match(mobileEmailSource, /min-h-screen bg-\[#efebf6\][\s\S]*pt-\[80px\]/);
-assert.match(mobileEmailSource, /flex h-\[24px\] items-center gap-4 px-4/);
-assert.match(mobileEmailSource, /ArrowLeft01Icon[\s\S]*size=\{24\}/);
-assert.match(mobileEmailSource, /onClick=\{onBack\}[\s\S]*mobileEmailBackAriaLabel/);
+assert.match(mobileEmailSource, /<MobilePinnedAppBar[\s\S]*title=\{t\('profile\.mobileEmailTitle'\)\}[\s\S]*compactLayout="leading-only"/);
+assert.doesNotMatch(mobileEmailSource, /pt-\[80px\]|<header/);
+assert.match(mobileEmailSource, /leading=\{[\s\S]*onClick=\{onBack\}[\s\S]*mobileEmailBackAriaLabel[\s\S]*size-11/);
+assert.match(mobileEmailSource, /<HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/);
 assert.match(mobileEmailSource, /mx-6 mt-8 flex flex-col gap-4 rounded-\[8px\] bg-white p-6/);
 assert.match(mobileEmailSource, /text-\[18px\] font-medium leading-\[18px\] text-\[#161519\]/);
 assert.match(mobileEmailSource, /text-\[14px\] font-normal leading-\[14px\] text-\[#8c8698\]/);
@@ -251,11 +267,22 @@ assert.match(mobileEmailSource, /text-\[12px\] font-medium leading-\[12px\] text
 assert.match(mobileEmailSource, /text-\[12px\] font-normal leading-\[12px\] text-\[#6a37c3\]">\{email\}/);
 assert.doesNotMatch(mobileEmailSource, /MobileBottomNav|@gmail\.com|onOpen|<button[\s\S]*edit/i);
 
+for (const [name, source, titleKey] of [
+  ['subscription', mobileSubscriptionSource, 'profile.mobileSettingsSubscriptionTitle'],
+  ['about', mobileAboutSource, 'profile.mobileSettingsAboutTitle'],
+]) {
+  assert.equal((source.match(/<MobilePinnedAppBar\b/g) ?? []).length, 1, `${name} state should have one canonical mobile app bar`);
+  assert.match(source, new RegExp(`<MobilePinnedAppBar[\\s\\S]*title=\\{t\\('${titleKey}'\\)\\}[\\s\\S]*compactLayout="leading-only"`));
+  assert.doesNotMatch(source, /pt-\[80px\]|<header/);
+  assert.match(source, /leading=\{[\s\S]*onClick=\{onBack\}[\s\S]*size-11/);
+}
+
 assert.match(mobilePasswordSource, /data-figma-node="286:password"/);
 assert.match(profileSource, /verifyMyCurrentPassword/);
 assert.match(mobilePasswordSource, /command\.type === 'verify-current'[\s\S]*verify-succeeded[\s\S]*verify-failed/);
-assert.match(mobilePasswordSource, /min-h-screen bg-\[#efebf6\][\s\S]*pt-\[80px\]/);
-assert.match(mobilePasswordSource, /flex h-\[24px\] items-center gap-4 px-4/);
+assert.match(mobilePasswordSource, /<MobilePinnedAppBar[\s\S]*title=\{t\(titleKey\)\}[\s\S]*compactLayout="leading-only"/);
+assert.doesNotMatch(mobilePasswordSource, /pt-\[80px\]|<header/);
+assert.match(mobilePasswordSource, /leading=\{[\s\S]*disabled=\{verifying \|\| submitting\}[\s\S]*size-11/);
 assert.match(mobilePasswordSource, /onClick=\{\(\) => dispatch\(\{ type: flowMode === 'create' \|\| step === 'current' \? 'close' : 'back-to-current' \}\)\}/);
 assert.match(mobilePasswordSource, /disabled=\{verifying \|\| submitting\}[\s\S]*mobilePasswordBackAriaLabel[\s\S]*mobilePasswordBackToCurrentAriaLabel/);
 assert.match(mobilePasswordSource, /mx-6 mt-8 rounded-\[8px\] bg-white p-6/);
@@ -300,9 +327,9 @@ assert.doesNotMatch(mobilePasswordSource, /AuthPasswordInput|navigate\(|logout|s
 // passwordChange.test.ts and users.test.ts; this source contract intentionally stays structural.
 
 assert.match(mobileUsernameSource, /data-figma-node="286:username"/);
-assert.match(mobileUsernameSource, /min-h-screen bg-\[#efebf6\][\s\S]*pt-\[80px\]/);
-assert.match(mobileUsernameSource, /flex h-\[24px\] items-center gap-4 px-4/);
-assert.match(mobileUsernameSource, /onClick=\{onBack\}[\s\S]*mobileUsernameBackAriaLabel/);
+assert.match(mobileUsernameSource, /<MobilePinnedAppBar[\s\S]*title=\{t\('profile\.mobileUsernameTitle'\)\}[\s\S]*compactLayout="leading-only"/);
+assert.doesNotMatch(mobileUsernameSource, /pt-\[80px\]|<header/);
+assert.match(mobileUsernameSource, /leading=\{[\s\S]*onClick=\{onBack\}[\s\S]*mobileUsernameBackAriaLabel[\s\S]*size-11/);
 assert.match(mobileUsernameSource, /mx-6 mt-8 rounded-\[8px\] bg-white p-6/);
 assert.match(mobileUsernameSource, /<FormField[\s\S]*<Input/);
 assert.match(mobileUsernameSource, /const \[username, setUsername\] = useState\(''\)/);
@@ -450,6 +477,8 @@ assert.match(profileSource, /navigate\('\/subscription'\)/);
 assert.match(mobileHomeSource, /focus-visible:outline-2/);
 assert.match(profileSource, /aria-label=\{t\('profile\.mobileBackToProfile'\)\}/);
 assert.match(mobileDetailSource, /<section[^>]*aria-labelledby="mobile-profile-detail-title"/);
-assert.match(mobileDetailSource, /<h1 id="mobile-profile-detail-title"[^>]*>\s*\{getTabTitle\(activeTab, t\)\}\s*<\/h1>/);
+assert.match(mobileDetailSource, /<MobilePinnedAppBar[\s\S]*title=\{getTabTitle\(activeTab, t\)\}[\s\S]*compactLayout="leading-only"/);
+assert.doesNotMatch(mobileDetailSource, /pt-\[80px\]|<header|mobileBackToProfile<\/span>/);
+assert.match(mobileDetailSource, /leading=\{[\s\S]*aria-label=\{t\('profile\.mobileBackToProfile'\)\}[\s\S]*size-11/);
 
 console.log('Profile mobile Figma contract passed');

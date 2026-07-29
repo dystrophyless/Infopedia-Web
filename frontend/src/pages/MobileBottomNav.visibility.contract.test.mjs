@@ -59,12 +59,15 @@ assert.match(profileSource, /activeTab\s*===\s*'settings'[\s\S]*settingsView\s*=
 
 assert.match(subscriptionSource, /planTouched/, 'Subscription should track whether a plan radio was touched');
 assert.match(subscriptionSource, /setPlanTouched\(true\)/, 'Any plan interaction should mark Subscription state as touched');
-assert.match(subscriptionSource, /planTouched\s*\|\|\s*paymentMessage/, 'Subscription should hide shell after plan interaction or payment message');
+assert.match(subscriptionSource, /const mobileNavHidden = planTouched/, 'Subscription should hide shell after plan interaction');
+assert.match(subscriptionSource, /data-subscription-cta[^>]*type="button"[^>]*disabled/, 'Unavailable subscription action should remain disabled without payment flow');
 
 assert.match(termPageSource, /useMobileBottomNavDecision/, 'TermDetail should read the shared shell decision');
 assert.match(termPageSource, /bottomNavVisible=\{decision\.visible\}/, 'TermDetail should pass shared visibility to its view');
 assert.match(termViewSource, /bottomNavVisible/, 'TermDetailView CTA should depend on shared visibility, not authentication');
-assert.match(termViewSource, /bottomNavVisible\s*\?\s*'bottom-\[128px\]'\s*:\s*'bottom-10'/, 'Term CTA should use 128px only when nav is visible');
+assert.match(termViewSource, /bottomNavVisible\s*\?\s*'max-md:bottom-\[128px\]'\s*:\s*'max-md:bottom-10'/, 'Term CTA should use responsive 128px/40px offsets based on nav visibility');
+assert.match(termViewSource, /<button[^>]*disabled[^>]*aria-disabled="true"/, 'Term CTA should remain a native disabled control while the action is unavailable');
+assert.match(termViewSource, /max-md:fixed[^"]*md:hidden/, 'Term CTA should be fixed only on mobile and hidden on desktop');
 
 for (const relativePath of [
   'features/tests/components/TestsHubView.tsx',

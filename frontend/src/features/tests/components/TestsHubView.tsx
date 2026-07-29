@@ -22,7 +22,7 @@ export function TestsHubView({
 
   return (
     <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-0 max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
-      <main className="w-full max-w-[382px]" aria-busy={loading}>
+      <main className="w-full max-w-[382px] md:max-w-[720px]" aria-busy={loading}>
         <h1 className="text-[24px] font-medium leading-[24px] text-black">
           {t('tests.title', { defaultValue: 'Тесты' })}
         </h1>
@@ -85,7 +85,7 @@ export function TestsHubView({
           <h2 id="other-tests-title" className="text-[20px] font-medium leading-[20px] text-[#572d9f]">
             {t('tests.otherTestsTitle', { defaultValue: 'Другие тесты' })}
           </h2>
-          <div className="mt-6 flex flex-col gap-4">
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
             <TestEntryLink
               title={t('tests.regularTestTitle', { defaultValue: 'Обычный тест' })}
               description={t('tests.regularTestDescription', { defaultValue: '10 случайных вопросов из всех разделов' })}

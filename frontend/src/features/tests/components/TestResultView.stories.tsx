@@ -39,3 +39,7 @@ export const UpperBoundary: Story = { args: { correctAnswerCount: 9, scorePercen
 export const Perfect: Story = { args: { correctAnswerCount: 10, scorePercent: 100, weakTopicResult: null } };
 export const WithWeakTopic: Story = {};
 export const WithoutWeakTopic: Story = { args: { weakTopicResult: null } };
+
+export const Desktop: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+};

@@ -46,3 +46,7 @@ export const FallbackTopics: Story = {
 export const Loading: Story = {
   args: { loading: true },
 };
+
+export const Desktop: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+};

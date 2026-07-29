@@ -21,14 +21,20 @@ const profileShellSource = sliceBetween(
   'function ProfileOverview(',
 );
 
-assert.doesNotMatch(
-  profileShellSource,
-  /bg-\[#6b6475\]|hover:bg-\[#5d5666\]|bg-accent|bg-danger/,
-  'Logout button should not use the old heavy gray fill, accent fill, or danger fill',
-);
+const desktopLogoutSource = profileShellSource.match(/<button[\s\S]*?onClick=\{handleLogout\}[\s\S]*?<\/button>/)?.[0] ?? '';
+const mobileLogoutSource = profileSource.match(/<button[\s\S]*?onClick=\{onLogout\}[\s\S]*?<\/button>/)?.[0] ?? '';
+assert.notEqual(desktopLogoutSource, '', 'Desktop logout button must remain present');
+assert.notEqual(mobileLogoutSource, '', 'Mobile logout button must remain present');
+for (const [name, source] of [['desktop', desktopLogoutSource], ['mobile', mobileLogoutSource]]) {
+  assert.doesNotMatch(
+    source,
+    /bg-\[#6b6475\]|hover:bg-\[#5d5666\]|bg-accent|bg-danger/,
+    `${name} logout button should not use heavy gray, accent, or danger fill`,
+  );
+}
 
 assert.match(
-  profileShellSource,
+  desktopLogoutSource,
   /onClick=\{handleLogout\}[\s\S]*border border-border\/55 bg-surface px-5 text-\[17px\] leading-none text-text-body[\s\S]*hover:bg-bg hover:text-primary/,
   'Logout button should use a neutral outlined treatment that fits the profile header',
 );

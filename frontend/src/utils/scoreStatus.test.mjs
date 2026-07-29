@@ -80,6 +80,7 @@ assert.equal(summary.lostPoints, 14);
 function createTopic(chapter, percentage, score, max_score, question_count) {
   return {
     chapter,
+    title: chapter,
     percentage,
     score,
     max_score,

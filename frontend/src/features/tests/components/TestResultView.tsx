@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { Button, MobileAppBar, Progress } from '../../../ui';
+import { Button, MobilePinnedAppBar, Progress } from '../../../ui';
 import { formatAverageSeconds, formatDuration, type WeakTopicResult } from '../model';
 import { WeakTopicRecommendation } from './WeakTopicRecommendation';
 
@@ -31,17 +31,14 @@ export function TestResultView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-12 max-md:pt-[var(--mobile-page-app-bar-offset)]">
-      <main className="mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
-        <MobileAppBar
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 md:py-12 md:flex md:justify-center max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-12 max-md:pt-0">
+      <main className="mx-auto flex w-full max-w-[382px] flex-col md:max-w-[720px] md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
+        <MobilePinnedAppBar
           title={title}
           titleAlign="start"
-          size="compact"
           compactLayout="leading-only"
-          safeArea={false}
-          className="h-10 min-h-10 translate-y-2 p-0 text-[#252329]"
           leading={(
-            <button type="button" className="flex size-6 items-center justify-center text-[#252329]" aria-label={t('tests.backToTests', { defaultValue: 'Назад к тестам' })} onClick={onBack}>
+            <button type="button" className="flex size-11 items-center justify-center text-[#252329]" aria-label={t('tests.backToTests', { defaultValue: 'Назад к тестам' })} onClick={onBack}>
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
             </button>
           )}
@@ -68,7 +65,7 @@ export function TestResultView({
           />
         </section>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2 md:gap-4">
           <section className="h-24 rounded-[8px] bg-white p-4">
             <p className="text-[12px] font-medium leading-3 text-[#865bcf]">
               {t('tests.resultTimeLabel', { defaultValue: 'Время' })}

@@ -29,12 +29,15 @@ export const Mobile430Multiple: Story = {
   globals: { viewport: { value: 'mobile430', isRotated: false } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('heading', { name: 'Бинарный поиск' })).toBeVisible();
+    await expect(canvas.getByRole('heading', { name: 'Термин' })).toBeVisible();
     const nextButtons = canvas.getAllByRole('button', { name: /Далее/i });
     await userEvent.click(nextButtons[0]);
     await expect(canvas.getAllByText(/Екілік іздеу/)[0]).toBeVisible();
   },
 };
+export const Mobile320: Story = { globals: { viewport: { value: 'mobile320', isRotated: false } } };
+export const Mobile360: Story = { globals: { viewport: { value: 'mobile360', isRotated: false } } };
+export const Mobile390: Story = { globals: { viewport: { value: 'mobile390', isRotated: false } } };
 export const Desktop1440: Story = { globals: { viewport: { value: 'desktop1440', isRotated: false } } };
 export const Loading: Story = { args: { term: null, loadState: 'loading' } };
 export const Error: Story = { args: { term: null, loadState: 'error' } };

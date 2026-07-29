@@ -8,7 +8,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MobileAppBar, Progress } from '../../../ui';
+import { MobilePinnedAppBar, Progress } from '../../../ui';
 
 export type PracticeTopicStatus = 'completed' | 'active' | 'pending';
 export type PracticeByTopicState = 'loading' | 'unavailable' | 'ready';
@@ -44,24 +44,21 @@ export function PracticeByTopicView({ data, onBack, onTopicStart }: PracticeByTo
 
   return (
     <div className="min-h-[var(--mobile-page-available-height,100dvh)] bg-[#efebf6] pb-8 text-[#252329] md:min-h-[calc(100dvh-80px)] md:pt-10">
-      <div className="mx-auto w-full max-w-[430px]">
-        <MobileAppBar
+      <div className="mx-auto w-full max-w-[430px] md:max-w-[720px]">
+        <MobilePinnedAppBar
           title={t('practiceByTopic.appBarTitle', { defaultValue: 'Практика по разделу' })}
           titleAlign="start"
-          size="compact"
           compactLayout="leading-only"
-          safeArea={false}
           leading={
             <button
               type="button"
               onClick={onBack}
               aria-label={t('practiceByTopic.back', { defaultValue: 'Назад' })}
-              className="flex size-6 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+              className="flex size-11 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.8} aria-hidden />
             </button>
           }
-          className="mt-16 h-14 min-h-14 px-4 md:mt-0 [&>h1]:!text-[16px] [&>h1]:!leading-4 [&>h2]:!text-[16px] [&>h2]:!leading-4"
         />
 
         <main className="mt-4 px-6" aria-labelledby="practice-by-topic-title">
@@ -232,7 +229,7 @@ function WeightedQuestionChip({ count }: { count: number }) {
         <span
           id={tooltipId}
           role="tooltip"
-          className="pointer-events-none fixed z-30 rounded-[8px] bg-[#252329] px-3 py-2.5 text-left text-[12px] font-normal leading-[12px] text-white opacity-0 shadow-[0_14px_34px_rgba(58,28,110,0.16)] transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 max-md:shadow-none"
+          className="pointer-events-none fixed z-30 rounded-[8px] bg-[#252329] px-3 py-2.5 text-left text-[12px] font-normal leading-[12px] text-white opacity-0 transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
           style={{ left: tooltipPosition.left, top: tooltipPosition.top, width: tooltipPosition.width }}
         >
           {t('practiceByTopic.weightedQuestionTooltip', {

@@ -1,10 +1,13 @@
 import '../i18n';
+import { useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import type { AnalyzeChapterResult, AnalyzeTask } from '../types';
 import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
-import { Analyze, AnalyzeFailure, AnalyzeMobileResults, AnalyzeProgress, AnalyzeResults } from './Analyze';
+import { Layout } from '../components/Layout';
+import { useAuthStore } from '../stores/authStore';
+import { Analyze, AnalyzeFailure, AnalyzeMobileResults, AnalyzeProgress } from './Analyze';
 
 const results: AnalyzeChapterResult[] = [
   {
@@ -91,7 +94,40 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+function AuthenticatedAnalyzeStory() {
+  useEffect(() => {
+    const previous = useAuthStore.getState();
+    useAuthStore.setState({ isAuthenticated: true, token: 'storybook-token' });
+    return () => {
+      useAuthStore.setState({
+        isAuthenticated: previous.isAuthenticated,
+        token: previous.token,
+        refreshToken: previous.refreshToken,
+        user: previous.user,
+      });
+    };
+  }, []);
+
+  return (
+    <Layout>
+      <Analyze />
+    </Layout>
+  );
+}
+
 export const UploadEmpty: Story = {};
+
+export const UploadEmptyResponsiveShell: Story = {
+  globals: { viewport: { value: 'mobile390', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => (
+      <MemoryRouter initialEntries={['/analyze']}>
+        <AuthenticatedAnalyzeStory />
+      </MemoryRouter>
+    ),
+};
 
 export const UploadEmptyMobile430: Story = {
   // The mobile430 viewport is configured as 430x932 in .storybook/preview.ts.
@@ -272,17 +308,29 @@ export const UnsupportedPdfMobile430: Story = {
 };
 
 export const EmptySuccess: Story = {
-  render: () => <AnalyzeResults results={[]} summary={{ score: 0, maxScore: 0, percentage: 0, chapterCount: 0 }} sortDirection="weakFirst" onSortDirectionChange={() => undefined} />,
+  render: () => (
+    <MemoryRouter>
+      <AnalyzeMobileResults access={selectAnalyzeResultAccess([])} onBack={() => undefined} />
+    </MemoryRouter>
+  ),
 };
 
 export const PopulatedDesktop: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  render: () => <AnalyzeResults results={results} summary={{ score: 14, maxScore: 20, percentage: 70, chapterCount: 1 }} sortDirection="weakFirst" onSortDirectionChange={() => undefined} />,
+  render: () => (
+    <MemoryRouter>
+      <AnalyzeMobileResults access={selectAnalyzeResultAccess(results)} onBack={() => undefined} />
+    </MemoryRouter>
+  ),
 };
 
 export const PopulatedMobile: Story = {
   globals: { viewport: { value: 'mobile390', isRotated: false } },
-  render: () => <AnalyzeResults results={results} summary={{ score: 14, maxScore: 20, percentage: 70, chapterCount: 1 }} sortDirection="weakFirst" onSortDirectionChange={() => undefined} />,
+  render: () => (
+    <MemoryRouter>
+      <AnalyzeMobileResults access={selectAnalyzeResultAccess(results)} onBack={() => undefined} />
+    </MemoryRouter>
+  ),
 };
 
 export const MobileResultsFigma430: Story = {

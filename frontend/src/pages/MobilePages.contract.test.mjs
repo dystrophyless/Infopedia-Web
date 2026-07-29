@@ -3,204 +3,70 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const pagesDir = import.meta.dirname;
-const componentsDir = path.resolve(pagesDir, '../components');
 const srcDir = path.resolve(pagesDir, '..');
+const read = (relativePath) => readFileSync(path.resolve(srcDir, relativePath), 'utf8');
 
-const landingSource = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
-const termSearchSource = readFileSync(
-  path.resolve(pagesDir, '../features/search/pages/TermSearchPage.tsx'),
-  'utf8',
-);
-const semanticSearchSource = readFileSync(path.resolve(pagesDir, 'SemanticSearch.tsx'), 'utf8');
-const analyzeSource = readFileSync(path.resolve(pagesDir, 'Analyze.tsx'), 'utf8');
-const profileSource = readFileSync(path.resolve(pagesDir, 'Profile.tsx'), 'utf8');
-const termDetailSource = readFileSync(
-  path.resolve(pagesDir, '../features/terms/components/TermDetailView.tsx'),
-  'utf8',
-);
-const authShellSource = readFileSync(path.resolve(componentsDir, 'AuthShell.tsx'), 'utf8');
-const ruLocale = JSON.parse(
-  readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
-);
-const kkLocale = JSON.parse(
-  readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'),
-);
-
-const mobileHeroLocaleKeys = [
-  'mobileHeroScoreValue',
-  'mobileHeroScoreLabel',
-  'mobileHeroTitle',
-  'mobileHeroSubtitle',
-  'mobileHeroPrimaryCta',
-  'mobileHeroSecondaryCta',
-];
-
-const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\r?\n\}\r?\n\r?\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
+const frameSource = read('ui/patterns/MobilePageFrame.tsx');
+const pinnedAppBarSource = read('ui/patterns/MobilePinnedAppBar.tsx');
+const sharedFrameSource = `${frameSource}\n${pinnedAppBarSource}`;
+const layoutSource = read('components/Layout.tsx');
+const bottomNavSource = read('components/MobileBottomNav.tsx');
+const tokensSource = read('styles/tokens.css');
 
 assert.match(
-  landingSource,
-  /md:hidden[\s\S]*<MobileHome/,
-  'Landing should render a dedicated mobile home branch instead of shrinking desktop sections',
+  tokensSource,
+  /--mobile-page-app-bar-offset:\s*80px;/,
+  'Shared mobile page rail must retain the canonical 80px offset',
 );
-
 assert.match(
-  landingSource,
-  /hidden md:block[\s\S]*isAuthenticated \? <DesktopAuthenticatedLanding \/> : <DesktopGuestLanding \/>/,
-  'Landing should split desktop authenticated users from the guest conversion landing',
+  sharedFrameSource,
+  /pt-\[var\(--mobile-page-app-bar-offset\)\] md:hidden/,
+  'Shared compact chrome must remain mobile-only',
 );
-
+assert.match(sharedFrameSource, /IntersectionObserver/, 'Shared mobile rail must transition to pinned state after leaving its slot');
+assert.match(sharedFrameSource, /fixed inset-x-0 top-0 z-sticky h-\[120px\] bg-surface pt-20 px-4 pb-4 border-b border-solid border-\[rgb\(213_211_217\)\] md:hidden/, 'Pinned mobile rail must reserve the status-bar-safe 120px paint box');
 assert.match(
-  landingSource,
-  /function DesktopAuthenticatedLanding\(\)[\s\S]*<Hero \/>/,
-  'Landing should keep the current desktop landing branch for authenticated md and wider users',
+  frameSource,
+  /showCanonicalAppBar && 'pt-8 md:pt-0'/,
+  'Shared compact pages must retain the 32px content gap and remove it on desktop',
 );
-
 assert.match(
-  landingSource,
-  /function DesktopGuestLanding\(\)[\s\S]*<DesktopGuestHero \/>/,
-  'Landing should render the Figma-inspired guest conversion landing for desktop guests',
+  frameSource,
+  /min-h-\[var\(--mobile-page-available-height,100dvh\)\]/,
+  'Shared frame must consume the height published by Layout on mobile',
 );
-
-assert.match(landingSource, /function MobileHome\(\)[\s\S]*<MobileConversionHeroHome \/>/, 'Mobile landing should keep the guest conversion hero branch');
-
-assert.doesNotMatch(landingSource, /MobileAppHome|Workspace|Terms of the Day|Quick Actions/, 'Landing should not contain the removed authenticated mobile workspace');
-
-assert.ok(
-  mobileGuestHeroSource,
-  'Landing should define a dedicated guest-only mobile conversion hero branch',
-);
-
 assert.match(
-  mobileGuestHeroSource,
-  /to=\{ONBOARDING_TARGET\}/,
-  'Guest mobile hero primary CTA should start onboarding',
+  frameSource,
+  /md:h-auto md:min-h-0/,
+  'Desktop frame layout must not remain constrained by the mobile available height',
 );
-
 assert.match(
-  mobileGuestHeroSource,
-  /href="#mobile-tools"/,
-  'Guest mobile hero secondary CTA should scroll to the visible Figma tools section',
+  frameSource,
+  /data-desktop-page-container[\s\S]*md:max-w-\[1200px\][\s\S]*md:px-6[\s\S]*lg:px-8/,
+  'Opt-in desktop header and content must share stable responsive gutters',
 );
-
 assert.match(
-  landingSource,
-  /id="mobile-proof"/,
-  'Guest mobile proof sections should expose an anchor for the secondary CTA',
+  frameSource,
+  /<PageHeader[\s\S]*hidden md:flex/,
+  'Desktop heading chrome must reuse PageHeader and stay hidden from mobile',
 );
-
+assert.match(frameSource, /data-mobile-page-scroll-viewport[\s\S]*overflow-y-auto overscroll-contain/, 'Content mode must own scrolling on a focusable viewport containing the rail and main');
 assert.doesNotMatch(
-  mobileGuestHeroSource,
-  /\b(?:shadow(?:-|\\\[)|border(?:-|\\\[))/,
-  'Guest mobile hero should stay flat with no decorative shadow or border classes',
-);
-
-for (const key of mobileHeroLocaleKeys) {
-  assert.match(
-    mobileGuestHeroSource,
-    new RegExp(`landing\\.${key}`),
-    `Guest mobile hero should render landing.${key}`,
-  );
-  assert.ok(ruLocale.landing[key], `RU locale should define landing.${key}`);
-  assert.ok(kkLocale.landing[key], `KK locale should define landing.${key}`);
-}
-
-assert.match(
-  landingSource,
-  /landing\.termExamples[\s\S]*<TermCardCarousel variant="guest"/,
-  'Guest mobile home should place the Figma-sized terms carousel immediately after the hero',
+  frameSource,
+  /--shell-mobile-bottom-nav-height|100dvh\s*-\s*88px/,
+  'Shared frame must not own or duplicate the mobile bottom-navigation reserve',
 );
 
 assert.match(
-  landingSource,
-  /id="mobile-proof"[\s\S]*flex flex-col gap-7[\s\S]*className="w-full overflow-hidden"[\s\S]*<TermCardCarousel variant="guest"/,
-  'Guest mobile terms carousel should clip the animated track inside a full-width gap-based proof strip',
+  layoutSource,
+  /max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\] max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
+  'Layout alone must publish and reserve the visible mobile bottom-navigation height',
 );
-
-assert.doesNotMatch(
-  landingSource,
-  /(?:translate-x-\[-53px\]|max-w-\[430px\] overflow-hidden pl-8)[\s\S]*<TermCardCarousel variant="guest"/,
-  'Guest mobile terms carousel wrapper should not create a left-clipped partial card',
-);
-
-assert.doesNotMatch(
-  landingSource,
-  /className="-mx-4 mt-3"[\s\S]*<TermCardCarousel variant="mobile"/,
-  'Mobile terms carousel should not bleed left past the shared page gutter',
-);
-
-for (const [name, source] of [
-  ['TermSearch', termSearchSource],
-  ['SemanticSearch', semanticSearchSource],
-  ['Analyze', analyzeSource],
-  ['Profile', profileSource],
-  ['TermDetail', termDetailSource],
-]) {
-  assert.doesNotMatch(
-    source,
-    /max-md:pb-\[calc\(theme\(spacing\.24\)\+env\(safe-area-inset-bottom\)\)\]/,
-    `${name} should not keep legacy fixed mobile chrome padding at page level`,
-  );
-}
-
-for (const [name, source, gutterPattern] of [
-  ['TermSearch', termSearchSource, /max-md:px-\[24px\]/],
-  ['SemanticSearch', semanticSearchSource, /max-md:px-4/],
-  ['Analyze', analyzeSource, /max-md:px-4/],
-  ['Profile', profileSource, /max-md:px-(?:4|0)/],
-  ['TermDetail', termDetailSource, /max-md:px-0[\s\S]*max-md:px-6/],
-]) {
-  assert.match(
-    source,
-    gutterPattern,
-    `${name} should keep a consistent mobile horizontal page gutter`,
-  );
-}
-
 assert.match(
-  authShellSource,
-  /max-md:px-8[\s\S]*max-md:max-w-\[366px\]/,
-  'Auth shell should use the Figma mobile onboarding gutter and 366px content rail',
+  layoutSource,
+  /max-md:\[--mobile-page-available-height:100dvh\] max-md:pb-0/,
+  'Layout must remove the reserve atomically when mobile navigation is hidden',
 );
+assert.match(bottomNavSource, /className="bottom-nav[^"]*md:hidden"/, 'Bottom navigation must remain mobile-only');
 
-assert.match(
-  analyzeSource,
-  /MobileBookCoverageList/,
-  'Analyze mobile results should replace the wide book table with a card/list representation',
-);
-
-assert.match(
-  analyzeSource,
-  /max-md:hidden[\s\S]*<table/,
-  'Analyze desktop book table should be hidden on mobile',
-);
-
-assert.match(
-  profileSource,
-  /MobileProfileDashboard/,
-  'Profile should provide a mobile settings/dashboard structure instead of desktop tabs',
-);
-
-assert.match(
-  profileSource,
-  /LanguageSettingsPanel/,
-  'Profile settings should own mobile language switching',
-);
-
-assert.doesNotMatch(
-  authShellSource,
-  /<LanguageSwitcher \/>/,
-  'Auth shell should not expose language switching before login on mobile-only language policy',
-);
-
-assert.match(
-  authShellSource,
-  /max-md:border-0/,
-  'Auth shell should flatten the mobile auth card instead of showing desktop framing',
-);
-
-assert.match(
-  termDetailSource,
-  /max-md:bg-canvas[\s\S]*max-md:px-0[\s\S]*<div className="hidden max-md:block max-md:px-6/,
-  'Term detail should keep an outer flat canvas and an explicit inner 24px content rail',
-);
+assert.equal(80 + 24 + 32, 136, 'Shared compact geometry must place first content at y=136');

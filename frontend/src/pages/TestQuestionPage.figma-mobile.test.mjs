@@ -80,10 +80,10 @@ for (const [viewSource, label] of [
   [statusViewSource, 'Status'],
   [resultViewSource, 'Result'],
 ]) {
-  assert.match(
+  assert.doesNotMatch(
     viewSource,
     /max-md:pt-\[var\(--mobile-page-app-bar-offset\)\]/,
-    `${label} view should use the semantic mobile page app-bar offset token`,
+    `${label} view should not duplicate the shared mobile page app-bar offset`,
   );
   assert.doesNotMatch(
     viewSource,
@@ -245,8 +245,8 @@ for (const className of [
 
 assert.match(
   questionSource,
-  /test-question-mobile-header[\s\S]*h-14[\s\S]*w-full[\s\S]*px-4/,
-  'Question page header should match the Figma full-width 56px app bar instead of the 382px content column',
+  /<MobilePinnedAppBar[\s\S]*size-11/,
+  'Question page header should use the shared pinned app bar with a 44px back target',
 );
 
 assert.match(
@@ -519,10 +519,10 @@ assert.doesNotMatch(
   'Result metrics should use local Figma markup instead of shared StatCard styles',
 );
 
-assert.match(
+assert.doesNotMatch(
   resultViewSource,
-  /className="h-10 min-h-10 translate-y-2 p-0 text-\[#252329\]"/,
-  'Result app bar contents should move 8px down without shifting the Results heading',
+  /translate-y-2/,
+  'Result should rely on shared pinned app-bar geometry instead of a local translation',
 );
 
 for (const [viewSource, label] of [
@@ -530,13 +530,14 @@ for (const [viewSource, label] of [
   [resultViewSource, 'Result'],
   [questionViewSource, 'Question'],
 ]) {
-  assert.match(viewSource, /titleAlign="start"[\s\S]*size="compact"[\s\S]*compactLayout="leading-only"/, `${label} app bar should use compact leading-only layout`);
-  assert.doesNotMatch(viewSource, /<MobileAppBar[\s\S]*trailing=/, `${label} back-only app bar should not render a trailing action`);
+  assert.match(viewSource, /<MobilePinnedAppBar/, `${label} mobile back/title rail should use the shared pinned app bar`);
+  assert.doesNotMatch(viewSource, /<MobileAppBar/, `${label} should not render a direct MobileAppBar for its mobile header`);
+  assert.match(viewSource, /titleAlign="start"[\s\S]*compactLayout="leading-only"/, `${label} app bar should use compact leading-only layout`);
 }
 
-assert.match(statusViewSource, /className="h-10 min-h-10 p-0 text-\[#252329\]"/, 'Status app bar should preserve its 40px outer height');
-assert.match(resultViewSource, /className="h-10 min-h-10 translate-y-2 p-0 text-\[#252329\]"/, 'Result app bar should preserve its 40px outer height');
-assert.match(questionViewSource, /test-question-mobile-header h-14 w-full/, 'Question app bar should preserve its 56px outer height');
+assert.doesNotMatch(statusViewSource, /h-10 min-h-10/, 'Status should not retain the direct app-bar shell height');
+assert.doesNotMatch(resultViewSource, /h-10 min-h-10/, 'Result should not retain the direct app-bar shell height');
+assert.doesNotMatch(questionViewSource, /test-question-mobile-header h-14/, 'Question should not retain the direct app-bar shell height');
 
 assert.match(
   resultViewSource,

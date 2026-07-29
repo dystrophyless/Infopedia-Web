@@ -22,8 +22,8 @@ function SubscriptionPlanCard({ value, selected, onSelect, indicator, price, met
 
 export function Subscription() {
   const { t } = useTranslation(); const navigate = useNavigate();
-  const [plan, setPlan] = useState<Plan>('annual'); const [planTouched, setPlanTouched] = useState(false); const [paymentMessage, setPaymentMessage] = useState(false);
-  const mobileNavHidden = planTouched || paymentMessage;
+  const [plan, setPlan] = useState<Plan>('annual'); const [planTouched, setPlanTouched] = useState(false);
+  const mobileNavHidden = planTouched;
   useMobileBottomNavOverride({ visibility: mobileNavHidden ? 'hide' : 'show' });
   const timeline = [[timelineToday, 'subscriptionTimelineToday', 'subscriptionTimelineTodayBody'], [timelineDay6, 'subscriptionTimelineDay6', 'subscriptionTimelineDay6Body'], [timelineDay7, 'subscriptionTimelineDay7', 'subscriptionTimelineDay7Body']] as const;
   const benefits = ['subscriptionBenefitPlan', 'subscriptionBenefitTests', 'subscriptionBenefitTopics'] as const;
@@ -38,6 +38,6 @@ export function Subscription() {
       <div className="h-px w-full bg-[#EFEAF8]" />
       <section><p className="text-[12px] font-medium leading-[12px] text-[#6A37C3]">{t('profile.subscriptionBenefitsEyebrow')}</p><h2 className="mt-1 text-[16px] leading-[16px] text-black">{t('profile.subscriptionPremiumTitle')}</h2><ul className="mt-4 flex flex-col gap-2 px-2">{benefits.map(key => <li key={key} className="flex items-center gap-2 text-left text-[12px] leading-[12px] text-[#6E6779]"><HugeiconsIcon icon={Tick02Icon} size={14.4} strokeWidth={1.8} className="shrink-0 text-[#6A37C3]" /><span>{t(`profile.${key}`)}</span></li>)}</ul></section>
     </section>
-    <div data-subscription-actions className="mx-auto mt-6 w-full max-w-[430px] px-6 pb-4"><button data-subscription-cta type="button" onClick={() => setPaymentMessage(true)} className="flex h-12 w-full items-center justify-center rounded-[4px] bg-[#6A37C3] text-[16px] font-medium leading-[16px] text-white hover:bg-[#6A37C3]">{t('profile.subscriptionCta')}</button><p data-subscription-disclosure className="mt-4 text-center text-[12px] leading-[12px] text-[#8C8698]"><span className="block">{plan === 'annual' ? t('profile.subscriptionAnnualDisclosure') : t('profile.subscriptionMonthlyDisclosure')}</span><span className="mt-1 block">{t('profile.subscriptionCancel')}</span></p><p className="sr-only" role="status" aria-live="polite">{paymentMessage ? t('profile.mobileSubscriptionUnavailable') : ''}</p></div>
+    <div data-subscription-actions className="mx-auto mt-6 w-full max-w-[430px] px-6 pb-4"><button data-subscription-cta type="button" disabled className="flex h-12 w-full items-center justify-center rounded-[4px] bg-[#6A37C3] text-[16px] font-medium leading-[16px] text-white opacity-60">{t('profile.mobileSubscriptionUnavailable')}</button><p data-subscription-disclosure className="mt-4 text-center text-[12px] leading-[12px] text-[#8C8698]"><span className="block">{plan === 'annual' ? t('profile.subscriptionAnnualDisclosure') : t('profile.subscriptionMonthlyDisclosure')}</span><span className="mt-1 block">{t('profile.subscriptionCancel')}</span></p><p className="sr-only" role="status" aria-live="polite">{t('profile.mobileSubscriptionUnavailable')}</p></div>
   </MobilePageFrame>;
 }

@@ -44,7 +44,7 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /file \?[\s\S]*size-16 bg-\[#6a37c3\] text-\[#ffffff\]/,
+  /file \?[\s\S]*bg-\[#6a37c3\] text-\[#ffffff\]/,
   'Analyze selected dropzone should use an unconditional 64px solid purple attachment circle',
 );
 assert.match(

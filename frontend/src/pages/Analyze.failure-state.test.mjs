@@ -5,7 +5,7 @@ import path from 'node:path';
 const analyzeSource = readFileSync(path.resolve(import.meta.dirname, 'Analyze.tsx'), 'utf8');
 const failureSource = analyzeSource.slice(
   analyzeSource.indexOf('export function AnalyzeFailure'),
-  analyzeSource.indexOf('export function AnalyzeResults'),
+  analyzeSource.indexOf('export function AnalyzeMobileResults'),
 );
 const locales = ['ru', 'kk'].map((locale) => ({
   locale,
@@ -41,7 +41,7 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /const hasGenericFailure = Boolean\(pollError \|\| \(sseError && !polling\)\)/,
+  /const hasGenericFailure = Boolean\([\s\S]*sseError && !polling && !sseResult/,
   'Poll and SSE transport failures should collapse to the generic presentation',
 );
 assert.doesNotMatch(analyzeSource, /setSubmitError\(true\)/, 'Submit failures must not be collapsed to a boolean');
@@ -84,7 +84,7 @@ assert.match(
 );
 assert.match(
   failureSource,
-  /data-analyze-failure-description[\s\S]*className="mt-4 max-w-\[330px\] text-\[14px\] font-normal leading-\[14px\] text-\[#6e6779\] md:mt-3 md:leading-\[1\.35\] md:text-muted"/,
+  /data-analyze-failure-description[\s\S]*className="mt-4 max-w-\[330px\] text-\[14px\] font-normal leading-\[14px\] text-\[#6e6779\] md:mt-3 md:leading-\[14px\] md:text-muted"/,
   'Failure description should match the exact mobile type and retain desktop styling',
 );
 assert.match(

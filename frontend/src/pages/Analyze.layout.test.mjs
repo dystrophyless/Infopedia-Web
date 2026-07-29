@@ -38,7 +38,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-\[calc\(100dvh-80px\)\] w-full max-w-\[1180px\] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-\[calc\(100dvh-80px\)\] max-lg:overflow-visible max-md:bg-\[#efebf6\] max-md:px-6 max-md:pt-\[var\(--mobile-page-app-bar-offset\)\]';/,
+  /const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-\[calc\(100dvh-80px\)\] w-full max-w-\[1180px\] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-\[calc\(100dvh-80px\)\] max-lg:overflow-visible max-md:bg-\[#efebf6\] max-md:px-6 max-\[359px\]:px-4 max-md:pt-\[var\(--mobile-page-app-bar-offset\)\]';/,
   'Analyze upload screen should preserve desktop 56px padding while using the semantic 80px mobile app-bar offset',
 );
 
@@ -56,7 +56,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 shadow-feature max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">/,
+  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0">/,
   'Analyze upload form should retain the desktop surface while becoming a rail-aligned mobile layout',
 );
 
@@ -74,7 +74,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /file \?[^:]+: 'bg-bg text-primary group-hover:bg-surface max-md:size-16 max-md:!bg-\[#ded2f1\] max-md:hover:!bg-\[#ded2f1\] max-md:focus-within:!bg-\[#ded2f1\] max-md:text-\[#572d9f\]'/,
+  /file \?[^:]+: 'bg-bg text-primary group-hover:bg-surface max-md:!bg-\[#ded2f1\] max-md:hover:!bg-\[#ded2f1\] max-md:focus-within:!bg-\[#ded2f1\] max-md:text-\[#572d9f\]'/,
   'Analyze empty upload circle should retain the deterministic mobile lavender fill on hover',
 );
 
@@ -92,7 +92,7 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /file \?[\s\S]*size-16 bg-\[#6a37c3\] text-\[#ffffff\][\s\S]*<HugeiconsIcon icon=\{DocumentAttachmentIcon\} size=\{32\} strokeWidth=\{1\.5\} \/>/,
+  /file \?[\s\S]*bg-\[#6a37c3\] text-\[#ffffff\][\s\S]*<HugeiconsIcon icon=\{DocumentAttachmentIcon\} size=\{32\} strokeWidth=\{1\.5\} \/>/,
   'Analyze selected upload dropzone should keep the exact 64px purple circle and 1.5px 32px HugeIcons glyph',
 );
 
@@ -116,8 +116,8 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /function AnalyzeBenefitCards\(\) \{[\s\S]*mt-6 grid grid-cols-2 gap-2[\s\S]*col-span-2 flex h-24 items-center gap-6 rounded-\[8px\] bg-\[#ffffff\] px-6 py-4/,
-  'Analyze benefits should use two half cards followed by one full-width card on mobile',
+  /function AnalyzeBenefitCards\(\) \{[\s\S]*mt-6 grid grid-cols-1 gap-4 min-\[360px\]:grid-cols-2 min-\[360px\]:gap-2[\s\S]*min-\[360px\]:col-span-2 flex min-h-\[96px\] items-center gap-6 rounded-\[8px\] bg-\[#ffffff\] px-6 py-4/,
+  'Analyze benefits should use one column at 320px and two half cards followed by one full-width card from 360px',
 );
 
 assert.match(

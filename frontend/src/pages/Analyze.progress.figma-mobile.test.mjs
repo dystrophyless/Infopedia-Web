@@ -14,6 +14,10 @@ const frameSource = readFileSync(
   path.resolve(import.meta.dirname, '../ui/patterns/MobilePageFrame.tsx'),
   'utf8',
 );
+const pinnedAppBarSource = readFileSync(
+  path.resolve(import.meta.dirname, '../ui/patterns/MobilePinnedAppBar.tsx'),
+  'utf8',
+);
 const appBarSource = readFileSync(
   path.resolve(import.meta.dirname, '../ui/molecules/MobileAppBar.tsx'),
   'utf8',
@@ -65,9 +69,15 @@ assert.match(
 );
 assert.match(
   frameSource,
-  /pt-\[var\(--mobile-page-app-bar-offset\)\] md:hidden[\s\S]*MobileAppBar \{\.\.\.canonicalAppBarProps\} size="compact" safeArea=\{false\} sticky=\{false\}/,
-  'MobilePageFrame should own the mobile top rail and app-bar configuration',
+  /<MobilePinnedAppBar[\s\S]*scrollRootRef=\{scrollMode === 'content' \? scrollViewportRef : undefined\}/,
+  'MobilePageFrame should delegate the mobile top rail to the pinned app-bar pattern with the content scroll root',
 );
+assert.match(
+  pinnedAppBarSource,
+  /pt-\[var\(--mobile-page-app-bar-offset\)\][\s\S]*MobileAppBar \{\.\.\.appBarProps\} tone="transparent" size="compact" safeArea=\{false\} sticky=\{false\}/,
+  'MobilePinnedAppBar should own the compact mobile top rail and app-bar configuration',
+);
+assert.match(pinnedAppBarSource, /IntersectionObserver/, 'MobilePinnedAppBar should own pinning observer behavior');
 assert.match(
   frameSource,
   /showCanonicalAppBar && 'pt-8 md:pt-0'/,

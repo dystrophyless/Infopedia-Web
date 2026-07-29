@@ -12,7 +12,7 @@ const skeletonSource = analyzeSource.slice(
 );
 const failureSource = analyzeSource.slice(
   analyzeSource.indexOf('export function AnalyzeFailure'),
-  analyzeSource.indexOf('export function AnalyzeResults'),
+  analyzeSource.indexOf('export function AnalyzeMobileResults'),
 );
 
 assert.match(
@@ -57,8 +57,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /<AnalyzeResults[\s\S]*results=\{sortedResults\}/,
-  'Latest results should use the existing AnalyzeResults renderer',
+  /<AnalyzeMobileResults[\s\S]*access=\{resultAccess\}/,
+  'Latest results should use the canonical responsive result renderer',
 );
 assert.match(
   analyzeSource,
@@ -82,8 +82,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /\{!isLatestLoading && \(\s*<PageHeader[\s\S]*?\n\s*\/>\s*\)\}/,
-  'Latest fetch pending must suppress the shared desktop PageHeader while the skeleton owns the loading layout',
+  /\{!isLatestLoading && !isMobileResult && \([\s\S]*?<PageHeader[\s\S]*?\n\s*\/>\s*\)\}/,
+  'Latest fetch pending and result states must suppress the outer desktop header',
 );
 assert.equal(
   (analyzeSource.match(/<PageHeader\b/g) ?? []).length,
@@ -151,7 +151,7 @@ assert.match(skeletonSource, /<button[\s\S]*className="[^"]*text-left[^"]*"[\s\S
 assert.doesNotMatch(skeletonSource, /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/, 'Latest skeleton back action should inherit the frame-owned 44px target');
 assert.match(skeletonSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/, 'Latest skeleton back action should retain the exact 24px glyph');
 assert.match(skeletonSource, /<Skeleton shape="text" className="h-5 w-40" \/>/, 'Latest skeleton first mobile placeholder should have no local margin');
-assert.match(failureSource, /<Surface tone="plain" className="hidden p-8 shadow-feature md:mt-6 md:block">/, 'Latest error content should retain a centered desktop surface separate from the canonical mobile frame');
+assert.match(failureSource, /<Surface tone="plain" className="hidden p-8 md:mt-6 md:block">/, 'Latest error content should retain a centered desktop surface separate from the canonical mobile frame');
 assert.match(failureSource, /titleAlign: 'start'/, 'Latest error title should use leading alignment');
 assert.match(failureSource, /compactLayout: 'leading-only'/, 'Latest error app bar should use leading-only compact layout');
 assert.equal(80 + 24 + 32, 136, 'Latest loading should retain the canonical y=136 content anchor');

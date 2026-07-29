@@ -37,7 +37,7 @@ assertTailwindDeclaration('.pb-\\[4px\\]', 'padding-bottom', '4px');
 
 const mobileSource = pageSource.slice(
   pageSource.indexOf('export function AnalyzeMobileResults'),
-  pageSource.indexOf('function SummaryStat'),
+  pageSource.indexOf('function formatAnalyzeFileSize'),
 );
 const scoreCardSource = mobileSource.slice(
   mobileSource.indexOf('<article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">'),
@@ -49,7 +49,7 @@ const lockedSource = mobileSource.slice(
 );
 const mobileCardSource = mobileSource.slice(
   mobileSource.indexOf('function AnalyzeMobileChapterCard'),
-  mobileSource.indexOf('function SummaryStat'),
+  mobileSource.indexOf('function formatAnalyzeFileSize'),
 );
 const cardDataSource = mobileCardSource.slice(
   mobileCardSource.indexOf('const topics'),
@@ -63,12 +63,12 @@ assert.match(
 );
 assert.match(
   pageSource,
-  /<div className="hidden md:block">[\s\S]*<AnalyzeResults[\s\S]*<\/div>[\s\S]*<div className="md:hidden">[\s\S]*<AnalyzeMobileResults[\s\S]*access=\{resultAccess\}/,
-  'Desktop and mobile result renderers should be separated at md',
+  /<AnalyzeMobileResults[\s\S]*access=\{resultAccess\}/,
+  'Responsive results should use one canonical renderer at every viewport',
 );
 assert.match(mobileSource, /mobileResultTitle/, 'Mobile app bar should keep the navigation title key');
 assert.match(mobileSource, /onBack: \(\) => void;[\s\S]*onTitleClick\?: \(\) => void;/, 'Mobile results should expose a back callback and optional title callback');
-assert.match(mobileSource, /<MobilePageFrame[\s\S]*className="md:hidden"[\s\S]*appBar=\{\{/, 'Mobile results should use the canonical MobilePageFrame app-bar configuration');
+assert.match(mobileSource, /<MobilePageFrame[\s\S]*appBar=\{\{/, 'Results should use the canonical MobilePageFrame app-bar configuration');
 assert.doesNotMatch(mobileSource, /(?:mt-16|h-16|min-h-16|safeArea)/, 'Canonical frame should own mobile app-bar geometry without local overrides');
 assert.match(mobileSource, /titleAlign: 'start'/, 'Mobile result navigation title should use leading alignment');
 assert.match(mobileSource, /compactLayout: 'leading-only'/, 'Mobile result app bar should use leading-only compact layout');
@@ -79,11 +79,10 @@ assert.match(mobileSource, /\) : t\('analyze\.mobileResultTitle'\),/, 'Ordinary 
 assert.match(mobileSource, /<button[\s\S]*onClick=\{onBack\}[\s\S]*mobileResultBack/, 'Mobile app-bar arrow should use the back callback');
 assert.doesNotMatch(mobileSource, /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/, 'Mobile result back action should inherit the frame-owned 44px target');
 assert.match(mobileSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\} size=\{24\}/, 'Mobile result back action should retain the exact 24px glyph');
-assert.match(mobileSource, /<h1[^>]*>\s*\{t\('analyze\.mobileResultHeading'\)\}/, 'Mobile h1 should keep the separate results heading key');
+assert.match(mobileSource, /<h2[^>]*>\s*\{t\('analyze\.mobileResultHeading'\)\}/, 'Mobile result body should continue the frame-owned h1 with its heading key');
 assert.match(mobileSource, /mobileLostPointsValue', \{ count: lostPoints \}/, 'Lost-points summary should stay dynamic');
 assert.match(mobileSource, /mobileFreeSummaryValue', \{ count: access\.freeChapter \? 1 : 0 \}/, 'Free-summary count should stay derived from access');
-assert.match(pageSource, /<div className="hidden md:block">/, 'Desktop results should remain hidden on mobile');
-assert.match(pageSource, /<div className="md:hidden">/, 'Mobile results should remain hidden on desktop');
+assert.doesNotMatch(pageSource, /<AnalyzeResults|<ChapterCard|<MobileBookCoverageList/, 'Legacy result presenters should be removed');
 assert.match(
   pageSource,
   /\$\{isMobileResult \? 'max-md:hidden' : ''\}/,
@@ -102,10 +101,11 @@ assert.doesNotMatch(
 );
 assert.match(
   mobileSource,
-  /<div className="mx-auto w-full max-w-\[430px\] px-6 pb-8">/,
-  'Mobile results inner wrapper should keep the 32px page-end gap',
+  /<div className="mx-auto w-full max-w-\[430px\] px-6 pb-8 md:max-w-none md:px-0 md:pb-14">/,
+  'Results should keep the 430px mobile rail while expanding on desktop',
 );
-assert.match(mobileSource, /<h1 className="text-\[20px\] font-medium leading-none text-\[#572d9f\]">/, 'Canonical main should begin directly with the mobile results heading');
+assert.match(mobileSource, /headingLevel: 1[\s\S]*<h2 className="text-\[20px\] font-medium leading-none text-\[#572d9f\]">/, 'The frame should own the single page h1 and the body should continue at h2');
+assert.doesNotMatch(mobileSource, /<h1\b/, 'Result body must not introduce a second page h1');
 assert.equal(80 + 24 + 32, 136, 'Mobile result heading should begin at canonical y=136');
 assert.equal(
   (pageSource.match(/function AnalyzeMobileChapterCard\(/g) ?? []).length,

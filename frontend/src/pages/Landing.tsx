@@ -3,29 +3,18 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowDown01Icon,
   Bookmark02Icon,
-  BookOpen01Icon,
   BookOpen02Icon,
   SearchList01Icon,
 } from '@hugeicons/core-free-icons';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
-import { Hero } from '../components/Hero';
-import { StatsBar } from '../components/StatsBar';
-import { FeatureCard } from '../components/FeatureCard';
 import { MobileFeatureCarousel } from '../components/MobileFeatureCarousel';
 import { TermCardCarousel } from '../components/TermCardCarousel';
-import {
-  FigmaFeatureAnalyticsIcon,
-  FigmaFeatureDescriptionIcon,
-  FigmaFeatureSearchIcon,
-} from '../components/FigmaIcons';
-
 const ONBOARDING_TARGET = '/onboarding';
 
-function authTarget(path: string, isAuthenticated: boolean): string {
-  if (isAuthenticated) return path;
-  return `/login?next=${encodeURIComponent(path)}`;
+function landingCtaTarget(path: string, isAuthenticated: boolean): string {
+  return isAuthenticated ? path : ONBOARDING_TARGET;
 }
 
 export function Landing() {
@@ -45,99 +34,20 @@ export function Landing() {
 }
 
 function DesktopAuthenticatedLanding() {
-  const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return <DesktopGuestLanding isAuthenticated={isAuthenticated} />;
+}
 
+function DesktopGuestLanding({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   return (
     <>
-      <Hero />
-
-      <section
-        id="featured-terms"
-        className="scroll-mt-[112px] bg-bg pb-[96px]"
-      >
-        <p className="mb-6 text-center text-[14px] tracking-wider text-[#524d5b]">
-          {t('landing.termExamples')}
-        </p>
-        <TermCardCarousel />
-      </section>
-
-      <StatsBar />
-
-      <section
-        id="tools"
-        className="scroll-mt-[112px] bg-bg px-6 py-[110px]"
-      >
-        <h2 className="mb-12 text-center text-[40px] font-medium leading-none text-text max-md:text-[28px]">
-          {t('landing.allTools')}
-        </h2>
-        <div className="mx-auto flex max-w-[1334px] flex-wrap justify-center gap-8">
-          <FeatureCard
-            icon={<FigmaFeatureSearchIcon className="block size-[21px]" />}
-            title={t('landing.feature1Title')}
-            description={t('landing.feature1Desc')}
-            to={authTarget('/search', isAuthenticated)}
-          />
-          <FeatureCard
-            icon={<FigmaFeatureDescriptionIcon className="block h-[18px] w-[21px]" />}
-            title={t('landing.feature2Title')}
-            description={t('landing.feature2Desc')}
-            to={authTarget('/semantic-search', isAuthenticated)}
-          />
-          <FeatureCard
-            icon={<FigmaFeatureAnalyticsIcon className="block h-[21px] w-[24px]" />}
-            title={t('landing.feature3Title')}
-            description={t('landing.feature3Desc')}
-            to={authTarget('/analyze', isAuthenticated)}
-          />
-        </div>
-      </section>
-
-      <section
-        id="books"
-        className="h-[425px] scroll-mt-[112px] bg-surface px-6 pt-[65px]"
-      >
-        <div className="mx-auto flex max-w-[820px] flex-col items-center text-center">
-          <div className="mb-[27px] flex size-[59px] items-center justify-center rounded-[10px] bg-secondary">
-            <HugeiconsIcon icon={BookOpen01Icon} size={31} strokeWidth={1.7} className="text-surface" />
-          </div>
-          <h2 className="mb-[26px] text-[40px] font-medium leading-none text-text max-md:text-[28px]">
-            {t('landing.booksSectionTitle')}
-          </h2>
-          <p className="mb-[32px] max-w-[533px] text-[16px] leading-none text-muted">
-            {t('landing.booksSectionSubtitle')}
-          </p>
-          <div className="flex flex-wrap justify-center gap-[10px]">
-            {[
-              t('landing.booksChipBook'),
-              t('landing.booksChipPage'),
-              t('landing.booksChipTopic'),
-              t('landing.booksChipDefinition'),
-            ].map((chip) => (
-              <span
-                key={chip}
-                className="rounded-full bg-bg px-5 py-[7px] text-[16px] font-medium leading-none text-secondary"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+      <DesktopGuestHero isAuthenticated={isAuthenticated} />
+      <DesktopGuestSections isAuthenticated={isAuthenticated} />
     </>
   );
 }
 
-function DesktopGuestLanding() {
-  return (
-    <>
-      <DesktopGuestHero />
-      <DesktopGuestSections />
-    </>
-  );
-}
-
-function DesktopGuestHero() {
+function DesktopGuestHero({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const { t } = useTranslation();
 
   return (
@@ -163,7 +73,7 @@ function DesktopGuestHero() {
 
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
-            to={ONBOARDING_TARGET}
+            to={landingCtaTarget('/search', isAuthenticated)}
             className="flex min-h-[56px] min-w-[240px] items-center justify-center rounded-[18px] bg-[#6a37c3] px-8 text-[18px] font-medium leading-none text-white transition-opacity hover:opacity-90"
           >
             {t('landing.mobileHeroPrimaryCta')}
@@ -180,7 +90,7 @@ function DesktopGuestHero() {
   );
 }
 
-function DesktopGuestSections() {
+function DesktopGuestSections({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const { t } = useTranslation();
 
   return (
@@ -199,13 +109,13 @@ function DesktopGuestSections() {
         </div>
       </section>
 
-      <DesktopSourceProof />
-      <DesktopToolsFeature isAuthenticated={false} />
+      <DesktopSourceProof isAuthenticated={isAuthenticated} />
+      <DesktopToolsFeature isAuthenticated={isAuthenticated} />
     </>
   );
 }
 
-function DesktopSourceProof() {
+function DesktopSourceProof({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const { t } = useTranslation();
   const sourceLabels = [
     {
@@ -261,7 +171,7 @@ function DesktopSourceProof() {
         </div>
 
         <Link
-          to={ONBOARDING_TARGET}
+          to={landingCtaTarget('/search', isAuthenticated)}
           className="flex h-14 min-w-[240px] items-center justify-center rounded-[16px] bg-[#6a37c3] px-6 text-[16px] font-medium leading-none text-white transition-opacity hover:opacity-90"
         >
           {t('landing.mobileHeroPrimaryCta')}
@@ -298,6 +208,7 @@ function MobileHome() {
 
 function MobileConversionHeroHome() {
   const { t } = useTranslation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
     <>
@@ -338,7 +249,7 @@ function MobileConversionHeroHome() {
 
           <div className="grid w-full gap-2">
             <Link
-              to={ONBOARDING_TARGET}
+              to={landingCtaTarget('/search', isAuthenticated)}
               className="flex min-h-12 items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-none text-white"
             >
               {t('landing.mobileHeroPrimaryCta')}
@@ -360,6 +271,7 @@ function MobileConversionHeroHome() {
 
 function MobileFigmaGuestSections() {
   const { t } = useTranslation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
     <>
@@ -374,13 +286,13 @@ function MobileFigmaGuestSections() {
         </div>
       </section>
 
-      <MobileSourceProof />
-      <MobileToolsFeature isAuthenticated={false} />
+      <MobileSourceProof isAuthenticated={isAuthenticated} />
+      <MobileToolsFeature isAuthenticated={isAuthenticated} />
     </>
   );
 }
 
-function MobileSourceProof() {
+function MobileSourceProof({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const { t } = useTranslation();
   const sourceLabels = [
     {
@@ -437,7 +349,7 @@ function MobileSourceProof() {
           </div>
         </div>
         <Link
-          to={ONBOARDING_TARGET}
+          to={landingCtaTarget('/search', isAuthenticated)}
           className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[#6a37c3] px-5 text-[14px] font-medium leading-none text-white"
         >
           {t('landing.mobileHeroPrimaryCta')}
@@ -478,7 +390,7 @@ function MobileHeroLanguageToggle() {
     <button
       type="button"
       aria-label={t('common.language')}
-      className="flex h-8 items-center justify-center gap-[5px] px-3 text-[12px] leading-none text-[#524d5b]"
+      className="flex h-8 items-center justify-center gap-[5px] px-3 text-[12px] leading-none text-[#8c8698]"
       onClick={() => setLang(nextLang)}
     >
       <span>{lang.toUpperCase()}</span>

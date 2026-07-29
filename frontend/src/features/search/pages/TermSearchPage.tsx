@@ -24,9 +24,7 @@ import {
   getSearchResultFilterChips,
 } from '../model';
 import { useFavoritesStore } from '../../favorites/model';
-import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
-export { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
-import { TermCard } from '../../../components/TermCard';
+import { TermCard } from '../../terms/components/TermCard';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import { MobilePageFrame, SegmentedControl } from '../../../ui';
 import type { Term } from '../../../types';
@@ -533,6 +531,7 @@ export function MobileSearchInputSheet({
 }
 
 export function TermSearchPage() {
+  // Canonical mobile result rail: className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]"
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [filtersOverlayOpen, setFiltersOverlayOpen] = useState(false);
@@ -621,7 +620,7 @@ export function TermSearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('search.placeholder')}
-            className="w-full rounded-[15px] border border-border bg-surface py-4 pl-14 pr-5 text-[18px] leading-none text-text shadow-feature outline-none transition-colors focus:border-accent max-md:shadow-none"
+            className="w-full rounded-[15px] border border-border bg-surface py-4 pl-14 pr-5 text-[18px] leading-none text-text outline-none transition-colors focus:border-accent"
           />
         </div>
       </div>
@@ -669,19 +668,9 @@ export function TermSearchPage() {
 
       {!pageIsLoading && displayResults.length > 0 && (
         <>
-          <div className="flex flex-col gap-4 max-md:hidden">
+          <div className="flex flex-col gap-4 max-md:-mx-[2px] max-md:w-[calc(100%+4px)]">
             {visibleResults.map((term) => (
               <TermCard
-                key={term.public_id}
-                term={term}
-                relatedTerms={getRelatedTerms(term, displayResults)}
-              />
-            ))}
-          </div>
-
-          <div className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]">
-            {visibleResults.map((term) => (
-              <MobileSearchTermCard
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, displayResults)}

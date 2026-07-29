@@ -80,7 +80,7 @@ export function FavoriteToggle({
         />
       </button>
       {errorLabel && (
-        <span role="alert" className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded bg-surface px-2 py-1 text-[11px] leading-none text-danger shadow-card">
+        <span role="alert" className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded border border-border bg-surface px-2 py-1 text-[11px] leading-none text-danger">
           {errorLabel}
         </span>
       )}

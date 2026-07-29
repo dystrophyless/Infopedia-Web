@@ -9,28 +9,29 @@ import { DefinitionMetadata } from './DefinitionMetadata';
 export interface TermCardProps {
   term: Term;
   relatedTerms?: Pick<Term, 'public_id' | 'name'>[];
+  backTo?: string;
 }
 
-export function TermCard({ term, relatedTerms = [] }: TermCardProps) {
+export function TermCard({ term, relatedTerms = [], backTo = '/search' }: TermCardProps) {
   const definition = term.definitions?.[0];
 
   return (
-    <article className="relative rounded-[15px] border border-border bg-surface shadow-feature transition-shadow hover:shadow-card max-md:shadow-none max-md:hover:shadow-none">
+    <article className="relative rounded-[15px] border border-border bg-surface transition-colors max-md:rounded-[16px] max-md:border-0 max-md:p-2">
       <Link
         to={`/terms/${term.public_id}`}
-        state={{ backTo: '/search', term, relatedTerms }}
-        className="group block p-8 max-md:p-6"
+        state={{ backTo, term, relatedTerms }}
+        className="group block rounded-[12px] p-8 max-md:rounded-[12px] max-md:bg-white max-md:p-4"
       >
         <div className="flex items-start gap-4 pr-14">
           <div className="min-w-0 flex-1">
-            <h3 className="text-[24px] font-medium leading-6 text-text max-md:text-[21px] max-md:leading-[21px]">{term.name}</h3>
+            <h3 className="text-[24px] font-medium leading-6 text-text max-md:text-[20px] max-md:leading-5">{term.name}</h3>
             {definition && (
-              <p className="mt-3 line-clamp-3 max-w-[760px] whitespace-pre-line text-[15px] leading-[15px] text-text-body">
+              <p className="mt-3 line-clamp-3 max-w-[760px] whitespace-pre-line text-[15px] leading-[15px] text-text-body max-md:text-[16px] max-md:leading-4">
                 {normalizeDefinitionPreviewText(definition.text)}
               </p>
             )}
           </div>
-          <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/40 text-muted transition-colors group-hover:border-accent/50 group-hover:text-accent" aria-hidden="true">
+          <span className="mt-1 mr-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/40 text-muted transition-colors group-hover:border-accent/50 group-hover:text-accent" aria-hidden="true">
             <HugeiconsIcon icon={ArrowRight01Icon} size={17} strokeWidth={1.7} />
           </span>
         </div>

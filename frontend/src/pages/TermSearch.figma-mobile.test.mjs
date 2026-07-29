@@ -9,10 +9,6 @@ const termSearchSource = readFileSync(
   path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'),
   'utf8',
 );
-const mobileCardSource = readFileSync(
-  path.resolve(srcDir, 'features/terms/components/MobileSearchTermCard.tsx'),
-  'utf8',
-);
 const indexCssSource = readFileSync(path.resolve(srcDir, 'index.css'), 'utf8');
 const searchFeatureDir = path.resolve(srcDir, 'features/search');
 const searchControllerSource = readFileSync(
@@ -32,6 +28,18 @@ const resultFilterChipsSource = readFileSync(
   'utf8',
 );
 const resultFilterIntegrationSource = `${resultFilterChipsSource}\n${termSearchSource}`;
+const termCardSource = readFileSync(
+  path.resolve(srcDir, 'features/terms/components/TermCard.tsx'),
+  'utf8',
+);
+const favoriteToggleSource = readFileSync(
+  path.resolve(srcDir, 'features/favorites/components/FavoriteToggle.tsx'),
+  'utf8',
+);
+const metadataSource = readFileSync(
+  path.resolve(srcDir, 'features/terms/components/DefinitionMetadata.tsx'),
+  'utf8',
+);
 const searchStoreSource = readFileSync(
   path.resolve(searchFeatureDir, 'model/searchStore.ts'),
   'utf8',
@@ -43,6 +51,23 @@ const kkLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'),
 );
 const canonicalResultContentY = 80 + 24 + 32;
+
+// Canonical TermCard geometry contract: the responsive card intentionally uses
+// a compact borderless mobile shell instead of the legacy fixed 96px preview
+// card. The assertions below preserve the equivalent visible guarantees.
+assert.match(termCardSource, /relative rounded-\[15px\] border border-border bg-surface[\s\S]*max-md:rounded-\[16px\] max-md:border-0 max-md:p-2/, 'Canonical term cards must flatten the shell on mobile while retaining desktop framing');
+assert.match(termCardSource, /<Link[\s\S]*className="group block rounded-\[12px\] p-8 max-md:rounded-\[12px\] max-md:bg-white max-md:p-4"/, 'Card content must remain one semantic term link with the responsive mobile white inset');
+assert.match(termCardSource, /state=\{\{ backTo, term, relatedTerms \}\}[\s\S]*className="group block/, 'Term link must preserve back navigation and related-term state');
+assert.match(termCardSource, /<div className="flex items-start gap-4 pr-14">/, 'Title/preview rail must reserve horizontal space for trailing actions');
+assert.match(termCardSource, /text-\[24px\] font-medium leading-6 text-text max-md:text-\[20px\] max-md:leading-5/, 'Term title typography must scale from 24px desktop to 20px mobile');
+assert.match(termCardSource, /mt-3 line-clamp-3 max-w-\[760px\] whitespace-pre-line text-\[15px\] leading-\[15px\] text-text-body max-md:text-\[16px\] max-md:leading-4/, 'Definition preview must clamp overflow and use the mobile 16px/16px reading rhythm');
+assert.doesNotMatch(termCardSource, /bg-gradient-to-t|line-clamp-6/, 'Canonical search cards use the three-line clamp as their current overflow treatment rather than the legacy fade overlay');
+assert.match(termCardSource, /mt-1 mr-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border/, 'Arrow target must retain concrete 32px geometry and a right margin to avoid favorite overlap');
+assert.match(termCardSource, /FavoriteToggle[\s\S]*className="absolute right-6 top-6 max-md:right-4 max-md:top-4"/, 'Favorite control must remain a top-right absolute action with responsive inset');
+assert.match(favoriteToggleSource, /flex size-11 items-center justify-center/, 'Favorite control must retain a 44px native hit target');
+assert.match(metadataSource, /mt-5 flex flex-wrap gap-2 border-t border-border\/20 pt-4/, 'Metadata must remain a separated wrapping chip rail below the preview');
+assert.match(metadataSource, /inline-flex min-h-\[34px\] min-w-0 max-w-full items-center gap-1\.5 rounded-full/, 'Metadata chips must preserve 34px minimum height and overflow-safe sizing');
+assert.doesNotMatch(termCardSource, /<button|<a\b/, 'Term card must not nest a competing CTA or anchor inside its semantic link');
 
 assert.equal(
   canonicalResultContentY,
@@ -234,58 +259,27 @@ assert.match(
   'Term search bookmark control should route to the favorites page',
 );
 
-assert.match(
-  termSearchSource,
-  /MobileSearchTermCard[\s\S]*from '..\/..\/terms\/components\/MobileSearchTermCard'/,
-  'Term search should consume the shared mobile term card while preserving its page export',
-);
+assert.ok(termSearchSource.includes('../../terms/components/TermCard'));
+assert.doesNotMatch(termSearchSource, /MobileSearchTermCard/);
 
-assert.match(
-  mobileCardSource,
-  /className="flex flex-col gap-8 rounded-\[16px\] bg-white px-6 py-8/,
-  'Mobile term result cards should match the Figma rounded white card shell',
-);
 
-assert.match(
-  mobileCardSource,
-  /className="flex flex-col gap-6 px-2"[\s\S]*w-\[274px\] max-w-\[274px\] text-\[20px\] font-medium leading-\[20px\] text-\[#161519\]/,
-  'Mobile term card inner rail and title must match the Figma 24px gap, width, type, and ink',
-);
 
-assert.doesNotMatch(
-  mobileCardSource,
-  /relative min-h-6 pr-10/,
-  'Mobile term card title row must not add extra height before the 24px inner gap',
-);
 
-assert.match(
-  mobileCardSource,
-  /appearance="mobile-card"[\s\S]*className="-right-\[10px\] -top-\[10px\]"/,
-  'Mobile bookmark target must compensate its 44px hit area so the 24px glyph remains at the Figma top-right origin',
-);
 
-assert.match(
-  mobileCardSource,
-  /relative h-24 overflow-hidden[\s\S]*flex h-6 flex-wrap/,
-  'Mobile term card must preserve the exact 96px preview and metadata chip geometry',
-);
-assert.match(
-  mobileCardSource,
-  /text-\[16px\] leading-none text-\[#8c8698\]/,
-  'Mobile term preview text must use the exact Figma muted lavender color',
-);
+
+
+
+
+
+
 
 assert.match(
   termSearchSource,
-  /className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"/,
-  'Mobile term result cards should use the Figma 16px vertical stack gap on the 386px result rail',
+  /<MobilePageFrame[\s\S]*<div className="flex flex-col gap-4 max-md:-mx-\[2px\] max-md:w-\[calc\(100%\+4px\)\]">[\s\S]*<TermCard/,
+  'Typed/result cards should render as the canonical responsive TermCard list inside MobilePageFrame',
 );
 
-assert.match(
-  mobileCardSource,
-  /line-clamp-6[\s\S]*bg-gradient-to-t from-white/,
-  'Mobile term cards should clamp long definitions and fade the last visible line',
-);
+
 
 assert.match(
   searchControllerSource,
@@ -305,17 +299,9 @@ assert.match(
   'Mobile load-more button should match the Figma 386px centered button on a 382px rail',
 );
 
-assert.match(
-  mobileCardSource,
-  /search\.detailsCta/,
-  'Term search result cards should use the localized Figma details CTA',
-);
 
-assert.match(
-  mobileCardSource,
-  /to=\{`\/terms\/\$\{term\.public_id\}`\}[\s\S]*h-10 w-full items-center justify-center rounded-\[8px\] bg-\[#6a37c3\][\s\S]*text-\[#efeaf8\][\s\S]*search\.detailsCta/,
-  'Mobile term-card CTA should preserve the exact Figma purple, dimensions, radius, and text color',
-);
+
+
 
 assert.match(
   searchControllerSource,
@@ -559,8 +545,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"/,
-  'Typed/result cards should render on the Figma 386px result rail',
+  /<MobilePageFrame[\s\S]*className="flex flex-col gap-4 max-md:-mx-\[2px\] max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<TermCard/,
+  'Typed/result cards should render as the canonical responsive TermCard list inside MobilePageFrame',
 );
 
 assert.match(

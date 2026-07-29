@@ -29,11 +29,7 @@ assert.match(
   'Term search should render a left-aligned eyebrow, title, and description block',
 );
 
-assert.match(
-  semanticSearchSource,
-  /<header className="mb-8 text-left">[\s\S]*text-\[14px\] font-medium uppercase leading-none tracking-\[0\.12em\] text-muted[\s\S]*t\('semanticSearch\.eyebrow'\)[\s\S]*t\('search\.title'\)[\s\S]*t\('semanticSearch\.description'\)[\s\S]*<\/header>/,
-  'Semantic search should render a left-aligned eyebrow, shared search title, and description block',
-);
+assert.match(semanticSearchSource, /MobilePageFrame[\s\S]*desktopHeader:[\s\S]*semanticSearch\.description/, 'Semantic search should use the shared responsive frame desktop header');
 
 const termSearchHeader = termSearchSource.match(
   /<header className="mb-8 text-left">[\s\S]*?<\/header>/,

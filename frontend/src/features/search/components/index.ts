@@ -2,7 +2,6 @@ export { SearchChoiceModal } from './SearchChoiceModal';
 export type { SearchChoiceModalProps } from './SearchChoiceModal';
 export {
   MobileSearchInputSheet,
-  MobileSearchTermCard,
   MobileSearchBrowseHeader as SearchBrowseHeader,
   MobileSearchEmptyState as SearchEmptyState,
   MobileSearchModePills as SearchModePills,

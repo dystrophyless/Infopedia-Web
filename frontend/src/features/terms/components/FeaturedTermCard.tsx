@@ -134,7 +134,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
         ? 'h-[220px] w-[320px] rounded-[20px] border-0 bg-surface-subtle p-8 shadow-none'
         : isMobileVariant
           ? `h-[238px] w-[76vw] rounded-[22px] border-0 bg-surface p-5 shadow-none ${tone.cardClassName}`
-          : 'h-[325px] w-[min(612px,calc(100vw_-_96px))] rounded-[15px] border border-border bg-surface p-[50px] shadow-feature transition-shadow hover:shadow-card max-md:h-[280px] max-md:w-[88vw] max-md:p-8 max-md:shadow-none';
+          : 'h-[325px] w-[min(612px,calc(100vw_-_96px))] rounded-[15px] border border-border bg-surface p-[50px] max-md:h-[280px] max-md:w-[88vw] max-md:p-8';
 
   const preview = (className: string) => (
     <p ref={definitionPreviewRef} className={className}>{visibleDefinition.text}</p>

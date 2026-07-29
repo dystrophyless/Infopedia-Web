@@ -30,7 +30,7 @@ function sourceBetween(start, end) {
 
 const desktopGuestBundleSource = sourceBetween('function DesktopGuestLanding', 'function MobileHome');
 const mobileGuestHeroSource =
-  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\n\}\n\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
+  landingSource.match(/function MobileConversionHeroHome\(\) \{([\s\S]*?)\r?\n\}\r?\n\r?\nfunction MobileFigmaGuestSections/)?.[1] ?? '';
 
 assert.match(
   landingSource,
@@ -44,8 +44,8 @@ for (const [name, source] of [
 ]) {
   assert.match(
     source,
-    /to=\{ONBOARDING_TARGET\}/,
-    `${name} primary CTAs should route to onboarding`,
+    /landingCtaTarget\('\/search', isAuthenticated\)/,
+    `${name} primary CTAs should use the auth-aware search destination`,
   );
   assert.doesNotMatch(
     source,

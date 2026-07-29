@@ -400,7 +400,7 @@ export function BottomSheet({
         aria-describedby={descriptionId}
         tabIndex={-1}
         className={cn(
-          'absolute inset-x-0 bottom-0 overflow-y-auto overscroll-contain rounded-b-none rounded-t-[32px] bg-surface px-[var(--space-mobile-rail)] pb-[max(var(--space-8),env(safe-area-inset-bottom))] pt-3 shadow-overlay outline-none transition-transform duration-base ease-standard motion-reduce:transition-none max-md:shadow-none',
+          'absolute inset-x-0 bottom-0 overflow-y-auto overscroll-contain rounded-b-none rounded-t-[32px] bg-surface px-[var(--space-mobile-rail)] pb-[max(var(--space-8),env(safe-area-inset-bottom))] pt-3 outline-none transition-transform duration-base ease-standard motion-reduce:transition-none',
           isExiting && 'translate-y-full',
           isDragging && 'select-none duration-0',
           className,

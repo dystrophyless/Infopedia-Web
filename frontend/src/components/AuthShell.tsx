@@ -38,7 +38,7 @@ export function AuthShell({
       </header>
 
       <div className="flex-1 flex items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:pt-[65px] max-md:px-8">
-        <div className="w-full max-w-[440px] bg-surface border border-border rounded-[15px] shadow-feature p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:border-0 max-lg:bg-transparent max-lg:p-0 max-lg:shadow-none max-md:max-w-[366px] max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
+        <div className="w-full max-w-[520px] p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:p-0 max-md:max-w-[366px]">
           <h1 className="mb-3 text-left text-[26px] font-medium leading-none text-text max-lg:mb-3 max-lg:text-[24px] max-lg:leading-none max-lg:text-[#161519]">{title}</h1>
           {children}
           {footer && (
@@ -62,7 +62,7 @@ function AuthMobileLanguageToggle() {
     <button
       type="button"
       aria-label={t('common.language')}
-      className="flex h-8 items-center justify-center gap-[5px] px-5 text-[12px] font-normal leading-none text-[#b1acb9]"
+      className="flex h-8 items-center justify-center gap-[5px] px-5 text-[12px] font-normal leading-none text-[#8c8698]"
       onClick={() => setLang(nextLang)}
     >
       <span>{lang.toUpperCase()}</span>

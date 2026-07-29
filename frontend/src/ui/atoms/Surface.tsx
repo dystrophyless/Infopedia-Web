@@ -29,7 +29,7 @@ export type SurfaceElement =
 
 const toneClasses: Record<SurfaceTone, string> = {
   plain: 'bg-surface',
-  card: 'bg-surface shadow-feature max-md:shadow-none',
+  card: 'bg-surface',
   canvas: 'bg-canvas',
   soft: 'bg-bg',
   subtle: 'bg-surface-subtle',
@@ -39,7 +39,7 @@ const toneClasses: Record<SurfaceTone, string> = {
 
 const variantClasses: Record<SurfaceVariant, string> = {
   default: '',
-  'mobile-flat': 'max-md:rounded-none max-md:shadow-none',
+  'mobile-flat': 'max-md:rounded-none',
 };
 
 type SurfaceOwnProps<E extends SurfaceElement> = {

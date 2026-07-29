@@ -7,7 +7,7 @@ import { Dialog } from './Dialog';
 function DialogDemo({ onDismiss }: { onDismiss: () => void }) {
   const [open, setOpen] = useState(false);
   const dismiss = () => { setOpen(false); onDismiss(); };
-  return <><Button onClick={() => setOpen(true)}>Open dialog</Button><Dialog open={open} onDismiss={dismiss} titleId="dialog-title" descriptionId="dialog-description" className="max-w-md rounded-surface bg-surface p-6 shadow-overlay"><h2 id="dialog-title">Dialog title</h2><p id="dialog-description" className="mt-2">Dialog description</p><Button className="mt-4" onClick={dismiss}>Close dialog</Button></Dialog></>;
+  return <><Button onClick={() => setOpen(true)}>Open dialog</Button><Dialog open={open} onDismiss={dismiss} titleId="dialog-title" descriptionId="dialog-description" className="max-w-md rounded-surface bg-surface p-6"><h2 id="dialog-title">Dialog title</h2><p id="dialog-description" className="mt-2">Dialog description</p><Button className="mt-4" onClick={dismiss}>Close dialog</Button></Dialog></>;
 }
 const meta = {
   title: 'Molecules/Dialog',

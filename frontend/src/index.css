@@ -147,7 +147,6 @@ select:focus-visible {
 
 .search-filter-option.search-filter-option-active {
   border-color: #6a37c3;
-  box-shadow: inset 0 0 0 1px #6a37c3;
 }
 
 .search-filter-checkbox-visual.search-filter-checkbox-visual-active {
@@ -167,31 +166,24 @@ select:focus-visible {
   .search-filter-option:not(.search-filter-option-active):hover {
     background-color: #f8f5fc;
     border-color: #a585db;
-    box-shadow: 0 6px 16px rgba(106, 55, 195, 0.1);
     transform: translateY(-1px);
   }
 
   .search-filter-option:not(.search-filter-option-active):hover .search-filter-checkbox-visual {
-    box-shadow: 0 0 0 1px #a585db;
     transform: scale(1.04);
   }
 
   .search-filter-option.search-filter-option-active:hover {
-    box-shadow:
-      inset 0 0 0 1px #6a37c3,
-      0 6px 16px rgba(106, 55, 195, 0.14);
     transform: translateY(-1px);
   }
 
   .search-filter-save-button:hover {
     background-color: #6a37c3;
-    box-shadow: 0 8px 18px rgba(106, 55, 195, 0.18);
     transform: translateY(-1px);
   }
 
   .search-filter-reset-button:hover {
     border-color: #6a37c3;
-    box-shadow: 0 8px 18px rgba(106, 55, 195, 0.12);
     color: #6a37c3;
     transform: translateY(-1px);
   }

@@ -46,7 +46,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
       >
         <span
           className={cn(
-            'rounded-full bg-surface shadow-sm transition-transform duration-fast ease-standard',
+            'rounded-full bg-surface transition-transform duration-fast ease-standard',
             thumbSizeClasses[size],
           )}
         />

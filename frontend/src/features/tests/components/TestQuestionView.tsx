@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import type { TestQuestion } from '../../../api/tests';
-import { Button, MobileAppBar, Progress } from '../../../ui';
+import { Button, MobilePinnedAppBar, Progress } from '../../../ui';
 import { getOptionTone } from '../model';
 import { TestAnswerOption } from './TestAnswerOption';
 
@@ -38,17 +38,14 @@ export function TestQuestionView({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 md:flex md:justify-center max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-12 max-md:pt-[var(--mobile-page-app-bar-offset)]">
-      <main className="test-question-content mx-auto flex w-full max-w-[382px] flex-col md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
-        <MobileAppBar
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 md:py-12 md:flex md:justify-center max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-12 max-md:pt-0">
+      <main className="test-question-content mx-auto flex w-full max-w-[382px] flex-col md:max-w-[720px] md:min-h-[720px] max-md:min-h-[calc(100dvh-200px)]">
+        <MobilePinnedAppBar
           title={title}
           titleAlign="start"
-          size="compact"
           compactLayout="leading-only"
-          safeArea={false}
-          className="test-question-mobile-header h-14 w-full px-4 text-[#252329] max-md:-mx-6 max-md:w-[calc(100%+48px)] md:px-0"
           leading={(
-            <button type="button" className="flex size-6 items-center justify-center text-[#252329]" aria-label={t('tests.backToTests', { defaultValue: 'Назад к тестам' })} onClick={onBack}>
+            <button type="button" className="flex size-11 items-center justify-center text-[#252329]" aria-label={t('tests.backToTests', { defaultValue: 'Назад к тестам' })} onClick={onBack}>
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
             </button>
           )}
@@ -60,7 +57,7 @@ export function TestQuestionView({
           className="test-question-progress mt-4 !h-2 !bg-[rgba(106,55,195,0.25)] [&>span]:!bg-[#6a37c3]"
         />
 
-        <section className="mt-6 rounded-[8px] bg-[#6a37c3] p-6 text-[#f8f5fc]">
+        <section className="mt-6 rounded-[8px] bg-[#6a37c3] p-6 text-[#f8f5fc] md:p-8">
           <p className="text-[12px] font-medium leading-3 text-[#c5b1e7]">
             {t('tests.questionCounter', {
               current: currentQuestionIndex + 1,
@@ -71,7 +68,7 @@ export function TestQuestionView({
           <p className="mt-2 text-[#f8f5fc] text-[16px] font-medium leading-4">{question.prompt}</p>
         </section>
 
-        <fieldset className="mt-6 flex flex-col gap-2">
+        <fieldset className="mt-6 grid gap-2 md:grid-cols-2">
           <legend className="sr-only leading-none">{t('tests.answerOptions', { defaultValue: 'Варианты ответа' })}</legend>
           {question.options.map((option) => {
             const selected = option.id === selectedOptionId;

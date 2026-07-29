@@ -69,6 +69,11 @@ export const LongKazakhContent: Story = {
   },
 };
 
+export const DesktopFlow: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  render: () => <TestFlowDemo />,
+};
+
 const flowQuestions = [question, { ...question, id: 'q-2', prompt: 'Келесі сұрақ' }];
 
 function TestFlowDemo() {

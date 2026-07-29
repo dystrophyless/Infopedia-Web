@@ -415,14 +415,14 @@ assert.match(
 
 assert.match(
   indexCssSource,
-  /\.search-filter-option\.search-filter-option-active\s*\{[\s\S]*border-color: #6a37c3;[\s\S]*box-shadow: inset 0 0 0 1px #6a37c3;/,
-  'Options dialog selected rows should thicken the border inward so the scroll container cannot clip the active stroke',
+  /\.search-filter-option\.search-filter-option-active\s*\{[\s\S]*border-color: #6a37c3;/,
+  'Options dialog selected rows should use a flat active border',
 );
 
 assert.match(
   indexCssSource,
-  /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover\s*\{[\s\S]*background-color: #f8f5fc;[\s\S]*border-color: #a585db;[\s\S]*transform: translateY\(-1px\);[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover \.search-filter-checkbox-visual\s*\{[\s\S]*box-shadow: 0 0 0 1px #a585db;[\s\S]*transform: scale\(1\.04\);/,
-  'Options dialog hover animation should stay lighter than the selected active state',
+  /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover\s*\{[\s\S]*background-color: #f8f5fc;[\s\S]*border-color: #a585db;[\s\S]*transform: translateY\(-1px\);[\s\S]*\.search-filter-option:not\(\.search-filter-option-active\):hover \.search-filter-checkbox-visual\s*\{[\s\S]*transform: scale\(1\.04\);/,
+  'Options dialog hover animation should stay flat while preserving light transform feedback',
 );
 
 assert.match(

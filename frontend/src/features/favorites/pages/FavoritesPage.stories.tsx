@@ -23,8 +23,8 @@ function LocationProbe() {
   return <output aria-hidden="true" className="hidden" data-testid="favorites-story-location">{location.pathname}</output>;
 }
 
-function FavoritesStory({ language }: { language: 'ru' | 'kk' }) {
-  const [ready, setReady] = useState(i18n.language === language);
+function FavoritesStory({ language, deferUntilSeeded = false }: { language: 'ru' | 'kk'; deferUntilSeeded?: boolean }) {
+  const [ready, setReady] = useState(deferUntilSeeded ? false : i18n.language === language);
 
   useEffect(() => {
     let active = true;
@@ -86,21 +86,33 @@ async function assertEmptyFavorites({ canvasElement, title, body, cta }: { canva
   await waitFor(() => {
     const rect = alert.getBoundingClientRect();
     expect(rect.x).toBe(24);
-    expect(rect.y).toBe(366);
     expect(rect.width).toBe(382);
     expect(rect.height).toBe(208);
   });
-  const emptyStateWrapper = alert.parentElement;
+  const emptyStateWrapper = alert.closest<HTMLElement>('[data-between-blocks]');
+  const ordered = Array.from(canvasElement.querySelectorAll<HTMLElement>('*'));
+  const wrapperIndex = emptyStateWrapper ? ordered.indexOf(emptyStateWrapper) : -1;
+  const boundaries = ordered.filter((element) =>
+    element.hasAttribute('data-between-blocks-boundary')
+    && element.getClientRects().length > 0,
+  );
+  const previous = boundaries.filter((element) => ordered.indexOf(element) < wrapperIndex).at(-1);
+  const next = boundaries.find((element) => ordered.indexOf(element) > wrapperIndex);
   expect(emptyStateWrapper).not.toBeNull();
-  if (emptyStateWrapper) {
-    const wrapperStyle = getComputedStyle(emptyStateWrapper);
-    expect(wrapperStyle.position).toBe('fixed');
-    expect(wrapperStyle.top).toBe('366px');
-    expect(wrapperStyle.left).toBe('24px');
-    expect(wrapperStyle.right).toBe('24px');
-    expect(wrapperStyle.paddingTop).toBe('0px');
-    expect(wrapperStyle.transform).toBe('none');
-  }
+  expect(previous).not.toBeUndefined();
+  expect(next).not.toBeUndefined();
+  if (!emptyStateWrapper || !previous || !next) return;
+  const alertRect = alert.getBoundingClientRect();
+  const paintMidpoint = (alertRect.top + alertRect.bottom) / 2;
+  const idealMidpoint = (previous.getBoundingClientRect().bottom + next.getBoundingClientRect().top) / 2;
+  expect(Math.abs(paintMidpoint - idealMidpoint)).toBeLessThanOrEqual(2);
+  const wrapperStyle = getComputedStyle(emptyStateWrapper);
+  expect(wrapperStyle.position).toBe('static');
+  expect(wrapperStyle.display).toBe('grid');
+  expect(wrapperStyle.gridTemplateRows).not.toBe('none');
+  expect(wrapperStyle.paddingLeft).toBe('24px');
+  expect(wrapperStyle.paddingRight).toBe('24px');
+  expect(wrapperStyle.transform).toBe('none');
   await expect(canvas.getByRole('heading', { name: title })).toHaveStyle({ fontSize: '20px', lineHeight: '20px' });
   const helper = canvas.getByText(body);
   await expect(helper).toHaveStyle({ fontSize: '14px', lineHeight: '14px', color: 'rgb(110, 103, 121)' });
@@ -111,9 +123,12 @@ async function assertEmptyFavorites({ canvasElement, title, body, cta }: { canva
   expect(icon).not.toBeNull();
   expect(icon?.getBoundingClientRect().width).toBe(32);
   expect(icon?.getBoundingClientRect().height).toBe(32);
-  const button = canvas.getByRole('button', { name: `${cta} →` });
+  const button = canvas.getByRole('button', { name: cta });
+  const actionRect = button.getBoundingClientRect();
+  expect(actionRect.bottom).toBeLessThanOrEqual(next.getBoundingClientRect().top);
   await expect(button).toHaveStyle({ width: '382px', height: '40px', borderRadius: '8px', backgroundColor: 'rgb(106, 55, 195)', fontSize: '16px', lineHeight: '16px', fontWeight: '500' });
   expect(button.querySelector('svg')).toBeNull();
+  expect(button.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
   expect(alert).not.toHaveStyle({ backgroundColor: 'rgb(255, 255, 255)' });
   await userEvent.click(button);
   await expect(canvas.getByTestId('favorites-story-location')).toHaveTextContent('/search');
@@ -141,13 +156,25 @@ export const Kazakh: Story = {
   }),
 };
 
+export const ResponsiveRussian: Story = {
+  tags: ['!test'],
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => <FavoritesStory language="ru" deferUntilSeeded />,
+};
+
+export const ResponsiveKazakh: Story = {
+  tags: ['!test'],
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => <FavoritesStory language="kk" deferUntilSeeded />,
+};
+
 export const Desktop: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
   render: () => <FavoritesStory language="ru" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const alert = await canvas.findByRole('region', { name: 'В избранном пока ничего нет' });
-    const emptyStateWrapper = alert.parentElement;
+    const emptyStateWrapper = alert.closest<HTMLElement>('[data-between-blocks]');
     expect(emptyStateWrapper).not.toBeNull();
     if (emptyStateWrapper) {
       await waitFor(() => {

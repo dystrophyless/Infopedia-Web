@@ -68,6 +68,18 @@ assert.match(
   'Tests hub should consume the shared mobile viewport available-height variable',
 );
 
+assert.match(
+  testsHubSource,
+  /max-md:pb-\[var\(--mobile-page-content-end-inset,0px\)\]/,
+  'Tests hub content owner should consume the dynamic mobile content-end inset',
+);
+
+assert.doesNotMatch(
+  testsHubSource,
+  /max-md:pb-0/,
+  'Tests hub should not erase the visible shell content-end inset',
+);
+
 assert.doesNotMatch(
   testsHubSource,
   /safe-area-inset/,
@@ -150,11 +162,17 @@ for (const className of [
   );
 }
 
-assert.match(
+assert.doesNotMatch(
   weakTopicsModelSource,
   /FALLBACK_WEAK_TOPICS/,
-  'Tests page model should keep Figma sample weak topics visible before analysis data exists',
+  'Tests page model should not invent weak topics before analysis data exists',
 );
+
+assert.match(testsSource, /status.*'loading'.*'ready'.*'empty'.*'error'/s);
+assert.match(testsHubSource, /to="\/analyze"/);
+assert.match(testsHubSource, /noAnalysisTitle/);
+assert.match(testsHubSource, /loadErrorTitle/);
+assert.doesNotMatch(testsHubSource, /WeakTopicProgressList topics=\{weakTopics\}.*status === 'empty'/s);
 
 assert.match(
   testsViewSource,

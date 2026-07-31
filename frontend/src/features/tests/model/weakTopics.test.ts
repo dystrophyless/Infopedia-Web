@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalyzeChapterResult } from '../../../types';
-import {
-  FALLBACK_WEAK_TOPICS,
-  buildTestsWeakTopics,
-  clampPercent,
-  getWeakTopicSearchTarget,
-} from './weakTopics';
+import { buildTestsWeakTopics, clampPercent, getWeakTopicSearchTarget } from './weakTopics';
 
 const chapterIds = new Map<string, number>();
 
@@ -59,8 +54,9 @@ describe('tests weak-topic model', () => {
     ]);
   });
 
-  it('preserves the established fallback rows when live analysis has no mistakes', () => {
-    expect(buildTestsWeakTopics(null)).toEqual(FALLBACK_WEAK_TOPICS);
-    expect(buildTestsWeakTopics([result('Perfect', 100, 10)])).toEqual(FALLBACK_WEAK_TOPICS);
+  it('returns no weak topics when analysis is missing, empty, or perfect', () => {
+    expect(buildTestsWeakTopics(null)).toEqual([]);
+    expect(buildTestsWeakTopics([])).toEqual([]);
+    expect(buildTestsWeakTopics([result('Perfect', 100, 10)])).toEqual([]);
   });
 });

@@ -477,6 +477,7 @@ export function SearchFilterOptionsDialog({
 }) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isOptionsListScrolled, setIsOptionsListScrolled] = useState(false);
   const optionsListRef = useRef<HTMLDivElement | null>(null);
   const touchDragIntentRef = useRef<'sheet' | 'list' | null>(null);
   const dragStartYRef = useRef<number | null>(null);
@@ -664,28 +665,35 @@ export function SearchFilterOptionsDialog({
           transition: isDragging ? 'none' : undefined,
         }}
       >
-        <button
-          type="button"
-          aria-label={t('searchFilters.dragCloseAria')}
-          className="mx-auto flex h-6 w-16 items-center justify-center"
+        <div
+          data-search-filter-options-header
+          data-scrolled={isOptionsListScrolled}
+          className="relative z-10 -mx-6 shrink-0 border-b border-solid border-transparent bg-white px-6 pb-[31px] data-[scrolled=true]:border-[rgb(213_211_217)]"
         >
-          <span
-            aria-hidden="true"
-            className="block h-1 w-8 rounded-[4px] bg-[#ded2f1]"
-          />
-        </button>
+          <button
+            type="button"
+            aria-label={t('searchFilters.dragCloseAria')}
+            className="mx-auto flex h-6 w-16 items-center justify-center"
+          >
+            <span
+              aria-hidden="true"
+              className="block h-1 w-8 rounded-[4px] bg-[#ded2f1]"
+            />
+          </button>
 
-        <h2
-          id="search-filter-dialog-title"
-          className="mt-4 text-center text-[20px] font-normal leading-none text-[#6a37c3]"
-        >
-          {title}
-        </h2>
+          <h2
+            id="search-filter-dialog-title"
+            className="mt-4 text-center text-[20px] font-normal leading-none text-[#6a37c3]"
+          >
+            {title}
+          </h2>
+        </div>
 
         <div
           data-search-filter-options-list
           ref={optionsListRef}
-          className="mt-8 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onScroll={(event) => setIsOptionsListScrolled(event.currentTarget.scrollTop > 0)}
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {isLoading && options.length === 0 && (
             <p className="py-6 text-center text-[16px] leading-none text-[#514b5c]" role="status">

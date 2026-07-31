@@ -32,3 +32,28 @@ export const ActionSlot: Story = {
     action: <Button variant="secondary">Import a list</Button>,
   },
 };
+
+export const Outcome: Story = {
+  args: {
+    variant: 'outcome',
+    role: 'alert',
+    'data-empty-state-story': 'outcome',
+    icon: <span aria-hidden="true">?</span>,
+    actionLabel: undefined,
+    onAction: undefined,
+    action: <Button fullWidth>Change parameters</Button>,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const outcome = canvas.getByRole('alert');
+    const titleId = outcome.getAttribute('aria-labelledby');
+    const descriptionId = outcome.getAttribute('aria-describedby');
+
+    await expect(outcome).toHaveAttribute('data-empty-state-story', 'outcome');
+    await expect(titleId).toBeTruthy();
+    await expect(descriptionId).toBeTruthy();
+    await expect(outcome.querySelector(`#${CSS.escape(titleId ?? '')}`)).toHaveTextContent('No saved terms');
+    await expect(outcome.querySelector(`#${CSS.escape(descriptionId ?? '')}`)).toHaveTextContent('Save a term to review it later.');
+    await expect(canvas.getByRole('button', { name: 'Change parameters' })).toBeVisible();
+  },
+};

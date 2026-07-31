@@ -242,6 +242,7 @@
   /* App-shell dimensions */
   --shell-desktop-header-height: 80px;
   --mobile-page-app-bar-offset: 80px;
+  --mobile-page-content-end-spacing: 32px;
   --shell-mobile-bottom-nav-height: 88px;
   --shell-content-max-width: 1200px;
 }

@@ -24,9 +24,10 @@ import {
   getSearchResultFilterChips,
 } from '../model';
 import { useFavoritesStore } from '../../favorites/model';
+import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
 import { TermCard } from '../../terms/components/TermCard';
 import { SkeletonCard } from '../../../components/SkeletonCard';
-import { MobilePageFrame, SegmentedControl } from '../../../ui';
+import { BetweenBlocks, EmptyState, MobilePageFrame, SegmentedControl } from '../../../ui';
 import type { Term } from '../../../types';
 import { useAuthStore } from '../../../stores/authStore';
 import { SearchFilters } from './SearchFiltersPage';
@@ -186,7 +187,7 @@ export function MobileSearchResultHeader({
         </label>
       </div>
 
-      <div className="-mx-[24px] mb-5 flex w-[calc(100%+48px)] gap-2 overflow-x-auto px-[22px] pb-1 scroll-px-[22px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div data-between-blocks-boundary className="-mx-[24px] mb-5 flex w-[calc(100%+48px)] gap-2 overflow-x-auto px-[22px] pb-1 scroll-px-[22px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {filters.map((filter) => {
           const filterIsIconOnly = filter.id === 'filter';
           const chipClassName = `flex h-[30px] shrink-0 items-center justify-center gap-1 rounded-[16px] px-4 text-[14px] font-medium leading-none ${
@@ -257,30 +258,33 @@ export function MobileSearchEmptyState({ query }: { query: string }) {
   const { t } = useTranslation();
 
   return (
-    <div
+    <EmptyState
+      variant="outcome"
       data-mobile-search-empty
-      className="hidden flex-col items-center text-center max-md:mt-[140px] max-md:flex max-md:w-[calc(100%+4px)]"
-    >
-      <div
-        data-mobile-search-empty-icon
-        className="flex size-16 items-center justify-center rounded-[64px] bg-[#ded2f1] text-[#6A37C3]"
-      >
-        <HugeiconsIcon icon={Search01Icon} size={32} strokeWidth={1.6} />
-      </div>
-      <h2 className="mt-4 text-[20px] font-medium leading-none text-[#161519]">
-        {t('search.emptyTitle')}
-      </h2>
-      <p className="mt-4 max-w-[284px] text-center text-[14px] leading-none text-[#514b5c]">
-        {t('search.emptyDescription', { query })}
-      </p>
-      <Link
-        to="/search/filters"
-        data-mobile-search-empty-action
-        className="mt-6 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-white"
-      >
-        {t('search.emptyChangeParameters')}
-      </Link>
-    </div>
+      data-mobile-outcome-paint
+      className="hidden max-md:flex max-md:w-[calc(100%+4px)]"
+      icon={<HugeiconsIcon icon={Search01Icon} size={32} strokeWidth={1.6} />}
+      title={t('search.emptyTitle')}
+      description={t('search.emptyDescription', { query })}
+      partProps={{
+        icon: {
+          'data-mobile-search-empty-icon': '',
+          className: 'rounded-[64px] !bg-[#ded2f1] !text-[#6A37C3]',
+        },
+        title: { className: 'text-[#161519]' },
+        description: { className: 'max-w-[284px] text-center !text-[#514b5c]' },
+      }}
+      action={(
+        <Link
+          to="/search/filters"
+          data-mobile-search-empty-action
+          data-mobile-outcome-action
+          className="flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-white"
+        >
+          {t('search.emptyChangeParameters')}
+        </Link>
+      )}
+    />
   );
 }
 
@@ -569,6 +573,9 @@ export function TermSearchPage() {
     void ensureStatuses(favoriteRefs).catch(() => undefined);
   }, [ensureStatuses, favoriteRefs, isAuthenticated]);
 
+  const mobileSearchEmptyActive =
+    !pageIsLoading && hasSearched && showingSearchResults && displayResults.length === 0;
+
   const mobileSearchResultAppBar = searchResultViewActive
     ? {
         title: t('search.resultsTitle'),
@@ -594,9 +601,11 @@ export function TermSearchPage() {
       appBar={mobileSearchResultAppBar}
       contentId="term-search-content"
       contentLabel={t('search.title')}
+      contentEndInset={!mobileSearchEmptyActive}
+      contentClassName={mobileSearchEmptyActive ? 'flex flex-col' : undefined}
     >
       <div
-        className={`mx-auto max-w-[900px] px-6 pb-14 md:pt-14 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-[24px] max-md:pb-8 ${searchResultViewActive ? '' : 'max-md:pt-[80px]'}`}
+        className={`mx-auto max-w-[900px] px-6 md:pb-14 md:pt-14 max-md:w-full max-md:min-w-0 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-[24px] ${searchResultViewActive ? '' : 'max-md:pt-[80px]'} ${mobileSearchEmptyActive ? 'max-md:flex max-md:flex-1 max-md:flex-col' : ''}`}
       >
       <div className="max-md:hidden">
         <header className="mb-8 text-left">
@@ -625,7 +634,7 @@ export function TermSearchPage() {
         </div>
       </div>
 
-      <div className="hidden max-md:block">
+      <div data-mobile-outcome-header={mobileSearchEmptyActive ? '' : undefined} className={`hidden max-md:block ${mobileSearchEmptyActive ? '[&>*:last-child]:mb-0' : ''}`}>
         {searchResultViewActive ? <MobileSearchResultHeader
           query={query}
           resultCount={displayResults.length}
@@ -644,21 +653,34 @@ export function TermSearchPage() {
         />}
       </div>
 
-      {pageIsLoading && (
-        <div className="flex flex-col gap-4 max-md:gap-3">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      )}
-
-      {!pageIsLoading && hasSearched && showingSearchResults && displayResults.length === 0 && (
+      {mobileSearchEmptyActive && (
         <>
-          <div className="flex flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
+          <BetweenBlocks
+            data-mobile-outcome-slot
+            className="hidden max-md:grid"
+            outcomeClassName="flex justify-center"
+          >
+            <MobileSearchEmptyState query={debounced.trim()} />
+          </BetweenBlocks>
+          <div data-adaptive-outcome-desktop className="flex flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
             <HugeiconsIcon icon={HelpCircleIcon} size={48} strokeWidth={1.4} />
             <p className="text-[16px] leading-none" children={t('search.empty')} />
           </div>
-          <MobileSearchEmptyState query={debounced.trim()} />
+        </>
+      )}
+
+      {pageIsLoading && (
+        <>
+          <div className="hidden flex-col gap-4 md:flex" role="status" aria-label={t('common.loading')}>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <div className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]" role="status" aria-label={t('common.loading')}>
+            <SkeletonCard variant="mobile-term-card" />
+            <SkeletonCard variant="mobile-term-card" />
+            <SkeletonCard variant="mobile-term-card" />
+          </div>
         </>
       )}
 
@@ -668,9 +690,19 @@ export function TermSearchPage() {
 
       {!pageIsLoading && displayResults.length > 0 && (
         <>
-          <div className="flex flex-col gap-4 max-md:-mx-[2px] max-md:w-[calc(100%+4px)]">
+          <div className="hidden flex-col gap-4 md:flex">
             {visibleResults.map((term) => (
               <TermCard
+                key={term.public_id}
+                term={term}
+                relatedTerms={getRelatedTerms(term, displayResults)}
+              />
+            ))}
+          </div>
+
+          <div className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]">
+            {visibleResults.map((term) => (
+              <MobileSearchTermCard
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, displayResults)}

@@ -31,6 +31,16 @@ describe('filterTermsBySearchFilters characterization', () => {
         },
       },
     ]),
+    term('algorithms', [
+      {
+        text: 'Algorithms',
+        page: 12,
+        topic: {
+          book: { public_id: 'book-arman-9', publisher: 'Арман-ПВ', grade: 9 },
+          chapter: { public_id: 'chapter-algorithms', code: 'algorithms', title: 'Algorithms' },
+        },
+      },
+    ]),
     term('networks', [
       {
         text: 'Networks',
@@ -65,7 +75,24 @@ describe('filterTermsBySearchFilters characterization', () => {
         ...emptySelections(),
         book: ['armanPv'],
       }).map(({ public_id }) => public_id),
-    ).toEqual(['python']);
+    ).toEqual(['python', 'algorithms']);
+  });
+
+  it('matches Арман-ПВ across grades, while grade remains an independent narrowing filter', () => {
+    expect(
+      filterTermsBySearchFilters(catalog, {
+        ...emptySelections(),
+        book: ['armanPv'],
+      }).map(({ public_id }) => public_id),
+    ).toEqual(['python', 'algorithms']);
+
+    expect(
+      filterTermsBySearchFilters(catalog, {
+        grade: ['9'],
+        book: ['armanPv'],
+        section: [],
+      }).map(({ public_id }) => public_id),
+    ).toEqual(['algorithms']);
   });
 
   it('matches numeric grades and chapters by either id or readable name', () => {
@@ -113,7 +140,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         ...emptySelections(),
         grade: ['9'],
       }).map(({ public_id }) => public_id),
-    ).toEqual(['networks']);
-    expect(catalog).toHaveLength(3);
+    ).toEqual(['algorithms', 'networks']);
+    expect(catalog).toHaveLength(4);
   });
 });

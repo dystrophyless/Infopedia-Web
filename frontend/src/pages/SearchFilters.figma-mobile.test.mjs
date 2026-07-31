@@ -235,8 +235,20 @@ assert.match(
 
 assert.match(
   filterOptionsSource,
-  /function mapBookOptions\(books: BookCatalogItem\[\], t: TFunction\)[\s\S]*id: book\.public_id[\s\S]*metadata\.bookWithGrade/,
-  'Book popup options should keep book public refs as canonical ids while rendering readable labels',
+  /function mapBookOptions\(books: BookCatalogItem\[\],[\s\S]*SEARCH_FILTER_BOOKS\.filter/,
+  'Book popup options should canonicalize publisher ids and preserve fallback labels',
+);
+
+assert.match(
+  filterOptionsSource,
+  /SEARCH_FILTER_BOOKS[\s\S]*atamura[\s\S]*almatykitap[\s\S]*armanPv/,
+  'Publisher fallback options should use the canonical order and ids',
+);
+
+assert.doesNotMatch(
+  filterOptionsSource,
+  /metadata\.bookWithGrade|id: 'mektep'/,
+  'Publisher filter options should not expose grade-specific book labels or Mektep',
 );
 
 assert.match(
@@ -381,6 +393,24 @@ assert.match(
   searchFiltersSource,
   /data-search-filter-option=\{option\.id\}[\s\S]*className=\{`[^`]*h-12[^`]*rounded-\[8px\][^`]*border[^`]*border-\[#a585db\][^`]*bg-white[^`]*px-4/,
   'Options dialog rows should keep the Figma 48px rounded purple stroke',
+);
+
+assert.match(
+  searchFiltersSource,
+  /data-search-filter-options-list[\s\S]*overflow-y-auto[\s\S]*\[scrollbar-width:none\][\s\S]*\[&::-webkit-scrollbar\]:hidden/,
+  'Options list should preserve scrolling semantics while visually hiding its scrollbar',
+);
+
+assert.match(
+  searchFiltersSource,
+  /filterId === 'section'[\s\S]*min-h-12[\s\S]*py-3[\s\S]*whitespace-normal[\s\S]*break-words/,
+  'Long section options should wrap with a 48px minimum row and vertical padding',
+);
+
+assert.match(
+  searchFiltersSource,
+  /filterId === 'section'[\s\S]*data-search-filter-chip=\{option\.id\}[\s\S]*min-h-8[\s\S]*w-full[\s\S]*whitespace-normal[\s\S]*break-words/,
+  'Selected section chips should use the available width and wrap across lines',
 );
 
 assert.match(
@@ -587,3 +617,6 @@ for (const key of [
     `KK locale should define searchFilters.${key}`,
   );
 }
+
+assert.equal(ruLocale.searchFilters.bookLabel, 'Издание');
+assert.equal(kkLocale.searchFilters.bookLabel, 'Басылым');

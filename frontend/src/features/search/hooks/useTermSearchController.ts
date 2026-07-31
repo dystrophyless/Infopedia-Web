@@ -7,6 +7,7 @@ import { filterTermsBySearchFilters } from '../model/filterTerms';
 import { useSearchStore } from '../model/searchStore';
 
 export const SEARCH_RESULT_LIMIT = 11;
+export const RANDOM_TERM_LIMIT = 10;
 export const MOBILE_SEARCH_PAGE_SIZE = 4;
 
 function toFeaturedTerm({ term, featured_definition }: FeaturedTerm): Term {
@@ -44,7 +45,7 @@ export function useTermSearchController(initialQuery: string) {
   useEffect(() => {
     let cancelled = false;
     setFeaturedLoading(true);
-    getFeaturedTerms(SEARCH_RESULT_LIMIT)
+    getFeaturedTerms(RANDOM_TERM_LIMIT)
       .then((data) => {
         if (!cancelled) setFeaturedTerms(data.map(toFeaturedTerm));
       })

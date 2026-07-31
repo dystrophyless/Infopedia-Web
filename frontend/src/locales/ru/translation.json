@@ -251,7 +251,7 @@
     "entLabel": "ЕНТ",
     "entToggleLabel": "Есть в спецификации ЕНТ",
     "gradeLabel": "Класс",
-    "bookLabel": "Книга",
+    "bookLabel": "Издание",
     "sectionLabel": "Раздел",
     "selectPlaceholder": "Выберите из списка",
     "selectedCount": "Выбрано {{count}}",
@@ -726,6 +726,26 @@
     "progressUnavailable": "Прогресс выполнения пока недоступен",
     "startTopic": "Начать тест по теме {{topic}}",
     "startHint": "Нажмите, чтобы пройти тест"
+  },
+  "tests": {
+    "title": "Тесты",
+    "weakPointsTitle": "Проблемные точки",
+    "yourWeakTopicsTitle": "Ваши слабые темы",
+    "weakTopicsTestEyebrow": "Проверь свои знания",
+    "weakTopicsTestTitle": "Тест по слабым темам",
+    "weakTopicsTestDescription": "Подборка вопросов из 3 разделов, где у вас низкий результат",
+    "weakTopicsTestButton": "Пройти тест →",
+    "otherTestsTitle": "Другие тесты",
+    "regularTestTitle": "Обычный тест",
+    "regularTestDescription": "10 случайных вопросов из всех разделов",
+    "sectionTestsTitle": "Тесты по разделам",
+    "sectionTestsDescription": "Сфокусируйтесь на нужном разделе",
+    "noAnalysisTitle": "Сначала проанализируйте ЕНТ",
+    "noAnalysisBody": "Загрузите результаты ЕНТ, чтобы увидеть слабые темы и получить персональные тесты.",
+    "noAnalysisButton": "Перейти к анализу ЕНТ",
+    "loadErrorTitle": "Не удалось загрузить результаты анализа",
+    "loadErrorBody": "Попробуйте ещё раз.",
+    "perfectResult": "Отличный результат — слабых тем не найдено."
   },
   "mobile": {
     "splashLoading": "Загрузка Infopedia"

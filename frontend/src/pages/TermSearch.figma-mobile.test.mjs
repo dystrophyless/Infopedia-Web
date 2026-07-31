@@ -1,12 +1,30 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import loadConfig from 'tailwindcss/loadConfig.js';
+import escapeClassNameModule from 'tailwindcss/lib/util/escapeClassName.js';
 
 const pagesDir = import.meta.dirname;
 const srcDir = path.resolve(pagesDir, '..');
+const frontendRoot = path.resolve(srcDir, '..');
+const escapeClassName = escapeClassNameModule.default ?? escapeClassNameModule;
 
 const termSearchSource = readFileSync(
   path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'),
+  'utf8',
+);
+const termSearchStorySource = readFileSync(
+  path.resolve(srcDir, 'features/search/pages/TermSearchPage.stories.tsx'),
+  'utf8',
+);
+const adaptiveOutcomeRunnerSource = readFileSync(
+  path.resolve(pagesDir, 'AdaptiveOutcomeStates.visual.mjs'),
+  'utf8',
+);
+const mobilePageFrameSource = readFileSync(
+  path.resolve(srcDir, 'ui/patterns/MobilePageFrame.tsx'),
   'utf8',
 );
 const indexCssSource = readFileSync(path.resolve(srcDir, 'index.css'), 'utf8');
@@ -32,6 +50,10 @@ const termCardSource = readFileSync(
   path.resolve(srcDir, 'features/terms/components/TermCard.tsx'),
   'utf8',
 );
+const mobileCardSource = readFileSync(
+  path.resolve(srcDir, 'features/terms/components/MobileSearchTermCard.tsx'),
+  'utf8',
+);
 const favoriteToggleSource = readFileSync(
   path.resolve(srcDir, 'features/favorites/components/FavoriteToggle.tsx'),
   'utf8',
@@ -44,6 +66,11 @@ const searchStoreSource = readFileSync(
   path.resolve(searchFeatureDir, 'model/searchStore.ts'),
   'utf8',
 );
+assert.match(termSearchSource, /import \{[\s\S]*BetweenBlocks[\s\S]*EmptyState[\s\S]*\} from '\.\.\/\.\.\/\.\.\/ui';/, 'Term search must consume the reusable sandwich and outcome primitives');
+assert.match(termSearchSource, /data-between-blocks-boundary[\s\S]*data-search-result-filter/, 'The search filter chips must expose the explicit generic preceding boundary');
+assert.match(termSearchSource, /<MobileSearchResultHeader[\s\S]*<BetweenBlocks[\s\S]*<MobileSearchEmptyState/, 'The mobile search filter/header block must be the explicit sibling immediately before its sandwich outcome');
+assert.match(termSearchSource, /function MobileSearchEmptyState[\s\S]*<EmptyState[\s\S]*variant="outcome"[\s\S]*to="\/search\/filters"/, 'Search empty paint must use EmptyState outcome while preserving filter navigation');
+assert.match(termSearchSource, /<MobilePageFrame[\s\S]*contentEndInset=\{!mobileSearchEmptyActive\}/, 'Search must let only its empty sandwich reach the actual next structural boundary');
 const ruLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
 );
@@ -105,14 +132,14 @@ assert.match(
 
 assert.doesNotMatch(
   termSearchSource,
-  /max-md:pt-0/,
-  'Search results should let MobilePageFrame place the first main content at y=136 without a local padding reset',
+  /contentClassName="[^"]*max-md:pt-0/,
+  'Search must not unconditionally reset the shared first-content gap outside the adaptive empty-result composition',
 );
 
 assert.match(
-  termSearchSource,
-  /max-md:px-\[24px\][\s\S]*max-md:pb-8/,
-  'Term search mobile route should retain the Figma 32px clearance between the load-more CTA and fixed navigation',
+  `${termSearchSource}\n${mobilePageFrameSource}`,
+  /<MobilePageFrame[\s\S]*max-md:pb-\[var\(--mobile-page-content-end-inset,0px\)\]/,
+  'Term search should receive its mobile navigation clearance from the shared frame',
 );
 
 assert.doesNotMatch(
@@ -155,6 +182,26 @@ assert.match(
   searchControllerSource,
   /SEARCH_RESULT_LIMIT = 11/,
   'Typed/result search should request the updated Figma total of 11 terms',
+);
+assert.match(
+  termSearchSource,
+  /pageIsLoading && \([\s\S]*role="status"[\s\S]*aria-label=\{t\('common\.loading'\)\}/,
+  'Search loading cards must expose a localized status announcement',
+);
+assert.match(
+  termSearchSource,
+  /pageIsLoading && \([\s\S]*className="hidden flex-col gap-4 md:flex"[\s\S]*<SkeletonCard \/>[\s\S]*className="hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[^"\n]*"[\s\S]*<SkeletonCard variant="mobile-term-card" \/>/,
+  'Search loading state should use breakpoint-exclusive default and mobile term-card skeletons',
+);
+assert.match(
+  searchControllerSource,
+  /RANDOM_TERM_LIMIT = 10/,
+  'Empty featured browsing should use the backend random-term limit of 10',
+);
+assert.match(
+  searchControllerSource,
+  /getFeaturedTerms\(RANDOM_TERM_LIMIT\)/,
+  'Featured browsing must request ten terms while regular search keeps its eleven-term limit',
 );
 
 assert.match(
@@ -253,6 +300,24 @@ assert.doesNotMatch(
   'Term search filter control should not route to semantic search',
 );
 
+assert.doesNotMatch(
+  termSearchSource,
+  /max-md:pb-8/,
+  'Term search should not duplicate the shared frame content-end inset locally',
+);
+
+assert.match(
+  termSearchSource,
+  /px-6 md:pb-14 md:pt-14/,
+  'Term search should retain its 56px bottom rhythm only on desktop',
+);
+
+assert.doesNotMatch(
+  termSearchSource,
+  /px-6 pb-14 md:pt-14/,
+  'Term search should not let unscoped desktop bottom spacing stack with the mobile shell inset',
+);
+
 assert.match(
   termSearchSource,
   /to="\/favorites"[\s\S]*search\.favoritesAria/,
@@ -260,7 +325,38 @@ assert.match(
 );
 
 assert.ok(termSearchSource.includes('../../terms/components/TermCard'));
-assert.doesNotMatch(termSearchSource, /MobileSearchTermCard/);
+assert.match(
+  termSearchSource,
+  /MobileSearchTermCard[\s\S]*from '\.\.\/\.\.\/terms\/components\/MobileSearchTermCard'/,
+  'Term search should consume the dedicated mobile term card',
+);
+
+assert.match(
+  mobileCardSource,
+  /className="flex flex-col gap-8 rounded-\[16px\] bg-white px-6 py-8/,
+  'Mobile term result cards should restore the rounded white Figma shell',
+);
+assert.match(
+  mobileCardSource,
+  /<div className="relative grid min-w-0 grid-cols-\[minmax\(0,1fr\)_24px\] items-start gap-6">[\s\S]*<h2 className="min-w-0 w-full max-w-\[274px\] text-\[20px\] font-medium leading-\[20px\] text-\[#161519\]">/,
+  'Mobile term header must use a shrinking title track and a 24px visual bookmark track with a 24px gap',
+);
+assert.doesNotMatch(mobileCardSource, /w-\[calc\(100%/, 'Mobile term title must not use a brittle calc-width overlap workaround');
+assert.match(
+  mobileCardSource,
+  /appearance="mobile-card"[\s\S]*className="-right-\[10px\] -top-\[10px\]"/,
+  'Mobile term card should keep the 44px bookmark hit target and historical outer offsets',
+);
+assert.match(
+  mobileCardSource,
+  /relative h-24 overflow-hidden[\s\S]*line-clamp-6[\s\S]*bg-gradient-to-t from-white[\s\S]*flex h-6 flex-wrap/,
+  'Mobile term card should restore its 96px faded preview and 24px metadata rail',
+);
+assert.match(
+  mobileCardSource,
+  /to=\{`\/terms\/\$\{term\.public_id\}`\}[\s\S]*h-10 w-full items-center justify-center rounded-\[8px\] bg-\[#6a37c3\][\s\S]*search\.detailsCta/,
+  'Mobile term card should restore its full-width 40px details CTA',
+);
 
 
 
@@ -275,8 +371,8 @@ assert.doesNotMatch(termSearchSource, /MobileSearchTermCard/);
 
 assert.match(
   termSearchSource,
-  /<MobilePageFrame[\s\S]*<div className="flex flex-col gap-4 max-md:-mx-\[2px\] max-md:w-\[calc\(100%\+4px\)\]">[\s\S]*<TermCard/,
-  'Typed/result cards should render as the canonical responsive TermCard list inside MobilePageFrame',
+  /<MobilePageFrame[\s\S]*className="hidden flex-col gap-4 md:flex"[\s\S]*<TermCard[\s\S]*className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<MobileSearchTermCard/,
+  'Typed/result cards should use breakpoint-exclusive desktop and mobile card lists',
 );
 
 
@@ -509,44 +605,75 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-empty[\s\S]*max-md:mt-\[140px\][\s\S]*max-md:w-\[calc\(100%\+4px\)\]/,
-  'Mobile zero-terms empty state should start at the exact Figma y=366 position on the 386px rail',
+  /mobileSearchEmptyActive \? 'max-md:flex max-md:flex-1 max-md:flex-col' : ''/,
+  'Mobile zero-terms view must expose a normal flex region below its real header',
 );
+assert.match(
+  termSearchSource,
+  /contentEndInset=\{!mobileSearchEmptyActive\}[\s\S]*contentClassName=\{mobileSearchEmptyActive \? 'flex flex-col' : undefined\}/,
+  'Only the mobile zero-terms sandwich must reach the actual next structural boundary',
+);
+assert.match(
+  termSearchSource,
+  /<MobileSearchResultHeader[\s\S]*<BetweenBlocks[\s\S]*data-mobile-outcome-slot[\s\S]*className="hidden max-md:grid"[\s\S]*outcomeClassName="flex justify-center"[\s\S]*<MobileSearchEmptyState/,
+  'The real filter/header block must be followed by the reusable sandwich outcome',
+);
+assert.match(termSearchSource, /\[&>\*:last-child\]:mb-0/, 'Empty mobile search outcomes must remove the result-list margin after their filter rail');
+const mobileEmptyComponentSource = termSearchSource.slice(
+  termSearchSource.indexOf('export function MobileSearchEmptyState'),
+  termSearchSource.indexOf('export function MobileSearchInputSheet'),
+);
+const mobileEmptyCompositionSource = termSearchSource.slice(
+  termSearchSource.indexOf('{mobileSearchEmptyActive && ('),
+  termSearchSource.indexOf('{pageIsLoading && ('),
+);
+assert.doesNotMatch(`${mobileEmptyComponentSource}\n${mobileEmptyCompositionSource}`, /max-md:mt-\[140px\]|grid-rows-\[|row-start|col-start|fixed|top-\[366px\]|50vh|translate|--shell-mobile-bottom-nav-height|100dvh\s*-\s*88px/, 'Mobile zero-terms page must reject local centering tracks, offsets, transforms, and duplicate navigation math');
+assert.doesNotMatch(
+  termSearchStorySource,
+  /const meta = \{[\s\S]*?tags: \['!test'\][\s\S]*?\} satisfies Meta/,
+  'Search outcome stories must not blanket-disable Storybook interaction and accessibility tests',
+);
+assert.match(termSearchStorySource, /export const BehaviorRussian:[\s\S]*a11y: \{ context: '\[data-mobile-search-empty\]' \}[\s\S]*getByRole\('link'\)[\s\S]*toHaveAccessibleName[\s\S]*userEvent\.click[\s\S]*\/search\/filters/, 'Search outcome must retain a focused Storybook a11y and CTA navigation scenario');
+assert.match(adaptiveOutcomeRunnerSource, /await splash\.waitFor\(\{ state: 'hidden'/, 'Adaptive visual runner must wait for the route splash to disappear before measuring');
+assert.match(adaptiveOutcomeRunnerSource, /await target\.waitFor[\s\S]*await targetCta\.waitFor[\s\S]*target\.isVisible\(\)[\s\S]*targetCta\.isVisible\(\)/, 'Adaptive visual runner must assert the target outcome and CTA are visible');
+assert.match(adaptiveOutcomeRunnerSource, /unobscuredPaintElementCount === requiredPaintElements\.length/, 'Adaptive visual runner must require every paint element to be unobscured');
+assert.match(adaptiveOutcomeRunnerSource, /const topmost = document\.elementsFromPoint\(x, y\)\[0\] \?\? null;[\s\S]*topmost === element \|\| element\.contains\(topmost\)/, 'Adaptive visual runner must accept only the topmost target element or its descendant');
+assert.doesNotMatch(adaptiveOutcomeRunnerSource, /elementsFromPoint\(x, y\)\.some|candidate\.contains\(element\)/, 'Adaptive visual runner must not search deeper in the hit-test stack or accept an overlay ancestor');
+assert.match(adaptiveOutcomeRunnerSource, /data-between-blocks-boundary[\s\S]*ordered\.indexOf\(element\) < slotIndex[\s\S]*ordered\.indexOf\(element\) > slotIndex/, 'Adaptive visual runner must resolve generic explicit boundaries by document order');
+assert.match(adaptiveOutcomeRunnerSource, /structuralCandidates[\s\S]*previousFallback[\s\S]*nextFallback/, 'Adaptive visual runner must provide a generic geometry fallback when explicit boundaries are absent');
+assert.match(adaptiveOutcomeRunnerSource, /idealMidpoint = \(result\.previous\.bottom \+ result\.next\.y\) \/ 2/, 'Adaptive visual runner must derive the midpoint from the measured surrounding blocks');
+assert.match(adaptiveOutcomeRunnerSource, /Math\.abs\(result\.slot\.y - result\.previous\.bottom\)[\s\S]*Math\.abs\(result\.slot\.bottom - result\.next\.y\)/, 'Adaptive visual runner must prove both structural endpoints');
+assert.match(adaptiveOutcomeRunnerSource, /scrollIntoView\(\{ block: 'center' \}\)[\s\S]*postScroll\.ctaUnobscured/, 'Short outcomes must fall back to sequential scrolling and re-run the strict CTA hit test');
+assert.doesNotMatch(adaptiveOutcomeRunnerSource, /querySelector(?:All)?\(['"][^'"]*(?:nav|app-bar|appbar|rail|footer)[^'"]*['"]\)|--shell-mobile-bottom-nav|navTop\s*-\s*32/i, 'Adaptive visual runner must not encode surrounding block types or shell formulas');
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-empty-icon[\s\S]*className="flex size-16 items-center justify-center rounded-\[64px\] bg-\[#ded2f1\] text-\[#6A37C3\]"[\s\S]*<HugeiconsIcon icon=\{Search01Icon\} size=\{32\} strokeWidth=\{1\.6\}/,
+  /icon=\{<HugeiconsIcon icon=\{Search01Icon\} size=\{32\} strokeWidth=\{1\.6\}[\s\S]*'data-mobile-search-empty-icon': ''[\s\S]*className: 'rounded-\[64px\] !bg-\[#ded2f1\] !text-\[#6A37C3\]'/,
   'Mobile zero-terms empty state should render the Figma 64px lavender circle with an exact purple 32px search icon',
 );
 
 assert.match(
   termSearchSource,
-  /data-mobile-search-empty-icon[\s\S]*<\/div>\s*<h2 className="mt-4 text-\[20px\] font-medium leading-none text-\[#161519\]"[\s\S]*search\.emptyTitle/,
-  'Mobile zero-terms empty-state title should begin 16px below the icon',
+  /<EmptyState[\s\S]*variant="outcome"[\s\S]*title=\{t\('search\.emptyTitle'\)\}/,
+  'Mobile zero-terms title must use the shared outcome heading',
 );
 
 assert.match(
   termSearchSource,
-  /search\.emptyTitle[\s\S]*<\/h2>\s*<p className="mt-4 max-w-\[284px\] text-center text-\[14px\] leading-none text-\[#514b5c\]"[\s\S]*search\.emptyDescription[\s\S]*query/,
-  'Mobile zero-terms description should begin 16px below the title and retain its query-aware copy',
+  /description=\{t\('search\.emptyDescription', \{ query \}\)\}[\s\S]*max-w-\[284px\] text-center !text-\[#514b5c\]/,
+  'Mobile zero-terms description must retain its query-aware copy and exact width/color hooks',
 );
 
 assert.match(
   termSearchSource,
-  /to="\/search\/filters"[\s\S]*data-mobile-search-empty-action[\s\S]*className="mt-6 flex h-10 w-full[\s\S]*rounded-\[8px\] bg-\[#6a37c3\][\s\S]*search\.emptyChangeParameters/,
-  'Mobile zero-terms CTA should begin 24px below the description and preserve its filters deep link',
+  /to="\/search\/filters"[\s\S]*data-mobile-search-empty-action[\s\S]*className="flex h-10 w-full[\s\S]*rounded-\[8px\] bg-\[#6a37c3\][\s\S]*search\.emptyChangeParameters/,
+  'Mobile zero-terms CTA must preserve its filters deep link and exact control paint while shared anatomy owns its 24px gap',
 );
 
 assert.match(
   termSearchSource,
   /displayResults\.length === 0[\s\S]*<MobileSearchEmptyState query=\{debounced\.trim\(\)\} \/>/,
   'Zero search results should render the Figma mobile empty state with the current debounced query',
-);
-
-assert.match(
-  termSearchSource,
-  /<MobilePageFrame[\s\S]*className="flex flex-col gap-4 max-md:-mx-\[2px\] max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<TermCard/,
-  'Typed/result cards should render as the canonical responsive TermCard list inside MobilePageFrame',
 );
 
 assert.match(

@@ -2,7 +2,7 @@ import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import {
   MobileSearchBrowseHeader,
   MobileSearchEmptyState,
@@ -42,11 +42,15 @@ function FilterFieldDemo({ selected = false }: { selected?: boolean }) {
 }
 
 function OptionsDemo({
+  filterId = 'grade',
+  title,
   options = SEARCH_FILTER_GRADES,
   selectedIds = [],
   loading = false,
   error = null,
 }: {
+  filterId?: 'grade' | 'book' | 'section';
+  title?: string;
   options?: FilterOption[];
   selectedIds?: string[];
   loading?: boolean;
@@ -55,8 +59,8 @@ function OptionsDemo({
   const { t } = useTranslation();
   return (
     <SearchFilterOptionsDialog
-      filterId="grade"
-      title={t('searchFilters.gradeLabel')}
+      filterId={filterId}
+      title={title ?? t(filterId === 'book' ? 'searchFilters.bookLabel' : filterId === 'section' ? 'searchFilters.sectionLabel' : 'searchFilters.gradeLabel')}
       options={options}
       selectedIds={selectedIds}
       isLoading={loading}
@@ -194,6 +198,170 @@ export const FilterOptionsSelected: Story = { render: () => <OptionsDemo selecte
 export const FilterOptionsLoading: Story = { render: () => <OptionsDemo options={[]} loading /> };
 export const FilterOptionsFallback: Story = { render: () => <OptionsDemo options={[]} error="Каталог временно недоступен" /> };
 export const NestedFilterSheet: Story = { render: () => <OptionsDemo selectedIds={['10']} /> };
+
+const EDITION_OPTIONS: FilterOption[] = [
+  { id: 'atamura', label: 'Атамұра' },
+  { id: 'almatykitap', label: 'Алматыкітап' },
+  { id: 'armanPv', label: 'Арман-ПВ' },
+];
+
+const LONG_SECTION_OPTIONS: FilterOption[] = Array.from({ length: 12 }, (_, index) => ({
+  id: `section-${index + 1}`,
+  label: `Алгоритмдер және бағдарламалау: ұзын раздел ${index + 1}`,
+}));
+
+function expectNear(actual: number, expected: number, label: string, tolerance = 1) {
+  if (Math.abs(actual - expected) > tolerance) {
+    throw new Error(`${label}: expected ${expected}±${tolerance}px, received ${actual}px`);
+  }
+}
+
+function makeEditionGeometryPlay(expectedWidth: number) {
+  return async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const dialog = canvasElement.querySelector<HTMLElement>('[data-search-filter-dialog]');
+    const header = canvasElement.querySelector<HTMLElement>('[data-search-filter-options-header]');
+    const list = canvasElement.querySelector<HTMLElement>('[data-search-filter-options-list]');
+    const rows = [...canvasElement.querySelectorAll<HTMLElement>('[data-search-filter-option]')];
+    const actions = canvasElement.querySelector<HTMLElement>('[data-search-filter-actions]');
+    const title = canvasElement.querySelector<HTMLElement>('#search-filter-dialog-title');
+
+    await expect(window.innerWidth).toBe(expectedWidth);
+    await expect(dialog).not.toBeNull();
+    await expect(header).not.toBeNull();
+    await expect(list).not.toBeNull();
+    await expect(rows).toHaveLength(3);
+    await expect(actions).not.toBeNull();
+    await expect(title).not.toBeNull();
+    if (!dialog || !header || !list || rows.length !== 3 || !actions || !title) return;
+
+    const labels = rows.map((row) => row.querySelector('span')?.textContent?.trim());
+    await expect(labels).toEqual(['Атамұра', 'Алматыкітап', 'Арман-ПВ']);
+
+    const dialogRect = dialog.getBoundingClientRect();
+    const titleRect = title.getBoundingClientRect();
+    const rowRects = rows.map((row) => row.getBoundingClientRect());
+    const actionButtons = [...actions.querySelectorAll<HTMLButtonElement>('button')];
+    const actionRect = actions.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+
+    expectNear(dialogRect.left, 0, 'sheet left');
+    expectNear(dialogRect.right, viewportWidth, 'sheet right');
+    expectNear(dialogRect.width, viewportWidth, 'sheet width');
+    rowRects.forEach((rect, index) => {
+      expectNear(rect.left, 24, `row ${index + 1} left`);
+      expectNear(rect.right, viewportWidth - 24, `row ${index + 1} right`);
+      expectNear(rect.height, 48, `row ${index + 1} height`);
+      if (index > 0) expectNear(rect.top - rowRects[index - 1].bottom, 8, `row ${index} gap`);
+    });
+    expectNear(rowRects[0].top - titleRect.bottom, 32, 'title-to-first-row gap');
+
+    const firstText = rows[0].querySelector<HTMLElement>('span');
+    const firstCheckbox = rows[0].querySelector<HTMLElement>('.search-filter-checkbox-visual');
+    await expect(firstText).not.toBeNull();
+    await expect(firstCheckbox).not.toBeNull();
+    if (!firstText || !firstCheckbox) return;
+    await expect(getComputedStyle(title).fontSize).toBe('20px');
+    await expect(getComputedStyle(title).lineHeight).toBe('20px');
+    await expect(getComputedStyle(firstText).fontSize).toBe('16px');
+    await expect(getComputedStyle(firstText).lineHeight).toBe('16px');
+    expectNear(firstCheckbox.getBoundingClientRect().width, 24, 'checkbox width');
+    expectNear(firstCheckbox.getBoundingClientRect().height, 24, 'checkbox height');
+
+    expectNear(actionRect.left, 0, 'footer left');
+    expectNear(actionRect.right, viewportWidth, 'footer right');
+    expectNear(actionRect.bottom, dialogRect.bottom, 'footer aligns with sheet bottom');
+    await expect(dialogRect.top).toBeLessThan(window.innerHeight + 1);
+    await expect(actionButtons).toHaveLength(2);
+    if (actionButtons.length === 2) {
+      const buttonRects = actionButtons.map((button) => button.getBoundingClientRect());
+      buttonRects.forEach((rect, index) => {
+        expectNear(rect.height, 48, `footer button ${index + 1} height`);
+        expectNear(rect.left, index === 0 ? 24 : viewportWidth / 2 + 6, `footer button ${index + 1} left`);
+      });
+      expectNear(buttonRects[0].right, viewportWidth / 2 - 6, 'reset button right');
+      expectNear(buttonRects[1].right, viewportWidth - 24, 'save button right');
+    }
+    await expect(header.dataset.scrolled).toBe('false');
+    await expect(getComputedStyle(header).borderBottomColor).toBe('rgba(0, 0, 0, 0)');
+  };
+}
+
+const editionGeometryRender = () => <OptionsDemo filterId="book" title="Издание" options={EDITION_OPTIONS} />;
+
+export const EditionOptionsGeometry: Story = {
+  render: editionGeometryRender,
+  play: makeEditionGeometryPlay(390),
+};
+
+export const EditionOptionsGeometry320: Story = {
+  render: editionGeometryRender,
+  play: makeEditionGeometryPlay(320),
+  globals: { viewport: { value: 'mobile320', isRotated: false } },
+};
+
+export const EditionOptionsGeometry360: Story = {
+  render: editionGeometryRender,
+  play: makeEditionGeometryPlay(360),
+  globals: { viewport: { value: 'mobile360', isRotated: false } },
+};
+
+export const EditionOptionsGeometry390: Story = {
+  render: editionGeometryRender,
+  play: makeEditionGeometryPlay(390),
+  globals: { viewport: { value: 'mobile390', isRotated: false } },
+};
+
+export const EditionOptionsGeometry430: Story = {
+  render: editionGeometryRender,
+  play: makeEditionGeometryPlay(430),
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+};
+
+export const LongSectionOptionsGeometry: Story = {
+  render: () => <OptionsDemo filterId="section" options={LONG_SECTION_OPTIONS} />,
+  play: async ({ canvasElement }) => {
+    const list = canvasElement.querySelector<HTMLElement>('[data-search-filter-options-list]');
+    const dialog = canvasElement.querySelector<HTMLElement>('[data-search-filter-dialog]');
+    const header = canvasElement.querySelector<HTMLElement>('[data-search-filter-options-header]');
+    const actions = canvasElement.querySelector<HTMLElement>('[data-search-filter-actions]');
+    const longRow = canvasElement.querySelector<HTMLElement>('[data-search-filter-option="section-1"]');
+    await expect(list).not.toBeNull();
+    await expect(dialog).not.toBeNull();
+    await expect(header).not.toBeNull();
+    await expect(actions).not.toBeNull();
+    await expect(longRow).not.toBeNull();
+    if (!list || !dialog || !header || !actions || !longRow) return;
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await expect(list.scrollHeight).toBeGreaterThan(list.clientHeight);
+    window.scrollTo(0, 0);
+    await expect(longRow.getBoundingClientRect().height).toBeGreaterThanOrEqual(48);
+    await expect(header.dataset.scrolled).toBe('false');
+    await expect(getComputedStyle(header).borderBottomColor).toBe('rgba(0, 0, 0, 0)');
+    const headerBefore = header.getBoundingClientRect();
+    const footerBefore = actions.getBoundingClientRect();
+
+    list.scrollTop = Math.max(1, list.scrollHeight - list.clientHeight);
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+    window.scrollTo(0, 0);
+    await waitFor(() => {
+      expect(canvasElement.querySelector('[data-search-filter-options-header]')?.getAttribute('data-scrolled')).toBe('true');
+      expect(getComputedStyle(header).borderBottomColor).toBe('rgb(213, 211, 217)');
+    });
+    expectNear(header.getBoundingClientRect().top, headerBefore.top, 'header top after scroll');
+    expectNear(header.getBoundingClientRect().height, headerBefore.height, 'header height after scroll');
+    expectNear(actions.getBoundingClientRect().bottom, footerBefore.bottom, 'footer bottom after scroll');
+    expect(actions.getBoundingClientRect().height).toBeGreaterThan(0);
+    expectNear(actions.getBoundingClientRect().bottom, dialog.getBoundingClientRect().bottom, 'footer remains inside sheet');
+
+    list.scrollTop = 0;
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+    await waitFor(() => {
+      expect(header.dataset.scrolled).toBe('false');
+      expect(getComputedStyle(header).borderBottomColor).toBe('rgba(0, 0, 0, 0)');
+    });
+  },
+};
 
 export const FilterOptionInteraction: Story = {
   render: () => <OptionsDemo />,

@@ -28,6 +28,11 @@ const preview = {
           styles: { width: '320px', height: '568px' },
           type: 'mobile',
         },
+        mobile360: {
+          name: 'Mobile 360',
+          styles: { width: '360px', height: '800px' },
+          type: 'mobile',
+        },
         mobile390: {
           name: 'Mobile 390',
           styles: { width: '390px', height: '844px' },

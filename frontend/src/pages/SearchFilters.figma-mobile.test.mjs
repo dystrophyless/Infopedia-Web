@@ -32,6 +32,10 @@ const searchFiltersPath = path.resolve(
 const searchFiltersSource = existsSync(searchFiltersPath)
   ? readFileSync(searchFiltersPath, 'utf8')
   : '';
+const searchViewsStorySource = readFileSync(
+  path.resolve(srcDir, 'features/search/components/SearchViews.stories.tsx'),
+  'utf8',
+);
 const ruLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
 );
@@ -40,6 +44,53 @@ const kkLocale = JSON.parse(
 );
 
 assert.ok(searchFiltersSource, 'Search filters page component should exist');
+
+assert.match(
+  searchViewsStorySource,
+  /const EDITION_OPTIONS[\s\S]*Атамұра[\s\S]*Алматыкітап[\s\S]*Арман-ПВ[\s\S]*export const EditionOptionsGeometry/,
+  'Edition options story should preserve the canonical publisher order',
+);
+
+assert.match(
+  searchViewsStorySource,
+  /export const LongSectionOptionsGeometry[\s\S]*filterId=\"section\"/,
+  'Long section options story should exercise the wrapping row variant',
+);
+
+for (const [storyName, width] of [
+  ['EditionOptionsGeometry320', 320],
+  ['EditionOptionsGeometry360', 360],
+  ['EditionOptionsGeometry390', 390],
+  ['EditionOptionsGeometry430', 430],
+]) {
+  assert.match(
+    searchViewsStorySource,
+    new RegExp(`export const ${storyName}[\\s\\S]*makeEditionGeometryPlay\\(${width}\\)`),
+    `${storyName} should assert its intended CSS viewport width`,
+  );
+}
+
+assert.match(
+  searchViewsStorySource,
+  /await expect\(labels\)\.toEqual\(\['Атамұра', 'Алматыкітап', 'Арман-ПВ'\]\)/,
+  'Edition geometry should assert exact publisher labels and order at runtime',
+);
+
+assert.match(
+  searchViewsStorySource,
+  /await expect\(list\.scrollHeight\)\.toBeGreaterThan\(list\.clientHeight\)/,
+  'Long section geometry should prove overflow and separator round-trip',
+);
+assert.match(
+  searchViewsStorySource,
+  /borderBottomColor\)\.toBe\('rgb\(213, 211, 217\)'\)/,
+  'Long section geometry should assert the active separator color',
+);
+assert.match(
+  searchViewsStorySource,
+  /header\.dataset\.scrolled\)\.toBe\('false'\)/,
+  'Long section geometry should assert the separator resets at scrollTop zero',
+);
 
 assert.match(
   appSource,
@@ -507,6 +558,42 @@ assert.match(
   searchFiltersSource,
   /data-search-filter-actions[\s\S]*className="search-filter-actions [^"]*sticky[^"]*bottom-0/,
   'Options dialog save/reset actions should stay fixed at the bottom of the sheet',
+);
+
+assert.match(
+  searchFiltersSource,
+  /const \[isOptionsListScrolled, setIsOptionsListScrolled\] = useState\(false\);/,
+  'Options dialog should start with an unscrolled list state',
+);
+
+assert.match(
+  searchFiltersSource,
+  /data-search-filter-options-list[\s\S]*onScroll=\{\(event\) => setIsOptionsListScrolled\(event\.currentTarget\.scrollTop > 0\)\}/,
+  'Options list should derive the scrolled state from currentTarget scrollTop',
+);
+
+assert.match(
+  searchFiltersSource,
+  /data-search-filter-options-header[\s\S]*data-scrolled=\{isOptionsListScrolled\}[\s\S]*className="relative z-10[^\"]*shrink-0[^\"]*border-b border-solid border-transparent[^\"]*pb-\[31px\][^\"]*data-\[scrolled=true\]:border-\[rgb\(213_211_217\)\][\s\S]*search-filter-dialog-title/,
+  'Options dialog header should reveal the canonical separator while owning the handle and title',
+);
+
+assert.doesNotMatch(
+  searchFiltersSource,
+  /data-search-filter-options-header[\s\S]*-mb-px/,
+  'Options header should not overlap the first option row with a negative margin',
+);
+
+assert.doesNotMatch(
+  searchFiltersSource,
+  /data-search-filter-actions[\s\S]*data-scrolled=\{isOptionsListScrolled\}|data-search-filter-actions[\s\S]*data-\[scrolled=true\]:border-/,
+  'Options footer should not own scroll-dependent separator state',
+);
+
+assert.match(
+  searchFiltersSource,
+  /data-search-filter-actions[\s\S]*className="search-filter-actions [^"]*sticky[^"]*bottom-0[^"]*border-t border-\[#efeaf8\][^"]*pb-\[calc\(16px\+env\(safe-area-inset-bottom\)\)\]/,
+  'Options footer should retain its original sticky safe-area action styling',
 );
 
 assert.match(

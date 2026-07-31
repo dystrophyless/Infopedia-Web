@@ -706,16 +706,16 @@ export function SearchFilterOptionsDialog({
               <label
                 key={option.id}
                 data-search-filter-option={option.id}
-                className={`search-filter-option flex w-full cursor-pointer select-none justify-between gap-4 ${
+                className={`search-filter-option flex w-full shrink-0 cursor-pointer select-none justify-between gap-4 ${
                   filterId === 'section'
-                    ? 'min-h-12 items-start py-3'
+                    ? 'min-h-12 items-center py-3'
                     : 'h-12 items-center'
                 } rounded-[8px] border border-[#a585db] border-solid bg-white px-4 text-[16px] font-normal leading-none text-[#44237d] ${selected ? 'search-filter-option-active border-[#6a37c3]' : ''}`}
               >
                 <span
                   className={`min-w-0 ${
                     filterId === 'section'
-                      ? 'whitespace-normal break-words'
+                      ? 'flex-1 whitespace-normal break-words'
                       : 'truncate'
                   }`}
                 >

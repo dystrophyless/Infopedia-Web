@@ -391,8 +391,14 @@ assert.doesNotMatch(
 
 assert.match(
   searchFiltersSource,
-  /data-search-filter-option=\{option\.id\}[\s\S]*className=\{`[^`]*h-12[^`]*rounded-\[8px\][^`]*border[^`]*border-\[#a585db\][^`]*bg-white[^`]*px-4/,
-  'Options dialog rows should keep the Figma 48px rounded purple stroke',
+  /data-search-filter-option=\{option\.id\}[\s\S]*className=\{`[^`]*shrink-0[^`]*rounded-\[8px\][^`]*border[^`]*border-\[#a585db\][^`]*bg-white[^`]*px-4/,
+  'Options dialog rows should not shrink below their content height',
+);
+
+assert.match(
+  searchFiltersSource,
+  /filterId === 'section'[\s\S]*:[\s\S]*'h-12 items-center'/,
+  'Non-section options should keep their fixed 48px centered row',
 );
 
 assert.match(
@@ -403,8 +409,14 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /filterId === 'section'[\s\S]*min-h-12[\s\S]*py-3[\s\S]*whitespace-normal[\s\S]*break-words/,
-  'Long section options should wrap with a 48px minimum row and vertical padding',
+  /filterId === 'section'[\s\S]*min-h-12 items-center py-3/,
+  'Long section options should wrap with a 48px minimum row, vertical centering, and padding',
+);
+
+assert.match(
+  searchFiltersSource,
+  /<span\s+className=\{`min-w-0[^>]*filterId === 'section'[^>]*'flex-1 whitespace-normal break-words'[^>]*>/,
+  'Long section labels should own the wrapping flex span instead of a neighboring control wrapper',
 );
 
 assert.match(

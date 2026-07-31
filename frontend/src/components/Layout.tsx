@@ -18,8 +18,8 @@ export function Layout({ children }: { children: ReactNode }) {
 function LayoutShell({ children }: { children: ReactNode }) {
   const decision = useMobileBottomNavDecision();
   const mobileMainClass = decision.visible
-    ? 'max-md:[--mobile-page-available-height:calc(100dvh-var(--shell-mobile-bottom-nav-height))] max-md:pb-[var(--shell-mobile-bottom-nav-height)]'
-    : 'max-md:[--mobile-page-available-height:100dvh] max-md:pb-0';
+    ? 'max-md:[--mobile-page-available-height:calc(100dvh-var(--shell-mobile-bottom-nav-height))] max-md:[--mobile-page-content-end-inset:var(--mobile-page-content-end-spacing)] max-md:pb-[var(--shell-mobile-bottom-nav-height)]'
+    : 'max-md:[--mobile-page-available-height:100dvh] max-md:[--mobile-page-content-end-inset:0px] max-md:pb-0';
 
   return (
     <div className="min-h-dvh flex flex-col bg-bg md:min-h-screen">

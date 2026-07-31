@@ -29,6 +29,7 @@ export interface MobilePageFrameProps extends Omit<HTMLAttributes<HTMLDivElement
   tone?: MobilePageFrameTone;
   scrollMode?: MobilePageFrameScrollMode;
   safeAreaBottom?: boolean;
+  contentEndInset?: boolean;
   contentClassName?: string;
   footerClassName?: string;
   children: ReactNode;
@@ -46,6 +47,7 @@ export function MobilePageFrame({
   tone = 'canvas',
   scrollMode = 'document',
   safeAreaBottom = true,
+  contentEndInset = true,
   contentClassName,
   footerClassName,
   className,
@@ -126,6 +128,7 @@ export function MobilePageFrame({
           aria-label={contentLabel}
           className={cn(
             'min-w-0 flex-1',
+            contentEndInset && 'max-md:pb-[var(--mobile-page-content-end-inset,0px)]',
             showCanonicalAppBar && 'pt-8 md:pt-0',
             contentClassName,
           )}

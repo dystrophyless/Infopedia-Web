@@ -155,7 +155,11 @@ assert.match(failureSource, /<Surface tone="plain" className="hidden p-8 md:mt-6
 assert.match(failureSource, /titleAlign: 'start'/, 'Latest error title should use leading alignment');
 assert.match(failureSource, /compactLayout: 'leading-only'/, 'Latest error app bar should use leading-only compact layout');
 assert.equal(80 + 24 + 32, 136, 'Latest loading should retain the canonical y=136 content anchor');
-assert.equal(366, 366, 'Latest failure uses the explicit Figma node 110:2268 y=366 exception');
+assert.match(
+  failureSource,
+  /<BetweenBlocks[\s\S]*data-analyze-failure-slot[\s\S]*outcomeClassName="flex justify-center"/,
+  'Latest failure should share the adaptive mobile outcome slot instead of a fixed Figma y coordinate',
+);
 assert.match(
   analyzeSource,
   /!hasLatestError && \(currentTask\?\.status === 'success' \|\| hasLatestResult\)/,

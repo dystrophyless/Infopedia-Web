@@ -142,7 +142,7 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pt-0">
+    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pb-[var(--mobile-page-content-end-inset,0px)] max-md:pt-0">
       <div className="mx-auto max-w-[640px] md:hidden">
         {loading && !profile && <SkeletonCard />}
 

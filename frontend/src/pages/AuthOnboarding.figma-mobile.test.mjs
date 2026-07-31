@@ -9,6 +9,9 @@ const componentsDir = path.resolve(srcDir, 'components');
 const authShellSource = readFileSync(path.resolve(componentsDir, 'AuthShell.tsx'), 'utf8');
 const onboardingSource = readFileSync(path.resolve(pagesDir, 'Onboarding.tsx'), 'utf8');
 const registerSource = readFileSync(path.resolve(pagesDir, 'Register.tsx'), 'utf8');
+const onboardingStoriesSource = readFileSync(path.resolve(pagesDir, 'Onboarding.stories.tsx'), 'utf8');
+const registerStoriesSource = readFileSync(path.resolve(pagesDir, 'Register.stories.tsx'), 'utf8');
+const visualRunnerSource = readFileSync(path.resolve(pagesDir, 'Onboarding.grade.visual.mjs'), 'utf8');
 const ruLocale = JSON.parse(
   readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
 );
@@ -42,8 +45,20 @@ assert.match(
 
 assert.match(
   authShellSource,
-  /h-16[\s\S]*className="absolute top-4 left-1\/2[\s\S]*right-8 top-4[\s\S]*h-px w-full bg-\[#eae9ec\]/,
+  /mobileHeaderMode === 'status-aware' \? 'h-\[112px\]' : 'h-16'[\s\S]*status-aware' \? 'top-16' : 'top-4'[\s\S]*right-8[\s\S]*status-aware' \? 'top-16' : 'top-4'[\s\S]*h-px w-full bg-\[#eae9ec\]/,
   'AuthShell mobile header should use the 64px height and 16px logo/language offsets',
+);
+
+assert.match(
+  authShellSource,
+  /mobileHeaderMode\?: 'compact' \| 'status-aware'/,
+  'AuthShell should expose a backward-compatible status-aware mobile header mode',
+);
+
+assert.match(
+  authShellSource,
+  /status-aware[\s\S]*h-\[112px\]/,
+  'Status-aware mobile header should reserve the Figma 112px surface',
 );
 
 assert.match(
@@ -66,8 +81,8 @@ assert.match(
 
 assert.match(
   authShellSource,
-  /max-lg:h-12[\s\S]*max-lg:mt-8[\s\S]*max-lg:rounded-\[8px\][\s\S]*max-lg:bg-\[#44237d\]/,
-  'Auth primary buttons should use the 48px Figma size and 32px top gap',
+  /max-lg:h-12[\s\S]*max-lg:mt-6[\s\S]*max-lg:rounded-\[8px\][\s\S]*max-lg:bg-\[#44237d\]/,
+  'Auth primary buttons should use the 48px Figma size and 24px top gap',
 );
 
 assert.match(
@@ -84,8 +99,8 @@ assert.match(
 
 assert.match(
   onboardingSource,
-  /AuthShell title=\{step === 'grade' \? t\('onboarding\.gradeQuestionTitle'\) : t\('onboarding\.usernameQuestionTitle'\)\}/,
-  'Onboarding shell title should switch to the Figma grade and username titles',
+  /<AuthShell[\s\S]*title=\{step === 'grade' \? t\('onboarding\.gradeQuestionTitle'\) : t\('onboarding\.usernameQuestionTitle'\)\}[\s\S]*mobileHeaderMode="status-aware"/,
+  'Both onboarding steps should opt into the shared Figma status-aware header',
 );
 
 assert.match(
@@ -96,8 +111,14 @@ assert.match(
 
 assert.match(
   onboardingSource,
-  /<form onSubmit=\{handleGradeSubmit\}[\s\S]*<AuthSubmit loading=\{loading\} disabled=\{!grade\}>[\s\S]*t\('common\.continue'\)/,
+  /<form onSubmit=\{handleGradeSubmit\}[\s\S]*<AuthSubmit[\s\S]*loading=\{loading\}[\s\S]*disabled=\{!grade\}[\s\S]*t\('common\.continue'\)/,
   'Grade step should advance with the separate Figma continue button',
+);
+
+assert.match(
+  onboardingSource,
+  /handleGradeSubmit[\s\S]*<p className="mb-6[^\"]*max-md:mb-7/,
+  'Grade supporting copy should reserve the extra 8px needed for Figma options y257 and CTA y449',
 );
 
 for (const iconName of ['Backpack02Icon', 'GraduationCapIcon', 'AnonymousIcon']) {
@@ -116,14 +137,116 @@ assert.doesNotMatch(
 
 assert.match(
   onboardingSource,
-  /className=\{`flex h-12 w-full items-center gap-4 rounded-\[8px\] bg-white px-6/,
+  /className=\{`relative flex h-12 w-full items-center justify-start gap-4 rounded-\[8px\] bg-white px-6/,
   'Grade options should match the Figma 48px control, 24px left inset, and 16px icon/text gap',
 );
 
-assert.doesNotMatch(
+assert.match(
   onboardingSource,
-  /ring-2|Tick02Icon/,
-  'Grade option selected state should not add non-Figma rings or trailing check icons',
+  /Tick02Icon/,
+  'Grade option selected state should use the HugeIcons Tick02Icon badge',
+);
+
+assert.match(
+  onboardingSource,
+    /selected[\s\S]*border-\[1\.5px\][\s\S]*border-\[#6a37c3\]/,
+    'Grade option selected state should use a 1.5px purple border',
+);
+
+assert.match(
+  onboardingSource,
+  /status-aware/,
+  'Grade step should opt into the status-aware mobile header',
+);
+
+assert.match(
+  onboardingSource,
+  /<AuthSubmit[\s\S]*disabled=\{!grade\}[\s\S]*mobileVisual="figma-auth"[\s\S]*t\('common\.continue'\)/,
+  'Grade CTA should use the shared 48px onboarding primary action in every state',
+);
+
+assert.match(
+  onboardingSource,
+  /<AuthUsernameInput[\s\S]*hideMobileLeadingIconWhenFilled[\s\S]*mobileFieldLayout="figma-auth"/,
+  'Username should keep the UserIcon for the empty state and opt into exact visible-message spacing',
+);
+
+assert.doesNotMatch(
+  authShellSource,
+  /hideMobileHelperTextWhenValid|max-lg:sr-only[^\n]*helper/i,
+  'Username availability must remain visibly rendered on mobile',
+);
+
+assert.match(
+  onboardingSource,
+  /max-md:mb-6[\s\S]*usernameQuestionHelper/,
+  'Username helper should leave the exact 24px mobile gap before the y269 field',
+);
+
+assert.match(
+  onboardingSource,
+  /<AuthSubmit[\s\S]*disabled=\{!usernameCanSubmit\}[\s\S]*mobileVisual="figma-auth"/,
+  'Username CTA should use the shared 48px primary action in enabled, disabled, and loading states',
+);
+
+assert.match(
+  authShellSource,
+  /type MobileFieldLayout = 'default' \| 'figma-auth'[\s\S]*mobileFieldLayout\?: MobileFieldLayout[\s\S]*max-lg:mb-0 max-lg:gap-2/,
+  'Auth fields should expose a backward-compatible opt-in 8px message layout with no trailing mobile margin',
+);
+
+assert.match(
+  authShellSource,
+  /hideMobileLeadingIconWhenFilled = false[\s\S]*hideMobileLeadingIconWhenFilled && value[\s\S]*max-lg:hidden/,
+  'Auth field leading icons should use a backward-compatible opt-in mobile visibility contract',
+);
+
+assert.match(
+  registerSource,
+  /<AuthShell[\s\S]*mobileHeaderMode="status-aware"/,
+  'Register and verify states should use the shared status-aware header',
+);
+
+assert.equal(
+  (registerSource.match(/max-lg:mb-7/g) ?? []).length,
+  2,
+  'Register and verify helpers should leave 28px before their y257 controls',
+);
+
+assert.match(
+  registerSource,
+  /<AuthEmailInput[\s\S]*hideMobileLeadingIconWhenFilled[\s\S]*<AuthPasswordInput[\s\S]*hideMobileLeadingIconWhenFilled/,
+  'Register should hide only filled mobile leading icons while preserving the password view control',
+);
+
+assert.match(
+  registerSource,
+  /accountCanSubmit[\s\S]*<AuthSubmit[\s\S]*disabled=\{!accountCanSubmit\}[\s\S]*mobileVisual="figma-auth"/,
+  'Register CTA should stay disabled until the account fields are valid',
+);
+
+assert.match(
+  registerSource,
+  /isValidRegistrationEmail\(email\)[\s\S]*!getPasswordValidationError\(password, t\)/,
+  'Register CTA should require a syntactically valid email and the existing valid-password rule',
+);
+
+assert.match(
+  registerSource,
+  /const normalizedEmail = email\.trim\(\)\.toLowerCase\(\)[\s\S]*!isValidRegistrationEmail\(normalizedEmail\)[\s\S]*setAccountFieldErrors\(nextErrors\)[\s\S]*return;[\s\S]*await startRegistration/,
+  'Account submission should reject malformed email before the registration API boundary',
+);
+
+assert.match(
+  authShellSource,
+  /mobileVisual\?: 'default' \| 'figma-auth'[\s\S]*max-lg:h-12[\s\S]*bg-\[#ded2f1\][\s\S]*max-lg:h-12[\s\S]*bg-\[#6a37c3\]/,
+  'Opt-in auth CTA styling should preserve default consumers and stay 48px in every state',
+);
+
+assert.match(
+  registerSource,
+  /<AuthEmailInput[\s\S]*mobileFieldLayout="figma-auth"[\s\S]*<AuthPasswordInput[\s\S]*mobileFieldLayout="figma-auth"[\s\S]*<AuthSubmit[\s\S]*mobileVisual="figma-auth"/,
+  'Register fields and CTA should share the exact opt-in message and action spacing contract',
 );
 
 assert.match(
@@ -134,20 +257,115 @@ assert.match(
 
 assert.match(
   registerSource,
-  /max-lg:flex max-lg:gap-\[8px\][\s\S]*max-lg:h-\[60px\][\s\S]*max-lg:w-\[54\.297px\][\s\S]*max-lg:rounded-\[16px\]/,
-  'Verification code cells should match the fixed Figma 6-cell mobile size and radius',
+  /grid-cols-\[repeat\(6,minmax\(0,1fr\)\)\][\s\S]*gap-\[8px\][\s\S]*h-\[60px\][\s\S]*w-full[\s\S]*rounded-\[16px\]/,
+  'Verification code should use six native inputs in the exact responsive Figma grid',
 );
 
 assert.match(
   registerSource,
-  /<label className="mb-4 block[\s\S]*max-lg:mb-0/,
-  'Verification code wrapper should remove mobile bottom margin so the submit button lands at the Figma 349px offset',
+  /max-lg:text-\[24px\][\s\S]*max-lg:text-black/,
+  'Filled OTP digits should use the exact black Figma text on mobile',
+);
+
+assert.match(
+  registerSource,
+  /<VerificationCodeInput[\s\S]*describedBy=\{error \? VERIFICATION_MESSAGE_ID : undefined\}/,
+  'Verification code inputs should be described by the visible verification message only',
 );
 
 assert.doesNotMatch(
   registerSource,
   /setNotice\(t\('auth\.(?:codeSent|codeResent)'\)\)/,
   'Verify email should not insert a success notice between the code cells and submit button in the Figma mobile layout',
+);
+
+assert.doesNotMatch(
+  registerSource,
+  /lastAutoSubmittedCode|void submitVerification\(code\)/,
+  'A filled OTP should remain stable until the explicit verify CTA is submitted',
+);
+
+assert.match(
+  registerSource,
+  /<AuthSubmit[\s\S]*disabled=\{!\/\^\\d\{6\}\$\/\.test\(code\)\}[\s\S]*mobileVisual="figma-auth"[\s\S]*t\('auth\.verifyButton'\)/,
+  'Verify CTA should be disabled until all six native OTP inputs are filled',
+);
+
+assert.match(
+  registerSource,
+  /handleCodeSubmit[\s\S]*await submitVerification\(normalizedCode\)/,
+  'Explicit verify submission should preserve the existing verifyEmail payload path',
+);
+
+assert.match(
+  registerSource,
+  /resendSeconds > 0[\s\S]*lg:hidden[\s\S]*t\('auth\.resendCode'\)[\s\S]*max-lg:hidden[\s\S]*t\('auth\.resendIn'/,
+  'Mobile verify should keep the exact Figma resend copy while preserving the desktop cooldown countdown',
+);
+
+assert.match(
+  registerSource,
+  /aria-describedby=\{describedBy\}/,
+  'All six native OTP inputs should share the stable visible-message description',
+);
+
+assert.match(
+  registerSource,
+  /handleCodeChange[\s\S]*setCode\(normalizedCode\)[\s\S]*setError\(null\)/,
+  'Editing the OTP should clear stale verification feedback',
+);
+
+assert.match(
+  registerSource,
+  /max-lg:!text-\[#a585db\][\s\S]*max-lg:disabled:!text-\[#a585db\]/,
+  'Visible mobile resend text should remain #A585DB during cooldown and loading',
+);
+
+assert.match(
+  registerSource,
+  /<FormMessage[\s\S]*id=\{VERIFICATION_MESSAGE_ID\}[\s\S]*<AuthSubmit/,
+  'The visible OTP message should remain directly between the group and primary CTA',
+);
+
+for (const storyName of [
+  'GradeError430',
+  'UsernameValidationError430',
+  'UsernameRequestError430',
+]) {
+  assert.match(onboardingStoriesSource, new RegExp(`export const ${storyName}`));
+}
+assert.match(
+  onboardingStoriesSource,
+  /const previousApiGet = apiClient\.get[\s\S]*apiClient\.get = previousApiGet/,
+  'Onboarding stories should restore the exact API method after every mocked state',
+);
+
+for (const storyName of ['RegisterErrors430', 'RegisterRequestError430', 'VerifyError430']) {
+  assert.match(registerStoriesSource, new RegExp(`export const ${storyName}`));
+}
+assert.match(
+  registerStoriesSource,
+  /const previousApiPost = apiClient\.post[\s\S]*apiClient\.post = previousApiPost/,
+  'Register stories should restore the exact API method after every mocked state',
+);
+
+assert.equal(
+  (visualRunnerSource.match(/\{ state: '[^']+', storyId:/g) ?? []).length,
+  14,
+  'Visual verification should retain the original eight states and add six visible-message states',
+);
+for (const spacingAssertion of [
+  'options to message gap',
+  'username input to message gap',
+  'last register field/message to CTA gap',
+  'OTP group to message gap',
+]) {
+  assert.match(visualRunnerSource, new RegExp(spacingAssertion.replace('/', '\\/')));
+}
+assert.match(
+  visualRunnerSource,
+  /primary CTA should remain 48px[\s\S]*rgb\(165, 133, 219\)/,
+  'Visual verification should measure uniform CTA height and the final resend computed color',
 );
 
 for (const key of [

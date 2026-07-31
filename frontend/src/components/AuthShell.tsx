@@ -10,14 +10,18 @@ import {
 import { useLangStore, type Language } from '../stores/langStore';
 import { Button, Divider, FormField, Input, PasswordField, Text } from '../ui';
 
+type MobileFieldLayout = 'default' | 'figma-auth';
+
 export function AuthShell({
   title,
   children,
   footer,
+  mobileHeaderMode = 'compact',
 }: {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  mobileHeaderMode?: 'compact' | 'status-aware';
 }) {
   return (
     <div className="min-h-screen w-full bg-bg flex flex-col max-lg:mx-auto max-lg:min-h-[932px] max-lg:max-w-[430px] max-lg:bg-[#efebf6]">
@@ -27,11 +31,24 @@ export function AuthShell({
         </Link>
       </header>
 
-      <header className="relative flex h-16 w-full justify-center px-8 lg:hidden">
-        <Link to="/" className="absolute top-4 left-1/2 -translate-x-1/2">
+      <header
+        className={`relative flex w-full justify-center px-8 lg:hidden ${
+          mobileHeaderMode === 'status-aware' ? 'h-[112px]' : 'h-16'
+        }`}
+      >
+        <Link
+          to="/"
+          className={`absolute left-1/2 -translate-x-1/2 ${
+            mobileHeaderMode === 'status-aware' ? 'top-16' : 'top-4'
+          }`}
+        >
           <img src="/logo.svg" alt="Infopedia" className="h-8 w-auto" />
         </Link>
-        <div className="absolute right-8 top-4">
+        <div
+          className={`absolute right-8 ${
+            mobileHeaderMode === 'status-aware' ? 'top-16' : 'top-4'
+          }`}
+        >
           <AuthMobileLanguageToggle />
         </div>
         <div className="absolute bottom-0 left-0 h-px w-full bg-[#eae9ec]" />
@@ -114,11 +131,17 @@ export function AuthSubmit({
   loading,
   disabled,
   children,
+  mobileVisual = 'default',
+  mobileTopClassName = 'max-lg:mt-6',
 }: {
   loading?: boolean;
   disabled?: boolean;
   children: ReactNode;
+  mobileVisual?: 'default' | 'figma-auth';
+  mobileTopClassName?: string;
 }) {
+  const unavailable = Boolean(loading || disabled);
+
   return (
     <Button
       type="submit"
@@ -126,16 +149,30 @@ export function AuthSubmit({
       aria-busy={loading || undefined}
       fullWidth
       size="lg"
-      className="w-full bg-primary text-surface rounded-[10px] py-3 text-[16px] mt-2 hover:opacity-90 transition-opacity disabled:opacity-60 max-lg:h-12 max-lg:mt-8 max-lg:rounded-[8px] max-lg:bg-[#44237d] max-lg:p-0 max-lg:font-medium max-lg:text-white"
+      className={`w-full rounded-[10px] bg-primary py-3 text-[16px] text-surface transition-opacity hover:opacity-90 disabled:opacity-60 ${
+        mobileVisual === 'figma-auth'
+          ? unavailable
+            ? `${mobileTopClassName} max-lg:h-12 max-lg:rounded-[8px] max-lg:bg-[#ded2f1] max-lg:p-0 max-lg:font-medium max-lg:text-[#a585db] max-lg:disabled:opacity-100`
+            : `${mobileTopClassName} max-lg:h-12 max-lg:rounded-[8px] max-lg:bg-[#6a37c3] max-lg:p-0 max-lg:font-medium max-lg:text-white`
+          : 'mt-2 max-lg:mt-6 max-lg:h-12 max-lg:rounded-[8px] max-lg:bg-[#44237d] max-lg:p-0 max-lg:font-medium max-lg:text-white'
+      }`}
     >
       {children}
     </Button>
   );
 }
 
-export function AuthDivider({ label }: { label: string }) {
+export function AuthDivider({
+  label,
+  mobileClassName = 'max-lg:my-6',
+}: {
+  label: string;
+  mobileClassName?: string;
+}) {
   return (
-    <div className="my-5 flex items-center gap-3 text-[13px] text-muted max-lg:my-6 max-lg:text-[14px] max-lg:text-[#c5b1e7]">
+    <div
+      className={`my-5 flex items-center gap-3 text-[13px] text-muted max-lg:text-[14px] max-lg:text-[#c5b1e7] ${mobileClassName}`}
+    >
       <Divider className="h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7]" />
       <Text as="span" tone="inherit" size="caption">
         {label}
@@ -189,20 +226,31 @@ export function AuthEmailInput({
   onChange,
   error,
   invalid,
+  hideMobileLeadingIconWhenFilled = false,
+  mobileFieldLayout = 'default',
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
   invalid?: boolean;
+  hideMobileLeadingIconWhenFilled?: boolean;
+  mobileFieldLayout?: MobileFieldLayout;
 }) {
+  const hideMobileLeadingIcon = hideMobileLeadingIconWhenFilled && value;
+
   return (
-    <FormField error={error} className="mb-4">
+    <FormField
+      error={error}
+      className={mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'}
+    >
       {(controlProps) => (
         <span className="relative block">
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]"
+            className={`pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7] ${
+              hideMobileLeadingIcon ? 'max-lg:hidden' : ''
+            }`}
           >
             <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={1.7} />
           </span>
@@ -216,7 +264,9 @@ export function AuthEmailInput({
             aria-label={label}
             required
             invalid={Boolean(error || invalid)}
-            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
+            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:placeholder:text-[#c5b1e7] ${
+              hideMobileLeadingIcon ? 'max-lg:pl-6' : 'max-lg:pl-[52px]'
+            } ${
               error || invalid
                 ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
                 : 'border-border bg-surface focus:border-accent'
@@ -236,6 +286,8 @@ export function AuthUsernameInput({
   error,
   helperText,
   helperTone = 'muted',
+  hideMobileLeadingIconWhenFilled = false,
+  mobileFieldLayout = 'default',
 }: {
   label: string;
   value: string;
@@ -244,19 +296,25 @@ export function AuthUsernameInput({
   error?: string;
   helperText?: string;
   helperTone?: 'muted' | 'success';
+  hideMobileLeadingIconWhenFilled?: boolean;
+  mobileFieldLayout?: MobileFieldLayout;
 }) {
+  const hideMobileLeadingIcon = hideMobileLeadingIconWhenFilled && value;
+
   return (
     <FormField
       error={error}
       helperText={helperText}
       helperTone={helperTone}
-      className="mb-4"
+      className={mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'}
     >
       {(controlProps) => (
         <span className="relative block">
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7]"
+            className={`pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7] ${
+              hideMobileLeadingIcon ? 'max-lg:hidden' : ''
+            }`}
           >
             <HugeiconsIcon icon={UserIcon} size={18} strokeWidth={1.7} />
           </span>
@@ -271,7 +329,9 @@ export function AuthUsernameInput({
             aria-label={label}
             required
             invalid={Boolean(error)}
-            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:placeholder:text-[#c5b1e7] ${
+            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:placeholder:text-[#c5b1e7] ${
+              hideMobileLeadingIcon ? 'max-lg:pl-6' : 'max-lg:pl-[52px]'
+            } ${
               error
                 ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
                 : 'border-border bg-surface focus:border-accent'
@@ -293,6 +353,8 @@ export function AuthPasswordInput({
   error,
   invalid,
   autoComplete = 'current-password',
+  hideMobileLeadingIconWhenFilled = false,
+  mobileFieldLayout = 'default',
 }: {
   label: string;
   value: string;
@@ -303,7 +365,11 @@ export function AuthPasswordInput({
   error?: string;
   invalid?: boolean;
   autoComplete?: string;
+  hideMobileLeadingIconWhenFilled?: boolean;
+  mobileFieldLayout?: MobileFieldLayout;
 }) {
+  const hideMobileLeadingIcon = hideMobileLeadingIconWhenFilled && value;
+
   return (
     <PasswordField
       label={label}
@@ -315,9 +381,13 @@ export function AuthPasswordInput({
       error={error}
       invalid={invalid}
       autoComplete={autoComplete}
-      className="mb-4"
-      leadingIconClassName="max-lg:size-4 max-lg:text-[#c5b1e7]"
-      inputClassName={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pl-[52px] max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
+      className={mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'}
+      leadingIconClassName={`max-lg:size-4 max-lg:text-[#c5b1e7] ${
+        hideMobileLeadingIcon ? 'max-lg:hidden' : ''
+      }`}
+      inputClassName={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
+        hideMobileLeadingIcon ? 'max-lg:pl-6' : 'max-lg:pl-[52px]'
+      } ${
         error || invalid
           ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
           : 'border-border bg-surface focus:border-accent'

@@ -21,6 +21,12 @@ type AccountFieldErrors = {
 };
 
 const RESEND_COOLDOWN_SECONDS = 60;
+const REGISTRATION_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VERIFICATION_MESSAGE_ID = 'registration-verification-message';
+
+function isValidRegistrationEmail(value: string) {
+  return REGISTRATION_EMAIL_PATTERN.test(value.trim());
+}
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (axios.isAxiosError(err) && err.response?.data) {
@@ -51,7 +57,8 @@ export function Register() {
   const [accountFieldErrors, setAccountFieldErrors] = useState<AccountFieldErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const lastAutoSubmittedCode = useRef('');
+  const accountCanSubmit =
+    isValidRegistrationEmail(email) && !getPasswordValidationError(password, t);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -62,14 +69,6 @@ export function Register() {
 
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
-
-  useEffect(() => {
-    if (step !== 'code' || loading || !/^\d{6}$/.test(code)) return;
-    if (lastAutoSubmittedCode.current === code) return;
-
-    lastAutoSubmittedCode.current = code;
-    void submitVerification(code);
-  }, [code, loading, step]);
 
   if (isAuthenticated) {
     return (
@@ -88,7 +87,7 @@ export function Register() {
     const normalizedEmail = email.trim().toLowerCase();
     const nextErrors: AccountFieldErrors = {};
 
-    if (!normalizedEmail) {
+    if (!isValidRegistrationEmail(normalizedEmail)) {
       nextErrors.email = t('auth.emailRequired');
     }
     nextErrors.password = getPasswordValidationError(password, t);
@@ -124,7 +123,6 @@ export function Register() {
       return;
     }
 
-    lastAutoSubmittedCode.current = normalizedCode;
     await submitVerification(normalizedCode);
   }
 
@@ -143,10 +141,8 @@ export function Register() {
 
   function handleCodeChange(value: string) {
     const normalizedCode = value.replace(/\D/g, '').slice(0, 6);
-    if (normalizedCode.length < 6) {
-      lastAutoSubmittedCode.current = '';
-    }
     setCode(normalizedCode);
+    setError(null);
   }
 
   async function handleResendCode() {
@@ -171,6 +167,7 @@ export function Register() {
   return (
     <AuthShell
       title={step === 'account' ? t('auth.registerTitle') : t('auth.verifyTitle')}
+      mobileHeaderMode="status-aware"
       footer={
         step === 'account' ? (
           <>
@@ -184,32 +181,42 @@ export function Register() {
     >
       {step === 'account' ? (
         <form onSubmit={handleAccountSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
+          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:mb-7 max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
             {t('auth.registerHelper')}
           </p>
-          <AuthEmailInput
-            label={t('auth.email')}
-            value={email}
-            onChange={(value) => {
-              setEmail(value);
-              setAccountFieldErrors((errors) => ({ ...errors, email: undefined }));
-            }}
-            error={accountFieldErrors.email}
-          />
-          <AuthPasswordInput
-            label={t('auth.password')}
-            value={password}
-            visible={showPassword}
-            onChange={(value) => {
-              setPassword(value);
-              setAccountFieldErrors((errors) => ({ ...errors, password: undefined }));
-            }}
-            onToggle={() => setShowPassword((visible) => !visible)}
-            toggleLabel={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-            autoComplete="new-password"
-            error={accountFieldErrors.password}
-          />
-          <AuthSubmit loading={loading}>
+          <div className="max-lg:space-y-4">
+            <AuthEmailInput
+              label={t('auth.email')}
+              value={email}
+              onChange={(value) => {
+                setEmail(value);
+                setAccountFieldErrors((errors) => ({ ...errors, email: undefined }));
+              }}
+              error={accountFieldErrors.email}
+              hideMobileLeadingIconWhenFilled
+              mobileFieldLayout="figma-auth"
+            />
+            <AuthPasswordInput
+              label={t('auth.password')}
+              value={password}
+              visible={showPassword}
+              onChange={(value) => {
+                setPassword(value);
+                setAccountFieldErrors((errors) => ({ ...errors, password: undefined }));
+              }}
+              onToggle={() => setShowPassword((visible) => !visible)}
+              toggleLabel={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+              autoComplete="new-password"
+              error={accountFieldErrors.password}
+              hideMobileLeadingIconWhenFilled
+              mobileFieldLayout="figma-auth"
+            />
+          </div>
+          <AuthSubmit
+            loading={loading}
+            disabled={!accountCanSubmit}
+            mobileVisual="figma-auth"
+          >
             {loading ? t('common.loading') : t('auth.sendCodeButton')}
           </AuthSubmit>
           <AuthDivider label={t('auth.or')} />
@@ -219,16 +226,21 @@ export function Register() {
         </form>
       ) : (
         <form onSubmit={handleCodeSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
+          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:mb-7 max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
             {t('auth.verifyHelperShort')}
           </p>
           <VerificationCodeInput
             label={t('auth.verificationCode')}
             value={code}
             onChange={handleCodeChange}
+            describedBy={error ? VERIFICATION_MESSAGE_ID : undefined}
           />
-          <FormMessage error={error} />
-          <AuthSubmit loading={loading}>
+          <FormMessage id={VERIFICATION_MESSAGE_ID} error={error} />
+          <AuthSubmit
+            loading={loading}
+            disabled={!/^\d{6}$/.test(code)}
+            mobileVisual="figma-auth"
+          >
             {loading ? t('common.loading') : t('auth.verifyButton')}
           </AuthSubmit>
           <div className="mt-4 flex justify-center text-[14px]">
@@ -236,11 +248,18 @@ export function Register() {
               type="button"
               onClick={handleResendCode}
               disabled={loading || resendSeconds > 0}
-              className="text-accent hover:underline disabled:text-muted disabled:no-underline max-lg:text-[#c5b1e7]"
+              className="text-accent hover:underline disabled:text-muted disabled:no-underline max-lg:!text-[#a585db] max-lg:disabled:!text-[#a585db]"
             >
-              {resendSeconds > 0
-                ? t('auth.resendIn', { seconds: resendSeconds })
-                : t('auth.resendCode')}
+              {resendSeconds > 0 ? (
+                <>
+                  <span className="lg:hidden">{t('auth.resendCode')}</span>
+                  <span className="max-lg:hidden">
+                    {t('auth.resendIn', { seconds: resendSeconds })}
+                  </span>
+                </>
+              ) : (
+                t('auth.resendCode')
+              )}
             </button>
           </div>
         </form>
@@ -253,10 +272,12 @@ function VerificationCodeInput({
   label,
   value,
   onChange,
+  describedBy,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  describedBy?: string;
 }) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const cells = Array.from({ length: 6 }, (_, index) => value[index] ?? '');
@@ -312,7 +333,7 @@ function VerificationCodeInput({
   return (
     <label className="mb-4 block text-[14px] font-medium text-text-body max-lg:mb-0">
       <span className="sr-only">{label}</span>
-      <span className="grid grid-cols-6 gap-2 max-lg:flex max-lg:gap-[8px]">
+      <span className="grid grid-cols-6 gap-2 max-lg:grid-cols-[repeat(6,minmax(0,1fr))] max-lg:gap-[8px]">
         {cells.map((digit, index) => (
           <input
             key={index}
@@ -328,7 +349,8 @@ function VerificationCodeInput({
             pattern="[0-9]*"
             autoComplete={index === 0 ? 'one-time-code' : 'off'}
             aria-label={`${label}: ${index + 1}`}
-            className="auth-code-field aspect-[0.88] min-h-[64px] rounded-[12px] border border-border bg-surface text-center text-[28px] font-medium text-primary caret-transparent outline-none ring-0 transition-colors focus:border-accent focus:outline-none focus:ring-0 max-lg:h-[60px] max-lg:w-[54.297px] max-lg:min-h-0 max-lg:flex-none max-lg:rounded-[16px] max-lg:border-0 max-lg:bg-white max-lg:text-[24px]"
+            aria-describedby={describedBy}
+            className="auth-code-field aspect-[0.88] min-h-[64px] rounded-[12px] border border-border bg-surface text-center text-[28px] font-medium text-primary caret-transparent outline-none ring-0 transition-colors focus:border-accent focus:outline-none focus:ring-0 max-lg:h-[60px] max-lg:w-full max-lg:min-w-0 max-lg:min-h-0 max-lg:rounded-[16px] max-lg:border-0 max-lg:bg-white max-lg:text-[24px] max-lg:text-black"
           />
         ))}
       </span>
@@ -337,13 +359,15 @@ function VerificationCodeInput({
 }
 
 function FormMessage({
+  id,
   error,
 }: {
+  id: string;
   error: string | null;
 }) {
   if (error) {
     return (
-      <p className="mb-3 text-[14px] text-danger" role="alert">
+      <p id={id} className="mb-3 text-[14px] text-danger max-lg:mb-0 max-lg:mt-2" role="alert">
         {error}
       </p>
     );

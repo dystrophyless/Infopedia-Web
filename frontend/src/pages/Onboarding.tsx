@@ -7,6 +7,7 @@ import {
   Backpack02Icon,
   GraduationCapIcon,
   AnonymousIcon,
+  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { checkUsernameAvailability, setMyGrade, setMyUsername } from '../api/users';
@@ -313,10 +314,13 @@ export function Onboarding() {
   }
 
   return (
-    <AuthShell title={step === 'grade' ? t('onboarding.gradeQuestionTitle') : t('onboarding.usernameQuestionTitle')}>
+    <AuthShell
+      title={step === 'grade' ? t('onboarding.gradeQuestionTitle') : t('onboarding.usernameQuestionTitle')}
+      mobileHeaderMode="status-aware"
+    >
       {step === 'grade' ? (
         <form onSubmit={handleGradeSubmit} noValidate>
-          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-5 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
+          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-7 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
             {t('onboarding.gradeQuestionHelper')}
           </p>
           <div className="space-y-2">
@@ -335,13 +339,13 @@ export function Onboarding() {
             ))}
           </div>
           <FormError error={error} />
-          <AuthSubmit loading={loading} disabled={!grade}>
+          <AuthSubmit loading={loading} disabled={!grade} mobileVisual="figma-auth">
             {loading ? t('common.loading') : t('common.continue')}
           </AuthSubmit>
         </form>
       ) : (
         <form onSubmit={handleUsernameSubmit} noValidate>
-          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-8 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
+          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-6 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
             {t('onboarding.usernameQuestionHelper')}
           </p>
           <AuthUsernameInput
@@ -355,6 +359,8 @@ export function Onboarding() {
             error={usernameFieldError ?? undefined}
             helperText={usernameHelperText}
             helperTone={usernameHelperTone}
+            hideMobileLeadingIconWhenFilled
+            mobileFieldLayout="figma-auth"
           />
           <button
             type="button"
@@ -366,7 +372,11 @@ export function Onboarding() {
           >
             {t('common.previous')}
           </button>
-          <AuthSubmit loading={loading} disabled={!usernameCanSubmit}>
+          <AuthSubmit
+            loading={loading}
+            disabled={!usernameCanSubmit}
+            mobileVisual="figma-auth"
+          >
             {loading
               ? t('common.loading')
               : token
@@ -407,13 +417,20 @@ function GradeOptionButton({
       disabled={disabled}
       variant="surface"
       fullWidth
-      className={`flex h-12 w-full items-center gap-4 rounded-[8px] bg-white px-6 justify-start text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 ${
-        selected ? 'text-[#44237d]' : 'text-[#161519] hover:text-[#44237d]'
+      className={`relative flex h-12 w-full items-center justify-start gap-4 rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 ${
+        selected
+          ? 'border-[1.5px] border-[#6a37c3] text-[#44237d] hover:!bg-white'
+          : 'border border-transparent text-[#161519] hover:text-[#44237d]'
       }`}
       aria-pressed={selected}
     >
       <HugeiconsIcon icon={icon} size={16} strokeWidth={1.8} className="shrink-0 text-[#44237d]" />
       <span className="min-w-0 flex-1">{label}</span>
+      {selected && (
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6a37c3] text-white">
+          <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />
+        </span>
+      )}
     </Button>
   );
 }
@@ -422,7 +439,7 @@ function FormError({ error }: { error: string | null }) {
   if (!error) return null;
 
   return (
-    <Text className="mt-3" tone="danger" size="helper" role="alert">
+    <Text className="mt-2" tone="danger" size="helper" role="alert">
       {error}
     </Text>
   );

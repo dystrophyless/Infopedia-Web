@@ -251,7 +251,7 @@
     "entLabel": "ҰБТ",
     "entToggleLabel": "ҰБТ спецификациясында бар",
     "gradeLabel": "Сынып",
-    "bookLabel": "Кітап",
+    "bookLabel": "Басылым",
     "sectionLabel": "Бөлім",
     "selectPlaceholder": "Тізімнен таңдаңыз",
     "selectedCount": "{{count}} таңдалды",
@@ -714,6 +714,26 @@
     "progressUnavailable": "Орындау прогресі әзірге қолжетімсіз",
     "startTopic": "Тақырып бойынша тесті бастау: {{topic}}",
     "startHint": "Тесттен өту үшін басыңыз"
+  },
+  "tests": {
+    "title": "Тесттер",
+    "weakPointsTitle": "Проблемалы тұстар",
+    "yourWeakTopicsTitle": "Сіздің әлсіз тақырыптарыңыз",
+    "weakTopicsTestEyebrow": "Біліміңізді тексеріңіз",
+    "weakTopicsTestTitle": "Әлсіз тақырыптар бойынша тест",
+    "weakTopicsTestDescription": "Нәтижеңіз төмен болған 3 бөлімнен сұрақтар жинағы",
+    "weakTopicsTestButton": "Тесттен өту →",
+    "otherTestsTitle": "Басқа тесттер",
+    "regularTestTitle": "Қалыпты тест",
+    "regularTestDescription": "Барлық бөлімдерден 10 кездейсоқ сұрақ",
+    "sectionTestsTitle": "Бөлімдер бойынша тесттер",
+    "sectionTestsDescription": "Қажетті бөлімге назар аударыңыз",
+    "noAnalysisTitle": "Алдымен ҰБТ-ны талдаңыз",
+    "noAnalysisBody": "Әлсіз тақырыптарды көріп, жеке тесттер алу үшін ҰБТ нәтижелерін жүктеңіз.",
+    "noAnalysisButton": "ҰБТ талдауына өту",
+    "loadErrorTitle": "Талдау нәтижелерін жүктеу мүмкін болмады",
+    "loadErrorBody": "Қайталап көріңіз.",
+    "perfectResult": "Тамаша нәтиже — әлсіз тақырыптар табылмады."
   },
   "mobile": {
     "splashLoading": "Infopedia жүктелуде"

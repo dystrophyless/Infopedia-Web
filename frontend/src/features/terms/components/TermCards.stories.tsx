@@ -2,13 +2,15 @@ import '../../../i18n';
 import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { expect, within } from 'storybook/test';
+import { expect, waitFor, within } from 'storybook/test';
+import { SkeletonCard } from '../../../components/SkeletonCard';
 import type { Definition, Term } from '../../../types';
 import { FavoriteToggle } from '../../favorites/components';
 import { useFavoritesStore } from '../../favorites/model';
 import { useAuthStore } from '../../../stores/authStore';
 import { DefinitionMetadata } from './DefinitionMetadata';
 import { FeaturedTermCard, type FeaturedTermCardVariant } from './FeaturedTermCard';
+import { MobileSearchTermCard } from './MobileSearchTermCard';
 import { SemanticResultCard } from './SemanticResultCard';
 import { TermCard } from './TermCard';
 
@@ -23,7 +25,7 @@ const term: Term = { public_id: 'search-algorithms', name: 'Алгоритмы �
 const meta = {
   title: 'Features/Terms/Cards',
   component: TermCard,
-  decorators: [(Story) => <MemoryRouter><div className="w-[min(760px,95vw)] p-6"><Story /></div></MemoryRouter>],
+  decorators: [(Story) => <MemoryRouter><div className="w-[min(760px,100vw)] p-6"><Story /></div></MemoryRouter>],
   args: { term },
 } satisfies Meta<typeof TermCard>;
 
@@ -54,6 +56,32 @@ function FavoriteToggleStates() {
   );
 }
 
+function AuthenticatedMobileCardsStory() {
+  useEffect(() => {
+    const previous = useAuthStore.getState();
+    useAuthStore.setState({ isAuthenticated: true, token: 'storybook-token' });
+    return () => {
+      useAuthStore.setState({
+        isAuthenticated: previous.isAuthenticated,
+        token: previous.token,
+        refreshToken: previous.refreshToken,
+        user: previous.user,
+      });
+    };
+  }, []);
+
+  return (
+    <div className="grid gap-4 bg-[#efebf6]">
+      <section aria-label="Populated mobile term card">
+        <MobileSearchTermCard term={term} />
+      </section>
+      <section aria-label="Loading mobile term card">
+        <SkeletonCard variant="mobile-term-card" />
+      </section>
+    </div>
+  );
+}
+
 export const LongRussianKazakh: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -68,6 +96,44 @@ export const MissingMetadata: Story = {
 
 export const FavoriteStates: Story = {
   render: () => <FavoriteToggleStates />,
+};
+
+export const MobilePopulatedAndLoading: Story = {
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => <AuthenticatedMobileCardsStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const populated = canvas.getByRole('region', { name: 'Populated mobile term card' });
+    const loading = canvas.getByRole('region', { name: 'Loading mobile term card' });
+    const favorite = await within(populated).findByRole('button');
+    const details = within(populated).getByRole('link');
+    const populatedCard = populated.querySelector<HTMLElement>('article');
+    const skeletonCard = loading.querySelector<HTMLElement>('[aria-hidden="true"]');
+    const skeletonFavorite = loading.querySelector<HTMLElement>('[data-skeleton-favorite]');
+    const skeletonHeader = skeletonFavorite?.parentElement;
+    const skeletonCta = loading.querySelector<HTMLElement>('[data-skeleton-cta]');
+
+    if (!populatedCard || !skeletonCard || !skeletonFavorite || !skeletonHeader || !skeletonCta) {
+      throw new Error('Mobile populated/loading story is missing required geometry probes');
+    }
+
+    await expect(favorite).toBeVisible();
+    await expect(favorite).toHaveAttribute('aria-pressed', 'false');
+    await expect(details).toBeVisible();
+    await expect(details).toHaveAttribute('href', '/terms/search-algorithms');
+    await waitFor(() => {
+      expect(favorite.getBoundingClientRect().height).toBe(44);
+      expect(details.getBoundingClientRect().height).toBe(40);
+      expect(skeletonFavorite.getBoundingClientRect().height).toBe(44);
+      expect(skeletonHeader.getBoundingClientRect().height).toBe(20);
+      expect(skeletonCta.getBoundingClientRect().height).toBe(40);
+      expect(populatedCard.getBoundingClientRect().height).toBe(324);
+      expect(skeletonCard.getBoundingClientRect().height).toBe(populatedCard.getBoundingClientRect().height);
+    });
+  },
 };
 
 export const SemanticResult: Story = {

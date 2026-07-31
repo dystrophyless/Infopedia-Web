@@ -27,9 +27,8 @@ export const SEARCH_FILTER_GRADES: FilterOption[] = [
 
 export const SEARCH_FILTER_BOOKS: FilterOption[] = [
   { id: 'atamura', labelKey: 'searchFilters.books.atamura' },
-  { id: 'armanPv', labelKey: 'searchFilters.books.armanPv' },
-  { id: 'mektep', labelKey: 'searchFilters.books.mektep' },
   { id: 'almatykitap', labelKey: 'searchFilters.books.almatykitap' },
+  { id: 'armanPv', labelKey: 'searchFilters.books.armanPv' },
 ];
 
 export const SEARCH_FILTER_CHAPTERS: FilterOption[] = [];
@@ -44,22 +43,31 @@ export function resolveOptionLabel(option: FilterOption, t: TFunction): string {
   return option.id;
 }
 
+function normalizePublisher(value: string): string {
+  return value.trim().toLocaleLowerCase().replace(/[\s._-]+/g, '');
+}
+
+const PUBLISHER_ALIASES: Readonly<Record<string, string>> = {
+  атамұра: 'atamura',
+  атамура: 'atamura',
+  atamura: 'atamura',
+  алматыкітап: 'almatykitap',
+  алматыкитап: 'almatykitap',
+  almatykitap: 'almatykitap',
+  арманпв: 'armanPv',
+  armanpv: 'armanPv',
+};
+
 export function mapBookOptions(books: BookCatalogItem[], t: TFunction): FilterOption[] {
-  const seen = new Set<string>();
-  const options: FilterOption[] = [];
+  void t;
+  const available = new Set<string>();
 
   books.forEach((book) => {
-    const publisher = book.publisher.trim();
-    if (!book.public_id || !publisher || seen.has(book.public_id)) return;
-
-    seen.add(book.public_id);
-    options.push({
-      id: book.public_id,
-      label: t('metadata.bookWithGrade', { publisher, grade: book.grade }),
-    });
+    const canonicalId = PUBLISHER_ALIASES[normalizePublisher(book.publisher)];
+    if (canonicalId) available.add(canonicalId);
   });
 
-  return options;
+  return SEARCH_FILTER_BOOKS.filter(({ id }) => available.has(id));
 }
 
 export function mapChapterOptions(chapters: ChapterCatalogItem[]): FilterOption[] {

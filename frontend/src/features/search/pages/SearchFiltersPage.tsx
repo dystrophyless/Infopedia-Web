@@ -388,10 +388,12 @@ export function SelectedFilterControl({
       <p className="text-[16px] font-normal leading-none text-[#7a43bb]">{label}</p>
       <div
         data-search-filter-select={filterId}
-        className={`search-filter-control flex min-h-12 w-full items-center rounded-[8px] border border-[#a585db] bg-white text-left text-[16px] font-normal leading-none ${
+        className={`search-filter-control flex min-h-12 w-full rounded-[8px] border border-[#a585db] bg-white text-left text-[16px] font-normal leading-none ${
           selectedOptions.length > 0
-            ? 'gap-2 p-2'
-            : 'justify-between gap-3 px-4 py-2 text-[#7650b4]'
+            ? filterId === 'section'
+              ? 'items-start gap-2 p-2'
+              : 'items-center gap-2 p-2'
+            : 'items-center justify-between gap-3 px-4 py-2 text-[#7650b4]'
         }`}
       >
         {selectedOptions.length > 0 ? (
@@ -400,13 +402,21 @@ export function SelectedFilterControl({
               <span
                 key={option.id}
                 data-search-filter-chip={option.id}
-                className="flex h-8 max-w-full shrink-0 items-center justify-center gap-1 rounded-[16px] bg-[#6a37c3] px-4 py-2 text-[14px] font-normal leading-none text-[#f8f5fc]"
+                className={`flex max-w-full items-center justify-center gap-1 rounded-[16px] bg-[#6a37c3] px-4 py-2 text-[14px] font-normal leading-none text-[#f8f5fc] ${
+                  filterId === 'section'
+                    ? 'min-h-8 w-full whitespace-normal break-words'
+                    : 'h-8 shrink-0'
+                }`}
               >
                 <button
                   type="button"
                   aria-label={t('searchFilters.openFilterAria', { label })}
                   onClick={onOpen}
-                  className="min-w-0 max-w-[240px] truncate text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  className={`min-w-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                    filterId === 'section'
+                      ? 'flex-1 whitespace-normal break-words'
+                      : 'max-w-[240px] truncate'
+                  }`}
                 >
                   {option.label}
                 </button>
@@ -675,7 +685,7 @@ export function SearchFilterOptionsDialog({
         <div
           data-search-filter-options-list
           ref={optionsListRef}
-          className="mt-8 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-6"
+          className="mt-8 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {isLoading && options.length === 0 && (
             <p className="py-6 text-center text-[16px] leading-none text-[#514b5c]" role="status">
@@ -696,11 +706,21 @@ export function SearchFilterOptionsDialog({
               <label
                 key={option.id}
                 data-search-filter-option={option.id}
-                className={`search-filter-option flex h-12 w-full cursor-pointer select-none items-center justify-between gap-4 rounded-[8px] border border-[#a585db] border-solid bg-white px-4 text-[16px] font-normal leading-none text-[#44237d] ${
-                  selected ? 'search-filter-option-active border-[#6a37c3]' : ''
-                }`}
+                className={`search-filter-option flex w-full cursor-pointer select-none justify-between gap-4 ${
+                  filterId === 'section'
+                    ? 'min-h-12 items-start py-3'
+                    : 'h-12 items-center'
+                } rounded-[8px] border border-[#a585db] border-solid bg-white px-4 text-[16px] font-normal leading-none text-[#44237d] ${selected ? 'search-filter-option-active border-[#6a37c3]' : ''}`}
               >
-                <span className="min-w-0 truncate">{resolveOptionLabel(option, t)}</span>
+                <span
+                  className={`min-w-0 ${
+                    filterId === 'section'
+                      ? 'whitespace-normal break-words'
+                      : 'truncate'
+                  }`}
+                >
+                  {resolveOptionLabel(option, t)}
+                </span>
                 <span className="relative flex size-6 shrink-0 items-center justify-center">
                   <input
                     type="checkbox"

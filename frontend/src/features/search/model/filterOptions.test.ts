@@ -22,29 +22,26 @@ describe('search filter option characterization', () => {
     expect(SEARCH_FILTER_GRADES.map(({ id }) => id)).toEqual(['7', '8', '9', '10', '11']);
     expect(SEARCH_FILTER_BOOKS.map(({ id }) => id)).toEqual([
       'atamura',
-      'armanPv',
-      'mektep',
       'almatykitap',
+      'armanPv',
     ]);
     expect(SEARCH_FILTER_CHAPTERS).toEqual([]);
   });
 
-  it('maps, labels, deduplicates, and validates live book options in source order', () => {
+  it('maps live publishers to canonical options, deduplicates across grades, and keeps canonical order', () => {
     expect(
       mapBookOptions(
         [
-          { public_id: 'book-1', publisher: ' Арман ', grade: 10 },
-          { public_id: 'book-1', publisher: 'Duplicate', grade: 11 },
-          { public_id: 'book-2', publisher: ' ', grade: 9 },
-          { public_id: '', publisher: 'No id', grade: 8 },
-          { public_id: 'book-3', publisher: 'Мектеп', grade: 9 },
+          { public_id: 'book-arman-11', publisher: 'Арман-ПВ', grade: 11 },
+          { public_id: 'book-atamura-9', publisher: 'Атамұра', grade: 9 },
+          { public_id: 'book-arman-9', publisher: 'Арман ПВ', grade: 9 },
+          { public_id: 'book-almaty', publisher: 'Алматыкітап', grade: 10 },
+          { public_id: 'book-mektep', publisher: 'Мектеп', grade: 9 },
+          { public_id: 'book-unknown', publisher: 'Unknown', grade: 9 },
         ],
         t,
       ),
-    ).toEqual([
-      { id: 'book-1', label: 'Арман · 10' },
-      { id: 'book-3', label: 'Мектеп · 9' },
-    ]);
+    ).toEqual(SEARCH_FILTER_BOOKS);
   });
 
   it('maps and deduplicates live chapters while trimming readable labels', () => {

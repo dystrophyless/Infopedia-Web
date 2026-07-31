@@ -31,8 +31,20 @@ assert.doesNotMatch(
 
 assert.match(
   visualRunner,
-  /await page\.waitForTimeout\(100\)[\s\S]*bottom\.bottom <= bottom\.navTop - 24/,
-  'Responsive visual runner must verify the post-scroll card viewport against the fixed nav clearance',
+  /\['ru-375x667', 'ru', 375, 667\]/,
+  'Responsive visual runner must cover the short 375x667 viewport',
+);
+
+assert.match(
+  visualRunner,
+  /\['ru-375x812', 'ru', 375, 812\]/,
+  'Responsive visual runner must retain the canonical 375x812 viewport',
+);
+
+assert.match(
+  visualRunner,
+  /await page\.waitForTimeout\(100\)[\s\S]*bottom\.bottom <= bottom\.navTop - 32/,
+  'Responsive visual runner must verify 32px post-scroll fixed-nav clearance',
 );
 
 assert.doesNotMatch(

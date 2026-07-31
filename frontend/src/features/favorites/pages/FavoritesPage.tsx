@@ -5,38 +5,27 @@ import {
   StarIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useCallback, useEffect, useId } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import type { Term } from '../../../types';
 import {
+  BetweenBlocks,
   Button,
+  EmptyState,
   IconButton,
   MobilePageFrame,
-  Skeleton,
   Text,
 } from '../../../ui';
+import { SkeletonCard } from '../../../components/SkeletonCard';
 import { DefinitionMetadata } from '../../terms/components/DefinitionMetadata';
+import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
 import { TermCard } from '../../terms/components/TermCard';
 import { normalizeDefinitionPreviewText } from '../../terms/model';
 import { useFavoritesStore } from '../model';
 
 const PAGE_SIZE = 20;
-
-function FavoritesSkeleton() {
-  return (
-    <div className="space-y-3" aria-label="Loading favorites" role="status">
-      {Array.from({ length: 4 }, (_, index) => (
-        <div key={index} className="rounded-[8px] bg-white p-5">
-          <Skeleton shape="text" className="w-3/5" />
-          <Skeleton shape="text" className="mt-3 w-full" />
-          <Skeleton shape="text" className="mt-2 w-2/5" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function getRelatedTerms(term: Term, terms: Term[]): Pick<Term, 'public_id' | 'name'>[] {
   return terms
@@ -96,54 +85,6 @@ function FavoriteTermCard({ term, terms }: { term: Term; terms: Term[] }) {
 // Kept as a private behavior reference while the canonical TermCard owns rendering.
 void FavoriteTermCard;
 
-export function FavoritesEmptyAlert({
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: {
-  title: string;
-  description: string;
-  actionLabel: string;
-  onAction: () => void;
-}) {
-  const titleId = useId();
-  const descriptionId = useId();
-
-  return (
-    <section
-      aria-labelledby={titleId}
-      aria-describedby={descriptionId}
-      className="flex w-full max-w-[382px] flex-col items-center gap-4 text-center"
-    >
-      <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-[#ded2f1] text-[#6a37c3]">
-        <span className="flex size-8 items-center justify-center [&>svg]:size-full">
-          <HugeiconsIcon icon={AllBookmarkIcon} className="size-full" aria-hidden="true" />
-        </span>
-      </div>
-      <div className="flex w-full flex-col gap-6">
-        <div className="flex flex-col items-center gap-4">
-          <h2 id={titleId} className="text-[20px] font-medium leading-[20px] text-[#161519]">
-            {title}
-          </h2>
-          <p id={descriptionId} className="w-full max-w-[320px] text-[14px] font-normal leading-[14px] text-[#6e6779]">
-            {description}
-          </p>
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          fullWidth
-          onClick={onAction}
-          className="h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] px-4 !text-white text-[16px] font-medium leading-[16px] !opacity-100 hover:!bg-[#6a37c3] hover:!opacity-100 focus:!bg-[#6a37c3] focus:!opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:!opacity-100 active:!bg-[#6a37c3] active:!opacity-100"
-        >
-          {actionLabel} <span aria-hidden="true">→</span>
-        </Button>
-      </div>
-    </section>
-  );
-}
-
 export function FavoritesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -193,7 +134,16 @@ export function FavoritesPage() {
         </p>
       </header>
 
-      {isLoading && list.length === 0 && <FavoritesSkeleton />}
+      {isLoading && list.length === 0 && (
+        <>
+          <div className="hidden space-y-4 md:block" aria-label="Loading favorites" role="status">
+            {Array.from({ length: 4 }, (_, index) => <SkeletonCard key={index} />)}
+          </div>
+          <div className="hidden space-y-4 max-md:-mx-[2px] max-md:block max-md:w-[calc(100%+4px)]" aria-label="Loading favorites" role="status">
+            {Array.from({ length: 4 }, (_, index) => <SkeletonCard key={index} variant="mobile-term-card" />)}
+          </div>
+        </>
+      )}
 
       {!isLoading && error && list.length === 0 && (
         <section className="rounded-[8px] bg-white p-8 text-center" role="alert">
@@ -207,14 +157,37 @@ export function FavoritesPage() {
       )}
 
       {showEmptyState && (
-        <div className="fixed inset-x-6 top-[366px] md:static md:inset-auto md:top-auto md:flex md:flex-1 md:items-center md:justify-center md:px-6">
-          <FavoritesEmptyAlert
+        <BetweenBlocks
+          data-mobile-outcome-slot
+          className="px-6 md:flex md:items-center md:justify-center md:px-6"
+          outcomeClassName="flex justify-center"
+        >
+          <EmptyState
+            variant="outcome"
+            data-mobile-outcome-paint
             title={t('favorites.emptyTitle', { defaultValue: 'No favorites yet' })}
             description={t('favorites.emptyBody', { defaultValue: 'Save terms while browsing to find them here.' })}
-            actionLabel={t('favorites.searchCta', { defaultValue: 'Искать термины' })}
-            onAction={() => navigate('/search')}
+            icon={<HugeiconsIcon icon={AllBookmarkIcon} className="size-full" aria-hidden="true" />}
+            partProps={{
+              icon: { className: 'shrink-0 !bg-[#ded2f1] !text-[#6a37c3]' },
+              title: { className: 'text-[#161519]' },
+              description: { className: '!text-[#6e6779]' },
+            }}
+            action={(
+              <Button
+                data-mobile-outcome-action
+                type="button"
+                size="sm"
+                fullWidth
+                onClick={() => navigate('/search')}
+                className="h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] px-4 !text-white text-[16px] font-medium leading-[16px] !opacity-100 hover:!bg-[#6a37c3] hover:!opacity-100 focus:!bg-[#6a37c3] focus:!opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:!opacity-100 active:!bg-[#6a37c3] active:!opacity-100"
+              >
+                {t('favorites.searchCta', { defaultValue: 'Искать термины' })}{' '}
+                <span aria-hidden="true">→</span>
+              </Button>
+            )}
           />
-        </div>
+        </BetweenBlocks>
       )}
 
       {list.length > 0 && (
@@ -222,9 +195,19 @@ export function FavoritesPage() {
           <p className="mb-4 text-[16px] font-normal leading-none text-[#514b5c] md:hidden">
             {t('favorites.count', { count: total, defaultValue: `${total}` })}
           </p>
-          <div className="flex flex-col gap-4 max-md:-mx-[2px] max-md:w-[calc(100%+4px)]" aria-label={t('favorites.listLabel', { defaultValue: 'Favorite terms' })}>
+          <div className="hidden flex-col gap-4 md:flex" aria-label={t('favorites.listLabel', { defaultValue: 'Favorite terms' })}>
             {list.map((term) => (
               <TermCard
+                key={term.public_id}
+                term={term}
+                relatedTerms={getRelatedTerms(term, list)}
+                backTo="/favorites"
+              />
+            ))}
+          </div>
+          <div className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]" aria-label={t('favorites.listLabel', { defaultValue: 'Favorite terms' })}>
+            {list.map((term) => (
+              <MobileSearchTermCard
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, list)}
@@ -269,7 +252,10 @@ export function FavoritesPage() {
       }}
       contentId="favorites-content"
       contentLabel={t('favorites.title', { defaultValue: 'Favorites' })}
-      contentClassName="flex flex-col bg-[#efebf6]"
+      contentEndInset={!showEmptyState}
+      contentClassName={showEmptyState
+        ? 'flex flex-col bg-[#efebf6] max-md:pt-0'
+        : 'flex flex-col bg-[#efebf6]'}
     >
       {content}
     </MobilePageFrame>

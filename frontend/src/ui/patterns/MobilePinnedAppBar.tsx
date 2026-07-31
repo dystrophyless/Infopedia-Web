@@ -53,6 +53,7 @@ export function MobilePinnedAppBar({ scrollRootRef, ...appBarProps }: MobilePinn
     <div
       ref={appBarSlotRef}
       className="relative min-h-[calc(var(--mobile-page-app-bar-offset)+1.5rem)] pt-[var(--mobile-page-app-bar-offset)] md:hidden"
+      data-between-blocks-boundary
       data-mobile-page-app-bar-rail
     >
       <div

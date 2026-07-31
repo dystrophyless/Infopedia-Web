@@ -15,6 +15,7 @@ const pageHeader = readFileSync(path.resolve(patternsDir, 'PageHeader.tsx'), 'ut
 const tokens = readFileSync(path.resolve(frontendRoot, 'src/styles/tokens.css'), 'utf8');
 
 assert.match(tokens, /--mobile-page-app-bar-offset:\s*80px;/, 'Mobile app-bar offset token must be 80px');
+assert.match(tokens, /--mobile-page-content-end-spacing:\s*32px;/, 'Mobile content-end spacing token must be 32px');
 assert.match(frame, /MobilePageFrameAppBarConfig/, 'Frame must expose a structured app-bar configuration');
 assert.match(
   frame,
@@ -54,6 +55,13 @@ assert.match(geometrySource, /safeArea=\{false\} sticky=\{false\}/, 'Frame-owned
 assert.match(frame, /Omit<MobileAppBarProps, 'safeArea' \| 'sticky' \| 'className' \| 'size'>/, 'Frame config must not expose molecule size overrides');
 assert.match(geometrySource, /size="compact" safeArea=\{false\} sticky=\{false\}/, 'Frame must force the compact 24px app-bar row');
 assert.match(frame, /showCanonicalAppBar && 'pt-8 md:pt-0'/, 'Canonical mobile content must add 32px and reset at desktop');
+assert.match(frame, /contentEndInset\?: boolean/, 'Frame must expose a backwards-compatible content-end inset switch for structural sandwich regions');
+assert.match(frame, /contentEndInset = true/, 'Existing frame consumers must retain content-end spacing by default');
+assert.match(
+  frame,
+  /contentEndInset && 'max-md:pb-\[var\(--mobile-page-content-end-inset,0px\)\]'/,
+  'Frame inner main must consume the shell-published content-end inset only on mobile',
+);
 assert.match(frame, /\{legacyAppBar\}[\s\S]*<main/, 'Legacy app-bar nodes must remain before main during migration');
 assert.doesNotMatch(frame, /pt-\[80px\]|env\(safe-area-inset-top\)/, 'Pattern must not duplicate local 80px or safe-area geometry');
 assert.match(
@@ -111,6 +119,7 @@ const classes = [
   'border-solid',
   'border-[rgb(213_211_217)]',
   'min-h-[calc(var(--mobile-page-app-bar-offset)+1.5rem)]',
+  'max-md:pb-[var(--mobile-page-content-end-inset,0px)]',
   'grid-cols-[24px_minmax(0,1fr)_24px]',
   'box-content',
   'md:h-auto',
@@ -154,6 +163,18 @@ function assertDeclaration(className, property, expectedValue) {
 }
 
 assertDeclaration('pt-[var(--mobile-page-app-bar-offset)]', 'padding-top', 'var(--mobile-page-app-bar-offset)');
+let mobileContentEndRule;
+result.root.walkRules((rule) => {
+  if (rule.nodes.some((node) => node.type === 'decl' && node.prop === 'padding-bottom' && node.value === 'var(--mobile-page-content-end-inset,0px)')) {
+    mobileContentEndRule = rule;
+  }
+});
+assert.ok(mobileContentEndRule, 'Tailwind must compile the mobile content-end padding utility');
+assert.match(
+  mobileContentEndRule.parent?.params ?? '',
+  /max-width|not all and \(min-width:/,
+  'Mobile content-end padding must remain scoped below the desktop breakpoint',
+);
 let mobileAvailableHeightRule;
 result.root.walkRules((rule) => {
   if (rule.nodes.some((node) => node.type === 'decl' && node.prop === '--mobile-page-available-height')) {

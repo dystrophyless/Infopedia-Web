@@ -41,6 +41,7 @@ export function MobileBottomNav({ activeItem }: { activeItem: MobileBottomNavIte
     <>
       <nav
         aria-label={t('mobile.bottomNavigation', { defaultValue: 'Bottom navigation' })}
+        data-between-blocks-boundary
         data-figma-node="14:1564"
         className="bottom-nav md:hidden"
       >

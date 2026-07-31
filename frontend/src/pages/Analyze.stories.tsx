@@ -1,5 +1,5 @@
 import '../i18n';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
@@ -7,6 +7,7 @@ import type { AnalyzeChapterResult, AnalyzeTask } from '../types';
 import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
+import i18n from '../i18n';
 import { Analyze, AnalyzeFailure, AnalyzeMobileResults, AnalyzeProgress } from './Analyze';
 
 const results: AnalyzeChapterResult[] = [
@@ -112,6 +113,44 @@ function AuthenticatedAnalyzeStory() {
     <Layout>
       <Analyze />
     </Layout>
+  );
+}
+
+function AuthenticatedAnalyzeFailureStory({ language }: { language: 'ru' | 'kk' }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const previousLanguage = i18n.language;
+    useAuthStore.setState({
+      isAuthenticated: true,
+      token: 'storybook-token',
+      refreshToken: null,
+      user: { id: 1, username: 'storybook', email: 'storybook@example.com', language, grade: 'undefined', role: 'user' },
+    });
+    void i18n.changeLanguage(language).then(() => {
+      if (active) setReady(true);
+    });
+    return () => {
+      active = false;
+      useAuthStore.setState({ isAuthenticated: false, token: null, refreshToken: null, user: null });
+      void i18n.changeLanguage(previousLanguage);
+    };
+  }, [language]);
+
+  if (!ready) return null;
+
+  return (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <Layout>
+        <AnalyzeFailure
+          kind="unsupportedDocument"
+          action="uploadAnother"
+          onAction={() => undefined}
+          onBack={() => undefined}
+        />
+      </Layout>
+    </MemoryRouter>
   );
 }
 
@@ -251,6 +290,10 @@ export const UnsupportedPdfMobile430: Story = {
 
     if (!failureGroup || !failureIcon || !failureTitle || !failureDescription || !failureAction || !failureIconSvg) return;
 
+    const rail = canvasElement.querySelector<HTMLElement>('[data-mobile-page-app-bar-rail]');
+    await expect(rail).not.toBeNull();
+    if (!rail) return;
+
     const groupRect = failureGroup.getBoundingClientRect();
     const iconRect = failureIcon.getBoundingClientRect();
     const iconSvgRect = failureIconSvg.getBoundingClientRect();
@@ -260,23 +303,25 @@ export const UnsupportedPdfMobile430: Story = {
     const iconStyle = getComputedStyle(failureIcon);
     const titleStyle = getComputedStyle(failureTitle);
     const descriptionStyle = getComputedStyle(failureDescription);
+    const paintMidpoint = (groupRect.top + groupRect.bottom) / 2;
+    const idealMidpoint = (rail.getBoundingClientRect().bottom + window.innerHeight) / 2;
 
     await expect(groupRect.x).toBe(24);
-    await expect(groupRect.y).toBe(366);
     await expect(groupRect.width).toBeCloseTo(382, 0);
+    await expect(Math.abs(paintMidpoint - idealMidpoint)).toBeLessThanOrEqual(2);
     await expect(iconRect.width).toBe(64);
     await expect(iconRect.height).toBe(64);
     await expect(iconSvgRect.width).toBe(32);
     await expect(iconSvgRect.height).toBe(32);
     await expect(iconStyle.backgroundColor).toBe('rgb(222, 210, 241)');
     await expect(iconStyle.color).toBe('rgb(106, 55, 195)');
-    await expect(titleRect.y).toBe(446);
+    await expect(titleRect.y).toBe(iconRect.bottom + 16);
     await expect(titleStyle.fontFamily).toContain('Mabry');
     await expect(titleStyle.fontSize).toBe('20px');
     await expect(titleStyle.lineHeight).toBe('20px');
     await expect(titleStyle.fontWeight).toBe('500');
     await expect(titleStyle.color).toBe('rgb(0, 0, 0)');
-    await expect(descriptionRect.y).toBe(482);
+    await expect(descriptionRect.y).toBe(titleRect.bottom + 16);
     await expect(descriptionStyle.fontSize).toBe('14px');
     await expect(descriptionStyle.lineHeight).toBe('14px');
     await expect(descriptionStyle.fontWeight).toBe('400');
@@ -285,6 +330,7 @@ export const UnsupportedPdfMobile430: Story = {
     await expect(actionRect.y).toBe(descriptionRect.bottom + 24);
     await expect(actionRect.width).toBeCloseTo(382, 0);
     await expect(actionRect.height).toBe(40);
+    await expect(actionRect.bottom).toBeLessThanOrEqual(window.innerHeight);
 
     const assertActionStyle = async () => {
       const actionStyle = getComputedStyle(failureAction);
@@ -305,6 +351,18 @@ export const UnsupportedPdfMobile430: Story = {
     await assertActionStyle();
     await userEvent.pointer([{ keys: '[/MouseLeft]', target: failureAction }]);
   },
+};
+
+export const UnsupportedPdfResponsiveRussian: Story = {
+  tags: ['!test'],
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => <AuthenticatedAnalyzeFailureStory language="ru" />,
+};
+
+export const UnsupportedPdfResponsiveKazakh: Story = {
+  tags: ['!test'],
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => <AuthenticatedAnalyzeFailureStory language="kk" />,
 };
 
 export const EmptySuccess: Story = {

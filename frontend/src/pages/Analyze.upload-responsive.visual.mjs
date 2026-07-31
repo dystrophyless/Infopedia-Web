@@ -10,6 +10,7 @@ const outputDir = path.join(os.tmpdir(), 'infopedia-analyze-responsive');
 const viewports = [
   ['ru-320x568', 'ru', 320, 568],
   ['ru-360x800', 'ru', 360, 800],
+  ['ru-375x667', 'ru', 375, 667],
   ['ru-375x812', 'ru', 375, 812],
   ['ru-390x844', 'ru', 390, 844],
   ['ru-430x932', 'ru', 430, 932],
@@ -100,7 +101,7 @@ try {
         return card ? { bottom: card.bottom, navTop, clearance: navTop - card.bottom } : null;
       });
       postScroll = bottom;
-      assert.ok(bottom && bottom.bottom <= bottom.navTop - 24, `${name}: last card accessible with 24px fixed-nav clearance (${JSON.stringify(bottom)})`);
+      assert.ok(bottom && bottom.bottom <= bottom.navTop - 32, `${name}: last card accessible with 32px fixed-nav clearance (${JSON.stringify(bottom)})`);
       assert.ok(result.nav && result.navAnalyzeActive, `${name}: fixed Analyze navigation active`);
     }
 

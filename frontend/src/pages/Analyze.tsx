@@ -28,6 +28,7 @@ import {
 } from '../features/analyze/model/failurePresentation';
 import { selectAnalyzeResultAccess, type AnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import {
+  BetweenBlocks,
   Button,
   EmptyState,
   MobilePageFrame,
@@ -781,41 +782,49 @@ export function AnalyzeFailure({
   const { t } = useTranslation();
 
   const content = (
-    <div
+    <EmptyState
+      variant="outcome"
       role="alert"
       data-analyze-failure-group
-      className="fixed inset-x-6 top-[366px] flex w-auto flex-col items-center px-0 pb-8 text-center md:static md:inset-auto md:mx-auto md:w-full md:max-w-[520px] md:px-0 md:pb-0"
-    >
-      <span
-        data-analyze-failure-icon
-        className="flex size-16 items-center justify-center rounded-full bg-[#ded2f1] text-[#6A37C3] md:text-action-emphasized"
-        aria-hidden="true"
-      >
+      data-mobile-outcome-paint
+      className="px-0 md:mx-auto md:max-w-[520px] md:px-0"
+      icon={(
+        <>
         <HugeiconsIcon icon={FileCorruptIcon} size={32} strokeWidth={1.6} className="md:hidden" />
         <HugeiconsIcon icon={FileSearchIcon} size={32} strokeWidth={1.5} className="hidden md:block" />
-      </span>
-      <h2
-        data-analyze-failure-title
-        className="mt-4 text-[20px] font-medium leading-[20px] text-black md:mt-6 md:text-text-strong"
-      >
-        {t(`analyze.failure.${kind}.title`)}
-      </h2>
-      <p
-        data-analyze-failure-description
-        className="mt-4 max-w-[330px] text-[14px] font-normal leading-[14px] text-[#6e6779] md:mt-3 md:leading-[14px] md:text-muted"
-      >
-        {t(`analyze.failure.${kind}.description`)}
-      </p>
-      <Button
-        data-analyze-failure-action
-        fullWidth
-        size="sm"
-        onClick={onAction}
-        className="mt-6 h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] text-[16px] font-medium leading-[16px] !text-[#ffffff] hover:!bg-[#6a37c3] hover:opacity-100 focus:!bg-[#6a37c3] focus:opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:opacity-100 active:!bg-[#6a37c3] active:opacity-100 md:text-[var(--type-helper-size)] md:leading-none md:mt-8 md:w-auto md:min-w-[180px]"
-      >
-        {t(`analyze.failure.${action}`)}
-      </Button>
-    </div>
+        </>
+      )}
+      title={t(`analyze.failure.${kind}.title`)}
+      description={t(`analyze.failure.${kind}.description`)}
+      partProps={{
+        icon: {
+          'data-analyze-failure-icon': '',
+          className: '!bg-[#ded2f1] max-md:!text-[#6A37C3] md:mb-6 md:text-action-emphasized',
+          'aria-hidden': 'true',
+        },
+        title: {
+          'data-analyze-failure-title': '',
+          className: 'text-black md:text-text-strong',
+        },
+        description: {
+          'data-analyze-failure-description': '',
+          className: 'max-w-[330px] max-md:!text-[#6e6779] md:mt-3 md:text-muted',
+        },
+        action: { className: 'md:mt-8 md:flex md:justify-center' },
+      }}
+      action={(
+        <Button
+          data-analyze-failure-action
+          data-mobile-outcome-action
+          fullWidth
+          size="sm"
+          onClick={onAction}
+          className="h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] text-[16px] font-medium leading-[16px] !text-[#ffffff] hover:!bg-[#6a37c3] hover:opacity-100 focus:!bg-[#6a37c3] focus:opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:opacity-100 active:!bg-[#6a37c3] active:opacity-100 md:w-auto md:min-w-[180px] md:text-[var(--type-helper-size)] md:leading-none"
+        >
+          {t(`analyze.failure.${action}`)}
+        </Button>
+      )}
+    />
   );
 
   return (
@@ -825,6 +834,8 @@ export function AnalyzeFailure({
       </Surface>
       <MobilePageFrame
         className="md:hidden"
+        contentEndInset={false}
+        contentClassName="flex flex-col max-md:pt-0"
         appBar={{
           title: t('analyze.title'),
           headingLevel: 2,
@@ -843,7 +854,14 @@ export function AnalyzeFailure({
           ),
         }}
       >
-        {content}
+        <BetweenBlocks
+          data-analyze-failure-slot
+          data-mobile-outcome-slot
+          className="px-6"
+          outcomeClassName="flex justify-center"
+        >
+          {content}
+        </BetweenBlocks>
       </MobilePageFrame>
     </>
   );

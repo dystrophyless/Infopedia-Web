@@ -28,7 +28,7 @@ assert.match(layoutSource, /useMobileBottomNavDecision/, 'Layout should consume 
 assert.match(layoutSource, /decision\.visible\s*&&\s*<MobileBottomNav\s+activeItem=\{decision\.activeItem\}\s*\/>/, 'Nav visibility and active item should come from the shared decision');
 assert.match(layoutSource, /max-md:\[--mobile-page-available-height:100dvh\]/, 'Hidden shell should expose the full mobile viewport');
 assert.match(layoutSource, /max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\]/, 'Visible shell should subtract exactly the 88px reserve');
-assert.match(layoutSource, /decision\.visible\s*\?\s*'[^']*max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]'\s*:\s*'[^']*max-md:pb-0'/, 'The same decision should switch the page reserve');
+assert.match(layoutSource, /decision\.visible\s*\?\s*'[^']*max-md:\[--mobile-page-content-end-inset:var\(--mobile-page-content-end-spacing\)\][^']*max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]'\s*:\s*'[^']*max-md:\[--mobile-page-content-end-inset:0px\][^']*max-md:pb-0'/, 'The same dynamic decision should switch the content inset and page reserve');
 assert.match(contextSource, /routeKey/, 'Shell registrations should be bound to the current route key');
 assert.match(contextSource, /token/, 'Shell registrations should have owner tokens');
 assert.match(contextSource, /registration\.token !== token/, 'Cleanup should only remove the registration that owns the token');
@@ -56,6 +56,7 @@ assert.match(practiceSource, /data\.state\s*===\s*'ready'[\s\S]*activeItem:\s*'t
 
 assert.match(profileSource, /useMobileBottomNavOverride/, 'Profile should register nested settings state with the shell');
 assert.match(profileSource, /activeTab\s*===\s*'settings'[\s\S]*settingsView\s*===\s*'account'[\s\S]*settingsView\s*===\s*'username'[\s\S]*settingsView\s*===\s*'password'/, 'Profile should hide only nested account/username/password branches');
+assert.match(profileSource, /pb-\[var\(--mobile-page-content-end-inset,0px\)\]/, 'Profile mobile content owner should consume the dynamic shell inset');
 
 assert.match(subscriptionSource, /planTouched/, 'Subscription should track whether a plan radio was touched');
 assert.match(subscriptionSource, /setPlanTouched\(true\)/, 'Any plan interaction should mark Subscription state as touched');

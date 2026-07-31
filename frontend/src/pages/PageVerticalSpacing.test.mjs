@@ -26,8 +26,8 @@ const landingSource = readFileSync(path.resolve(import.meta.dirname, 'Landing.ts
 
 assert.match(
   termSearchSource,
-  /mx-auto max-w-\[900px\] px-6 pb-14 md:pt-14/,
-  'Term search establishes the shared desktop top spacing and mobile page-frame offset',
+  /mx-auto max-w-\[900px\] px-6 md:pb-14 md:pt-14/,
+  'Term search retains desktop bottom spacing while the mobile page frame owns the content-end inset',
 );
 
 assert.match(
@@ -38,8 +38,8 @@ assert.match(
 
 assert.match(
   termDetailSource,
-  /mx-auto max-w-\[860px\] bg-canvas px-6 pb-8 pt-\[var\(--mobile-page-app-bar-offset\)\][\s\S]*md:py-14/,
-  'Term detail should match term search page spacing',
+  /px-0 pb-\[108px\] pt-\[42px\] max-md:px-6 max-md:pb-\[108px\] max-md:pt-\[42px\] md:px-2/,
+  'Term detail must preserve its approved 42px mobile offset, leaving 32px from the 44px action-target boundary at y=114 to content at y=146',
 );
 
 assert.match(
@@ -56,8 +56,8 @@ assert.match(
 
 assert.match(
   profileSource,
-  /min-h-\[calc\(100vh-80px\)\] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pt-0/,
-  'Profile should match term search top spacing',
+  /min-h-\[calc\(100vh-80px\)\] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pb-\[var\(--mobile-page-content-end-inset,0px\)\] max-md:pt-0/,
+  'Profile must retain desktop spacing while consuming the shared mobile content-end inset',
 );
 
 assert.match(landingSource, /bg-\[#efebf6\]/, 'Landing should keep the canonical guest surface');

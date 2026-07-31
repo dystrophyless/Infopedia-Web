@@ -10,19 +10,21 @@ import { WeakTopicProgressList } from './WeakTopicProgressList';
 export interface TestsHubViewProps {
   weakTopics: TestsWeakTopic[];
   weakTopicSearchTarget: string;
-  loading?: boolean;
+  status: 'loading' | 'ready' | 'empty' | 'error';
+  onRetry?: () => void;
 }
 
 export function TestsHubView({
   weakTopics,
   weakTopicSearchTarget,
-  loading = false,
+  status,
+  onRetry,
 }: TestsHubViewProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-0 max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
-      <main className="w-full max-w-[382px] md:max-w-[720px]" aria-busy={loading}>
+    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-[var(--mobile-page-content-end-inset,0px)] max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
+      <main className="w-full max-w-[382px] md:max-w-[720px]" aria-busy={status === 'loading'}>
         <h1 className="text-[24px] font-medium leading-[24px] text-black">
           {t('tests.title', { defaultValue: 'Тесты' })}
         </h1>
@@ -32,23 +34,62 @@ export function TestsHubView({
             {t('tests.weakPointsTitle', { defaultValue: 'Проблемные точки' })}
           </h2>
 
+          {status === 'empty' ? (
+            <article className="mt-6 rounded-[8px] bg-[#ded2f1] p-6">
+              <h3 className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">
+                {t('tests.noAnalysisTitle', { defaultValue: 'Сначала проанализируйте ЕНТ' })}
+              </h3>
+              <p className="mt-2 text-[14px] leading-[14px] text-[#161519]">
+                {t('tests.noAnalysisBody', {
+                  defaultValue: 'Загрузите результаты ЕНТ, чтобы увидеть слабые темы и получить персональные тесты.',
+                })}
+              </p>
+              <Link
+                to="/analyze"
+                className="mt-4 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[14px] font-medium leading-[14px] text-[#f8f5fc]"
+              >
+                {t('tests.noAnalysisButton', { defaultValue: 'Перейти к анализу ЕНТ' })}
+              </Link>
+            </article>
+          ) : status === 'error' ? (
+            <article className="mt-6 rounded-[8px] bg-[#ded2f1] p-6" role="alert">
+              <h3 className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">
+                {t('tests.loadErrorTitle', { defaultValue: 'Не удалось загрузить результаты анализа' })}
+              </h3>
+              <p className="mt-2 text-[14px] leading-[14px] text-[#161519]">
+                {t('tests.loadErrorBody', { defaultValue: 'Попробуйте ещё раз.' })}
+              </p>
+              <button
+                type="button"
+                onClick={onRetry}
+                className="mt-4 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[14px] font-medium leading-[14px] text-[#f8f5fc]"
+              >
+                {t('common.retry', { defaultValue: 'Повторить' })}
+              </button>
+            </article>
+          ) : (
           <div className="mt-6 rounded-[8px] bg-[#ded2f1] p-6">
             <h3 className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">
               {t('tests.yourWeakTopicsTitle', { defaultValue: 'Ваши слабые темы' })}
             </h3>
-            {loading ? (
+            {status === 'loading' ? (
               <div className="mt-4 flex flex-col gap-2" role="status" aria-live="polite">
                 <span className="sr-only leading-none">{t('common.loading', { defaultValue: 'Загрузка' })}</span>
                 {[0, 1, 2].map((item) => (
                   <Skeleton key={item} className="h-3 w-full bg-[rgba(134,91,207,0.25)]" />
                 ))}
               </div>
+            ) : weakTopics.length === 0 ? (
+              <p className="mt-4 text-[14px] leading-[14px] text-[#161519]">
+                {t('tests.perfectResult', { defaultValue: 'Отличный результат — слабых тем не найдено.' })}
+              </p>
             ) : (
               <WeakTopicProgressList topics={weakTopics} />
             )}
           </div>
+          )}
 
-          <article className="mt-4 rounded-[8px] bg-white p-6">
+          {status === 'ready' && weakTopics.length > 0 && <article className="mt-4 rounded-[8px] bg-white p-6">
             <div className="flex items-center gap-6">
               <HugeiconsIcon
                 icon={GoalIcon}
@@ -71,14 +112,14 @@ export function TestsHubView({
                 </p>
               </div>
             </div>
-          </article>
+          </article>}
 
-          <Link
+          {status === 'ready' && weakTopics.length > 0 && <Link
             to={weakTopicSearchTarget}
             className="mt-4 flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-center text-[14px] font-medium leading-[14px] text-[#f8f5fc] transition-opacity hover:opacity-90"
           >
             {t('tests.weakTopicsTestButton', { defaultValue: 'Пройти тест →' })}
-          </Link>
+          </Link>}
         </section>
 
         <section className="mt-10" aria-labelledby="other-tests-title">

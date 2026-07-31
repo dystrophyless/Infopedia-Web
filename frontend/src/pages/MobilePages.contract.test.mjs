@@ -19,6 +19,11 @@ assert.match(
   'Shared mobile page rail must retain the canonical 80px offset',
 );
 assert.match(
+  tokensSource,
+  /--mobile-page-content-end-spacing:\s*32px;/,
+  'Shared mobile pages must expose the semantic 32px content-end spacing token',
+);
+assert.match(
   sharedFrameSource,
   /pt-\[var\(--mobile-page-app-bar-offset\)\] md:hidden/,
   'Shared compact chrome must remain mobile-only',
@@ -42,6 +47,11 @@ assert.match(
 );
 assert.match(
   frameSource,
+  /max-md:pb-\[var\(--mobile-page-content-end-inset,0px\)\]/,
+  'Shared frame content must consume the inherited mobile content-end inset',
+);
+assert.match(
+  frameSource,
   /data-desktop-page-container[\s\S]*md:max-w-\[1200px\][\s\S]*md:px-6[\s\S]*lg:px-8/,
   'Opt-in desktop header and content must share stable responsive gutters',
 );
@@ -59,13 +69,13 @@ assert.doesNotMatch(
 
 assert.match(
   layoutSource,
-  /max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\] max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
-  'Layout alone must publish and reserve the visible mobile bottom-navigation height',
+  /max-md:\[--mobile-page-available-height:calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\][^']*max-md:\[--mobile-page-content-end-inset:var\(--mobile-page-content-end-spacing\)\][^']*max-md:pb-\[var\(--shell-mobile-bottom-nav-height\)\]/,
+  'Layout alone must publish the visible content inset and reserve the mobile bottom-navigation height',
 );
 assert.match(
   layoutSource,
-  /max-md:\[--mobile-page-available-height:100dvh\] max-md:pb-0/,
-  'Layout must remove the reserve atomically when mobile navigation is hidden',
+  /max-md:\[--mobile-page-available-height:100dvh\][^']*max-md:\[--mobile-page-content-end-inset:0px\][^']*max-md:pb-0/,
+  'Layout must remove the content inset and reserve atomically when mobile navigation is hidden',
 );
 assert.match(bottomNavSource, /className="bottom-nav[^"]*md:hidden"/, 'Bottom navigation must remain mobile-only');
 

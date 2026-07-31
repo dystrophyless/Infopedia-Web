@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLatestAnalyzeResult } from '../api/analyze';
 import type { AnalyzeChapterResult } from '../types';
@@ -10,28 +10,31 @@ import {
 
 export function Tests() {
   const { i18n } = useTranslation();
-  const [latestResults, setLatestResults] = useState<AnalyzeChapterResult[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [latestResults, setLatestResults] = useState<AnalyzeChapterResult[]>([]);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
 
-  useEffect(() => {
+  const loadLatestResults = useCallback(() => {
     let cancelled = false;
 
-    setLoading(true);
+    setStatus('loading');
     getLatestAnalyzeResult(i18n.language)
       .then((data) => {
-        if (!cancelled) setLatestResults(data);
+        if (cancelled) return;
+        setLatestResults(data);
+        setStatus(data.length > 0 ? 'ready' : 'empty');
       })
       .catch(() => {
-        if (!cancelled) setLatestResults(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setStatus('error');
       });
 
     return () => {
       cancelled = true;
     };
   }, [i18n.language]);
+
+  useEffect(() => {
+    return loadLatestResults();
+  }, [loadLatestResults]);
 
   const weakTopics = useMemo(() => buildTestsWeakTopics(latestResults), [latestResults]);
   const weakTopicSearchTarget = getWeakTopicSearchTarget(weakTopics);
@@ -40,7 +43,8 @@ export function Tests() {
     <TestsHubView
       weakTopics={weakTopics}
       weakTopicSearchTarget={weakTopicSearchTarget}
-      loading={loading}
+      status={status}
+      onRetry={loadLatestResults}
     />
   );
 }

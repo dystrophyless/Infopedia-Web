@@ -2,7 +2,6 @@ import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { expect, userEvent, within } from 'storybook/test';
-import { FALLBACK_WEAK_TOPICS } from '../model';
 import { TestsHubView } from './TestsHubView';
 
 const liveTopics = [
@@ -20,7 +19,7 @@ const meta = {
   args: {
     weakTopics: liveTopics,
     weakTopicSearchTarget: '/search?query=Алгоритмдер',
-    loading: false,
+    status: 'ready',
   },
 } satisfies Meta<typeof TestsHubView>;
 
@@ -36,15 +35,20 @@ export const LiveAnalysis: Story = {
   },
 };
 
-export const FallbackTopics: Story = {
+export const NoAnalysis: Story = {
   args: {
-    weakTopics: FALLBACK_WEAK_TOPICS,
+    weakTopics: [],
     weakTopicSearchTarget: '/search',
+    status: 'empty',
   },
 };
 
 export const Loading: Story = {
-  args: { loading: true },
+  args: { status: 'loading' },
+};
+
+export const LoadError: Story = {
+  args: { status: 'error' },
 };
 
 export const Desktop: Story = {

@@ -5,6 +5,7 @@ import path from 'node:path';
 const src = path.resolve(import.meta.dirname, '../../../');
 const semantic = fs.readFileSync(path.join(src, 'pages/SemanticSearch.tsx'), 'utf8');
 const termCard = fs.readFileSync(path.join(src, 'features/terms/components/TermCard.tsx'), 'utf8');
+const mobileTermCard = fs.readFileSync(path.join(src, 'features/terms/components/MobileSearchTermCard.tsx'), 'utf8');
 const semanticCard = fs.readFileSync(path.join(src, 'features/terms/components/SemanticResultCard.tsx'), 'utf8');
 const termRoute = fs.readFileSync(path.join(src, 'pages/TermSearch.tsx'), 'utf8');
 const filtersRoute = fs.readFileSync(path.join(src, 'pages/SearchFilters.tsx'), 'utf8');
@@ -21,15 +22,19 @@ assert.match(semantic, /MobilePageFrame/, 'semantic search must use the canonica
 assert.match(semantic, /desktopHeader:\s*\{/, 'semantic search desktop heading must be supplied by the frame');
 assert.match(semantic, /<SemanticResultCard definition=\{successResult\}/, 'semantic results must use the feature card');
 assert.doesNotMatch(termCard, /shadow-(?:feature|card)|hover:shadow/, 'term cards must not use decorative elevation');
+assert.doesNotMatch(mobileTermCard, /shadow-(?:feature|card)|hover:shadow/, 'mobile term cards must not use decorative elevation');
 assert.doesNotMatch(semanticCard, /shadow-(?:feature|card)|hover:shadow/, 'semantic result cards must not use decorative elevation');
 assert.match(searchPage, /terms\/components\/TermCard/);
-assert.doesNotMatch(searchPage, /MobileSearchTermCard/);
+assert.match(searchPage, /terms\/components\/MobileSearchTermCard/);
+assert.match(searchPage, /hidden flex-col gap-4 md:flex[\s\S]*<TermCard[\s\S]*hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[\s\S]*<MobileSearchTermCard/, 'search must keep breakpoint-exclusive desktop and mobile card lists');
 assert.match(favoritesPage, /terms\/components\/TermCard/);
-assert.doesNotMatch(favoritesPage, /MobileSearchTermCard/);
-assert.equal((favoritesPage.match(/<TermCard\b/g) ?? []).length, 1, 'Favorites must render one canonical responsive list');
+assert.match(favoritesPage, /terms\/components\/MobileSearchTermCard/);
+assert.match(favoritesPage, /hidden flex-col gap-4 md:flex[\s\S]*<TermCard[\s\S]*hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[\s\S]*<MobileSearchTermCard/, 'favorites must keep breakpoint-exclusive desktop and mobile card lists');
+assert.equal((favoritesPage.match(/<TermCard\b/g) ?? []).length, 1, 'Favorites must render one desktop TermCard branch');
+assert.equal((favoritesPage.match(/<MobileSearchTermCard\b/g) ?? []).length, 1, 'Favorites must render one mobile term-card branch');
 assert.doesNotMatch(detailView, /<div className="hidden">/);
 assert.match(detailView, /max-md:fixed[\s\S]*md:hidden/, 'Detail test CTA must be mobile-only');
-for (const [name, source] of [['search', searchPage], ['favorites', favoritesPage], ['detail', detailView], ['featured', featured], ['toggle', toggle], ['choice', choice]]) {
+for (const [name, source] of [['search', searchPage], ['favorites', favoritesPage], ['mobile-term-card', mobileTermCard], ['detail', detailView], ['featured', featured], ['toggle', toggle], ['choice', choice]]) {
   assert.doesNotMatch(source, /shadow-(?:feature|card)|hover:shadow/, `${name} must not add decorative elevation`);
 }
 assert.match(termRoute, /features\/search\/pages\/TermSearchPage/);

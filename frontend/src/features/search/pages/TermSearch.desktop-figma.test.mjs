@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const source = fs.readFileSync(path.resolve(import.meta.dirname, 'TermSearchPage.tsx'), 'utf8');
+
+assert.match(source, /md:w-\[684px\]|w-\[684px\]/, 'desktop search content should use the 684px Figma rail');
+assert.match(source, /w-\[400px\]/, 'desktop search input should be 400px');
+assert.match(source, /w-\[125px\].*#ded2f1|#ded2f1.*w-\[125px\]/s, 'desktop filter control should be 125px lavender');
+assert.match(source, /w-\[143px\].*#572d9f|#572d9f.*w-\[143px\]/s, 'desktop submit control should be 143px purple');
+assert.match(source, /hidden [^"\n]*flex-col gap-4 md:flex[\s\S]*<TermCard/, 'desktop result list should use TermCard');
+assert.doesNotMatch(source, /inspectMode|interactionMode|onInspect/, 'search results should use the canonical TermCard API');
+assert.match(source, /featured.*loading|featured.*error|search.*error|retry/i, 'desktop page should render explicit loading/error/retry states');
+assert.match(source, /type="button"[\s\S]*onClick=\{\(\) => setFiltersOverlayOpen\(true\)\}/, 'desktop filters must open a local overlay button');
+assert.doesNotMatch(source, /data-desktop-search-controls[\s\S]*<Link/, 'desktop filters must not navigate away from the search page');
+assert.match(source, /onSubmit=\{[\s\S]*submitSearch/, 'desktop search submit must execute the normalized query');
+assert.match(source, /search\.sheetClose[\s\S]*Cancel01Icon/, 'desktop filter dialog should expose a visible accessible close control');
+assert.match(source, /data-desktop-search-modes/, 'desktop search should render a stable mode rail');
+assert.match(source, /data-search-mode=\{item\.value\}/, 'search modes should expose a shared stable mode selector');
+assert.match(source, /useState<['"]random['"] \| ['"]forYou['"] \| ['"]popular['"]>\(['"]random['"]\)/, 'desktop mode rail should default to Random');
+assert.match(source, /modeRandom[\s\S]*modeForYou[\s\S]*modePopular/, 'desktop mode rail should expose Random, For You, and Popular labels');
+assert.match(source, /mt-8|margin-top:32px/, 'desktop controls should reserve 32px before mode rail');
+assert.match(source, /gap-2/, 'desktop mode pills should use an 8px gap');
+assert.match(source, /data-desktop-search-results/, 'desktop result states should share a stable results selector');
+assert.match(source, /data-desktop-search-load-more/, 'desktop load-more should expose a stable selector');
+assert.match(source, /data-desktop-search-load-more[\s\S]*h-12[\s\S]*w-\[684px\][\s\S]*bg-\[#ded2f1\]/, 'desktop load-more should preserve the 684x48 Figma geometry and lavender surface');
+assert.match(source, /query\.trim\(\)/, 'desktop controls should branch immediately on the raw trimmed query');
+assert.match(source, /data-desktop-search-filters/, 'desktop typed search should render a stable quick-filter rail');
+assert.match(source, /data-desktop-search-filter/, 'desktop quick filters should expose stable chip selectors');
+assert.match(source, /getSearchResultFilterChips/, 'desktop quick filters should reuse the shared result-filter view model');
+assert.match(source, /overflow-x-auto/, 'desktop quick filters should preserve responsive horizontal overflow');
+assert.match(source, /data-desktop-search-content/, 'desktop search content should expose a stable geometry selector');
+assert.match(source, /md:px-\[10px\]/, 'narrow desktop search should use 10px horizontal gutters');
+assert.match(source, /min-\[1132px\]:px-16/, 'desktop search should restore 64px gutters once the full rail fits');
+
+console.log('Desktop TermSearch Figma contract passed');

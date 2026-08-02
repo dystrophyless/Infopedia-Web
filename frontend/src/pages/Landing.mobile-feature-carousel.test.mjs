@@ -26,7 +26,7 @@ const kkLocale = JSON.parse(
 const mobileToolsFeatureSource =
   landingSource.match(/function MobileToolsFeature[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileHeroLanguageToggle/)?.[0] ?? '';
 const desktopToolsFeatureSource =
-  landingSource.match(/function DesktopToolsFeature[\s\S]*?\r?\n\}\r?\n\r?\nfunction MobileHome/)?.[0] ?? '';
+  landingSource.match(/function DesktopFeatureCards[\s\S]*?\r?\n\}\r?\n\r?\nfunction DesktopSourceProof/)?.[0] ?? '';
 
 function decodePngRgba(filePath) {
   const png = readFileSync(filePath);
@@ -138,20 +138,20 @@ assert.match(
 
 assert.match(
   desktopToolsFeatureSource,
-  /<MobileFeatureCarousel isAuthenticated=\{isAuthenticated\} variant="desktop" \/>/,
-  'Desktop tools section should render the same feature carousel in desktop mode',
+  /mobile-feature-weak-topics\.png[\s\S]*mobile-feature-tests\.png[\s\S]*mobile-feature-term\.png[\s\S]*mobile-feature-semantic\.png/,
+  'Desktop tools section should reuse all four approved mobile feature assets',
 );
 
 assert.match(
   desktopToolsFeatureSource,
-  /pb-24[\s\S]*pt-16[\s\S]*max-w-\[980px\][\s\S]*flex-col[\s\S]*items-center[\s\S]*gap-12/,
-  'Desktop tools section should center the heading and stack the carousel below the copy',
+  /overflow-hidden[\s\S]*gap-\[32px\][\s\S]*h-\[493px\][\s\S]*w-\[366px\]/,
+  'Desktop tools section should render the clipped Figma four-card rail',
 );
 
 assert.doesNotMatch(
   desktopToolsFeatureSource,
-  /grid-cols-\[minmax\(0,440px\)_minmax\(0,1fr\)\]|items-start/,
-  'Desktop tools section should not keep the old side-by-side or left-aligned layout',
+  /desktop-landing\/feature-|<MobileFeatureCarousel[^>]*variant="desktop"/,
+  'Desktop tools should not use the invalid exports or superseded single-card carousel',
 );
 
 assert.match(

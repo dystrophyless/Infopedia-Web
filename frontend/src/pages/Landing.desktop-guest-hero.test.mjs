@@ -3,215 +3,93 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const pagesDir = import.meta.dirname;
-const srcDir = path.resolve(pagesDir, '..');
-
-const landingSource = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
-const ruLocale = JSON.parse(
-  readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'),
-);
-const kkLocale = JSON.parse(
-  readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'),
-);
+const landing = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
 
 function sourceBetween(start, end) {
-  const startIndex = landingSource.indexOf(start);
-  if (startIndex === -1) return '';
-  const endIndex = landingSource.indexOf(end, startIndex + start.length);
-  return endIndex === -1 ? landingSource.slice(startIndex) : landingSource.slice(startIndex, endIndex);
+  const startIndex = landing.indexOf(start);
+  assert.notEqual(startIndex, -1, `${start} should be defined`);
+  const endIndex = landing.indexOf(end, startIndex + start.length);
+  return endIndex === -1 ? landing.slice(startIndex) : landing.slice(startIndex, endIndex);
 }
 
-const desktopAuthenticatedSource = sourceBetween(
-  'function DesktopAuthenticatedLanding',
-  'function DesktopGuestLanding',
-);
-const desktopGuestSource = sourceBetween('function DesktopGuestLanding', 'function DesktopGuestHero');
-const desktopGuestBundleSource = sourceBetween('function DesktopGuestLanding', 'function MobileHome');
-const desktopHeroSource = sourceBetween('function DesktopGuestHero', 'function DesktopGuestSections');
-const desktopSectionsSource = sourceBetween('function DesktopGuestSections', 'function DesktopSourceProof');
-const desktopSourceProofSource = sourceBetween('function DesktopSourceProof', 'function DesktopToolsFeature');
-const desktopToolsSource = sourceBetween('function DesktopToolsFeature', 'function MobileHome');
+const authenticated = sourceBetween('function DesktopAuthenticatedLanding', 'function DesktopGuestLanding');
+const guest = sourceBetween('function DesktopGuestLanding', 'function MobileHome');
+const hero = sourceBetween('function DesktopGuestHero', 'function DesktopGuestSections');
+const sections = sourceBetween('function DesktopGuestSections', 'function DesktopFeatureCards');
+const features = sourceBetween('function DesktopFeatureCards', 'function DesktopSourceProof');
+const sourceProof = sourceBetween('function DesktopSourceProof', 'function DesktopEntAnalysis');
+const analyze = sourceBetween('function DesktopEntAnalysis', 'function MobileHome');
 
 assert.match(
-  landingSource,
-  /hidden md:block[\s\S]*isAuthenticated \? <DesktopAuthenticatedLanding \/> : <DesktopGuestLanding \/>/,
-  'Desktop landing should split authenticated users from guest conversion landing',
+  landing,
+  /md:hidden[\s\S]*hidden md:block[\s\S]*isAuthenticated \? <DesktopAuthenticatedLanding \/> : <DesktopGuestLanding \/>/,
+  'Landing should preserve separate mobile and desktop route branches',
 );
-
-assert.ok(desktopGuestSource, 'Landing should define a desktop guest landing');
-assert.ok(desktopHeroSource, 'Landing should define a desktop guest hero');
-assert.ok(desktopSectionsSource, 'Landing should define desktop guest proof sections');
-assert.ok(desktopSourceProofSource, 'Landing should define a desktop source proof section');
-assert.ok(desktopToolsSource, 'Landing should define a desktop tools feature section');
-assert.ok(desktopAuthenticatedSource, 'Landing should keep the authenticated desktop landing fallback');
-
 assert.match(
-  desktopAuthenticatedSource,
+  authenticated,
   /<DesktopGuestLanding isAuthenticated=\{isAuthenticated\} \/>/,
-  'Authenticated desktop users should use the canonical responsive landing flow',
+  'Authenticated desktop CTA routing should remain auth-aware',
 );
+assert.match(
+  sections,
+  /<DesktopFeatureCards \/>[\s\S]*<DesktopSourceProof isAuthenticated=\{isAuthenticated\} \/>[\s\S]*<DesktopEntAnalysis isAuthenticated=\{isAuthenticated\} \/>/,
+  'Desktop guest sections should follow the Figma feature, source, analysis order',
+);
+
+assert.match(hero, /min-h-\[656px\]/, 'Hero should preserve the 656px canvas below the 80px header');
+assert.match(hero, /text-\[72px\][\s\S]*leading-\[72px\]/, 'Hero should use the Figma 72px two-line display type');
+assert.match(hero, /landing\.desktopEyebrow[\s\S]*landing\.desktopHeroLine1[\s\S]*landing\.desktopHeroLine2Accent/);
+assert.match(hero, /landingCtaTarget\('\/search', isAuthenticated\)[\s\S]*href="#desktop-analysis"/);
+assert.match(hero, /h-\[48px\][\s\S]*w-\[200px\][\s\S]*rounded-\[16px\]/);
 
 assert.match(
-  desktopGuestSource,
-  /<DesktopGuestHero(?: isAuthenticated=\{isAuthenticated\})? \/>[\s\S]*<DesktopGuestSections isAuthenticated=\{isAuthenticated\} \/>/,
-  'Desktop guest landing should compose the hero and guest proof sections',
+  features,
+  /mx-auto w-full max-w-\[1120px\]/,
+  'Feature rail should use the shared centered 1120px canvas',
 );
-
-assert.doesNotMatch(
-  desktopGuestBundleSource,
-  /<Hero \/>|<StatsBar \/>|<FeatureCard|id="books"/,
-  'Desktop guest landing should not render the old desktop hero, stats, feature-card grid, or books section',
-);
-
-assert.match(
-  desktopHeroSource,
-  /bg-\[#efebf6\][\s\S]*landing\.mobileHeroScoreValue[\s\S]*landing\.mobileHeroScoreLabel[\s\S]*landing\.mobileHeroTitle[\s\S]*landing\.mobileHeroSubtitle/,
-  'Desktop guest hero should adapt the mobile hero copy inside the lavender band',
-);
-
-assert.match(
-  desktopHeroSource,
-  /pb-16[\s\S]*pt-12/,
-  'Desktop guest hero should sit closer to the navbar and fit the first viewport',
-);
-
-assert.match(
-  desktopHeroSource,
-  /gap-8/,
-  'Desktop guest hero should use compact desktop rhythm between hero groups',
-);
-
-assert.match(
-  desktopHeroSource,
-  /text-\[190px\]/,
-  'Desktop guest score should be closer to the reference scale without overflowing the first viewport',
-);
-
-assert.match(
-  desktopHeroSource,
-  /flex flex-col items-center gap-3[\s\S]*landing\.mobileHeroScoreValue[\s\S]*landing\.mobileHeroScoreLabel/,
-  'Desktop guest score label should sit slightly farther from the score value',
-);
-
-assert.match(
-  desktopHeroSource,
-  /text-\[56px\]/,
-  'Desktop guest headline should use compact desktop typography',
-);
-
-assert.match(
-  desktopHeroSource,
-  /max-w-\[820px\]/,
-  'Desktop guest headline should keep a readable compact line measure',
-);
-
-assert.equal(
-  ruLocale.landing.mobileHeroTitle,
-  'Готовься к ЕНТ по информатике без догадок',
-  'RU hero headline should preserve the original Infopedia copy',
-);
-
-assert.equal(
-  ruLocale.landing.mobileHeroSubtitle,
-  'Вопросы, слабые темы — в одном месте',
-  'RU hero subtitle should preserve the original Infopedia copy',
-);
-
-assert.match(
-  desktopHeroSource,
-  /to=\{landingCtaTarget\('\/search', isAuthenticated\)\}[\s\S]*href="#tools"/,
-  'Desktop hero should keep auth-aware search CTA and tools anchor',
-);
-
-assert.match(
-  desktopSectionsSource,
-  /id="featured-terms"[\s\S]*landing\.termExamples[\s\S]*<TermCardCarousel variant="guestDesktop" \/>/,
-  'Desktop guest proof sections should use enlarged desktop guest term cards',
-);
-
-assert.match(
-  desktopSectionsSource,
-  /className="scroll-mt-\[112px\] overflow-hidden bg-\[#efebf6\] pb-20 pt-12"/,
-  'Desktop guest term examples should leave a generous gap before the source proof section',
-);
-
-assert.match(
-  desktopSectionsSource,
-  /<DesktopSourceProof isAuthenticated=\{isAuthenticated\} \/>[\s\S]*<DesktopToolsFeature isAuthenticated=\{isAuthenticated\} \/>/,
-  'Desktop guest sections should keep the order: term examples, source proof, then tools carousel',
-);
-
-assert.match(
-  desktopSourceProofSource,
-  /landing\.mobileSourceGuess[\s\S]*landing\.mobileSourceCite[\s\S]*landing\.mobileSourceBody/,
-  'Desktop source proof should reuse the source-backed mobile proof copy',
-);
-
-assert.match(
-  desktopSourceProofSource,
-  /px-6[\s\S]*pb-16[\s\S]*pt-14[\s\S]*max-w-\[920px\][\s\S]*flex-col[\s\S]*items-start[\s\S]*gap-5[\s\S]*grid min-h-\[204px\][\s\S]*grid-cols-\[minmax\(0,1fr\)_10px_minmax\(220px,260px\)\]/,
-  'Desktop source proof should be a smaller left-aligned plaque with an intentionally larger gap after the carousel',
-);
-
-assert.match(
-  desktopSourceProofSource,
-  /grid min-h-\[204px\][\s\S]*grid-cols-\[minmax\(0,1fr\)_10px_minmax\(220px,260px\)\][\s\S]*rounded-l-\[24px\] rounded-r-none[\s\S]*px-10[\s\S]*py-8[\s\S]*text-\[20px\][\s\S]*text-\[40px\][\s\S]*text-\[18px\]/,
-  'Desktop source proof copy panel should be smaller than the previous desktop plaque',
-);
-
-assert.match(
-  desktopSourceProofSource,
-  /<div aria-hidden="true" \/>[\s\S]*w-2 self-stretch bg-\[#6a37c3\]/,
-  'Desktop source proof should keep the lavender gap and render a real purple rail inside the metadata panel',
-);
-
-assert.match(
-  desktopSourceProofSource,
-  /rounded-l-none rounded-r-\[24px\][\s\S]*gap-4[\s\S]*py-8[\s\S]*pl-7[\s\S]*pr-8[\s\S]*size=\{22\}[\s\S]*text-\[#6a37c3\][\s\S]*text-\[20px\]/,
-  'Desktop source proof metadata panel should shrink with the plaque and no longer own the CTA',
-);
-
-assert.match(
-  desktopSourceProofSource,
-  /<\/div>\s*<Link[\s\S]*to=\{landingCtaTarget\('\/search', isAuthenticated\)\}[\s\S]*h-14[\s\S]*min-w-\[240px\][\s\S]*rounded-\[16px\][\s\S]*text-\[16px\][\s\S]*landing\.mobileHeroPrimaryCta/,
-  'Desktop source proof CTA should sit below the plaque and align to the left edge',
-);
-
-assert.doesNotMatch(
-  desktopSourceProofSource,
-  /h-\[163px\]|rounded-\[54px\]|text-\[68px\]|text-\[42px\]|max-w-\[1120px\]|min-h-\[248px\]|grid-cols-\[minmax\(0,1fr\)_12px_minmax\(280px,320px\)\]|to=\{ONBOARDING_TARGET\}[\s\S]*<\/Link>[\s\S]*<\/div>[\s\S]*<\/div>[\s\S]*<\/section>/,
-  'Desktop source proof should not keep the previous large plaque or place the CTA inside the metadata panel',
-);
-
-assert.match(
-  desktopToolsSource,
-  /id="tools"[\s\S]*landing\.mobileToolsTitle[\s\S]*landing\.mobileToolsSubtitle[\s\S]*<MobileFeatureCarousel isAuthenticated=\{isAuthenticated\} variant="desktop" \/>/,
-  'Desktop tools section should render the feature carousel in desktop mode',
-);
-
-assert.match(
-  desktopToolsSource,
-  /pb-24[\s\S]*pt-16[\s\S]*max-w-\[980px\][\s\S]*flex-col[\s\S]*items-center[\s\S]*gap-12/,
-  'Desktop tools section should center the copy above the carousel instead of using the old side-by-side grid',
-);
-
-for (const key of [
-  'mobileHeroScoreValue',
-  'mobileHeroScoreLabel',
-  'mobileHeroTitle',
-  'mobileHeroSubtitle',
-  'mobileHeroPrimaryCta',
-  'mobileHeroSecondaryCta',
-  'termExamples',
-  'mobileSourceGuess',
-  'mobileSourceCite',
-  'mobileSourceBody',
-  'mobileSourceEdition',
-  'mobileSourceTopic',
-  'mobileSourcePage',
-  'mobileToolsTitle',
-  'mobileToolsSubtitle',
+assert.doesNotMatch(features, /pl-\[clamp\(|pr-\[clamp\(|calc\(50vw|max-w-\[1560px\]/);
+assert.match(features, /gap-\[32px\]/);
+assert.match(features, /h-\[493px\][\s\S]*w-\[366px\]/);
+assert.match(features, /pb-\[64px\]/, 'The feature rail should leave the Figma 64px gap before the term heading');
+assert.match(features, /scrollBy\(\{[\s\S]*behavior: prefersReducedMotion \? 'auto' : 'smooth'/, 'Feature controls should move the rail and honor reduced motion');
+assert.match(features, /overflow-x-auto[\s\S]*motion-reduce:scroll-auto/, 'Feature rail should expose native scrolling and reduced-motion behavior');
+assert.match(features, /snap-x[\s\S]*snap-mandatory/, 'Every clipped feature card should stay reachable through the snap rail');
+assert.match(features, /landing\.desktopFeaturesPrevious[\s\S]*landing\.desktopFeaturesNext/, 'Feature rail should expose localized previous and next controls');
+assert.match(features, /role="region"[\s\S]*aria-roledescription=\{t\('landing\.desktopFeaturesCarouselRole'\)\}/, 'Feature rail should expose region and carousel semantics');
+assert.match(features, /disabled=\{featureRailState\.atStart\}[\s\S]*disabled=\{featureRailState\.atEnd\}/, 'Feature controls should expose endpoint state');
+assert.match(features, /onScroll=\{syncFeatureRailState\}/, 'Native rail scrolling should keep endpoint state synchronized');
+for (const asset of [
+  'mobile-feature-weak-topics.png',
+  'mobile-feature-tests.png',
+  'mobile-feature-term.png',
+  'mobile-feature-semantic.png',
 ]) {
-  assert.match(desktopGuestBundleSource, new RegExp(`landing\\.${key}`), `Desktop guest landing should render landing.${key}`);
-  assert.ok(ruLocale.landing[key], `RU locale should define landing.${key}`);
-  assert.ok(kkLocale.landing[key], `KK locale should define landing.${key}`);
+  assert.match(features, new RegExp(`/${asset}`), `Desktop feature rail should use ${asset}`);
 }
+
+assert.match(sourceProof, /max-w-\[1120px\]/);
+assert.match(sourceProof, /grid-cols-\[minmax\(0,720px\)_minmax\(0,400px\)\]/);
+assert.match(sourceProof, /<TermCardCarousel variant="guestLanding" \/>/);
+assert.match(sourceProof, /landingCtaTarget\('\/search', isAuthenticated\)/);
+assert.match(sourceProof, /pb-\[88px\]/, 'The term rail should leave the Figma 88px gap before analysis');
+
+assert.match(analyze, /data-analysis-stage[\s\S]*xl:h-\[327px\]/, 'Analysis stage should preserve the 2117-to-2444 Figma composition');
+assert.match(analyze, /data-analysis-snippet="result"[\s\S]*xl:left-\[803px\][\s\S]*xl:top-0[\s\S]*xl:w-\[292px\]/, 'Result panel should land at x≈963 in the 1120px canvas');
+assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*xl:left-\[29px\][\s\S]*xl:top-\[223px\][\s\S]*xl:w-\[284px\]/, 'Registration snippet should preserve the lower-left Figma placement');
+assert.match(analyze, /data-analysis-snippet="upload"[\s\S]*xl:left-\[410px\][\s\S]*xl:top-\[135px\][\s\S]*xl:w-\[300px\]/, 'Upload snippet should preserve the centered Figma placement');
+assert.match(analyze, /desktopAnalyzeResultPrep[\s\S]*desktopAnalyzeResultGrade/);
+assert.match(analyze, /desktopAnalyzeResultItem1[\s\S]*desktopAnalyzeResultItem2[\s\S]*desktopAnalyzeResultItem3[\s\S]*desktopAnalyzeResultItem4/);
+assert.match(analyze, /landingCtaTarget\('\/practice-by-topic', isAuthenticated\)[\s\S]*desktopAnalyzeResultCta/, 'Result panel should expose the Figma practice action');
+for (const snippet of ['registration', 'upload', 'result']) {
+  assert.match(analyze, new RegExp(`data-analysis-snippet="${snippet}"`));
+}
+assert.match(analyze, /<ol[\s\S]*step\.number[\s\S]*step\.title[\s\S]*step\.description/);
+assert.doesNotMatch(analyze, /<img|image [123]\.png/, 'ENT analysis should be native UI, not raster screenshots');
+
+assert.doesNotMatch(
+  guest,
+  /desktop-landing\/feature-|https:\/\/www\.figma\.com\/api\/mcp\/asset|<MobileFeatureCarousel[^>]*variant="desktop"/,
+  'Desktop guest runtime should not use invalid exports, expiring URLs, or the superseded one-card carousel',
+);
+
+console.log('Landing desktop guest Figma contract passed');

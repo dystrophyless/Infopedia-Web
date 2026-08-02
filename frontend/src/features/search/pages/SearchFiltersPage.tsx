@@ -54,6 +54,11 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
   const activePageTouchIdRef = useRef<number | null>(null);
   const pageTouchDragIntentRef = useRef<'sheet' | 'page' | null>(null);
   const pageCloseTimeoutRef = useRef<number | null>(null);
+  const filterPageDialogRef = useRef<HTMLElement | null>(null);
+  const overlaySheetClassName = overlay ? 'mt-[80px] min-h-[calc(100dvh-80px)] max-w-none rounded-b-none rounded-t-[32px] bg-white flex flex-col overflow-hidden px-6 pb-0 pt-2' : '';
+  const overlaySheetResponsiveClassName = overlay
+    ? 'max-md:mt-[calc(62px+env(safe-area-inset-top))] max-md:min-h-[calc(100dvh-62px)] max-md:w-full md:relative md:ml-auto md:mr-8 md:mt-8 md:min-h-0 md:w-[430px] md:max-w-[430px] md:max-h-[min(720px,calc(100dvh-64px))] md:rounded-[16px]'
+    : '';
 
   useEffect(
     () => () => {
@@ -69,6 +74,19 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
       setActiveFilter(requestedFilter);
     }
   }, [requestedFilter]);
+
+  useEffect(() => {
+    if (!overlay) return undefined;
+    const dialog = filterPageDialogRef.current;
+    if (!dialog) return undefined;
+    const firstFocusable =
+      dialog.querySelector<HTMLElement>('[data-search-filter-toggle="ent"]') ??
+      dialog.querySelector<HTMLElement>(
+        'button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+    (firstFocusable ?? dialog).focus();
+    return undefined;
+  }, [overlay]);
 
   function resetFiltersPage() {
     resetSearchFilters();
@@ -236,11 +254,23 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
         if (event.key === 'Escape') closeFiltersPage();
       }}
     >
+      {overlay && (
+        <button
+          type="button"
+          aria-label={t('search.sheetClose')}
+          className="absolute inset-0 cursor-default bg-[#efebf6] md:bg-[#12091f]/30"
+          onClick={closeFiltersPage}
+        />
+      )}
       <section
+        ref={filterPageDialogRef}
+        id={overlay ? 'search-filter-page-sheet' : undefined}
+        role={overlay ? 'dialog' : undefined}
+        aria-modal={overlay ? true : undefined}
+        aria-labelledby={overlay ? 'search-filter-page-title' : undefined}
+        tabIndex={-1}
         data-search-filter-page-sheet
-        className={`search-filter-sheet mx-auto max-w-[560px] rounded-[16px] bg-surface px-6 py-8 ${overlay
-          ? 'mt-[80px] min-h-[calc(100dvh-80px)] max-w-none rounded-b-none rounded-t-[32px] bg-white flex flex-col overflow-hidden px-6 pb-0 pt-2'
-          : 'max-md:mt-[calc(62px+env(safe-area-inset-top))] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[32px] max-md:bg-white max-md:min-h-[calc(100dvh-62px)] max-md:flex max-md:flex-col max-md:overflow-hidden max-md:px-6 max-md:pb-0 max-md:pt-2'}`}
+        className={`search-filter-sheet mx-auto max-w-[560px] rounded-[16px] bg-surface px-6 py-8 ${overlay ? `${overlaySheetClassName} ${overlaySheetResponsiveClassName}` : 'max-md:mt-[calc(62px+env(safe-area-inset-top))] max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[32px] max-md:bg-white max-md:min-h-[calc(100dvh-62px)] max-md:flex max-md:flex-col max-md:overflow-hidden max-md:px-6 max-md:pb-0 max-md:pt-2'}`}
         onPointerDown={handlePageDragStart}
         onPointerMove={handlePageDragMove}
         onPointerUp={handlePageDragEnd}
@@ -259,7 +289,18 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
           className="mx-auto block h-1 w-8 rounded-[4px] bg-[#ded2f1]"
         />
 
-        <h1 className="mt-[14px] text-center text-[20px] font-normal leading-none text-[#6a37c3]">
+        {overlay && (
+          <button
+            type="button"
+            aria-label={t('search.sheetClose')}
+            onClick={closeFiltersPage}
+            className="absolute right-4 top-4 hidden size-10 items-center justify-center rounded-full text-[#6a37c3] md:flex"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={20} strokeWidth={1.8} />
+          </button>
+        )}
+
+        <h1 id={overlay ? 'search-filter-page-title' : undefined} className="mt-[14px] text-center text-[20px] font-normal leading-none text-[#6a37c3]">
           {t('searchFilters.title')}
         </h1>
 

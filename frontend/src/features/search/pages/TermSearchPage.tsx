@@ -19,6 +19,7 @@ import {
   useTermSearchController,
 } from '../hooks/useTermSearchController';
 import {
+  type SearchResultFilterChip,
   type SearchFilterSelectionLabels,
   type SearchFilterSelections,
   getSearchResultFilterChips,
@@ -63,6 +64,116 @@ export function MobileSearchModePills() {
       onValueChange={setMode}
       className="mb-6 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>div]:h-[30px] [&>div]:gap-2 [&>div]:rounded-[16px] [&>div]:bg-transparent [&>div]:p-0 [&_label]:flex [&_label]:h-[30px] [&_label]:shrink-0 [&_label]:items-center [&_label]:justify-center [&_label]:rounded-[16px] [&_label]:px-4 [&_label]:py-0 [&_label]:leading-none [&_label]:!bg-[#ded2f1] [&_label]:!text-[#a585db] [&_label:has(:checked)]:!bg-[#44237d] [&_label:has(:checked)]:!text-[#f8f5fc]"
     />
+  );
+}
+
+function SearchResultFilterChips({
+  filters,
+  activeFilterCount,
+  onOpenFilters,
+  className,
+  desktop = false,
+}: {
+  filters: SearchResultFilterChip[];
+  activeFilterCount: number;
+  onOpenFilters?: () => void;
+  className: string;
+  desktop?: boolean;
+}) {
+  return (
+    <div
+      className={className}
+      data-desktop-search-filters={desktop ? '' : undefined}
+    >
+      {filters.map((filter) => {
+        const filterIsIconOnly = filter.id === 'filter';
+        const chipClassName = `flex h-[30px] shrink-0 items-center justify-center gap-1 rounded-[16px] px-4 text-[14px] font-medium leading-none ${
+          filter.active ? 'bg-[#44237d] text-[#f8f5fc]' : 'bg-[#ded2f1] text-[#a585db]'
+        }`;
+        const chipProps = {
+          'data-search-result-filter': filter.id,
+          'data-desktop-search-filter': desktop ? filter.id : undefined,
+        };
+
+        const chipContent = (
+          <>
+            {filter.id === 'filter' ? (
+              <HugeiconsIcon icon={filter.icon} size={14} strokeWidth={2.3} />
+            ) : (
+              !filter.active && <HugeiconsIcon icon={filter.icon} size={14} strokeWidth={1.8} />
+            )}
+            {filter.id === 'filter' && activeFilterCount > 0 && (
+              <span className="text-[#ded2f1]">{activeFilterCount}</span>
+            )}
+            {filter.selectedCount && !filterIsIconOnly ? (
+              <span data-search-result-filter-count={filter.selectedCount} className="inline-flex items-center gap-1">
+                <span className="text-[#f8f5fc]">{filter.label}</span>
+                <span className="text-[#ded2f1]">{filter.selectedCount}</span>
+              </span>
+            ) : (
+              !filterIsIconOnly && <span>{filter.label}</span>
+            )}
+          </>
+        );
+
+        return filter.to && !filterIsIconOnly ? (
+          <Link
+            key={filter.id}
+            to={filter.to}
+            {...chipProps}
+            className={chipClassName}
+            aria-label={filterIsIconOnly ? filter.label : undefined}
+          >
+            {chipContent}
+          </Link>
+        ) : (
+          <button
+            key={filter.id}
+            type="button"
+            {...chipProps}
+            className={chipClassName}
+            aria-pressed={filter.active}
+            onClick={filterIsIconOnly ? onOpenFilters : filter.onToggle}
+          >
+            {chipContent}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function DesktopSearchModePills() {
+  const { t } = useTranslation();
+  const [mode, setMode] = useState<'random' | 'forYou' | 'popular'>('random');
+  const modes = [
+    { value: 'random' as const, label: t('search.modeRandom') },
+    { value: 'forYou' as const, label: t('search.modeForYou') },
+    { value: 'popular' as const, label: t('search.modePopular') },
+  ];
+
+  return (
+    <div className="flex w-[684px] items-center gap-2" role="tablist" aria-label={t('search.title')}>
+      {modes.map((item) => {
+        const active = mode === item.value;
+        return (
+          <button
+            key={item.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            data-desktop-search-mode={item.value}
+            data-search-mode={item.value}
+            onClick={() => setMode(item.value)}
+            className={`flex h-[30px] shrink-0 items-center justify-center rounded-[16px] px-4 text-[14px] font-medium leading-none ${
+              active ? 'bg-[#44237d] text-[#f8f5fc]' : 'bg-[#ded2f1] text-[#a585db]'
+            }`}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -291,10 +402,12 @@ export function MobileSearchEmptyState({ query }: { query: string }) {
 export function MobileSearchInputSheet({
   query,
   onQueryChange,
+  onSubmitSearch,
   onClose,
 }: {
   query: string;
   onQueryChange: (query: string) => void;
+  onSubmitSearch?: (query: string) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -471,6 +584,7 @@ export function MobileSearchInputSheet({
           onSubmit={(event) => {
             event.preventDefault();
             onClose();
+            onSubmitSearch?.(query);
           }}
         >
         <button
@@ -539,6 +653,8 @@ export function TermSearchPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [filtersOverlayOpen, setFiltersOverlayOpen] = useState(false);
+  const filtersTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const previousFiltersOverlayOpenRef = useRef(false);
   const initialQuery = searchParams.get('query') ?? '';
   const {
     query,
@@ -546,6 +662,7 @@ export function TermSearchPage() {
     searchFilterSelectionLabels,
     entOnlyFilterActive,
     setQuery,
+    submitSearch,
     setEntOnlyFilterActive,
     hasSearched,
     setVisibleCount,
@@ -558,9 +675,23 @@ export function TermSearchPage() {
     visibleResults,
     hiddenResultsCount,
     pageIsLoading,
+    pageHasError,
+    resourceError,
+    filterNoMatch,
+    retryFeatured,
+    retrySearch,
+    selectedTermId,
+    setSelectedTermId,
     searchResultViewActive,
     handleMobileResultsBack,
   } = useTermSearchController(initialQuery);
+
+  useEffect(() => {
+    if (previousFiltersOverlayOpenRef.current && !filtersOverlayOpen) {
+      filtersTriggerRef.current?.focus();
+    }
+    previousFiltersOverlayOpenRef.current = filtersOverlayOpen;
+  }, [filtersOverlayOpen]);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
   const favoriteRefs = useMemo(
@@ -574,7 +705,19 @@ export function TermSearchPage() {
   }, [ensureStatuses, favoriteRefs, isAuthenticated]);
 
   const mobileSearchEmptyActive =
-    !pageIsLoading && hasSearched && showingSearchResults && displayResults.length === 0;
+    !pageIsLoading && !pageHasError && !filterNoMatch && hasSearched && showingSearchResults && displayResults.length === 0;
+  const desktopFilterChips = useMemo(
+    () =>
+      getSearchResultFilterChips({
+        entOnlyFilterActive,
+        searchFilterSelections,
+        searchFilterSelectionLabels,
+        onEntOnlyFilterToggle: () => setEntOnlyFilterActive(!entOnlyFilterActive),
+        t,
+      }),
+    [entOnlyFilterActive, searchFilterSelectionLabels, searchFilterSelections, setEntOnlyFilterActive, t],
+  );
+  const desktopQueryHasText = query.trim().length > 0;
 
   const mobileSearchResultAppBar = searchResultViewActive
     ? {
@@ -605,33 +748,57 @@ export function TermSearchPage() {
       contentClassName={mobileSearchEmptyActive ? 'flex flex-col' : undefined}
     >
       <div
-        className={`mx-auto max-w-[900px] px-6 md:pb-14 md:pt-14 max-md:w-full max-md:min-w-0 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-[24px] ${searchResultViewActive ? '' : 'max-md:pt-[80px]'} ${mobileSearchEmptyActive ? 'max-md:flex max-md:flex-1 max-md:flex-col' : ''}`}
+        data-desktop-search-content
+        className={`mx-auto max-w-[900px] px-6 md:max-w-none md:px-[10px] min-[1132px]:px-16 md:pb-14 md:pt-8 max-md:w-full max-md:min-w-0 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-[24px] ${searchResultViewActive ? '' : 'max-md:pt-[80px]'} ${mobileSearchEmptyActive ? 'max-md:flex max-md:flex-1 max-md:flex-col' : ''}`}
       >
       <div className="max-md:hidden">
-        <header className="mb-8 text-left">
-          <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
-            {t('search.eyebrow')}
-          </p>
-          <h1 className="mt-2 text-[36px] font-medium leading-none text-text max-md:text-[26px]">
-            {t('search.title')}
-          </h1>
-          <p className="mt-3 max-w-[680px] text-[16px] leading-none text-text-body">
-            {t('search.description')}
-          </p>
-        </header>
-
-        <div className="relative mb-8">
-          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted">
-            <HugeiconsIcon icon={Search01Icon} size={22} strokeWidth={1.7} />
-          </span>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('search.placeholder')}
-            className="w-full rounded-[15px] border border-border bg-surface py-4 pl-14 pr-5 text-[18px] leading-none text-text outline-none transition-colors focus:border-accent"
+        <form
+          className="flex w-[684px] items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitSearch(query);
+          }}
+          data-desktop-search-controls
+        >
+          <label className="relative flex h-10 w-[400px] items-center rounded-[8px] bg-white px-3 py-2">
+            <span className="sr-only">{t('search.title')}</span>
+            <HugeiconsIcon icon={Search01Icon} size={24} strokeWidth={1.6} className="mr-4 shrink-0 text-[#c5b1e7]" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('search.placeholderShort')}
+              className="min-w-0 flex-1 bg-transparent text-[16px] leading-6 text-[#39363f] outline-none placeholder:text-[#c5b1e7]"
+            />
+          </label>
+          <button
+            ref={filtersTriggerRef}
+            type="button"
+            onClick={() => setFiltersOverlayOpen(true)}
+            aria-expanded={filtersOverlayOpen}
+            aria-controls="search-filter-page-sheet"
+            className="flex h-10 w-[125px] items-center justify-center gap-2 rounded-[8px] bg-[#ded2f1] px-4 text-[16px] font-medium leading-4 text-[#6a37c3]"
+          >
+            {t('searchFilters.title')}
+            <HugeiconsIcon icon={FilterHorizontalIcon} size={16} strokeWidth={1.8} />
+          </button>
+          <button type="submit" className="flex h-10 w-[143px] items-center justify-center rounded-[8px] bg-[#572d9f] px-12 text-[16px] font-medium leading-4 text-[#ded2f1]">
+            {t('searchFilters.search')}
+          </button>
+        </form>
+        {desktopQueryHasText ? (
+          <SearchResultFilterChips
+            filters={desktopFilterChips}
+            activeFilterCount={desktopFilterChips.find((filter) => filter.id === 'filter')?.selectedCount ?? 0}
+            onOpenFilters={() => setFiltersOverlayOpen(true)}
+            desktop
+            className="mt-8 flex w-[684px] items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           />
-        </div>
+        ) : (
+          <div className="mt-8 hidden w-[684px] md:block" data-desktop-search-modes>
+            <DesktopSearchModePills />
+          </div>
+        )}
       </div>
 
       <div data-mobile-outcome-header={mobileSearchEmptyActive ? '' : undefined} className={`hidden max-md:block ${mobileSearchEmptyActive ? '[&>*:last-child]:mb-0' : ''}`}>
@@ -662,7 +829,7 @@ export function TermSearchPage() {
           >
             <MobileSearchEmptyState query={debounced.trim()} />
           </BetweenBlocks>
-          <div data-adaptive-outcome-desktop className="flex flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
+          <div data-adaptive-outcome-desktop data-desktop-search-results className="mt-6 flex w-[684px] flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
             <HugeiconsIcon icon={HelpCircleIcon} size={48} strokeWidth={1.4} />
             <p className="text-[16px] leading-none" children={t('search.empty')} />
           </div>
@@ -671,7 +838,7 @@ export function TermSearchPage() {
 
       {pageIsLoading && (
         <>
-          <div className="hidden flex-col gap-4 md:flex" role="status" aria-label={t('common.loading')}>
+          <div data-desktop-search-results className="hidden flex-col gap-4 md:flex md:mt-6 w-[684px]" role="status" aria-label={t('common.loading')}>
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
@@ -684,20 +851,68 @@ export function TermSearchPage() {
         </>
       )}
 
-      {!pageIsLoading && !showingSearchResults && displayResults.length === 0 && (
-        <p className="py-12 text-center leading-none text-muted">{t('search.startTyping')}</p>
+      {pageHasError && (
+        <section data-desktop-search-results className="hidden w-[684px] flex-col items-center gap-4 rounded-[16px] bg-white p-8 text-center md:mt-6 md:flex" role="alert" data-search-error>
+          <p className="text-[16px] leading-5 text-[#514b5c]">{t('common.error')}</p>
+          <button
+            type="button"
+            className="h-10 rounded-[8px] bg-[#6a37c3] px-8 text-[16px] font-medium leading-4 text-white"
+            onClick={showingSearchResults ? retrySearch : retryFeatured}
+          >
+            {t('common.retry')}
+          </button>
+          {resourceError instanceof Error && <span className="sr-only">{resourceError.message}</span>}
+        </section>
+      )}
+      {pageHasError && (
+        <section className="flex flex-col items-center gap-4 rounded-[16px] bg-white p-8 text-center md:hidden" role="alert" data-mobile-search-error>
+          <p className="text-[16px] leading-5 text-[#514b5c]">{t('common.error')}</p>
+          <button
+            type="button"
+            className="h-10 w-full rounded-[8px] bg-[#6a37c3] px-8 text-[16px] font-medium leading-4 text-white"
+            onClick={showingSearchResults ? retrySearch : retryFeatured}
+          >
+            {t('common.retry')}
+          </button>
+        </section>
       )}
 
-      {!pageIsLoading && displayResults.length > 0 && (
+      {!pageIsLoading && !pageHasError && !filterNoMatch && !showingSearchResults && displayResults.length === 0 && (
+        <p data-desktop-search-results className="w-[684px] py-12 text-center leading-none text-muted md:mt-6">{t('search.startTyping')}</p>
+      )}
+
+      {!pageIsLoading && !pageHasError && filterNoMatch && (
+        <p data-desktop-search-results className="hidden w-[684px] py-12 text-center leading-none text-muted md:mt-6 md:block">{t('search.empty')}</p>
+      )}
+
+      {!pageIsLoading && !pageHasError && displayResults.length > 0 && (
         <>
-          <div className="hidden flex-col gap-4 md:flex">
+          <div data-desktop-search-results-container className="hidden min-w-0 w-full flex-col gap-4 md:flex md:mt-6">
+            <div data-desktop-search-results className={`flex min-w-0 flex-col gap-4 ${selectedTermId ? 'w-full' : 'w-[684px]'}`}>
             {visibleResults.map((term) => (
               <TermCard
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, displayResults)}
+                expansion={selectedTermId === term.public_id ? 'fill-parent' : 'intrinsic'}
+                selected={selectedTermId === term.public_id}
+                onSelectedChange={(nextSelected) => setSelectedTermId(nextSelected ? term.public_id : null)}
               />
             ))}
+            {hiddenResultsCount > 0 && (
+              <button
+                type="button"
+                data-desktop-search-load-more
+                className="mt-2 flex h-12 w-[684px] items-center justify-center rounded-[8px] bg-[#ded2f1] px-4 text-center text-[16px] font-medium leading-none text-[#6a37c3] transition-opacity hover:opacity-90"
+                onClick={() => {
+                  if (!showingSearchResults) setHasExpandedRandomResults(true);
+                  setVisibleCount((count) => count + MOBILE_SEARCH_PAGE_SIZE);
+                }}
+              >
+                {t('search.loadMore', { count: hiddenResultsCount })}
+              </button>
+            )}
+            </div>
           </div>
 
           <div className="hidden flex-col gap-4 max-md:-mx-[2px] max-md:flex max-md:w-[calc(100%+4px)]">
@@ -713,7 +928,7 @@ export function TermSearchPage() {
           {hiddenResultsCount > 0 && (
             <button
               type="button"
-              className="mt-6 flex h-12 w-full items-center justify-center rounded-[8px] bg-[#44237d] px-4 text-center text-[16px] font-medium leading-none text-[#f8f5fc] max-md:-mx-[2px] max-md:w-[calc(100%+4px)] transition-opacity hover:opacity-90 max-md:mt-6"
+              className="mt-6 flex h-12 w-full items-center justify-center rounded-[8px] bg-[#44237d] px-4 text-center text-[16px] font-medium leading-none text-[#f8f5fc] max-md:-mx-[2px] max-md:w-[calc(100%+4px)] transition-opacity hover:opacity-90 max-md:mt-6 md:hidden"
               onClick={() => {
                 if (!showingSearchResults) setHasExpandedRandomResults(true);
                 setVisibleCount((count) => count + MOBILE_SEARCH_PAGE_SIZE);
@@ -729,6 +944,7 @@ export function TermSearchPage() {
         <MobileSearchInputSheet
           query={query}
           onQueryChange={setQuery}
+          onSubmitSearch={submitSearch}
           onClose={() => setMobileSearchSheetOpen(false)}
         />
       )}

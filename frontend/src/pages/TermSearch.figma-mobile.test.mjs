@@ -50,6 +50,10 @@ const termCardSource = readFileSync(
   path.resolve(srcDir, 'features/terms/components/TermCard.tsx'),
   'utf8',
 );
+const termCardFavoriteSource = readFileSync(
+  path.resolve(srcDir, 'features/terms/components/TermCardFavoriteButton.tsx'),
+  'utf8',
+);
 const mobileCardSource = readFileSync(
   path.resolve(srcDir, 'features/terms/components/MobileSearchTermCard.tsx'),
   'utf8',
@@ -82,19 +86,17 @@ const canonicalResultContentY = 80 + 24 + 32;
 // Canonical TermCard geometry contract: the responsive card intentionally uses
 // a compact borderless mobile shell instead of the legacy fixed 96px preview
 // card. The assertions below preserve the equivalent visible guarantees.
-assert.match(termCardSource, /relative rounded-\[15px\] border border-border bg-surface[\s\S]*max-md:rounded-\[16px\] max-md:border-0 max-md:p-2/, 'Canonical term cards must flatten the shell on mobile while retaining desktop framing');
-assert.match(termCardSource, /<Link[\s\S]*className="group block rounded-\[12px\] p-8 max-md:rounded-\[12px\] max-md:bg-white max-md:p-4"/, 'Card content must remain one semantic term link with the responsive mobile white inset');
-assert.match(termCardSource, /state=\{\{ backTo, term, relatedTerms \}\}[\s\S]*className="group block/, 'Term link must preserve back navigation and related-term state');
-assert.match(termCardSource, /<div className="flex items-start gap-4 pr-14">/, 'Title/preview rail must reserve horizontal space for trailing actions');
-assert.match(termCardSource, /text-\[24px\] font-medium leading-6 text-text max-md:text-\[20px\] max-md:leading-5/, 'Term title typography must scale from 24px desktop to 20px mobile');
-assert.match(termCardSource, /mt-3 line-clamp-3 max-w-\[760px\] whitespace-pre-line text-\[15px\] leading-\[15px\] text-text-body max-md:text-\[16px\] max-md:leading-4/, 'Definition preview must clamp overflow and use the mobile 16px/16px reading rhythm');
-assert.doesNotMatch(termCardSource, /bg-gradient-to-t|line-clamp-6/, 'Canonical search cards use the three-line clamp as their current overflow treatment rather than the legacy fade overlay');
-assert.match(termCardSource, /mt-1 mr-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border/, 'Arrow target must retain concrete 32px geometry and a right margin to avoid favorite overlap');
-assert.match(termCardSource, /FavoriteToggle[\s\S]*className="absolute right-6 top-6 max-md:right-4 max-md:top-4"/, 'Favorite control must remain a top-right absolute action with responsive inset');
-assert.match(favoriteToggleSource, /flex size-11 items-center justify-center/, 'Favorite control must retain a 44px native hit target');
+assert.match(termCardSource, /hidden[^\n]*items-start[^\n]*md:flex/, 'Canonical TermCard is desktop-only; mobile search/favorites use MobileSearchTermCard');
+assert.doesNotMatch(termCardSource, /max-md:rounded-\[16px\]|max-md:bg-white|line-clamp-3 max-w-\[760px\]/, 'Canonical TermCard must not retain the removed mobile legacy branch');
+assert.match(termCardSource, /state=\{\{ backTo, term, relatedTerms \}\}/, 'Term link must preserve back navigation and related-term state');
+assert.match(termCardSource, /const detailLink = <Link[\s\S]*className="flex h-10 w-\[216px\]/, 'Term link must retain a native detail link');
+assert.match(termCardSource, /data-term-card-main[\s\S]*data-term-card-header-actions[\s\S]*data-term-card-rail/, 'Canonical desktop card must retain the inspect anatomy');
+assert.match(mobileCardSource, /<FavoriteToggle[\s\S]*appearance="mobile-card"/, 'Mobile search/favorites must retain their dedicated favorite control');
+assert.match(termCardFavoriteSource, /flex size-11 items-center justify-center/, 'Favorite control must retain a 44px native hit target');
 assert.match(metadataSource, /mt-5 flex flex-wrap gap-2 border-t border-border\/20 pt-4/, 'Metadata must remain a separated wrapping chip rail below the preview');
 assert.match(metadataSource, /inline-flex min-h-\[34px\] min-w-0 max-w-full items-center gap-1\.5 rounded-full/, 'Metadata chips must preserve 34px minimum height and overflow-safe sizing');
-assert.doesNotMatch(termCardSource, /<button|<a\b/, 'Term card must not nest a competing CTA or anchor inside its semantic link');
+const mobileTermCardSource = termCardSource.slice(termCardSource.indexOf('md:hidden'));
+assert.equal(mobileTermCardSource.trim(), '', 'Canonical TermCard must not retain a mobile legacy branch');
 
 assert.equal(
   canonicalResultContentY,
@@ -190,7 +192,7 @@ assert.match(
 );
 assert.match(
   termSearchSource,
-  /pageIsLoading && \([\s\S]*className="hidden flex-col gap-4 md:flex"[\s\S]*<SkeletonCard \/>[\s\S]*className="hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[^"\n]*"[\s\S]*<SkeletonCard variant="mobile-term-card" \/>/,
+  /pageIsLoading && \([\s\S]*className="hidden flex-col gap-4 md:flex[^"\n]*"[\s\S]*<SkeletonCard \/>[\s\S]*className="hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[^"\n]*"[\s\S]*<SkeletonCard variant="mobile-term-card" \/>/,
   'Search loading state should use breakpoint-exclusive default and mobile term-card skeletons',
 );
 assert.match(
@@ -308,8 +310,8 @@ assert.doesNotMatch(
 
 assert.match(
   termSearchSource,
-  /px-6 md:pb-14 md:pt-14/,
-  'Term search should retain its 56px bottom rhythm only on desktop',
+  /px-6 md:max-w-none md:px-\[10px\] min-\[1132px\]:px-16 md:pb-14 md:pt-8/,
+  'Term search should use 10px narrow-desktop gutters, restore 64px when the rail fits, and preserve the Figma 32px top origin',
 );
 
 assert.doesNotMatch(
@@ -371,7 +373,7 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /<MobilePageFrame[\s\S]*className="hidden flex-col gap-4 md:flex"[\s\S]*<TermCard[\s\S]*className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<MobileSearchTermCard/,
+  /<MobilePageFrame[\s\S]*className="hidden flex-col gap-4 md:flex[^"\n]*"[\s\S]*<TermCard[\s\S]*className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<MobileSearchTermCard/,
   'Typed/result cards should use breakpoint-exclusive desktop and mobile card lists',
 );
 

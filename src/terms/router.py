@@ -14,7 +14,7 @@ from src.terms.models import Definition, Term
 from src.terms.repository import (
     check_if_term_exists,
     count_terms,
-    get_random_terms,
+    get_featured_definitions,
     get_term_by_id,
     get_terms_paginated,
 )
@@ -52,16 +52,16 @@ async def _get_featured_terms(
     limit: int = FEATURED_TERMS_LIMIT,
 ) -> list[FeaturedTermResponse]:
     featured_terms: list[FeaturedTermResponse] = []
-    terms = await get_random_terms(session, quantity=limit)
+    definitions = await get_featured_definitions(
+        session,
+        definition_ids=settings.FEATURED_DEFINITION_IDS[:limit],
+    )
 
-    if not terms:
+    if not definitions:
         return featured_terms
 
-    for term in terms[:limit]:
-        definition = next(iter(term.definitions), None)
-        if definition is None:
-            continue
-
+    for definition in definitions[:limit]:
+        term = definition.term
         featured_terms.append(
             FeaturedTermResponse(
                 term=TermDetailedResponse.model_validate(term),

@@ -28,30 +28,30 @@ def make_term(term_id: int) -> Term:
 
 
 class FeaturedTermsTests(unittest.IsolatedAsyncioTestCase):
-    async def test_featured_terms_use_ten_random_terms_from_database(self):
+    async def test_featured_terms_use_configured_definition_ids_in_order(self):
         calls = []
-        terms = [make_term(term_id) for term_id in range(1, 13)]
-        had_original = hasattr(router, "get_random_terms")
-        original = getattr(router, "get_random_terms", None)
+        definitions = [make_term(term_id).definitions[0] for term_id in (10, 4, 27, 31, 47)]
+        had_original = hasattr(router, "get_featured_definitions")
+        original = getattr(router, "get_featured_definitions", None)
 
-        async def fake_get_random_terms(session, *, quantity):
-            calls.append(quantity)
-            return terms[:quantity]
+        async def fake_get_featured_definitions(session, *, definition_ids):
+            calls.append(definition_ids)
+            return definitions
 
-        router.get_random_terms = fake_get_random_terms
+        router.get_featured_definitions = fake_get_featured_definitions
 
         try:
             featured_terms = await router._get_featured_terms(object())
         finally:
             if had_original:
-                router.get_random_terms = original
+                router.get_featured_definitions = original
             else:
-                delattr(router, "get_random_terms")
+                delattr(router, "get_featured_definitions")
 
-        self.assertEqual(calls, [10])
-        self.assertEqual(len(featured_terms), 10)
+        self.assertEqual(calls, [[10, 4, 27, 31, 47]])
+        self.assertEqual(len(featured_terms), 5)
         self.assertEqual(
             [item.term.name for item in featured_terms],
-            [f"Term {term_id}" for term_id in range(1, 11)],
+            [f"Term {term_id}" for term_id in (10, 4, 27, 31, 47)],
         )
-        self.assertEqual(featured_terms[0].featured_definition.topic.book.publisher, "Atamura")
+        self.assertEqual(featured_terms[0].featured_definition.id, 10)

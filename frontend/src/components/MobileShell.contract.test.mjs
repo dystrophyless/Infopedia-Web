@@ -67,8 +67,19 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /className="min-h-dvh flex flex-col bg-bg md:min-h-screen"/,
+  /min-h-dvh flex flex-col bg-bg md:min-h-screen/,
   'Layout should use the dynamic mobile viewport and desktop screen-height roots',
+);
+
+assert.match(
+  layoutSource,
+  /<DesktopSidebar[\s\S]*activeItem=\{desktopShell\.activeItem\}/,
+  'Authenticated desktop shell should render the Figma sidebar with route activity',
+);
+assert.match(
+  layoutSource,
+  /useAuthStore\.persist\.hasHydrated\(\)/,
+  'Desktop shell should gate navigation on persisted auth hydration',
 );
 
 assert.match(

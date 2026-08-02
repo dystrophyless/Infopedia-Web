@@ -48,6 +48,16 @@ const preview = {
           styles: { width: '1440px', height: '900px' },
           type: 'desktop',
         },
+        desktop1280: {
+          name: 'Desktop 1280',
+          styles: { width: '1280px', height: '800px' },
+          type: 'desktop',
+        },
+        desktop1024: {
+          name: 'Desktop 1024',
+          styles: { width: '1024px', height: '768px' },
+          type: 'desktop',
+        },
       },
     },
   },

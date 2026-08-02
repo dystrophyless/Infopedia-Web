@@ -12,6 +12,7 @@ assert.ok(existsSync(navigationPolicyPath), 'Navigation policy should exist as a
 assert.ok(existsSync(navigationContextPath), 'Mobile shell context should own route-local registrations');
 
 const layoutSource = read('components/Layout.tsx');
+const desktopSidebarSource = read('components/DesktopSidebar.tsx');
 const navSource = read('components/MobileBottomNav.tsx');
 const contextSource = read('features/navigation/MobileShellContext.tsx');
 const semanticSource = read('pages/SemanticSearch.tsx');
@@ -24,6 +25,9 @@ const termPageSource = read('pages/TermDetail.tsx');
 const termViewSource = read('features/terms/components/TermDetailView.tsx');
 
 assert.match(layoutSource, /MobileShellProvider/, 'Layout should mount the shell provider');
+assert.match(layoutSource, /<DesktopSidebar/, 'Layout should mount the desktop sidebar shell');
+assert.match(desktopSidebarSource, /hidden md:flex[^\"]*w-\[320px\]/, 'Desktop sidebar should remain a separate desktop-only shell surface');
+assert.match(layoutSource, /!authenticated && authHydrated && <Navbar \/>/, 'Guest Navbar should wait for auth hydration to avoid an authenticated flash');
 assert.match(layoutSource, /useMobileBottomNavDecision/, 'Layout should consume one shared shell decision');
 assert.match(layoutSource, /decision\.visible\s*&&\s*<MobileBottomNav\s+activeItem=\{decision\.activeItem\}\s*\/>/, 'Nav visibility and active item should come from the shared decision');
 assert.match(layoutSource, /max-md:\[--mobile-page-available-height:100dvh\]/, 'Hidden shell should expose the full mobile viewport');

@@ -6,6 +6,8 @@ import tailwindcss from 'tailwindcss';
 import loadConfig from 'tailwindcss/loadConfig.js';
 
 const pageSource = readFileSync(path.resolve(import.meta.dirname, 'Analyze.tsx'), 'utf8');
+const cardSource = readFileSync(path.resolve(import.meta.dirname, '../features/analyze/components/AnalyzeChapterCard.tsx'), 'utf8');
+const cardModelSource = readFileSync(path.resolve(import.meta.dirname, '../features/analyze/model/analyzeChapterCard.ts'), 'utf8');
 const storiesSource = readFileSync(path.resolve(import.meta.dirname, 'Analyze.stories.tsx'), 'utf8');
 const ruSource = readFileSync(path.resolve(import.meta.dirname, '../locales/ru/translation.json'), 'utf8');
 const kkSource = readFileSync(path.resolve(import.meta.dirname, '../locales/kk/translation.json'), 'utf8');
@@ -35,10 +37,11 @@ function assertTailwindDeclaration(selector, property, expectedValue) {
 assertTailwindDeclaration('.items-end', 'align-items', 'flex-end');
 assertTailwindDeclaration('.pb-\\[4px\\]', 'padding-bottom', '4px');
 
-const mobileSource = pageSource.slice(
+const mobilePageSource = pageSource.slice(
   pageSource.indexOf('export function AnalyzeMobileResults'),
   pageSource.indexOf('function formatAnalyzeFileSize'),
 );
+const mobileSource = `${mobilePageSource}\n${cardSource}\n${cardModelSource}`;
 const scoreCardSource = mobileSource.slice(
   mobileSource.indexOf('<article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">'),
   mobileSource.indexOf('</article>', mobileSource.indexOf('<article className="mt-6 rounded-[8px] bg-[#ffffff] px-6 py-4">')) + '</article>'.length,
@@ -47,10 +50,7 @@ const lockedSource = mobileSource.slice(
   mobileSource.indexOf('{locked ? ('),
   mobileSource.indexOf(') : (', mobileSource.indexOf('{locked ? (')),
 );
-const mobileCardSource = mobileSource.slice(
-  mobileSource.indexOf('function AnalyzeMobileChapterCard'),
-  mobileSource.indexOf('function formatAnalyzeFileSize'),
-);
+const mobileCardSource = `${cardSource}\n${cardModelSource}`;
 const cardDataSource = mobileCardSource.slice(
   mobileCardSource.indexOf('const topics'),
   mobileCardSource.indexOf('{locked ? ('),
@@ -108,18 +108,18 @@ assert.match(mobileSource, /headingLevel: 1[\s\S]*<h2 className="text-\[20px\] f
 assert.doesNotMatch(mobileSource, /<h1\b/, 'Result body must not introduce a second page h1');
 assert.equal(80 + 24 + 32, 136, 'Mobile result heading should begin at canonical y=136');
 assert.equal(
-  (pageSource.match(/function AnalyzeMobileChapterCard\(/g) ?? []).length,
-  1,
+  (pageSource.match(/<AnalyzeChapterCard/g) ?? []).length,
+  2,
   'Mobile free and locked chapters should share one card renderer',
 );
 assert.match(
   pageSource,
-  /<AnalyzeMobileChapterCard chapter=\{access\.freeChapter\} locked=\{false\}/,
+  /<AnalyzeChapterCard[\s\S]*chapter=\{access\.freeChapter\}[\s\S]*mode="detail"[\s\S]*practiceTo=/,
   'The selected free chapter should use the unlocked renderer state',
 );
 assert.match(
   pageSource,
-  /<AnalyzeMobileChapterCard key=\{getAnalyzeChapterKey\(chapter\)\} chapter=\{chapter\} locked \/>/,
+  /<AnalyzeChapterCard key=\{getAnalyzeChapterKey\(chapter\)\} chapter=\{chapter\} locked mode="detail" \/>/,
   'Remaining ordered chapters should use the locked renderer state',
 );
 assert.match(mobileSource, /HugeiconsIcon icon=\{ArrowLeft01Icon\}/, 'Mobile app bar should use HugeIcons for back');
@@ -164,7 +164,7 @@ assert.match(
 );
 assert.match(
   mobileCardSource,
-  /const previewLabelKeys = \[[\s\S]*mobileHiddenTopicPreview1[\s\S]*mobileHiddenTopicPreview7[\s\S]*const fakePreviewRows = Array\.from\(\s*\{ length: topicCount \}[\s\S]*previewIndex % previewLabelKeys\.length/,
+  /const previewLabelKeys = \[[\s\S]*mobileHiddenTopicPreview1[\s\S]*mobileHiddenTopicPreview7[\s\S]*const fakePreviewRows = Array\.from\(\s*\{ length: data\.topicCount \}[\s\S]*previewIndex % previewLabelKeys\.length/,
   'Locked preview must render exactly one deterministic local row per hidden topic',
 );
 assert.match(
@@ -241,7 +241,7 @@ assert.match(mobileSource, /<div className="relative mt-4 min-h-\[64px\] rounded
 assert.doesNotMatch(lockedSource, /overflow-hidden|truncate/, 'Locked preview rows must keep their long blurred text visible');
 assert.match(
   mobileSource,
-  /to=\{`\/practice-by-topic\?chapterId=\$\{encodeURIComponent\(String\(chapter\.chapter_id\)\)\}`\}/,
+  /to=\{practiceTo\}/,
   'Free practice CTA should route to practice by topic with the selected chapterId',
 );
 assert.match(mobileSource, /to="\/profile"/, 'Premium CTA should use the existing profile destination');
@@ -339,7 +339,7 @@ assert.match(oneTopicLockedFixture, /topic_codes: \[\]/);
 assert.doesNotMatch(oneTopicLockedFixture, /loops|arrays|protocols|routing|security|sql|relations|binary|encoding/);
 assert.match(
   mobileCardSource,
-  /Array\.from\(\s*\{ length: topicCount \}/,
+  /Array\.from\(\s*\{ length: data\.topicCount \}/,
   'One-topic locked fixture must render exactly one synthetic row',
 );
 assert.match(

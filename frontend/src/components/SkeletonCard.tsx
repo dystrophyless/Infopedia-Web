@@ -28,23 +28,21 @@ export function SkeletonCard({ variant = 'default' }: SkeletonCardProps) {
   }
 
   return (
-    <div className="animate-pulse rounded-[15px] border border-border bg-surface max-md:rounded-[16px] max-md:border-0 max-md:p-2" aria-hidden="true">
-      <div className="rounded-[12px] p-8 max-md:bg-white max-md:p-4">
-        <div className="h-6 w-1/3 rounded bg-bg max-md:h-5" />
-        <div className="mt-4 space-y-2">
-          <div className="h-4 w-full rounded bg-bg" />
-          <div className="h-4 w-5/6 rounded bg-bg" />
-          <div className="h-4 w-2/3 rounded bg-bg" />
+    <div data-skeleton-card className="flex min-h-[208px] w-[684px] animate-pulse flex-col gap-8 rounded-[16px] bg-white p-6" aria-hidden="true">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div data-skeleton-header className="flex min-h-6 items-start justify-between gap-12">
+          <div data-skeleton-title className="h-6 w-1/3 rounded bg-bg" />
+          <div data-skeleton-header-actions className="flex shrink-0 items-center gap-4">
+            <div className="size-6 rounded bg-bg" />
+            <div className="size-6 rounded bg-bg" />
+          </div>
         </div>
-        <div data-skeleton-metadata className="mt-5 flex gap-2 pt-4">
-          <div className="h-[34px] w-24 rounded-full bg-bg" />
-          <div className="h-[34px] w-20 rounded-full bg-bg" />
-        </div>
-        <div data-skeleton-actions className="mt-4 flex justify-end gap-2">
-          <div data-skeleton-action className="h-8 w-8 rounded-full bg-bg" />
-          <div data-skeleton-action className="h-8 w-8 rounded-full bg-bg" />
+        <div data-skeleton-definition className="space-y-2">
+          <div className="h-4 w-full max-w-[480px] rounded bg-bg" />
+          <div className="h-4 w-5/6 max-w-[420px] rounded bg-bg" />
         </div>
       </div>
+      <div data-skeleton-cta className="h-10 w-[216px] rounded-[8px] bg-bg" />
     </div>
   );
 }

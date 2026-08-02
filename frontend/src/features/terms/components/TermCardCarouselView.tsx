@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FeaturedTerm } from '../../../types';
 import { FeaturedTermCard, type FeaturedTermCardVariant } from './FeaturedTermCard';
 
@@ -8,6 +9,8 @@ export const AUTO_SCROLL_PX_PER_SECOND = 46;
 export interface TermCardCarouselViewProps {
   terms: FeaturedTerm[];
   loading?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
   variant?: FeaturedTermCardVariant;
 }
 
@@ -15,6 +18,7 @@ const trackClasses: Record<FeaturedTermCardVariant, string> = {
   home: 'gap-2.5 pl-0 pr-4',
   guest: 'gap-4 pl-8 pr-8',
   guestDesktop: 'gap-6 px-[72px]',
+  guestLanding: 'gap-6 px-0',
   mobile: 'gap-3 pl-0 pr-[24vw]',
   desktop: 'gap-[45px] px-[48px] max-md:gap-4 max-md:px-4',
 };
@@ -26,12 +30,14 @@ function LoadingCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
       ? 'h-[168px] w-[216px] rounded-[16px] border-0 bg-surface-subtle'
       : variant === 'guestDesktop'
         ? 'h-[220px] w-[320px] rounded-[20px] border-0 bg-surface-subtle'
+        : variant === 'guestLanding'
+          ? 'h-[168px] w-[262px] rounded-[16px] border-0 bg-white'
         : variant === 'mobile'
           ? 'h-[238px] w-[76vw] rounded-[22px] border-0'
           : 'h-[325px] w-[min(612px,calc(100vw_-_96px))] rounded-[15px] border border-border/40 max-md:w-[88vw]';
-  const gap = variant === 'home' ? 'gap-2.5' : variant === 'guest' ? 'gap-4' : variant === 'guestDesktop' ? 'gap-6' : variant === 'mobile' ? 'gap-3' : 'gap-[45px]';
+  const gap = variant === 'home' ? 'gap-2.5' : variant === 'guest' ? 'gap-4' : variant === 'guestDesktop' || variant === 'guestLanding' ? 'gap-6' : variant === 'mobile' ? 'gap-3' : 'gap-[45px]';
   return (
-    <div className={variant === 'desktop' ? 'overflow-hidden px-[48px] pb-6 pt-2 max-md:px-4' : 'overflow-hidden'} aria-busy="true">
+    <div className={variant === 'desktop' ? 'overflow-hidden rounded-[16px] px-[48px] pb-6 pt-2 max-md:px-4' : 'overflow-hidden rounded-[16px]'} aria-busy="true">
       <div className={`flex ${gap}`}>
         {[0, 1, 2].map((key) => <div key={key} className={`flex-none animate-pulse bg-surface/70 ${shell}`} />)}
       </div>
@@ -39,11 +45,42 @@ function LoadingCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
   );
 }
 
-export function TermCardCarouselView({ terms, loading = false, variant = 'desktop' }: TermCardCarouselViewProps) {
+function EmptyCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={`flex min-h-[120px] w-full items-center justify-center overflow-hidden rounded-[16px] px-6 py-8 text-center text-[14px] leading-[14px] text-muted ${variant === 'guestDesktop' ? 'min-h-[220px]' : variant === 'guestLanding' ? 'min-h-[168px]' : ''}`}
+      role="status"
+    >
+      {t('terms.noFeatured', { defaultValue: 'Избранных терминов пока нет' })}
+    </div>
+  );
+}
+
+function ErrorCarousel({ variant, onRetry }: { variant: FeaturedTermCardVariant; onRetry?: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={`flex min-h-[120px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[16px] px-6 py-8 text-center text-[14px] leading-[14px] text-muted ${variant === 'guestDesktop' ? 'min-h-[220px]' : variant === 'guestLanding' ? 'min-h-[168px]' : ''}`}
+      role="alert"
+    >
+      <p>{t('terms.featuredError', { defaultValue: 'Не удалось загрузить термины' })}</p>
+      <button
+        type="button"
+        className="rounded-[8px] px-3 py-2 font-medium text-[#6a37c3] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        onClick={onRetry}
+      >
+        {t('common.retry', { defaultValue: 'Повторить' })}
+      </button>
+    </div>
+  );
+}
+
+export function TermCardCarouselView({ terms, loading = false, error = false, onRetry, variant = 'desktop' }: TermCardCarouselViewProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
   const carouselTerms = useMemo(() => terms.slice(0, FEATURED_TERMS_LIMIT), [terms]);
-  const shouldAutoScroll = variant === 'desktop' || variant === 'guest' || variant === 'guestDesktop';
+  const shouldAutoScroll = variant === 'desktop' || variant === 'guest' || variant === 'guestDesktop' || variant === 'guestLanding';
   const displayTerms = useMemo(
     () => shouldAutoScroll && carouselTerms.length > 1 ? [...carouselTerms, ...carouselTerms] : carouselTerms,
     [carouselTerms, shouldAutoScroll],
@@ -72,11 +109,12 @@ export function TermCardCarouselView({ terms, loading = false, variant = 'deskto
   }, [carouselTerms, shouldAutoScroll]);
 
   if (loading) return <LoadingCarousel variant={variant} />;
-  if (carouselTerms.length === 0) return null;
+  if (error) return <ErrorCarousel variant={variant} onRetry={onRetry} />;
+  if (carouselTerms.length === 0) return <EmptyCarousel variant={variant} />;
 
   return (
     <div
-      className={`relative w-full overflow-hidden ${variant === 'desktop' ? 'pt-2' : 'pt-0'}`}
+      className={`relative w-full overflow-hidden rounded-[16px] ${variant === 'desktop' ? 'pt-2' : 'pt-0'}`}
       onMouseEnter={() => { pausedRef.current = true; }}
       onMouseLeave={() => { pausedRef.current = false; }}
       onFocusCapture={() => { pausedRef.current = true; }}
@@ -84,7 +122,7 @@ export function TermCardCarouselView({ terms, loading = false, variant = 'deskto
     >
       <div
         ref={scrollerRef}
-        className={`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${variant === 'desktop' ? 'overflow-x-auto pb-6' : variant === 'guest' || variant === 'guestDesktop' ? 'overflow-hidden pb-0' : 'overflow-x-auto touch-pan-x snap-x snap-proximity overscroll-x-contain scroll-smooth pb-2'}`}
+        className={`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${variant === 'desktop' ? 'overflow-x-auto pb-6' : variant === 'guest' || variant === 'guestDesktop' || variant === 'guestLanding' ? 'overflow-hidden pb-0' : 'overflow-x-auto touch-pan-x snap-x snap-proximity overscroll-x-contain scroll-smooth pb-2'}`}
       >
         <ul className={`flex w-max ${trackClasses[variant]}`}>
           {displayTerms.map((featuredTerm, index) => {

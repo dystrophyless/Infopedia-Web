@@ -1,7 +1,7 @@
 import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import type { FeaturedTerm } from '../../../types';
 import { TermCardCarouselView } from './TermCardCarouselView';
 
@@ -27,6 +27,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Loading: Story = { args: { loading: true, terms: [] } };
+export const RequestError: Story = {
+  args: {
+    error: true,
+    terms: [],
+    onRetry: fn(),
+  },
+};
 export const Empty: Story = { args: { terms: [] } };
 export const Single: Story = { args: { terms: [terms[0]] } };
 export const MultipleWithClonesAndPause: Story = {

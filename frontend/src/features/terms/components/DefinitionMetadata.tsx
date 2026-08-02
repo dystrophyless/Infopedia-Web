@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { Definition } from '../../../types';
 import { buildDefinitionMetadataItems } from '../model';
 
-export type DefinitionMetadataVariant = 'compact' | 'detail';
+export type DefinitionMetadataVariant = 'compact' | 'detail' | 'source-panel';
 
 export interface DefinitionMetadataProps {
   definition?: Definition;
@@ -36,6 +36,19 @@ export function DefinitionMetadata({
   const items = buildDefinitionMetadataItems(definition, t, { showPage });
 
   if (items.length === 0) return null;
+
+  if (variant === 'source-panel') {
+    return (
+      <dl className={['flex w-full flex-col gap-2 text-[14px] leading-[14px]', className].filter(Boolean).join(' ')}>
+        {items.map((item) => (
+          <div key={item.key} className="flex min-w-0 items-center justify-between gap-3">
+            <dt className="w-20 shrink-0 text-[#ded2f1]">{item.label}</dt>
+            <dd className="min-w-0 flex-1 text-right font-medium text-white">{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
 
   return (
     <dl className={['mt-5 flex flex-wrap gap-2 border-t border-border/20 pt-4', className].filter(Boolean).join(' ')}>

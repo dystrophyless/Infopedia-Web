@@ -10,8 +10,9 @@ import {
   normalizeDefinitionPreviewText,
 } from '../model';
 import { DefinitionMetadata } from './DefinitionMetadata';
+import { MeasuredTextPreview } from './MeasuredTextPreview';
 
-export type FeaturedTermCardVariant = 'desktop' | 'mobile' | 'home' | 'guest' | 'guestDesktop';
+export type FeaturedTermCardVariant = 'desktop' | 'mobile' | 'home' | 'guest' | 'guestDesktop' | 'guestLanding';
 
 export interface FeaturedTermCardProps {
   featuredTerm: FeaturedTerm;
@@ -97,7 +98,8 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
   const isMobileVariant = variant === 'mobile';
   const isHomeVariant = variant === 'home';
   const isGuestDesktopVariant = variant === 'guestDesktop';
-  const isGuestLikeVariant = variant === 'guest' || isGuestDesktopVariant;
+  const isGuestLandingVariant = variant === 'guestLanding';
+  const isGuestLikeVariant = variant === 'guest' || isGuestDesktopVariant || isGuestLandingVariant;
   const tone = getMobileCardToneClasses(term.public_id);
   const sourceLine = formatDefinitionSource(definition, t);
   const mobileBookValue = getDefinitionBookValue(definition, t);
@@ -121,7 +123,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
     return () => { cancelled = true; observer.disconnect(); };
   }, [fullDefinitionText]);
 
-  const definitionFadeClass = isGuestDesktopVariant ? 'from-surface-subtle' : variant === 'guest' ? 'from-white' : isMobileVariant ? tone.fadeClassName : 'from-surface';
+  const definitionFadeClass = isGuestDesktopVariant ? 'from-surface-subtle' : variant === 'guest' || isGuestLandingVariant ? 'from-white' : isMobileVariant ? tone.fadeClassName : 'from-surface';
   const definitionFade = visibleDefinition.overflowing ? (
     <span aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-[1.75em] bg-gradient-to-t ${definitionFadeClass} to-transparent`} />
   ) : null;
@@ -130,6 +132,8 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
     ? 'h-[134px] w-[204px] rounded-[8px] border border-[#e8e1ee] bg-surface p-4 shadow-none'
     : variant === 'guest'
       ? 'h-[168px] w-[216px] rounded-[16px] border-0 bg-white p-6 shadow-none'
+      : isGuestLandingVariant
+        ? 'h-[168px] w-[262px] rounded-[16px] border-0 bg-white p-6 shadow-none'
       : isGuestDesktopVariant
         ? 'h-[220px] w-[320px] rounded-[20px] border-0 bg-surface-subtle p-8 shadow-none'
         : isMobileVariant
@@ -137,16 +141,16 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
           : 'h-[325px] w-[min(612px,calc(100vw_-_96px))] rounded-[15px] border border-border bg-surface p-[50px] max-md:h-[280px] max-md:w-[88vw] max-md:p-8';
 
   const preview = (className: string) => (
-    <p ref={definitionPreviewRef} className={className}>{visibleDefinition.text}</p>
+    <MeasuredTextPreview text={visibleDefinition.text} className={className} fadeClassName={definitionFadeClass} maxHeight={definitionPreviewRef.current?.parentElement?.clientHeight ?? 80} />
   );
 
   const cardContent = (
     <>
       {isGuestLikeVariant ? (
         <div className="flex h-full min-h-0 min-w-0 flex-col">
-          <h3 className={`min-w-0 truncate ${isGuestDesktopVariant ? 'text-[20px] leading-[20px]' : 'text-[15px] leading-[15px]'} font-medium text-action-selected`}>{oneLineTermName(term.name)}</h3>
+          <h3 className={`min-w-0 truncate ${isGuestDesktopVariant ? 'text-[20px] leading-[20px]' : isGuestLandingVariant ? 'text-[16px] leading-[16px]' : 'text-[15px] leading-[15px]'} font-medium text-action-selected`}>{oneLineTermName(term.name)}</h3>
           <div className={`${isGuestDesktopVariant ? 'mt-5' : 'mt-3'} relative min-h-0 min-w-0 flex-1`}>
-            {preview(`h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line ${isGuestDesktopVariant ? 'text-[16px] leading-[16px]' : 'text-[12px] leading-[12px]'} text-text-body`)}
+            {preview(`h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line ${isGuestDesktopVariant ? 'text-[16px] leading-[16px]' : isGuestLandingVariant ? 'text-[14px] leading-[14px]' : 'text-[12px] leading-[12px]'} text-text-body`)}
             {definitionFade}
           </div>
           {sourceLine && <p className={`mt-2 min-w-0 truncate ${isGuestDesktopVariant ? 'text-[13px] leading-[13px]' : 'text-[12px] leading-[12px]'} text-muted`}>{sourceLine}</p>}

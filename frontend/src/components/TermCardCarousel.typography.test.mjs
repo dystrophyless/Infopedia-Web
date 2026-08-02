@@ -15,14 +15,16 @@ assert.doesNotMatch(`${card}\n${view}\n${controller}`, /GUEST_FALLBACK_TERMS|inf
 
 assert.match(card, /formatDefinitionSource\(definition, t\)/, 'Visible source must derive from definition metadata');
 assert.match(card, /text-muted/, 'Guest source copy must retain the exact semantic muted-purple color');
-assert.match(card, /'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/, 'All five accepted variants must remain public');
+assert.match(card, /'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop' \| 'guestLanding'/, 'Existing variants plus the landing-only compact variant must remain public');
 assert.match(card, /h-\[238px\][\s\S]*w-\[76vw\][\s\S]*p-5[\s\S]*shadow-none/, 'Mobile card geometry and flat treatment must remain exact');
 assert.match(card, /h-\[168px\] w-\[216px\][\s\S]*bg-white[\s\S]*p-6/, 'Guest mobile card must keep its white accepted footprint');
 assert.match(card, /h-\[220px\] w-\[320px\][\s\S]*p-8/, 'Guest desktop card must keep its accepted footprint');
+assert.match(card, /h-\[168px\] w-\[262px\][\s\S]*p-6/, 'Landing guest cards should fit four 168px-tall cards across the 1120px rail');
 assert.match(card, /text-\[23px\][\s\S]*text-\[30px\]/, 'Mobile and desktop titles must keep compact sizes');
 assert.match(card, /ArrowUpRight01Icon/, 'Title row must keep the up-right action icon');
 assert.doesNotMatch(card, /line-clamp-\d+|WebkitLineClamp|definitionLineClamp/, 'Definition preview must use measured fitting, not line clamp');
 assert.match(card, /fitTextToAvailableSpace\(node, fullDefinitionText\)/, 'Visible definition must be measured against real available space');
+assert.match(card, /MeasuredTextPreview/, 'Featured cards must reuse the shared measured preview component');
 assert.match(card, /words\.slice\(0, wordCount\)\.join\(' '\) \+ ELLIPSIS/, 'Measured truncation must end on a whole word');
 assert.match(card, /return \{ text: bestFitText, overflowing: true \}/, 'Measured fitting must expose overflow state');
 assert.match(card, /visibleDefinition\.overflowing \?/, 'Fade must render only for actual overflow');
@@ -30,7 +32,7 @@ assert.match(card, /pointer-events-none absolute inset-x-0 bottom-0 h-\[1\.75em\
 assert.match(card, /from-surface-subtle[\s\S]*from-white[\s\S]*tone\.fadeClassName[\s\S]*from-surface/, 'Fade must match desktop guest, mobile guest, colored mobile, and surface backgrounds');
 assert.match(card, /aria-hidden="true"/, 'Clones must be hidden from accessibility');
 
-assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop'/, 'Only desktop and guest variants may auto-scroll');
+assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding'/, 'Landing guest variant must auto-scroll');
 assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/, 'Auto-scroll variants must duplicate multiple items for the loop');
 assert.match(view, /clone-0[\s\S]*offsetLeft[\s\S]*orig-0[\s\S]*offsetLeft/, 'Loop distance must use measured clone and original offsets');
 assert.match(view, /AUTO_SCROLL_PX_PER_SECOND = 46/, 'Loop speed must remain the named fixed speed');
@@ -39,4 +41,9 @@ assert.match(view, /onFocusCapture[\s\S]*pausedRef\.current = true[\s\S]*onBlurC
 assert.match(view, /touch-pan-x snap-x/, 'Finite mobile carousel must retain native horizontal panning');
 assert.match(view, /mobile: 'gap-3 pl-0 pr-\[24vw\]'/, 'Mobile track must bleed only to the right');
 assert.match(view, /guest: 'gap-4 pl-8 pr-8'/, 'Guest track must own complete-card gutters');
-assert.match(view, /if \(loading\)[\s\S]*if \(carouselTerms\.length === 0\) return null/, 'View must preserve loading and empty states');
+assert.match(view, /guestLanding: 'gap-6 px-0'/, 'Landing compact track should fit four cards across 1120px');
+assert.match(view, /variant === 'guestLanding'[\s\S]*overflow-hidden/, 'Landing compact terms should use a clipped viewport');
+assert.doesNotMatch(view, /variant === 'guestLanding'\s*\?\s*'overflow-x-auto/, 'Landing compact terms should not use finite manual scrolling');
+assert.match(view, /requestAnimationFrame\(animate\)/, 'Landing carousel should advance through the RAF loop');
+assert.match(view, /if \(loading\)[\s\S]*if \(error\)[\s\S]*if \(carouselTerms\.length === 0\) return <EmptyCarousel/, 'View must expose loading, error, and truthful empty states');
+assert.match(view, /role="alert"[\s\S]*onRetry/, 'Error state must announce failure and expose retry');

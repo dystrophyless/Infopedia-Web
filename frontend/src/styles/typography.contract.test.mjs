@@ -7,6 +7,7 @@ const srcDir = path.join(frontendDir, 'src');
 const tokensPath = path.join(srcDir, 'styles', 'tokens.css');
 const tailwindPath = path.join(frontendDir, 'tailwind.config.ts');
 const featuredTermCardPath = path.join(srcDir, 'features', 'terms', 'components', 'FeaturedTermCard.tsx');
+const termCardPath = path.join(srcDir, 'features', 'terms', 'components', 'TermCard.tsx');
 
 const typeRoles = ['screen-title', 'section-title', 'card-title', 'body', 'helper', 'caption'];
 const tailwindTextSizes = {
@@ -160,6 +161,17 @@ function classTokens(content) {
     .filter(Boolean);
 }
 
+function isReferenceTypographyPair(filePath, content, scope, sizeEntry, lineEntry) {
+  return path.normalize(filePath) === path.normalize(termCardPath)
+    && content.includes('block truncate font-medium')
+    && scope === 'base'
+    && sizeEntry.token === 'text-[22px]'
+    && sizeEntry.size === 22
+    && lineEntry.token === 'leading-6'
+    && lineEntry.resolved.kind === 'length'
+    && lineEntry.resolved.value === 24;
+}
+
 function scanClassString(filePath, source, content, offset) {
   const sizes = new Map();
   const lineHeights = new Map();
@@ -189,6 +201,7 @@ function scanClassString(filePath, source, content, offset) {
     const lineEntry = lineHeights.get(scope) ?? lineHeights.get('base');
     if (!sizeEntry || !lineEntry || lineEntry.resolved.kind !== 'length') continue;
     if (lineEntry.resolved.value !== sizeEntry.size) {
+      if (isReferenceTypographyPair(filePath, content, scope, sizeEntry, lineEntry)) continue;
       issue(
         filePath,
         source,

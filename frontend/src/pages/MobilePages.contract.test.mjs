@@ -77,6 +77,8 @@ assert.match(
   /max-md:\[--mobile-page-available-height:100dvh\][^']*max-md:\[--mobile-page-content-end-inset:0px\][^']*max-md:pb-0/,
   'Layout must remove the content inset and reserve atomically when mobile navigation is hidden',
 );
+assert.match(layoutSource, /resolveDesktopShell[\s\S]*authHydrated/, 'Desktop shell policy should include the persisted auth hydration state');
+assert.match(layoutSource, /<DesktopSidebar/, 'Authenticated desktop layout should own the sidebar outside mobile frame geometry');
 assert.match(bottomNavSource, /className="bottom-nav[^"]*md:hidden"/, 'Bottom navigation must remain mobile-only');
 
 assert.equal(80 + 24 + 32, 136, 'Shared compact geometry must place first content at y=136');

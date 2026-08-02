@@ -351,6 +351,31 @@ async def get_random_terms(
     return terms
 
 
+async def get_featured_definitions(
+    session: AsyncSession,
+    *,
+    definition_ids: list[int],
+) -> list[Definition] | None:
+    if not definition_ids:
+        return None
+
+    query = (
+        select(Definition)
+        .where(Definition.id.in_(definition_ids))
+        .options(
+            joinedload(Definition.term)
+            .selectinload(Term.definitions)
+            .joinedload(Definition.topic)
+            .joinedload(Topic.book),
+            joinedload(Definition.topic).joinedload(Topic.book),
+        )
+    )
+    result = await session.execute(query)
+    by_id = {definition.id: definition for definition in result.scalars().all()}
+    ordered = [by_id[definition_id] for definition_id in definition_ids if definition_id in by_id]
+    return ordered or None
+
+
 async def search_terms_by_prefix(
     session: AsyncSession,
     *,

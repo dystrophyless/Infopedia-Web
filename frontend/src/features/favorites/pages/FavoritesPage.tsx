@@ -1,13 +1,11 @@
 import {
   AllBookmarkIcon,
   ArrowLeft01Icon,
-  Delete02Icon,
-  StarIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useCallback, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import type { Term } from '../../../types';
 import {
@@ -19,10 +17,8 @@ import {
   Text,
 } from '../../../ui';
 import { SkeletonCard } from '../../../components/SkeletonCard';
-import { DefinitionMetadata } from '../../terms/components/DefinitionMetadata';
 import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCard';
 import { TermCard } from '../../terms/components/TermCard';
-import { normalizeDefinitionPreviewText } from '../../terms/model';
 import { useFavoritesStore } from '../model';
 
 const PAGE_SIZE = 20;
@@ -34,58 +30,13 @@ function getRelatedTerms(term: Term, terms: Term[]): Pick<Term, 'public_id' | 'n
     .map(({ public_id, name }) => ({ public_id, name }));
 }
 
-function FavoriteTermCard({ term, terms }: { term: Term; terms: Term[] }) {
-  const { t } = useTranslation();
-  const removeFavorite = useFavoritesStore((state) => state.removeFavorite);
-  const pending = useFavoritesStore((state) => Boolean(state.pendingByTermRef[term.public_id]));
-  const actionError = useFavoritesStore((state) => state.errorByTermRef[term.public_id]);
-  const definition = term.definitions?.[0];
-
-  const handleRemove = useCallback(() => {
-    void removeFavorite(term.public_id).catch(() => undefined);
-  }, [removeFavorite, term.public_id]);
-
-  return (
-    <article className="rounded-[8px] bg-white p-5 text-[#161519] shadow-none md:border md:border-border/40 md:p-6">
-      <div className="flex items-start gap-3">
-        <Link
-          to={`/terms/${term.public_id}`}
-          state={{ backTo: '/favorites', term, relatedTerms: getRelatedTerms(term, terms) }}
-          className="min-w-0 flex-1 rounded-[4px] outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2"
-        >
-          <h2 className="text-[20px] font-medium leading-[20px] text-[#252329]">{term.name}</h2>
-          {definition && (
-            <p className="mt-3 line-clamp-3 whitespace-pre-line text-[15px] leading-[15px] text-[#39363f]">
-              {normalizeDefinitionPreviewText(definition.text)}
-            </p>
-          )}
-          <DefinitionMetadata definition={definition} variant="compact" />
-        </Link>
-        <IconButton
-          aria-label={t('favorites.removeAria', { defaultValue: 'Remove from favorites' })}
-          onClick={handleRemove}
-          disabled={pending}
-          className="text-[#6a37c3]"
-        >
-          <HugeiconsIcon icon={pending ? StarIcon : Delete02Icon} size={20} strokeWidth={1.7} />
-        </IconButton>
-      </div>
-      {actionError && (
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-[6px] bg-[#fff1f1] px-3 py-2 text-[13px] text-danger" role="alert">
-          <span>{t('favorites.actionError', { defaultValue: actionError })}</span>
-          <Button size="sm" variant="secondary" onClick={handleRemove} disabled={pending}>
-            {t('common.retry', { defaultValue: 'Retry' })}
-          </Button>
-        </div>
-      )}
-    </article>
-  );
-}
-
-// Kept as a private behavior reference while the canonical TermCard owns rendering.
-void FavoriteTermCard;
-
-export function FavoritesPage() {
+export function FavoritesContent({
+  embedded = false,
+  detailBackTo = '/favorites',
+}: {
+  embedded?: boolean;
+  detailBackTo?: string;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -99,10 +50,15 @@ export function FavoritesPage() {
   const isLoading = useFavoritesStore((state) => state.isLoading);
   const error = useFavoritesStore((state) => state.error);
   const loadFavorites = useFavoritesStore((state) => state.loadFavorites);
+  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
 
   useEffect(() => {
     setOwnerUserId(ownerUserId);
   }, [ownerUserId, setOwnerUserId]);
+
+  useEffect(() => {
+    if (selectedTermId && !list.some((term) => term.public_id === selectedTermId)) setSelectedTermId(null);
+  }, [list, selectedTermId]);
 
   useEffect(() => {
     if (ownerUserId === null) return;
@@ -121,22 +77,24 @@ export function FavoritesPage() {
 
   const content = (
     <div
-      className={showEmptyState
-        ? 'flex w-full flex-1 flex-col md:mx-auto md:max-w-[760px] md:px-8 md:pb-16 md:pt-12'
-        : 'mx-auto w-full max-w-[760px] px-4 pb-8 md:px-8 md:pb-16 md:pt-12'}
+      className={embedded
+        ? 'flex h-[416px] min-h-[416px] max-h-[416px] w-full flex-col overflow-hidden'
+        : showEmptyState
+          ? 'flex w-full flex-1 flex-col md:mx-auto md:max-w-[760px] md:px-8 md:pb-16 md:pt-12'
+          : 'mx-auto w-full max-w-[760px] px-4 pb-8 md:px-8 md:pb-16 md:pt-12'}
     >
-      <header className="mb-6 hidden md:block">
+      {!embedded && <header className="mb-6 hidden md:block">
         <h1 className="text-[38px] font-medium leading-none text-text">
           {t('favorites.title', { defaultValue: 'Favorites' })}
         </h1>
         <p className="mt-3 text-[16px] text-muted">
           {t('favorites.subtitle', { defaultValue: 'Terms you saved for later' })}
         </p>
-      </header>
+      </header>}
 
       {isLoading && list.length === 0 && (
         <>
-          <div className="hidden space-y-4 md:block" aria-label="Loading favorites" role="status">
+          <div className={embedded ? 'hidden min-h-0 flex-1 space-y-4 overflow-y-auto md:block' : 'hidden space-y-4 md:block'} aria-label="Loading favorites" role="status">
             {Array.from({ length: 4 }, (_, index) => <SkeletonCard key={index} />)}
           </div>
           <div className="hidden space-y-4 max-md:-mx-[2px] max-md:block max-md:w-[calc(100%+4px)]" aria-label="Loading favorites" role="status">
@@ -146,20 +104,33 @@ export function FavoritesPage() {
       )}
 
       {!isLoading && error && list.length === 0 && (
-        <section className="rounded-[8px] bg-white p-8 text-center" role="alert">
-          <Text tone="danger" className="text-[16px]">
-            {t('favorites.loadError', { defaultValue: 'Unable to load favorites.' })}
-          </Text>
-          <Button className="mt-5" onClick={retry}>
-            {t('common.retry', { defaultValue: 'Retry' })}
-          </Button>
-        </section>
+        embedded ? (
+          <BetweenBlocks className="flex min-h-0 flex-1 items-center justify-center px-6">
+            <section className="rounded-[8px] bg-white p-8 text-center" role="alert">
+              <Text tone="danger" className="text-[16px]">
+                {t('favorites.loadError', { defaultValue: 'Unable to load favorites.' })}
+              </Text>
+              <Button className="mt-5" onClick={retry}>
+                {t('common.retry', { defaultValue: 'Retry' })}
+              </Button>
+            </section>
+          </BetweenBlocks>
+        ) : (
+          <section className="rounded-[8px] bg-white p-8 text-center" role="alert">
+            <Text tone="danger" className="text-[16px]">
+              {t('favorites.loadError', { defaultValue: 'Unable to load favorites.' })}
+            </Text>
+            <Button className="mt-5" onClick={retry}>
+              {t('common.retry', { defaultValue: 'Retry' })}
+            </Button>
+          </section>
+        )
       )}
 
       {showEmptyState && (
         <BetweenBlocks
           data-mobile-outcome-slot
-          className="px-6 md:flex md:items-center md:justify-center md:px-6"
+          className="min-h-0 flex-1 px-6 md:flex md:items-center md:justify-center md:px-6"
           outcomeClassName="flex justify-center"
         >
           <EmptyState
@@ -190,8 +161,9 @@ export function FavoritesPage() {
         </BetweenBlocks>
       )}
 
-      {list.length > 0 && (
-        <>
+      {(list.length > 0 || (error && list.length > 0) || hasMore) && (
+        <div className={embedded ? 'min-h-0 flex-1 overflow-y-auto' : 'contents'}>
+          {list.length > 0 && <>
           <p className="mb-4 text-[16px] font-normal leading-none text-[#514b5c] md:hidden">
             {t('favorites.count', { count: total, defaultValue: `${total}` })}
           </p>
@@ -201,7 +173,9 @@ export function FavoritesPage() {
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, list)}
-                backTo="/favorites"
+                backTo={detailBackTo}
+                selected={selectedTermId === term.public_id}
+                onSelectedChange={(nextSelected) => setSelectedTermId(nextSelected ? term.public_id : null)}
               />
             ))}
           </div>
@@ -211,12 +185,11 @@ export function FavoritesPage() {
                 key={term.public_id}
                 term={term}
                 relatedTerms={getRelatedTerms(term, list)}
-                backTo="/favorites"
+                backTo={detailBackTo}
               />
             ))}
           </div>
-        </>
-      )}
+          </>}
 
       {error && list.length > 0 && (
         <section className="mt-4 flex items-center justify-between gap-3 rounded-[8px] bg-white px-4 py-3 text-[14px] text-danger" role="alert">
@@ -232,11 +205,12 @@ export function FavoritesPage() {
           {t('favorites.loadMore', { defaultValue: 'Load more' })}
         </Button>
       )}
-
+        </div>
+      )}
     </div>
   );
 
-  return (
+  return embedded ? content : (
     <MobilePageFrame
       tone="canvas"
       appBar={{
@@ -260,6 +234,10 @@ export function FavoritesPage() {
       {content}
     </MobilePageFrame>
   );
+}
+
+export function FavoritesPage() {
+  return <FavoritesContent />;
 }
 
 export const Favorites = FavoritesPage;

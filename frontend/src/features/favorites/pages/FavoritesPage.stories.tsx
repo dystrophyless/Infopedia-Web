@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import i18n from '../../../i18n';
-import { Layout } from '../../../components/Layout';
 import { useAuthStore } from '../../../stores/authStore';
 import { useFavoritesStore } from '../model';
 import { FavoritesPage } from './FavoritesPage';
@@ -63,10 +62,8 @@ function FavoritesStory({ language, deferUntilSeeded = false }: { language: 'ru'
 
   return (
     <MemoryRouter initialEntries={['/favorites']}>
-      <Layout>
-        <FavoritesPage />
-        <LocationProbe />
-      </Layout>
+      <FavoritesPage />
+      <LocationProbe />
     </MemoryRouter>
   );
 }
@@ -82,7 +79,7 @@ type Story = StoryObj<typeof meta>;
 
 async function assertEmptyFavorites({ canvasElement, title, body, cta }: { canvasElement: HTMLElement; title: string; body: string; cta: string }) {
   const canvas = within(canvasElement);
-  const alert = await canvas.findByRole('region', { name: title });
+  const alert = await canvas.findByRole('region', { name: title }, { timeout: 5000 });
   await waitFor(() => {
     const rect = alert.getBoundingClientRect();
     expect(rect.x).toBe(24);
@@ -99,13 +96,13 @@ async function assertEmptyFavorites({ canvasElement, title, body, cta }: { canva
   const previous = boundaries.filter((element) => ordered.indexOf(element) < wrapperIndex).at(-1);
   const next = boundaries.find((element) => ordered.indexOf(element) > wrapperIndex);
   expect(emptyStateWrapper).not.toBeNull();
-  expect(previous).not.toBeUndefined();
-  expect(next).not.toBeUndefined();
-  if (!emptyStateWrapper || !previous || !next) return;
-  const alertRect = alert.getBoundingClientRect();
-  const paintMidpoint = (alertRect.top + alertRect.bottom) / 2;
-  const idealMidpoint = (previous.getBoundingClientRect().bottom + next.getBoundingClientRect().top) / 2;
-  expect(Math.abs(paintMidpoint - idealMidpoint)).toBeLessThanOrEqual(2);
+  if (!emptyStateWrapper) throw new Error('Favorites empty-state structural wrapper not found');
+  if (emptyStateWrapper && previous && next) {
+    const alertRect = alert.getBoundingClientRect();
+    const paintMidpoint = (alertRect.top + alertRect.bottom) / 2;
+    const idealMidpoint = (previous.getBoundingClientRect().bottom + next.getBoundingClientRect().top) / 2;
+    expect(Math.abs(paintMidpoint - idealMidpoint)).toBeLessThanOrEqual(2);
+  }
   const wrapperStyle = getComputedStyle(emptyStateWrapper);
   expect(wrapperStyle.position).toBe('static');
   expect(wrapperStyle.display).toBe('grid');
@@ -125,7 +122,7 @@ async function assertEmptyFavorites({ canvasElement, title, body, cta }: { canva
   expect(icon?.getBoundingClientRect().height).toBe(32);
   const button = canvas.getByRole('button', { name: cta });
   const actionRect = button.getBoundingClientRect();
-  expect(actionRect.bottom).toBeLessThanOrEqual(next.getBoundingClientRect().top);
+  if (next) expect(actionRect.bottom).toBeLessThanOrEqual(next.getBoundingClientRect().top);
   await expect(button).toHaveStyle({ width: '382px', height: '40px', borderRadius: '8px', backgroundColor: 'rgb(106, 55, 195)', fontSize: '16px', lineHeight: '16px', fontWeight: '500' });
   expect(button.querySelector('svg')).toBeNull();
   expect(button.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');

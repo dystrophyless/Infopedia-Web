@@ -11,10 +11,8 @@ import {
   ChartColumnIcon,
   Coins02Icon,
   Delete02Icon,
-  HelpCircleIcon,
   InformationCircleIcon,
   Invoice03Icon,
-  LockPasswordIcon,
   MentorIcon,
   Logout01Icon,
   Mail01Icon,
@@ -30,6 +28,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
 import { getLatestAnalyzeResult } from '../api/analyze';
 import { getFavorites } from '../features/favorites/api/favorites';
+import { FavoritesContent } from '../features/favorites/pages/FavoritesPage';
 import {
   createMyPassword,
   changeMyPassword,
@@ -39,15 +38,12 @@ import {
   updateMyUsername,
   verifyMyCurrentPassword,
 } from '../api/users';
-import type { AnalyzeBookCoverage, AnalyzeChapterResult, User } from '../types';
+import type { AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
-import { AuthPasswordInput, AuthSubmit } from '../components/AuthShell';
-import { getPasswordValidationError } from '../utils/passwordValidation';
 import { shouldShowProfileLogout, type ProfileTabId } from '../utils/profileTabs';
-import { clampScorePercent, getScoreStatus, type ScoreStatus } from '../utils/scoreStatus';
 import { BottomSheet } from '../ui/molecules/BottomSheet';
 import { Button, FormField, Input, MobilePinnedAppBar, PasswordField } from '../ui';
 import { validateUsername, type UsernameValidationErrorCode } from '../features/users/model/usernameValidation';
@@ -62,15 +58,12 @@ import {
   type MobilePasswordAction,
   type MobilePasswordState,
 } from '../features/users/model/passwordChange';
-import {
-  buildWeakTopicInsights,
-  type WeakTopicInsight,
-} from '../utils/weakTopics';
+import { AnalyzeChapterCard } from '../features/analyze/components/AnalyzeChapterCard';
+import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import { useMobileBottomNavOverride } from '../features/navigation';
 
-const INITIAL_VISIBLE_BOOKS_LIMIT = 3;
 const WEAK_TOPICS_PANEL_SECTION_CLASS = 'px-8 py-12 max-md:px-5';
-const WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS = 'grid gap-4 lg:h-[320px] lg:grid-cols-[240px_minmax(0,1fr)]';
+const WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS = 'grid gap-4 lg:h-[416px] lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]';
 
 const profileNavItems: Array<{
   id: ProfileTabId;
@@ -166,60 +159,7 @@ export function Profile() {
         )}
       </div>
 
-      <div className="mx-auto grid max-w-[1260px] grid-cols-[300px_minmax(0,1fr)] gap-7 max-lg:grid-cols-1 max-md:hidden">
-        <aside
-          className="max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]"
-          aria-label={t('profile.title')}
-        >
-          <section className="rounded-[8px] border border-border/45 bg-surface p-4">
-            <div className="flex items-center gap-3">
-              <FigmaProfileIcon className="block size-[56px] shrink-0 text-accent" />
-              <div className="min-w-0">
-                <p className="truncate text-[24px] font-medium leading-none text-primary max-sm:text-[22px] max-sm:leading-none">
-                  {profile?.username ?? user?.username ?? t('profile.usernameUndefined')}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <nav className="mt-4 flex flex-col gap-2 max-lg:grid max-lg:grid-cols-2 max-sm:grid-cols-1">
-            {profileNavItems.map((item) => {
-              const isActive = activeTab === item.id;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    if (item.id === 'favorites') {
-                      navigate('/favorites');
-                      return;
-                    }
-                    setActiveTab(item.id);
-                  }}
-                  className={`group flex h-[48px] w-full items-center gap-3 rounded-[8px] border px-4 text-left text-[16px] leading-none text-primary transition-colors duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                    isActive
-                      ? 'border-transparent bg-surface'
-                      : 'border-transparent text-primary/80 hover:bg-surface/70 hover:text-primary'
-                  }`}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <HugeiconsIcon
-                    icon={item.icon}
-                    size={22}
-                    strokeWidth={1.7}
-                    className="shrink-0 transition-transform duration-200 ease-out group-hover:scale-110"
-                  />
-                  <span className="truncate transition-transform duration-200 ease-out group-hover:translate-x-0.5">
-                    {t(item.labelKey)}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <main className="rounded-[8px] border border-border/45 bg-surface max-lg:mx-auto max-lg:w-full max-lg:max-w-[860px]">
+      <main className="mx-auto w-full max-w-[1040px] rounded-[8px] border border-border/45 bg-surface max-md:hidden">
           {loading && !profile && (
             <div className="p-8">
               <SkeletonCard />
@@ -232,6 +172,30 @@ export function Profile() {
 
           {profile && (
             <>
+              <div
+                role="tablist"
+                aria-label={t('profile.title')}
+                className="flex gap-2 overflow-x-auto border-b border-border/55 px-7 py-3 max-md:px-5"
+              >
+                {profileNavItems.map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] px-4 text-[15px] leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                        isActive ? 'bg-bg text-primary' : 'text-muted hover:bg-bg/70 hover:text-primary'
+                      }`}
+                    >
+                      <HugeiconsIcon icon={item.icon} size={18} strokeWidth={1.7} aria-hidden="true" />
+                      {t(item.labelKey)}
+                    </button>
+                  );
+                })}
+              </div>
               <header className="border-b border-border/55 px-7 py-5 max-md:px-5">
                 <div className="flex flex-wrap items-start justify-between gap-5">
                   <div>
@@ -258,11 +222,19 @@ export function Profile() {
               {activeTab === 'profile' && <ProfileOverview profile={profile} />}
               {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
               {activeTab === 'weakTopics' && <WeakTopicsPanel />}
-              {activeTab === 'settings' && <SettingsPanel profile={profile} />}
+              {activeTab === 'favorites' && <FavoritesContent embedded detailBackTo="/profile" />}
+              {activeTab === 'settings' && (
+                <SettingsPanel
+                  profile={profile}
+                  onProfileUpdated={(nextProfile) => {
+                    setProfile(nextProfile);
+                    setUser(nextProfile);
+                  }}
+                />
+              )}
             </>
           )}
         </main>
-      </div>
     </div>
   );
 }
@@ -981,11 +953,13 @@ function MobilePassword({
   onBack,
   onPasswordCreated,
   onPasswordConflict,
+  embedded = false,
 }: {
   hasPassword?: boolean;
   onBack: () => void;
   onPasswordCreated: () => void;
   onPasswordConflict: (profile: User) => void;
+  embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const mode = hasPassword === false ? 'create' : 'change';
@@ -1085,8 +1059,8 @@ function MobilePassword({
   const successKey = flowMode === 'create' ? 'profile.mobilePasswordCreateSaved' : 'profile.mobilePasswordSaved';
 
   return (
-    <section data-figma-node="286:password" className="min-h-screen bg-[#efebf6] pb-8">
-      <MobilePinnedAppBar
+    <section data-figma-node="286:password" className={embedded ? 'bg-transparent' : 'min-h-screen bg-[#efebf6] pb-8'}>
+      {!embedded && <MobilePinnedAppBar
         title={t(titleKey)}
         headingLevel={1}
         titleAlign="start"
@@ -1102,9 +1076,9 @@ function MobilePassword({
             <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
           </button>
         )}
-      />
+      />}
 
-      <section className="mx-6 mt-8 rounded-[8px] bg-white p-6">
+      <section className={embedded ? 'bg-transparent' : 'mx-6 mt-8 rounded-[8px] bg-white p-6'}>
         <div className="flex flex-col gap-2">
           <h2 className="text-[18px] font-medium leading-[18px] text-[#161519]">{t(cardTitleKey)}</h2>
           <p className="text-[14px] font-normal leading-[14px] text-[#8c8698]">{t(bodyKey)}</p>
@@ -1175,10 +1149,12 @@ function MobileUsername({
   profile,
   onBack,
   onSaved,
+  embedded = false,
 }: {
   profile: User;
   onBack: () => void;
   onSaved: (profile: User) => void;
+  embedded?: boolean;
 }) {
   const { t } = useTranslation();
   const setAuthUser = useAuthStore((state) => state.setUser);
@@ -1339,8 +1315,8 @@ function MobileUsername({
   }
 
   return (
-    <section data-figma-node="286:username" className="min-h-screen bg-[#efebf6] pb-8">
-      <MobilePinnedAppBar
+    <section data-figma-node="286:username" className={embedded ? 'bg-transparent' : 'min-h-screen bg-[#efebf6] pb-8'}>
+      {!embedded && <MobilePinnedAppBar
         title={t('profile.mobileUsernameTitle')}
         headingLevel={1}
         titleAlign="start"
@@ -1355,9 +1331,9 @@ function MobileUsername({
             <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.5} />
           </button>
         )}
-      />
+      />}
 
-      <section className="mx-6 mt-8 rounded-[8px] bg-white p-6">
+      <section className={embedded ? 'bg-transparent' : 'mx-6 mt-8 rounded-[8px] bg-white p-6'}>
         <div className="flex flex-col gap-2">
           <h2 className="text-[18px] font-medium leading-[18px] text-[#161519]">
             {t('profile.mobileUsernameCardTitle')}
@@ -1647,6 +1623,7 @@ function WeakTopicsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -1668,12 +1645,10 @@ function WeakTopicsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [i18n.language, t]);
+  }, [i18n.language, retryKey, t]);
 
-  const weakTopics = useMemo(
-    () => buildWeakTopicInsights(results ?? []),
-    [results],
-  );
+  const access = useMemo(() => selectAnalyzeResultAccess(results ?? []), [results]);
+  const weakTopics = access.orderedChapters;
 
   useEffect(() => {
     if (weakTopics.length === 0) {
@@ -1698,13 +1673,20 @@ function WeakTopicsPanel() {
             {t('profile.weakTopicsErrorTitle')}
           </p>
           <p className="mt-2 text-[15px] leading-none text-danger">{error}</p>
+          <Button className="mt-5" variant="secondary" onClick={() => setRetryKey((value) => value + 1)}>
+            {t('common.retry', { defaultValue: 'Retry' })}
+          </Button>
         </div>
       </section>
     );
   }
 
-  if (!results || weakTopics.length === 0) {
+  if (!results || results.length === 0) {
     return <PlaceholderPanel type="weakTopics" />;
+  }
+
+  if (access.orderedChapters.length === 0) {
+    return <WeakTopicsPerfectState />;
   }
 
   return (
@@ -1712,8 +1694,26 @@ function WeakTopicsPanel() {
       <WeakTopicsMasterDetail
         selectedChapter={selectedChapter}
         weakTopics={weakTopics}
+        freeChapterId={access.freeChapter?.chapter_id ?? null}
         onSelectChapter={setSelectedChapter}
       />
+    </section>
+  );
+}
+
+function WeakTopicsPerfectState() {
+  const { t } = useTranslation();
+
+  return (
+    <section className={WEAK_TOPICS_PANEL_SECTION_CLASS}>
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[8px] border border-border/35 bg-bg px-6 text-center">
+        <h2 className="text-[24px] font-medium leading-none text-text">
+          {t('profile.weakTopicsPerfectTitle', { defaultValue: 'Perfect result' })}
+        </h2>
+        <p className="mt-3 max-w-[520px] text-[16px] leading-none text-text-body">
+          {t('profile.weakTopicsPerfectBody', { defaultValue: 'This analysis has no lost points to review.' })}
+        </p>
+      </div>
     </section>
   );
 }
@@ -1733,78 +1733,26 @@ function WeakTopicsLoadingState() {
         <div className="flex h-full min-h-0 flex-col rounded-[8px] border border-border/30 bg-bg/55 p-3">
           <div>
             <div className="h-3 w-28 rounded-full bg-primary/12" />
-            <div className="mt-1.5 h-5 w-16 rounded-[6px] bg-primary/12" />
+            <div className="mt-1.5 h-5 w-24 rounded-[6px] bg-primary/12" />
             <div className="mt-1.5 h-3 w-32 rounded-full bg-border/40" />
           </div>
           <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pr-2">
-            {Array.from({ length: 3 }).map((_, item) => (
-              <div
-                key={item}
-                className="grid grid-cols-[minmax(0,1fr)_46px] items-start gap-2 rounded-[8px] border border-transparent bg-surface/70 px-3 py-2.5"
-              >
-                <span className="min-w-0">
-                  <span className="block h-4 w-full max-w-[150px] rounded-[6px] bg-primary/12" />
-                  {item === 0 && (
-                    <span className="mt-1.5 block h-4 w-[118px] rounded-[6px] bg-primary/12" />
-                  )}
-                  <span className="mt-2 block h-3 w-24 rounded-full bg-border/40" />
-                </span>
-                <span className="mt-0.5 h-[22px] w-[46px] rounded-[8px] bg-bg" />
+            {Array.from({ length: 5 }).map((_, item) => (
+              <div key={item} className="rounded-[8px] bg-surface/70 p-4">
+                <span className="block h-4 w-full max-w-[180px] rounded-[6px] bg-primary/12" />
+                <span className="mt-2 block h-3 w-28 rounded-full bg-border/40" />
               </div>
             ))}
           </div>
         </div>
-
         <article className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="h-3 w-36 rounded-full bg-primary/12" />
-              <div className="mt-1 h-8 w-[420px] max-w-full rounded-[8px] bg-primary/12" />
-              <div className="mt-1.5 h-8 w-[300px] max-w-[72%] rounded-[8px] bg-primary/12" />
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                <div className="h-7 w-24 rounded-full bg-bg" />
-                <div className="h-7 w-20 rounded-full bg-bg" />
-              </div>
-            </div>
-            <div className="min-w-[104px] text-right max-sm:w-full max-sm:text-left">
-              <div className="ml-auto h-[30px] w-16 rounded-[8px] bg-primary/12 max-sm:ml-0" />
-              <div className="mt-1.5 h-1.5 rounded-full bg-bg" />
-            </div>
+          <div className="h-3 w-36 rounded-full bg-primary/12" />
+          <div className="mt-2 h-8 w-[420px] max-w-full rounded-[8px] bg-primary/12" />
+          <div className="mt-4 flex gap-2">
+            <div className="h-8 w-28 rounded-full bg-bg" />
+            <div className="h-8 w-24 rounded-full bg-bg" />
           </div>
-
-          <div className="mt-4 border-t border-border/30 pt-3">
-            <div className="rounded-[8px] bg-bg/70 p-2">
-              <div className="flex min-h-8 flex-wrap items-center gap-2">
-                <div className="h-5 w-52 max-w-full rounded-full bg-primary/12" />
-                <div className="size-5 rounded-full bg-primary/12" />
-                <div className="ml-auto flex items-center gap-1.5">
-                  <div className="size-8 rounded-[8px] border border-border/55 bg-surface" />
-                  <div className="h-8 w-36 rounded-[8px] border border-border/55 bg-surface" />
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-2 max-md:grid-cols-2 max-sm:grid-cols-1">
-                {Array.from({ length: 3 }).map((_, book) => (
-                  <div
-                    key={book}
-                    className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3"
-                  >
-                    <span className="flex min-w-0 items-start justify-between gap-2">
-                      <span className="block h-4 w-28 rounded-[6px] bg-primary/12" />
-                      <span className="h-[18px] w-16 shrink-0 rounded-full bg-bg" />
-                    </span>
-                    <span className="mt-3 min-w-0">
-                      <span className="flex items-center justify-between gap-3">
-                        <span className="h-3 w-16 rounded-full bg-primary/12" />
-                        <span className="h-3 w-8 rounded-full bg-primary/12" />
-                      </span>
-                      <span className="mt-1.5 block h-1.5 rounded-full bg-bg" />
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <div className="mt-6 h-10 w-full rounded-[8px] bg-primary/12" />
         </article>
       </div>
     </section>
@@ -1814,10 +1762,12 @@ function WeakTopicsLoadingState() {
 function WeakTopicsMasterDetail({
   weakTopics,
   selectedChapter,
+  freeChapterId,
   onSelectChapter,
 }: {
-  weakTopics: WeakTopicInsight[];
+  weakTopics: AnalyzeChapterResult[];
   selectedChapter: number | null;
+  freeChapterId: number | null;
   onSelectChapter: (chapterId: number) => void;
 }) {
   const selectedTopic =
@@ -1828,9 +1778,23 @@ function WeakTopicsMasterDetail({
       <WeakTopicList
         selectedChapter={selectedTopic.chapter_id}
         weakTopics={weakTopics}
+        freeChapterId={freeChapterId}
         onSelectChapter={onSelectChapter}
       />
-      <WeakTopicDetail key={selectedTopic.chapter_id} topic={selectedTopic} />
+      {selectedTopic.chapter_id === freeChapterId ? (
+        <div className="min-h-0">
+          <AnalyzeChapterCard
+            key={selectedTopic.chapter_id}
+            chapter={selectedTopic}
+            locked={false}
+            mode="detail"
+            practiceTo={`/practice-by-topic?chapterId=${encodeURIComponent(String(selectedTopic.chapter_id))}`}
+          />
+          <WeakTopicQuestionMeta topic={selectedTopic} />
+        </div>
+      ) : (
+        <LockedWeakTopicDetail key={selectedTopic.chapter_id} topic={selectedTopic} />
+      )}
     </div>
   );
 }
@@ -1838,14 +1802,16 @@ function WeakTopicsMasterDetail({
 function WeakTopicList({
   weakTopics,
   selectedChapter,
+  freeChapterId,
   onSelectChapter,
 }: {
-  weakTopics: WeakTopicInsight[];
+  weakTopics: AnalyzeChapterResult[];
   selectedChapter: number | null;
+  freeChapterId: number | null;
   onSelectChapter: (chapterId: number) => void;
 }) {
   const { t } = useTranslation();
-  const lostPoints = weakTopics.reduce((sum, topic) => sum + topic.lostPoints, 0);
+  const lostPoints = weakTopics.reduce((sum, topic) => sum + Math.max(0, topic.max_score - topic.score), 0);
 
   return (
     <aside className="flex h-full min-h-0 flex-col rounded-[8px] border border-border/30 bg-bg/55 p-3">
@@ -1869,43 +1835,18 @@ function WeakTopicList({
         aria-label={t('profile.weakTopicsListAriaLabel')}
       >
         {weakTopics.map((topic) => {
-          const status = getScoreStatus(topic.percentage);
-          const chapterLabel = topic.title;
           const isSelected = selectedChapter === topic.chapter_id;
 
           return (
-            <button
-              key={topic.chapter_id}
-              type="button"
-              role="option"
-              aria-selected={isSelected}
-              onClick={() => onSelectChapter(topic.chapter_id)}
-              className={`group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-[8px] border px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                isSelected
-                  ? 'border-primary/35 bg-surface'
-                  : 'border-transparent bg-surface/70 hover:border-border/55 hover:bg-surface'
-              }`}
-              aria-label={t('profile.weakTopicsListItemLabel', {
-                chapter: chapterLabel,
-                percent: topic.percentage,
-              })}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block min-w-0 break-words text-[14px] font-medium leading-none text-text">
-                  {chapterLabel}
-                </span>
-                <span className="mt-1 block truncate text-[12px] leading-none text-muted">
-                  {t('profile.weakTopicsLostPointsInline', {
-                    count: topic.lostPoints,
-                  })}
-                </span>
-              </span>
-              <span
-                className={`mt-0.5 inline-flex min-w-[46px] shrink-0 justify-center rounded-[8px] bg-bg px-1.5 py-1 text-[14px] font-medium leading-none tabular-nums ${status.textClass}`}
-              >
-                {topic.percentage}%
-              </span>
-            </button>
+            <div key={topic.chapter_id} role="option" aria-selected={isSelected}>
+              <AnalyzeChapterCard
+                chapter={topic}
+                locked={topic.chapter_id !== freeChapterId}
+                mode="summary"
+                selected={isSelected}
+                onSelect={onSelectChapter}
+              />
+            </div>
           );
         })}
       </div>
@@ -1913,300 +1854,103 @@ function WeakTopicList({
   );
 }
 
-function WeakTopicDetail({ topic }: { topic: WeakTopicInsight }) {
+function LockedWeakTopicDetail({ topic }: { topic: AnalyzeChapterResult }) {
   const { t } = useTranslation();
-  const status = getScoreStatus(topic.percentage);
-  const progress = clampScorePercent(topic.percentage);
-  const chapterLabel = topic.title;
+  const lostPoints = Math.max(0, topic.max_score - topic.score);
 
   return (
     <article
       className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4"
       aria-live="polite"
-      aria-label={t('profile.weakTopicsDetailLabel', { chapter: chapterLabel })}
+      aria-label={t('profile.weakTopicsDetailLabel', { chapter: topic.title })}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
-            {t('profile.weakTopicsSelectedLabel')}
-          </p>
-          <h3 className="mt-1 break-words text-[22px] font-medium leading-none text-text max-md:text-[20px] max-md:leading-none">
-            {chapterLabel}
-          </h3>
-          <WeakTopicStatsRow topic={topic} />
-        </div>
-        <WeakTopicResultIndicator
-          percentage={topic.percentage}
-          progress={progress}
-          status={status}
-        />
+      <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
+        {t('profile.weakTopicsSelectedLabel')}
+      </p>
+      <h3 className="mt-2 break-words text-[22px] font-medium leading-none text-text">
+        {topic.title}
+      </h3>
+      <div className="mt-4 flex flex-wrap gap-2 text-[13px] leading-none text-text-body">
+        <span className="rounded-full bg-bg px-3 py-2">
+          {t('analyze.mobileChapterScoreSummary', {
+            score: topic.score,
+            maxScore: topic.max_score,
+            percentage: topic.percentage,
+          })}
+        </span>
+        <span className="rounded-full bg-bg px-3 py-2 text-danger">
+          {t('analyze.mobileChapterLost', { count: lostPoints })}
+        </span>
       </div>
-
-      <div className="mt-4 border-t border-border/30 pt-3">
-        <WeakTopicBookList books={topic.books} />
+      <div className="mt-5 border-t border-border/30 pt-4 text-[14px] leading-[14px] text-muted">
+        {t('profile.weakTopicsLockedDetail', { defaultValue: 'Topic details are available through the free chapter.' })}
       </div>
+      <WeakTopicQuestionMeta topic={topic} />
     </article>
   );
 }
 
-function WeakTopicResultIndicator({
-  percentage,
-  progress,
-  status,
-}: {
-  percentage: number;
-  progress: number;
-  status: ScoreStatus;
-}) {
-  return (
-    <div className="min-w-[104px] text-right max-sm:w-full max-sm:text-left">
-      <span className={`text-[30px] font-medium leading-none ${status.textClass}`}>
-        {percentage}%
-      </span>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg" aria-hidden>
-        <div
-          className={`h-full rounded-full ${status.progressClass}`}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function WeakTopicStatsRow({ topic }: { topic: WeakTopicInsight }) {
+function WeakTopicQuestionMeta({ topic }: { topic: AnalyzeChapterResult }) {
   const { t } = useTranslation();
-  const weightedQuestionCount = Math.max(0, topic.max_score - topic.question_count);
 
   return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-2">
-      <span className="inline-flex h-7 items-center rounded-full bg-bg px-2.5 text-[12px] font-medium leading-none text-primary">
-        {t('profile.weakTopicsScoreInline', {
-          score: topic.score,
-          maxScore: topic.max_score,
-        })}
-      </span>
-      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-bg px-2.5 text-[12px] font-medium leading-none text-primary">
-        {t('profile.weakTopicsQuestionCount', {
-          count: topic.question_count,
-        })}
-      </span>
-      {weightedQuestionCount > 0 && (
-        <WeakTopicInfoTooltip
-          label={t('profile.weakTopicsWeightedScoreLabel', {
-            count: weightedQuestionCount,
-          })}
-          text={t('profile.weakTopicsWeightedScoreTooltip', {
-            count: weightedQuestionCount,
-          })}
-        />
-      )}
-    </div>
+    <p className="mt-3 text-[13px] leading-[13px] text-muted">
+      {t('profile.weakTopicsQuestionMax', {
+        defaultValue: '{{questions}} questions, maximum {{maxScore}} points',
+        questions: topic.question_count,
+        maxScore: topic.max_score,
+      })}
+    </p>
   );
 }
 
-function WeakTopicBookList({
-  books,
+type SettingsView = 'home' | 'account' | 'email' | 'username' | 'password' | 'subscription' | 'about' | 'delete';
+
+function SettingsPanel({
+  profile,
+  onProfileUpdated,
 }: {
-  books: AnalyzeBookCoverage[];
+  profile: User;
+  onProfileUpdated?: (profile: User) => void;
 }) {
   const { t } = useTranslation();
-  const [bookWindowStart, setBookWindowStart] = useState(0);
-  const maxWindowStart = Math.max(0, books.length - INITIAL_VISIBLE_BOOKS_LIMIT);
-  const normalizedWindowStart = Math.min(bookWindowStart, maxWindowStart);
-  const visibleBooks = books.slice(
-    normalizedWindowStart,
-    normalizedWindowStart + INITIAL_VISIBLE_BOOKS_LIMIT,
-  );
-  const hasBookNavigation = books.length > INITIAL_VISIBLE_BOOKS_LIMIT;
-  const canShowPreviousBooks = normalizedWindowStart > 0;
-  const canShowNextBooks =
-    normalizedWindowStart + INITIAL_VISIBLE_BOOKS_LIMIT < books.length;
-  const remainingBookCount = Math.max(
-    0,
-    books.length - normalizedWindowStart - INITIAL_VISIBLE_BOOKS_LIMIT,
-  );
-
-  useEffect(() => {
-    setBookWindowStart(0);
-  }, [books]);
-
-  function showPreviousBooks() {
-    setBookWindowStart((value) => Math.max(0, value - INITIAL_VISIBLE_BOOKS_LIMIT));
-  }
-
-  function showNextBooks() {
-    setBookWindowStart((value) =>
-      Math.min(maxWindowStart, value + INITIAL_VISIBLE_BOOKS_LIMIT),
-    );
-  }
-
-  if (books.length === 0) {
-    return (
-      <p className="rounded-[8px] bg-bg px-4 py-3 text-[14px] leading-none text-muted">
-        {t('profile.weakTopicsNoBooks')}
-      </p>
-    );
-  }
-
-  return (
-    <div className="rounded-[8px] bg-bg/70 p-2">
-      <div className="flex min-h-8 flex-wrap items-center gap-2">
-        <span className="inline-flex min-w-0 items-center gap-1">
-          <p className="truncate text-[15px] font-medium leading-none text-primary">
-            {t('profile.weakTopicsBooksTitle')}
-          </p>
-          <WeakTopicInfoTooltip text={t('profile.weakTopicsBooksInfoTooltip')} />
-        </span>
-
-        {hasBookNavigation && (
-          <div className="ml-auto inline-flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={showPreviousBooks}
-              disabled={!canShowPreviousBooks}
-              aria-label={t('profile.weakTopicsPreviousBooks')}
-              className="inline-flex size-8 items-center justify-center rounded-[8px] border border-border/55 bg-surface text-primary transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:text-muted/45 disabled:opacity-55"
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.8} />
-            </button>
-            <button
-              type="button"
-              onClick={showNextBooks}
-              disabled={!canShowNextBooks}
-              aria-label={t('profile.weakTopicsNextBooks')}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[8px] border border-border/55 bg-surface px-2.5 text-[12px] font-medium leading-none text-primary transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:text-muted/45 disabled:opacity-55"
-            >
-              <span className="max-sm:sr-only">
-                {remainingBookCount > 0
-                  ? t('profile.weakTopicsShowMoreBooks', { count: remainingBookCount })
-                  : t('profile.weakTopicsNextBooks')}
-              </span>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.8} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      <ol
-        className="mt-4 grid grid-cols-3 gap-2 max-md:grid-cols-2 max-sm:grid-cols-1"
-        aria-label={t('profile.weakTopicsSecondaryBooksLabel')}
-      >
-        {visibleBooks.map((book) => (
-          <li key={book.public_id} className="min-w-0">
-            <WeakTopicBookRow book={book} />
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
-function WeakTopicBookRow({
-  book,
-}: {
-  book: AnalyzeBookCoverage;
-}) {
-  const { t } = useTranslation();
-  const coverage = clampScorePercent(book.percentage);
-
-  return (
-    <div className="flex min-h-[96px] w-full min-w-0 flex-col gap-1.5 rounded-[8px] border border-border/25 bg-surface px-3 py-3">
-      <span className="flex min-w-0 items-start justify-between gap-2">
-        <span className="line-clamp-2 block min-w-0 break-words text-[14px] font-medium leading-none text-text">
-          {book.publisher}
-        </span>
-        <span className="shrink-0 rounded-full bg-bg px-2 py-0.5 text-[11px] font-medium leading-none text-muted">
-          {t('analyze.bookGradeSuperscript', { grade: book.grade })}
-        </span>
-      </span>
-
-      <span className="mt-3 min-w-0">
-        <span
-          className="flex items-center justify-between gap-3 text-[12px] font-medium leading-none text-primary"
-          aria-label={t('profile.weakTopicsBookCoverageTooltip', {
-            percent: book.percentage,
-          })}
-        >
-          <span>{t('profile.weakTopicsBookCoverageLabel')}</span>
-          <span>{book.percentage}%</span>
-        </span>
-        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-bg" aria-hidden>
-          <span
-            className="block h-full rounded-full bg-primary"
-            style={{ width: `${coverage}%` }}
-          />
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function WeakTopicInfoTooltip({
-  text,
-  label,
-}: {
-  text: string;
-  label?: string;
-}) {
-  const tooltipId = useId();
-
-  return (
-    <span className="relative inline-flex shrink-0 items-center">
-      <button
-        type="button"
-        aria-describedby={tooltipId}
-        aria-label={text}
-        className={`group inline-flex items-center justify-center gap-1 text-[12px] font-medium leading-none text-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-          label
-            ? 'h-7 rounded-full bg-bg px-2.5 hover:bg-primary/5'
-            : 'h-5 w-5 rounded-none bg-transparent p-0 hover:bg-transparent'
-        }`}
-      >
-        {label && <span>{label}</span>}
-        <HugeiconsIcon icon={HelpCircleIcon} size={14} strokeWidth={1.8} />
-        <span
-          id={tooltipId}
-          role="tooltip"
-      className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 w-[300px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[8px] bg-surface px-3 py-2.5 text-left text-[12px] font-normal leading-none text-text-body opacity-0 transition duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
-        >
-          <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rotate-45 bg-surface" />
-          {text}
-        </span>
-      </button>
-    </span>
-  );
-}
-
-type SettingsView = 'menu' | 'account' | 'subscription' | 'about' | 'password' | 'email' | 'language' | 'delete';
-
-function SettingsPanel({ profile }: { profile: User }) {
-  const { t } = useTranslation();
-  const [view, setView] = useState<SettingsView>('menu');
+  const [view, setView] = useState<SettingsView>('home');
 
   if (view === 'account') {
-    return (
-      <SettingsDetail title={t('profile.mobileSettingsAccountTitle')} body={t('profile.mobileSettingsAccountHelper')} onBack={() => setView('menu')}>
-        <div className="grid gap-3"><ProfileField label={t('profile.boundEmailLabel')} value={profile.email} /><ProfileField label={t('profile.usernameUndefined')} value={profile.username ?? t('profile.usernameUndefined')} /></div>
-      </SettingsDetail>
-    );
+    return <section className="px-8 py-12 max-md:px-5"><div className="space-y-3">
+      <SettingsActionButton icon={Mail01Icon} title={t('profile.mobileAccountEmailTitle')} body={t('profile.mobileAccountEmailHelper')} onClick={() => setView('email')} />
+      <SettingsActionButton icon={UserEdit01Icon} title={t('profile.mobileAccountUsernameTitle')} body={t('profile.mobileAccountUsernameHelper')} onClick={() => setView('username')} />
+      <SettingsActionButton icon={ResetPasswordIcon} title={t(profile.has_password === false ? 'profile.mobileAccountPasswordCreateTitle' : 'profile.mobileAccountPasswordTitle')} body={t(profile.has_password === false ? 'profile.mobileAccountPasswordCreateHelper' : 'profile.mobileAccountPasswordHelper')} onClick={() => setView('password')} />
+      <SettingsActionButton icon={Delete02Icon} title={t('profile.deleteAccountButton')} body={t('profile.deleteAccountWarning')} tone="danger" onClick={() => setView('delete')} />
+      <button type="button" onClick={() => setView('home')} className="mt-2 inline-flex h-10 items-center gap-2 rounded-[8px] border border-border/65 px-4 text-[15px] leading-none text-primary transition-colors hover:bg-bg"><HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.8} />{t('profile.settingsBackButton')}</button>
+    </div></section>;
   }
 
   if (view === 'subscription') {
-    return <SettingsDetail title={t('profile.mobileSettingsSubscriptionTitle')} body={t('profile.subscriptionBody')} onBack={() => setView('menu')}><p className="rounded-[8px] bg-bg px-4 py-3 text-sm leading-none text-text-body">{t('profile.mobileSubscriptionUnavailable')}</p></SettingsDetail>;
+    return <SettingsDetail title={t('profile.mobileSettingsSubscriptionTitle')} body={t('profile.subscriptionBody')} onBack={() => setView('home')}><p className="rounded-[8px] bg-bg px-4 py-3 text-sm leading-none text-text-body">{t('profile.mobileSubscriptionUnavailable')}</p></SettingsDetail>;
   }
 
   if (view === 'about') {
-    return <SettingsDetail title={t('profile.mobileSettingsAboutTitle')} body={t('profile.mobileSettingsAboutHelper')} onBack={() => setView('menu')}><p className="rounded-[8px] bg-bg px-4 py-3 text-sm leading-none text-text-body">Infopedia</p></SettingsDetail>;
+    return <SettingsDetail title={t('profile.mobileSettingsAboutTitle')} body={t('profile.mobileSettingsAboutHelper')} onBack={() => setView('home')}><p className="rounded-[8px] bg-bg px-4 py-3 text-sm leading-none text-text-body">Infopedia</p></SettingsDetail>;
   }
 
   if (view === 'password') {
     return (
       <SettingsDetail
-        title={t('profile.changePasswordTitle')}
-        body={t('profile.changePasswordBody')}
-        onBack={() => setView('menu')}
+        title={t(profile.has_password === false ? 'profile.mobileAccountPasswordCreateTitle' : 'profile.mobileAccountPasswordTitle')}
+        body={t(profile.has_password === false ? 'profile.mobileAccountPasswordCreateHelper' : 'profile.mobileAccountPasswordHelper')}
+        onBack={() => setView('account')}
       >
-        <ChangePasswordFlow />
+        <MobilePassword
+          hasPassword={profile.has_password}
+          onBack={() => setView('account')}
+          onPasswordCreated={() => onProfileUpdated?.({ ...profile, has_password: true })}
+          onPasswordConflict={(nextProfile) => {
+            onProfileUpdated?.(nextProfile);
+            setView('account');
+          }}
+          embedded
+        />
       </SettingsDetail>
     );
   }
@@ -2216,21 +1960,26 @@ function SettingsPanel({ profile }: { profile: User }) {
       <SettingsDetail
         title={t('profile.boundEmailTitle')}
         body={t('profile.boundEmailBody')}
-        onBack={() => setView('menu')}
+        onBack={() => setView('account')}
       >
         <ProfileField label={t('profile.boundEmailLabel')} value={profile.email} />
       </SettingsDetail>
     );
   }
 
-  if (view === 'language') {
+  if (view === 'username') {
     return (
       <SettingsDetail
-        title={t('profile.languagePref')}
-        body={t('profile.settingsLanguageBody')}
-        onBack={() => setView('menu')}
+        title={t('profile.mobileUsernameTitle')}
+        body={t('profile.mobileUsernameBody')}
+        onBack={() => setView('account')}
       >
-        <LanguageSettingsPanel />
+        <MobileUsername
+          profile={profile}
+          onBack={() => setView('account')}
+          onSaved={(nextProfile) => onProfileUpdated?.(nextProfile)}
+          embedded
+        />
       </SettingsDetail>
     );
   }
@@ -2240,84 +1989,22 @@ function SettingsPanel({ profile }: { profile: User }) {
       <SettingsDetail
         title={t('profile.deleteAccountTitle')}
         body={t('profile.deleteAccountBody')}
-        onBack={() => setView('menu')}
+        onBack={() => setView('account')}
       >
         <DeleteAccountPanel userId={profile.id} />
       </SettingsDetail>
     );
   }
 
-  return (
-    <section className="px-8 py-12 max-md:px-5">
-      <div className="min-h-[320px] space-y-3">
-        <SettingsActionButton icon={UserIcon} title={t('profile.mobileSettingsAccountTitle')} body={t('profile.mobileSettingsAccountHelper')} onClick={() => setView('account')} />
-        <SettingsActionButton icon={Invoice03Icon} title={t('profile.mobileSettingsSubscriptionTitle')} body={t('profile.mobileSettingsSubscriptionHelper')} onClick={() => setView('subscription')} />
-        <SettingsActionButton icon={InformationCircleIcon} title={t('profile.mobileSettingsAboutTitle')} body={t('profile.mobileSettingsAboutHelper')} onClick={() => setView('about')} />
-        <SettingsActionButton
-          icon={LockPasswordIcon}
-          title={t('profile.settingsPasswordTitle')}
-          body={t('profile.settingsPasswordBody')}
-          onClick={() => setView('password')}
-        />
-        <SettingsActionButton
-          icon={Mail01Icon}
-          title={t('profile.settingsEmailTitle')}
-          body={t('profile.settingsEmailBody')}
-          onClick={() => setView('email')}
-        />
-        <SettingsActionButton
-          icon={Settings01Icon}
-          title={t('profile.settingsLanguageTitle')}
-          body={t('profile.settingsLanguageBody')}
-          onClick={() => setView('language')}
-        />
-        <SettingsActionButton
-          icon={Delete02Icon}
-          title={t('profile.settingsDeleteTitle')}
-          body={t('profile.settingsDeleteBody')}
-          tone="danger"
-          onClick={() => setView('delete')}
-        />
-      </div>
-    </section>
-  );
-}
+  if (view === 'home') {
+    return <section className="px-8 py-12 max-md:px-5"><div className="min-h-[320px] space-y-3">
+      <SettingsActionButton icon={UserIcon} title={t('profile.mobileSettingsAccountTitle')} body={t('profile.mobileSettingsAccountHelper')} onClick={() => setView('account')} />
+      <SettingsActionButton icon={Invoice03Icon} title={t('profile.mobileSettingsSubscriptionTitle')} body={t('profile.mobileSettingsSubscriptionHelper')} onClick={() => setView('subscription')} />
+      <SettingsActionButton icon={InformationCircleIcon} title={t('profile.mobileSettingsAboutTitle')} body={t('profile.mobileSettingsAboutHelper')} onClick={() => setView('about')} />
+    </div></section>;
+  }
 
-function LanguageSettingsPanel() {
-  const { t } = useTranslation();
-  const lang = useLangStore((state) => state.lang);
-  const setLang = useLangStore((state) => state.setLang);
-  const options: Array<{ value: Language; label: string }> = [
-    { value: 'ru', label: t('profile.languageRussian') },
-    { value: 'kk', label: t('profile.languageKazakh') },
-  ];
-
-  return (
-    <div className="grid gap-2">
-      {options.map((option) => {
-        const selected = lang === option.value;
-
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setLang(option.value)}
-            className={`flex min-h-[52px] items-center justify-between gap-3 rounded-[8px] border px-4 text-left text-[16px] font-medium leading-none transition-colors ${
-              selected
-                ? 'border-primary/45 bg-bg text-primary'
-                : 'border-border/65 bg-surface text-text-body hover:bg-bg'
-            }`}
-            aria-pressed={selected}
-          >
-            <span>{option.label}</span>
-            {selected && (
-              <HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2} className="text-accent" />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
+  return null;
 }
 
 function SettingsActionButton({
@@ -2404,164 +2091,6 @@ function SettingsDetail({
         <div className="mt-5">{children}</div>
       </div>
     </section>
-  );
-}
-
-type ChangePasswordFieldErrors = {
-  currentPassword?: string;
-  newPassword?: string;
-  confirmPassword?: string;
-};
-
-function ChangePasswordFlow() {
-  const { t } = useTranslation();
-  const [step, setStep] = useState<'current' | 'new'>('current');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<ChangePasswordFieldErrors>({});
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  function handleCurrentPasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setNotice(null);
-    setError(null);
-    setFieldErrors({});
-
-    if (!currentPassword) {
-      setFieldErrors({ currentPassword: t('auth.passwordRequired') });
-      return;
-    }
-
-    setStep('new');
-  }
-
-  async function handleNewPasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setNotice(null);
-    setError(null);
-    setFieldErrors({});
-
-    const nextErrors: ChangePasswordFieldErrors = {
-      newPassword: getPasswordValidationError(newPassword, t),
-    };
-    if (confirmPassword !== newPassword) {
-      nextErrors.confirmPassword = t('auth.passwordsDontMatch');
-    }
-
-    if (nextErrors.newPassword || nextErrors.confirmPassword) {
-      setFieldErrors(nextErrors);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await changeMyPassword(currentPassword, newPassword);
-      setNotice(t('profile.changePasswordSuccess'));
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setStep('current');
-    } catch (err) {
-      setError(getApiErrorMessage(err, t('profile.changePasswordFailed')));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (step === 'current') {
-    return (
-      <form onSubmit={handleCurrentPasswordSubmit} noValidate>
-        <AuthPasswordInput
-          label={t('profile.currentPassword')}
-          value={currentPassword}
-          visible={showCurrentPassword}
-          onChange={(value) => {
-            setCurrentPassword(value);
-            setFieldErrors((errors) => ({ ...errors, currentPassword: undefined }));
-            setError(null);
-            setNotice(null);
-          }}
-          onToggle={() => setShowCurrentPassword((visible) => !visible)}
-          toggleLabel={showCurrentPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-          autoComplete="current-password"
-          error={fieldErrors.currentPassword}
-        />
-        {notice && (
-          <p className="mb-3 rounded-[8px] bg-success/10 px-3 py-2 text-[14px] leading-none text-success" role="status">
-            {notice}
-          </p>
-        )}
-        {error && (
-          <p className="mb-3 text-[14px] leading-none text-danger" role="alert">
-            {error}
-          </p>
-        )}
-        <AuthSubmit>{t('profile.changePasswordContinueButton')}</AuthSubmit>
-      </form>
-    );
-  }
-
-  return (
-    <form onSubmit={handleNewPasswordSubmit} noValidate>
-      <div>
-        <AuthPasswordInput
-          label={t('auth.newPassword')}
-          value={newPassword}
-          visible={showNewPassword}
-          onChange={(value) => {
-            setNewPassword(value);
-            setFieldErrors((errors) => ({ ...errors, newPassword: undefined }));
-            setError(null);
-            setNotice(null);
-          }}
-          onToggle={() => setShowNewPassword((visible) => !visible)}
-          toggleLabel={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-          autoComplete="new-password"
-          error={fieldErrors.newPassword}
-        />
-        <AuthPasswordInput
-          label={t('auth.confirmPassword')}
-          value={confirmPassword}
-          visible={showConfirmPassword}
-          onChange={(value) => {
-            setConfirmPassword(value);
-            setFieldErrors((errors) => ({ ...errors, confirmPassword: undefined }));
-            setError(null);
-            setNotice(null);
-          }}
-          onToggle={() => setShowConfirmPassword((visible) => !visible)}
-          toggleLabel={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-          autoComplete="new-password"
-          error={fieldErrors.confirmPassword}
-        />
-      </div>
-      {error && (
-        <p className="mb-3 text-[14px] leading-none text-danger" role="alert">
-          {error}
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          setStep('current');
-          setError(null);
-          setNotice(null);
-          setFieldErrors({});
-        }}
-        className="mb-3 inline-flex h-[40px] items-center justify-center rounded-[8px] px-2 text-[15px] leading-none text-primary transition-colors hover:bg-bg"
-      >
-        {t('profile.changePasswordEditCurrentButton')}
-      </button>
-      <AuthSubmit loading={loading}>
-        {loading ? t('common.loading') : t('profile.changePasswordButton')}
-      </AuthSubmit>
-    </form>
   );
 }
 

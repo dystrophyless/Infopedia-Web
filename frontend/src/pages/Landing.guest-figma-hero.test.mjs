@@ -252,7 +252,7 @@ assert.match(
 );
 assert.match(
   featuredTermCardSource,
-  /variant === 'guest' \? 'from-white' : isMobileVariant/,
+  /variant === 'guest' \|\| isGuestLandingVariant \? 'from-white' : isMobileVariant/,
   'Guest mobile term card fades should match the white card surface',
 );
 assert.match(
@@ -267,6 +267,27 @@ assert.match(
   'Guest term carousel should request real featured examples from the backend',
 );
 
+assert.match(
+  carouselSource,
+  /const \[error, setError\] = useState\(false\)/,
+  'Featured carousel should distinguish a request error from an empty response',
+);
+assert.match(
+  carouselSource,
+  /onRetry=\{loadTerms\}/,
+  'Featured carousel should expose a retry action after a failed request',
+);
+assert.match(
+  carouselViewSource,
+  /error\?: boolean[\s\S]*onRetry\?: \(\) => void/,
+  'Carousel view should model error and retry state explicitly',
+);
+assert.match(
+  carouselViewSource,
+  /role="alert"[\s\S]*Повторить|role="alert"[\s\S]*onRetry/,
+  'Carousel error state should be announced and provide an accessible retry control',
+);
+
 assert.doesNotMatch(
   carouselViewFunctionSource,
   /GUEST_FALLBACK_TERMS|informatika-fallback|public_id: 'informatika'|public_id: 'alfavit'|public_id: 'etiket'/,
@@ -275,12 +296,18 @@ assert.doesNotMatch(
 
 assert.match(
   carouselViewFunctionSource,
-  /const shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop';/,
-  'Desktop and guest carousels should use fixed-speed auto-scroll behavior',
+  /const shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding';/,
+  'Desktop, guest, and landing carousels should use fixed-speed auto-scroll behavior',
 );
 
 assert.match(
   carouselViewFunctionSource,
-  /variant === 'guest' \|\| variant === 'guestDesktop' \? 'overflow-hidden pb-0'/,
-  'Guest mobile terms carousel should be moved by the animation rather than manual horizontal scrolling',
+  /variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding' \? 'overflow-hidden pb-0'/,
+  'Guest terms carousel should be moved by animation inside a clipped viewport',
+);
+
+assert.doesNotMatch(
+  carouselViewFunctionSource,
+  /variant === 'guestLanding'\s*\?\s*'[^']*(?:overflow-x-auto|snap-)/,
+  'Landing carousel should not retain finite manual snap scrolling',
 );

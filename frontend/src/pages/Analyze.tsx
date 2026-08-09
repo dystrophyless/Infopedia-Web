@@ -27,6 +27,15 @@ import {
 } from '../features/analyze/model/failurePresentation';
 import { selectAnalyzeResultAccess, type AnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import { AnalyzeChapterCard } from '../features/analyze/components/AnalyzeChapterCard';
+import { AnalyzeDesktopUploadGuide } from '../features/analyze/components/AnalyzeDesktopUploadGuide';
+import { AnalyzeDesktopProgress } from '../features/analyze/components/AnalyzeDesktopProgress';
+import {
+  createAnalyzeProgressSnapshot,
+  syncAnalyzeProgressSnapshot,
+  tickAnalyzeProgressSnapshot,
+  type AnalyzeProgressInput,
+  type AnalyzeProgressSnapshot,
+} from '../features/analyze/model/desktopProgress';
 import {
   BetweenBlocks,
   Button,
@@ -44,16 +53,11 @@ const MAX_ANALYZE_UPLOAD_BYTES = 2 * 1024 * 1024;
 const POLL_INTERVAL_MS = 2500;
 const TERMINAL_STATUSES = new Set(['success', 'failure']);
 const SMOOTH_PROGRESS_INTERVAL_MS = 450;
-const SMOOTH_PROGRESS_MAX = 100;
-const ANALYZE_STAGE_ALIASES: Record<string, string> = {
-  llmwhisperer_accepted: 'extraction_accepted',
-  llmwhisperer_processing: 'extraction_processing',
-  llmwhisperer_processed: 'extraction_completed',
-};
 const ANALYZE_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:px-4';
 const ANALYZE_RESULTS_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hidden px-6 py-14 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0';
-const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0`;
+const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0 min-[1440px]:!ml-[2px] min-[1440px]:!mr-0 min-[1440px]:h-dvh min-[1440px]:min-h-[573px] min-[1440px]:w-[calc(100%-2px)] min-[1440px]:max-w-none min-[1440px]:bg-[#efeaf8] min-[1440px]:px-0 min-[1440px]:py-0`;
 const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-hidden px-6 py-14 max-lg:h-auto max-lg:min-h-[calc(100dvh-80px)] max-lg:overflow-visible max-md:bg-[#efebf6] max-md:px-6 max-[359px]:px-4 max-md:pt-[var(--mobile-page-app-bar-offset)]';
+const ANALYZE_EMPTY_DESKTOP_PAGE_CLASS = `${ANALYZE_UPLOAD_PAGE_CLASS} min-[1440px]:!ml-[2px] min-[1440px]:!mr-0 min-[1440px]:h-[1080px] min-[1440px]:w-[calc(100%-2px)] min-[1440px]:max-w-none min-[1440px]:bg-[#efeaf8] min-[1440px]:px-16 min-[1440px]:py-8`;
 const ANALYZE_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5';
 const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
 const ANALYZE_PROCESSING_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5 max-md:mb-6 max-md:[&>div>div>div]:hidden max-md:[&>div>div>p]:hidden max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
@@ -64,11 +68,11 @@ export function Analyze() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isLatestView = searchParams.get('view') === 'latest';
   const [file, setFile] = useState<File | null>(null);
-  const [createdTask, setCreatedTask] = useState<AnalyzeTask | null>(null);
+  const [createdTaskState, setCreatedTask] = useState<AnalyzeTask | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [submitFailureKind, setSubmitFailureKind] = useState<AnalyzeFailureKind | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [pollTask, setPollTask] = useState<AnalyzeTask | null>(null);
+  const [pollTaskState, setPollTask] = useState<AnalyzeTask | null>(null);
   const [pollError, setPollError] = useState(false);
   const [polling, setPolling] = useState(false);
   const [latestResults, setLatestResults] = useState<AnalyzeChapterResult[] | null | undefined>(undefined);
@@ -77,10 +81,11 @@ export function Analyze() {
 
   const sseUrl = !isLatestView && taskId ? buildAnalyzeSseUrl(taskId) : null;
   const {
-    messages,
-    result: sseResult,
+    messages: rawMessages,
+    result: rawSseResult,
     error: sseError,
   } = useSSE<AnalyzeTask>(sseUrl);
+  const sseResult = taskId && rawSseResult?.task_id === taskId ? rawSseResult : undefined;
 
   useEffect(() => {
     if (!isLatestView) {
@@ -118,7 +123,11 @@ export function Analyze() {
 
   // A latest-result deep link is an independent read-only flow. Ignore any
   // task/SSE/poll state left over from a previous upload while it is active.
+  const messages = taskId ? rawMessages.filter((message) => message.task_id === taskId) : [];
+  const pollTask = taskId && pollTaskState?.task_id === taskId ? pollTaskState : undefined;
+  const createdTask = taskId && createdTaskState?.task_id === taskId ? createdTaskState : undefined;
   const currentTask = isLatestView ? undefined : sseResult ?? pollTask ?? messages.at(-1) ?? createdTask;
+  const activeCurrentTask = currentTask;
   const hasLatestResult = isLatestView && Array.isArray(latestResults) && latestResults.length > 0;
   const hasLatestError = isLatestView && latestResults === null && latestError;
   const isLatestLoading = isLatestView && latestResults === undefined && !latestError;
@@ -136,6 +145,7 @@ export function Analyze() {
     ? null
     : taskFailureKind ?? submitFailureKind ?? (hasGenericFailure ? 'generic' : null);
   const showUploadForm = !isLatestView && !isTerminal && !isProcessing && !failureKind;
+  const showDesktopUploadGuide = showUploadForm;
   const successResults = currentTask?.status === 'success'
     ? currentTask.result ?? []
     : hasLatestResult
@@ -257,11 +267,11 @@ export function Analyze() {
     <PageContainer
       width="full"
       gutter="none"
-      className={showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing ? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult ? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS}
+      className={showDesktopUploadGuide ? ANALYZE_EMPTY_DESKTOP_PAGE_CLASS : showUploadForm ? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing ? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult ? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS}
     >
       {!isLatestLoading && !isMobileResult && (
         <PageHeader
-          className={`${showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS} ${isMobileResult ? 'max-md:hidden' : ''}`}
+          className={`${showUploadForm ? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing ? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS} ${isMobileResult ? 'max-md:hidden' : ''} ${showDesktopUploadGuide ? 'min-[1440px]:hidden' : ''}`}
           eyebrow={!showUploadForm ? t('analyze.eyebrow') : undefined}
           eyebrowClassName={isProcessing ? 'max-md:hidden' : undefined}
           title={t('analyze.title')}
@@ -271,8 +281,22 @@ export function Analyze() {
         />
       )}
 
+      {showDesktopUploadGuide && (
+        <div className="hidden min-[1440px]:block">
+          <AnalyzeDesktopUploadGuide
+            file={file}
+            submitting={submitting}
+            onFileChange={handleFileChange}
+            onSubmit={handleSubmit}
+          />
+        </div>
+      )}
+
       {showUploadForm && (
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0">
+        <form
+          onSubmit={handleSubmit}
+          className={`flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0 ${showDesktopUploadGuide ? 'min-[1440px]:hidden' : ''}`}
+        >
           <p className="mt-8 hidden text-[20px] font-medium leading-none text-[#572d9f] max-md:block">{t('analyze.uploadTitle')}</p>
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5 max-lg:grid-cols-1 max-md:mt-6">
             <div className="flex min-h-0 min-w-0 flex-col justify-between rounded-[8px] bg-bg px-4 py-4 max-md:hidden">
@@ -385,8 +409,8 @@ export function Analyze() {
       {isLatestLoading && <AnalyzeLatestResultSkeleton onBack={handleMobileResultBack} />}
 
       {isProcessing && (
-        <AnalyzeProgress
-          currentTask={currentTask}
+        <AnalyzeProcessingViews
+          currentTask={activeCurrentTask}
           file={file}
           onBack={handleMobileResultBack}
         />
@@ -420,6 +444,46 @@ export function Analyze() {
         </>
       )}
     </PageContainer>
+  );
+}
+
+export function AnalyzeProcessingViews({
+  currentTask,
+  file,
+  onBack,
+  progressOverride,
+  sourceReferenceOnly = false,
+  sourceReferenceFillOverride,
+}: {
+  currentTask: AnalyzeTask | null | undefined;
+  file?: File | null;
+  onBack?: () => void;
+  progressOverride?: number;
+  sourceReferenceOnly?: boolean;
+  sourceReferenceFillOverride?: number;
+}) {
+  const progressSnapshot = useAnalyzeProgressSnapshot(currentTask, {
+    percent: progressOverride,
+    sourceReferenceOnly,
+  });
+
+  return (
+    <>
+      <div className="hidden min-[1440px]:flex h-full w-full items-center justify-center">
+        <AnalyzeDesktopProgress
+          progressSnapshot={progressSnapshot}
+          file={file}
+          sourceReferenceFillOverride={sourceReferenceFillOverride}
+        />
+      </div>
+      <div className="min-[1440px]:hidden">
+        <AnalyzeProgress
+          progressSnapshot={progressSnapshot}
+          file={file}
+          onBack={onBack}
+        />
+      </div>
+    </>
   );
 }
 
@@ -629,30 +693,23 @@ function InstructionStep({
 }
 
 export function AnalyzeProgress({
-  currentTask,
+  progressSnapshot,
   file,
-  progressOverride,
   onBack,
 }: {
-  currentTask: AnalyzeTask | null | undefined;
+  progressSnapshot: AnalyzeProgressSnapshot;
   file?: File | null;
-  progressOverride?: number;
   onBack?: () => void;
 }) {
   const { t } = useTranslation();
-  const currentStage = currentTask?.stage ?? currentTask?.status ?? 'pending';
-  const liveProgressPercent = useSmoothAnalyzeProgress();
-  const sourceProgressPercent = progressOverride ?? liveProgressPercent;
-  const progressPercent = Number.isFinite(sourceProgressPercent)
-    ? Math.min(100, Math.max(0, sourceProgressPercent))
-    : 0;
+  const { percent: progressPercent, effectiveStage } = progressSnapshot;
   const mobileProgressCaption =
     t('analyze.mobileProgressCaption') === 'analyze.mobileProgressCaption'
       ? t('analyze.stages.parsing')
       : t('analyze.mobileProgressCaption');
 
   const content = (
-    <section className="overflow-hidden rounded-[8px] border border-border bg-surface md:mt-6 max-md:overflow-visible max-md:rounded-[8px] max-md:border-0 max-md:bg-transparent">
+    <section data-analyze-legacy-progress className="overflow-hidden rounded-[8px] border border-border bg-surface md:mt-6 max-md:overflow-visible max-md:rounded-[8px] max-md:border-0 max-md:bg-transparent">
       <div className="h-1 bg-bg max-md:hidden" aria-hidden>
         <div className="h-full w-1/3 animate-[analyze-scan_1.8s_ease-in-out_infinite] bg-accent" />
       </div>
@@ -672,7 +729,7 @@ export function AnalyzeProgress({
 
         <div className="mt-7">
           <div className="mb-2 flex items-center justify-between gap-4 text-[14px] font-medium leading-none text-primary">
-            <span>{getStageLabel(currentStage, t)}</span>
+            <span>{getStageLabel(effectiveStage, t)}</span>
             <span>{t('analyze.progressPercent', { percent: progressPercent })}</span>
           </div>
           <Progress
@@ -692,6 +749,7 @@ export function AnalyzeProgress({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={progressPercent}
+            aria-valuetext={t('analyze.progressPercent', { percent: progressPercent })}
             aria-label={t('analyze.progressTitle')}
           >
             <svg
@@ -1095,39 +1153,41 @@ function normalizeAnalyzeIdentity(value: string) {
   return value.trim().toLowerCase();
 }
 
-function useSmoothAnalyzeProgress() {
-  const [progress, setProgress] = useState(8);
+function useAnalyzeProgressSnapshot(
+  currentTask: AnalyzeTask | null | undefined,
+  progressOverride: { percent?: number; sourceReferenceOnly?: boolean } = {},
+) {
+  const progressInput: AnalyzeProgressInput = {
+    taskId: currentTask?.task_id ?? null,
+    hasTask: Boolean(currentTask),
+    status: currentTask?.status,
+    stage: currentTask?.stage,
+  };
+  const [progressSnapshot, setProgressSnapshot] = useState(() => syncAnalyzeProgressSnapshot(
+    createAnalyzeProgressSnapshot(),
+    progressInput,
+    progressOverride,
+  ));
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setProgress((current) => {
-        if (current >= SMOOTH_PROGRESS_MAX) return current;
+    setProgressSnapshot((current) => syncAnalyzeProgressSnapshot(current, progressInput, progressOverride));
+  }, [currentTask?.stage, currentTask?.status, currentTask?.task_id, progressOverride.percent, progressOverride.sourceReferenceOnly]);
 
-        const step = current < 35 ? 1.4 : current < 75 ? 0.75 : 0.35;
-        return Math.min(
-          SMOOTH_PROGRESS_MAX,
-          Math.round((current + step) * 10) / 10,
-        );
-      });
+  useEffect(() => {
+    if (Number.isFinite(progressOverride.percent)) return;
+
+    const timer = window.setInterval(() => {
+      setProgressSnapshot((current) => tickAnalyzeProgressSnapshot(current, progressInput));
     }, SMOOTH_PROGRESS_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [currentTask?.stage, currentTask?.status, currentTask?.task_id, progressOverride.percent]);
 
-  return Math.round(progress);
-}
-
-function normalizeAnalyzeStage(stage: string | undefined) {
-  if (!stage) return 'pending';
-  if (ANALYZE_STAGE_ALIASES[stage]) return ANALYZE_STAGE_ALIASES[stage];
-  if (stage.startsWith('llmwhisperer_')) return 'extraction_processing';
-
-  return stage;
+  return progressSnapshot;
 }
 
 function getStageLabel(stage: string | undefined, t: (key: string) => string) {
-  const publicStage = normalizeAnalyzeStage(stage);
-  const key = `analyze.stages.${publicStage}`;
+  const key = `analyze.stages.${stage ?? 'pending'}`;
   const translated = t(key);
   return translated === key ? t('analyze.stages.processing') : translated;
 }

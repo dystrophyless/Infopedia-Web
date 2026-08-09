@@ -172,11 +172,16 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /const ANALYZE_PROCESSING_PAGE_CLASS = `[^`]*max-md:max-w-none[^`]*max-md:py-0`/,
+  /const ANALYZE_PROCESSING_PAGE_CLASS = `[^`]*max-md:max-w-none[^`]*max-md:py-0[^`]*`/,
   'Ordinary processing should use the full mobile canvas around the canonical frame',
 );
 assert.match(
   analyzeSource,
-  /<AnalyzeProgress[\s\S]*onBack=\{handleMobileResultBack\}/,
+  /<AnalyzeProcessingViews[\s\S]*onBack=\{handleMobileResultBack\}/,
   'Ordinary processing should expose the canonical mobile back action',
+);
+assert.match(
+  analyzeSource,
+  /<AnalyzeProgress[\s\S]*onBack=\{onBack\}/,
+  'The responsive processing wrapper should preserve the mobile back callback below 1440px',
 );

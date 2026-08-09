@@ -7,3 +7,6 @@ export * from './TestsHubView';
 export * from './PracticeByTopicView';
 export * from './WeakTopicProgressList';
 export * from './WeakTopicRecommendation';
+export * from './DesktopTestsHubView';
+export * from './DesktopTestOptionCard';
+export * from './DesktopChapterTestCard';

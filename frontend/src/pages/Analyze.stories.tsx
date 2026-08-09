@@ -2,13 +2,13 @@ import '../i18n';
 import { useEffect, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { AnalyzeChapterResult, AnalyzeTask } from '../types';
 import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import { Layout } from '../components/Layout';
 import { useAuthStore } from '../stores/authStore';
 import i18n from '../i18n';
-import { Analyze, AnalyzeFailure, AnalyzeMobileResults, AnalyzeProgress } from './Analyze';
+import { Analyze, AnalyzeFailure, AnalyzeMobileResults, AnalyzeProcessingViews } from './Analyze';
 
 const results: AnalyzeChapterResult[] = [
   {
@@ -116,6 +116,111 @@ function AuthenticatedAnalyzeStory() {
   );
 }
 
+function AuthenticatedAnalyzeLocalizedStory({ language }: { language: 'ru' | 'kk' }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const previousLanguage = i18n.language;
+    const previous = useAuthStore.getState();
+    useAuthStore.setState({
+      isAuthenticated: true,
+      token: 'storybook-token',
+      refreshToken: null,
+      user: { id: 1, username: 'storybook', email: 'storybook@example.com', language, grade: 'undefined', role: 'user' },
+    });
+    void i18n.changeLanguage(language).then(() => {
+      if (active) setReady(true);
+    });
+
+    return () => {
+      active = false;
+      useAuthStore.setState({
+        isAuthenticated: previous.isAuthenticated,
+        token: previous.token,
+        refreshToken: previous.refreshToken,
+        user: previous.user,
+      });
+      void i18n.changeLanguage(previousLanguage);
+    };
+  }, [language]);
+
+  if (!ready) return null;
+
+  return (
+    <Layout>
+      <Analyze />
+    </Layout>
+  );
+}
+
+function DesktopProgressComposition({
+  language,
+  currentTask,
+  file,
+  progressOverride,
+  sourceReferenceOnly,
+  sourceReferenceFillOverride,
+}: {
+  language: 'ru' | 'kk';
+  currentTask: AnalyzeTask;
+  file: File;
+  progressOverride: number;
+  sourceReferenceOnly?: boolean;
+  sourceReferenceFillOverride?: number;
+}) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const previousLanguage = i18n.language;
+    const previous = useAuthStore.getState();
+    useAuthStore.setState({
+      isAuthenticated: true,
+      token: 'storybook-token',
+      refreshToken: null,
+      user: {
+        id: 1,
+        username: 'dystrophyless',
+        email: 'dystrophyless@example.com',
+        language,
+        grade: 'undefined',
+        role: 'user',
+      },
+    });
+    void i18n.changeLanguage(language).then(() => {
+      if (active) setReady(true);
+    });
+
+    return () => {
+      active = false;
+      useAuthStore.setState({
+        isAuthenticated: previous.isAuthenticated,
+        token: previous.token,
+        refreshToken: previous.refreshToken,
+        user: previous.user,
+      });
+      void i18n.changeLanguage(previousLanguage);
+    };
+  }, [language]);
+
+  if (!ready) return null;
+
+  return (
+    <Layout>
+      <div className="ml-[2px] flex h-dvh min-h-[573px] w-[calc(100%-2px)] items-center justify-center bg-[#efeaf8]">
+        <AnalyzeProcessingViews
+          currentTask={currentTask}
+          file={file}
+          progressOverride={progressOverride}
+          sourceReferenceOnly={sourceReferenceOnly}
+          sourceReferenceFillOverride={sourceReferenceFillOverride}
+        />
+      </div>
+    </Layout>
+  );
+}
+
 function AuthenticatedAnalyzeFailureStory({ language }: { language: 'ru' | 'kk' }) {
   const [ready, setReady] = useState(false);
 
@@ -155,6 +260,111 @@ function AuthenticatedAnalyzeFailureStory({ language }: { language: 'ru' | 'kk' 
 }
 
 export const UploadEmpty: Story = {};
+
+function renderDesktopGuide(language: 'ru' | 'kk' = 'ru') {
+  return (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <AuthenticatedAnalyzeLocalizedStory language={language} />
+    </MemoryRouter>
+  );
+}
+
+const desktopGuideGlobals = { viewport: { value: 'desktop1440', isRotated: false } };
+const desktopGuideParameters = {
+  a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+};
+
+function playDesktopGuideStep(targetStep: number) {
+  return async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement);
+    for (let step = 1; step < targetStep; step += 1) {
+      await userEvent.click(await canvas.findByRole('button', { name: /Перейти на следующий шаг|Келесі қадамға өту/i }));
+    }
+    await expect(canvasElement.querySelector('[data-analyze-desktop-active-step]')).toHaveAttribute(
+      'data-analyze-desktop-active-step',
+      String(targetStep),
+    );
+  };
+}
+
+export const DesktopGuideStep1: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide(),
+  play: playDesktopGuideStep(1),
+};
+
+export const DesktopGuideStep2: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide(),
+  play: playDesktopGuideStep(2),
+};
+
+export const DesktopGuideStep3: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide(),
+  play: playDesktopGuideStep(3),
+};
+
+export const DesktopGuideStep4: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide(),
+  play: playDesktopGuideStep(4),
+};
+
+export const DesktopGuideStep5: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide(),
+  play: playDesktopGuideStep(5),
+};
+
+export const DesktopGuideStep6: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide(),
+  play: playDesktopGuideStep(6),
+};
+
+function playDesktopUploadSelected(language: 'ru' | 'kk') {
+  return async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => {
+      expect(canvasElement.querySelector('#analyze-file-desktop')).toBeInTheDocument();
+    });
+    const desktopInput = canvasElement.querySelector<HTMLInputElement>('#analyze-file-desktop') as HTMLInputElement;
+    await userEvent.upload(desktopInput, new File(['sample'], 'analysis.pdf', { type: 'application/pdf' }));
+
+    await expect(canvasElement.querySelector('[data-analyze-desktop-composition]')).toBeVisible();
+    await expect(canvasElement.querySelector('[data-analyze-desktop-active-step="1"]')).toBeVisible();
+    await expect(canvasElement.querySelector('[data-analyze-desktop-selected-filename]')).toHaveTextContent('analysis.pdf');
+    await expect(canvasElement.querySelector('[data-analyze-desktop-selected-helper]')).toHaveTextContent(
+      language === 'ru' ? 'Нажмите, что бы выбрать другой файл' : 'Басқа файлды таңдау үшін басыңыз',
+    );
+    await expect(canvasElement.querySelector('[data-analyze-desktop-submit]')).toBeEnabled();
+    await expect(canvasElement.querySelector('#analyze-file')).not.toBeVisible();
+
+    const visibleFilenames = canvas.getAllByText('analysis.pdf').filter((node) => node.checkVisibility());
+    await expect(visibleFilenames).toHaveLength(1);
+  };
+}
+
+export const DesktopUploadSelected: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide('ru'),
+  play: playDesktopUploadSelected('ru'),
+};
+
+export const DesktopUploadSelectedKk: Story = {
+  globals: desktopGuideGlobals,
+  parameters: desktopGuideParameters,
+  render: () => renderDesktopGuide('kk'),
+  play: playDesktopUploadSelected('kk'),
+};
 
 export const UploadEmptyResponsiveShell: Story = {
   globals: { viewport: { value: 'mobile390', isRotated: false } },
@@ -211,7 +421,85 @@ export const UploadFileSelectedMobile430: Story = {
 
 export const SubmitProcessing: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  render: () => <AnalyzeProgress currentTask={processingTask} />,
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => <AnalyzeProcessingViews currentTask={processingTask} />,
+};
+
+export const DesktopProgressFigmaRussian: Story = {
+  globals: { viewport: { value: 'desktop1440x1080', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <DesktopProgressComposition
+        language="ru"
+        sourceReferenceOnly
+        currentTask={{ task_id: 'desktop-progress', status: 'started', stage: 'parsing' }}
+        progressOverride={42}
+        file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
+        sourceReferenceFillOverride={43.16667}
+      />
+    </MemoryRouter>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const progressbar = await canvas.findByRole('progressbar', { name: 'Анализируем результаты ЕНТ' });
+    await expect(progressbar).toHaveAttribute('aria-valuenow', '42');
+    await expect(canvasElement.querySelector('[data-analyze-desktop-progress-filename]')).toHaveTextContent('analysis.pdf');
+    await expect(canvasElement.querySelector('[data-analyze-desktop-progress-filesize]')).toHaveTextContent('1.3MB');
+    await expect(canvasElement.querySelector('[data-analyze-desktop-progress-step="3"]')).toHaveAttribute('data-step-state', 'current');
+  },
+};
+
+export const DesktopProgressStage3Russian: Story = {
+  globals: { viewport: { value: 'desktop1440x1080', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <DesktopProgressComposition
+        language="ru"
+        currentTask={{ task_id: 'desktop-progress-stage-3', status: 'started', stage: 'parsing' }}
+        progressOverride={70}
+        file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
+      />
+    </MemoryRouter>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const progressbar = await canvas.findByRole('progressbar');
+    await expect(progressbar).toHaveAttribute('aria-valuenow', '70');
+    await expect(progressbar).toHaveAttribute('aria-valuetext', expect.stringContaining('70'));
+    await expect(canvasElement.querySelector('[data-analyze-desktop-progress-fill]')).toHaveAttribute('style', 'width: 70%;');
+    await expect(canvasElement.querySelector('[data-analyze-desktop-progress-step="3"]')).toHaveAttribute('data-step-state', 'current');
+  },
+};
+
+export const DesktopProgressKazakh: Story = {
+  globals: { viewport: { value: 'desktop1440x1080', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <DesktopProgressComposition
+        language="kk"
+        currentTask={{ task_id: 'desktop-progress-kk', status: 'started', stage: 'parsing' }}
+        progressOverride={70}
+        file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
+      />
+    </MemoryRouter>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByRole('status')).toBeVisible();
+    await expect(canvas.getByText('ҰБТ нәтижелерін талдап жатырмыз')).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
+  },
 };
 
 export const ProcessingMobile: Story = {
@@ -219,7 +507,7 @@ export const ProcessingMobile: Story = {
   parameters: {
     a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
   },
-  render: () => <AnalyzeProgress currentTask={processingTask} />,
+  render: () => <AnalyzeProcessingViews currentTask={processingTask} />,
 };
 
 export const ProcessingUploadedFileMobile430: Story = {
@@ -234,8 +522,8 @@ export const ProcessingUploadedFileMobile430: Story = {
     <div className="min-h-dvh bg-[#efebf6] pb-[88px]">
       <main className="mx-auto w-full max-w-none px-6 pt-[88px]">
         <h1 className="mb-12 text-[24px] font-medium leading-none text-[#000000]">Анализ ЕНТ</h1>
-        <AnalyzeProgress
-          currentTask={processingTask}
+        <AnalyzeProcessingViews
+          currentTask={{ ...processingTask, stage: 'parsing' }}
           file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
           progressOverride={78}
         />
@@ -245,8 +533,10 @@ export const ProcessingUploadedFileMobile430: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('progressbar')).toBeVisible();
-    await expect(canvas.getByText('analysis.pdf')).toBeVisible();
-    await expect(canvas.getByText('1.3MB')).toBeVisible();
+    const visibleFilenames = canvas.getAllByText('analysis.pdf').filter((node) => node.checkVisibility());
+    await expect(visibleFilenames).toHaveLength(1);
+    const visibleSizes = canvas.getAllByText('1.3MB').filter((node) => node.checkVisibility());
+    await expect(visibleSizes).toHaveLength(1);
   },
 };
 

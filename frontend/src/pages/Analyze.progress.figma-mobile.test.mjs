@@ -29,8 +29,8 @@ const tokensSource = readFileSync(
 
 assert.match(
   analyzeSource,
-  /<AnalyzeProgress\s+currentTask=\{currentTask\}\s+file=\{file\}/,
-  'Analyze should pass the selected uploaded file into the processing progress view',
+  /<AnalyzeProgress\s+progressSnapshot=\{progressSnapshot\}\s+file=\{file\}/,
+  'Analyze should pass the shared snapshot and selected uploaded file into the legacy progress view',
 );
 assert.match(
   analyzeSource,
@@ -39,7 +39,7 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /const ANALYZE_PROCESSING_PAGE_CLASS = `\$\{ANALYZE_PAGE_CLASS\} max-md:max-w-none max-md:bg-\[#efebf6\] max-md:px-0 max-md:py-0`;/,
+  /const ANALYZE_PROCESSING_PAGE_CLASS = `\$\{ANALYZE_PAGE_CLASS\} max-md:max-w-none max-md:bg-\[#efebf6\] max-md:px-0 max-md:py-0[^`]*`;/,
   'Analyze processing page should use the full mobile canvas for the canonical frame',
 );
 assert.doesNotMatch(
@@ -54,7 +54,7 @@ assert.doesNotMatch(
 );
 assert.match(
   analyzeSource,
-  /className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\}`\}/,
+  /className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\} \$\{showDesktopUploadGuide \? 'min-\[1440px\]:hidden' : ''\}`\}/,
   'Analyze should select processing-specific mobile header spacing without changing desktop result/header behavior',
 );
 assert.match(
@@ -89,7 +89,7 @@ assert.match(appBarSource, /absolute left-1\/2 top-1\/2 flex size-11/, 'Compact 
 assert.equal(80 + 24 + 32, 136, 'Processing content should begin at canonical y=136');
 assert.match(
   analyzeSource,
-  /<section className="overflow-hidden[^\"]*md:mt-6[^\"]*max-md:overflow-visible/,
+  /<section[^>]*className="overflow-hidden[^\"]*md:mt-6[^\"]*max-md:overflow-visible/,
   'Processing content should have no mobile margin while retaining desktop spacing',
 );
 assert.doesNotMatch(
@@ -115,8 +115,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /const progressPercent = Number\.isFinite\(sourceProgressPercent\)[\s\S]*Math\.min\(100, Math\.max\(0, sourceProgressPercent\)\)/,
-  'AnalyzeProgress should clamp the shared displayed and aria progress value to 0..100',
+  /const \{ percent: progressPercent, effectiveStage \} = progressSnapshot/,
+  'AnalyzeProgress should consume the shared displayed, aria, fill, and effective-stage snapshot',
 );
 assert.match(
   analyzeSource,
@@ -125,8 +125,8 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /getStageLabel\(currentStage, t\)/,
-  'AnalyzeProgress desktop body should retain localized stage semantics',
+  /getStageLabel\(effectiveStage, t\)/,
+  'AnalyzeProgress legacy label should use the monotonic effective phase instead of a stale raw stage',
 );
 assert.match(
   analyzeSource,
@@ -181,4 +181,9 @@ assert.match(
   storiesSource,
   /export const ProcessingUploadedFileMobile430:[\s\S]*value: 'mobile430'[\s\S]*pt-\[88px\][\s\S]*Анализ ЕНТ[\s\S]*new File\(\[[\s\S]*analysis\.pdf/,
   'Analyze should expose a 430px processing page composition with title offset and an actual uploaded PDF file',
+);
+assert.match(
+  storiesSource,
+  /export const ProcessingUploadedFileMobile430:[\s\S]*stage:\s*'parsing'[\s\S]*progressOverride=\{78\}/,
+  'The 78% mobile behavior fixture should truthfully map to analysis',
 );

@@ -44,20 +44,20 @@ assert.match(
 
 assert.match(
   analyzeSource,
-  /<PageContainer\s+width="full"\s+gutter="none"\s+className=\{showUploadForm \? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing \? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult \? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS\}/,
-  'Analyze page should use the shared page container while keeping upload and processing layouts',
+  /<PageContainer\s+width="full"\s+gutter="none"\s+className=\{showDesktopUploadGuide \? ANALYZE_EMPTY_DESKTOP_PAGE_CLASS : showUploadForm \? ANALYZE_UPLOAD_PAGE_CLASS : isProcessing \? ANALYZE_PROCESSING_PAGE_CLASS : isMobileResult \? ANALYZE_RESULTS_PAGE_CLASS : ANALYZE_PAGE_CLASS\}/,
+  'Analyze page should use the shared page container while preserving the 1440px Figma rail across upload states',
 );
 
 assert.match(
   analyzeSource,
-  /<PageHeader\s+className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\}`\}/,
-  'Analyze upload header should use the shared header while processing uses the mobile Figma spacing and results keep the standard rhythm',
+  /<PageHeader\s+className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\} \$\{showDesktopUploadGuide \? 'min-\[1440px\]:hidden' : ''\}`\}/,
+  'Analyze upload header should stay intact below 1440px and hide behind both desktop upload states',
 );
 
 assert.match(
   analyzeSource,
-  /<form onSubmit=\{handleSubmit\} className="flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0">/,
-  'Analyze upload form should retain the desktop surface while becoming a rail-aligned mobile layout',
+  /<form\s+onSubmit=\{handleSubmit\}\s+className=\{`flex min-h-0 flex-1 flex-col rounded-surface border border-border bg-surface p-5 max-lg:flex-none max-md:border-0 max-md:bg-transparent max-md:p-0 \$\{showDesktopUploadGuide \? 'min-\[1440px\]:hidden' : ''\}`\}/,
+  'Analyze legacy upload form should retain its responsive surface and stay hidden across 1440px upload states',
 );
 
 assert.match(

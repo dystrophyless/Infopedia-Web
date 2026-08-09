@@ -2,20 +2,22 @@ export type OptionTone = 'neutral' | 'selected' | 'correct' | 'incorrect';
 
 type OptionToneInput = {
   optionId: string;
-  correctOptionId: string;
   selectedOptionId: string | null;
   checkedOptionId: string | null;
+  correctOptionRef?: string;
+  answerCorrect?: boolean;
 };
 
 export function getOptionTone({
   optionId,
-  correctOptionId,
   selectedOptionId,
   checkedOptionId,
+  correctOptionRef,
+  answerCorrect,
 }: OptionToneInput): OptionTone {
   if (checkedOptionId !== null) {
-    if (optionId === correctOptionId) return 'correct';
-    if (optionId === checkedOptionId) return 'incorrect';
+    if (correctOptionRef && optionId === correctOptionRef) return 'correct';
+    if (optionId === checkedOptionId) return answerCorrect ? 'correct' : 'incorrect';
     return 'neutral';
   }
 

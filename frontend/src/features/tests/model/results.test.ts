@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TestQuestion } from '../../../api/tests';
+import type { TestCompletionSummary, TestQuestion } from '../../../api/tests';
 import {
   buildWeakTopicResult,
   formatAverageSeconds,
@@ -15,7 +15,6 @@ const question = (id: string, topicId: string, topicTitle: string): TestQuestion
     { id: 'a', label: 'A', text: 'Wrong' },
     { id: 'b', label: 'B', text: 'Correct' },
   ],
-  correctOptionId: 'b',
   explanation: 'Explanation',
   topic: {
     id: topicId,
@@ -85,6 +84,7 @@ describe('test result helpers', () => {
       currentQuestionIndex: 1,
       selectedOptionId: 'a',
       checkedOptionId: 'a',
+      answerFeedback: null,
       answerRecords: [
         answer('q1', 'topic-a', 'Topic A', true),
         answer('q2', 'topic-b', 'Topic B', false),
@@ -92,6 +92,21 @@ describe('test result helpers', () => {
       resultVisible: true,
       startedAt: 1_000,
       completedAt: 5_000,
+      completionSummary: {
+        correctAnswerCount: 1,
+        totalQuestions: 2,
+        answeredQuestions: 2,
+        scorePercent: 50,
+        durationSeconds: 4,
+        averagePaceSeconds: 2,
+        weakTopicResult: {
+          topicId: 'topic-b',
+          topicTitle: 'Topic B',
+          mistakeCount: 1,
+          questionCount: 8,
+          estimatedMinutes: 4,
+        },
+      } satisfies TestCompletionSummary,
     };
 
     expect(getTestRunnerMetrics(state, questions, 99_000)).toMatchObject({
@@ -111,5 +126,33 @@ describe('test result helpers', () => {
       },
     });
     expect(state.completedAt).toBe(5_000);
+  });
+
+  it('uses server completion timing instead of recomputing client timing', () => {
+    const state = {
+      ...({
+        currentQuestionIndex: 0,
+        selectedOptionId: null,
+        checkedOptionId: null,
+        answerFeedback: null,
+        answerRecords: [],
+        resultVisible: true,
+        startedAt: 1_000,
+        completedAt: 5_000,
+        completionSummary: {
+          correctAnswerCount: 1,
+          totalQuestions: 1,
+          answeredQuestions: 1,
+          scorePercent: 100,
+          durationSeconds: 91,
+          averagePaceSeconds: 91,
+          weakTopicResult: null,
+        },
+      } satisfies TestRunnerState),
+    };
+    expect(getTestRunnerMetrics(state, [question('q1', 'topic-a', 'Topic A')], 99_000)).toMatchObject({
+      durationSeconds: 91,
+      averagePaceSeconds: 91,
+    });
   });
 });

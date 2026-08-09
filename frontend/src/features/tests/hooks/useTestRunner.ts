@@ -1,5 +1,9 @@
 import { useCallback, useReducer } from 'react';
-import type { TestQuestion } from '../../../api/tests';
+import type {
+  TestAnswerFeedback,
+  TestCompletionSummary,
+  TestQuestion,
+} from '../../../api/tests';
 import { createTestRunnerState, reduceTestRunner } from '../model';
 
 export function useTestRunner() {
@@ -13,23 +17,38 @@ export function useTestRunner() {
     dispatch({ type: 'reset', now: Date.now() });
   }, []);
 
+  const hydrateTestState = useCallback((questions: TestQuestion[], answers: Record<string, TestAnswerFeedback>, currentQuestionIndex: number) => {
+    dispatch({ type: 'hydrate', questions, answers, currentQuestionIndex, now: Date.now() });
+  }, []);
+
   const selectOption = useCallback((optionId: string) => {
     dispatch({ type: 'select-option', optionId });
   }, []);
 
-  const runPrimaryAction = useCallback((question: TestQuestion, totalQuestions: number) => {
+  const submitAnswer = useCallback((question: TestQuestion, feedback: TestAnswerFeedback) => {
     dispatch({
-      type: 'primary-action',
+      type: 'answer-submitted',
       question,
-      totalQuestions,
+      feedback,
       now: Date.now(),
     });
+  }, []);
+
+  const advanceQuestion = useCallback((totalQuestions: number) => {
+    dispatch({ type: 'next-question', totalQuestions, now: Date.now() });
+  }, []);
+
+  const completeAttempt = useCallback((summary: TestCompletionSummary | null) => {
+    dispatch({ type: 'complete', summary, now: Date.now() });
   }, []);
 
   return {
     state,
     resetTestState,
+    hydrateTestState,
     selectOption,
-    runPrimaryAction,
+    submitAnswer,
+    advanceQuestion,
+    completeAttempt,
   };
 }

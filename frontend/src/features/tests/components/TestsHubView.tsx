@@ -6,12 +6,18 @@ import { Skeleton } from '../../../ui';
 import type { TestsWeakTopic } from '../model';
 import { TestEntryLink } from './TestEntryLink';
 import { WeakTopicProgressList } from './WeakTopicProgressList';
+import { DesktopTestsHubView } from './DesktopTestsHubView';
+import type { TestsDashboard } from '../../../api/tests';
 
 export interface TestsHubViewProps {
   weakTopics: TestsWeakTopic[];
   weakTopicSearchTarget: string;
   status: 'loading' | 'ready' | 'empty' | 'error';
   onRetry?: () => void;
+  dashboard?: TestsDashboard | null;
+  dashboardStatus?: 'loading' | 'ready' | 'error' | 'catalog';
+  onDashboardRetry?: () => void;
+  desktopQuestionLabel?: (count: number) => string;
 }
 
 export function TestsHubView({
@@ -19,12 +25,17 @@ export function TestsHubView({
   weakTopicSearchTarget,
   status,
   onRetry,
+  dashboard = null,
+  dashboardStatus = 'loading',
+  onDashboardRetry,
+  desktopQuestionLabel,
 }: TestsHubViewProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-[var(--mobile-page-content-end-inset,0px)] max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
-      <main className="w-full max-w-[382px] md:max-w-[720px]" aria-busy={status === 'loading'}>
+    <div data-tests-hub-root aria-busy={status === 'loading' || dashboardStatus === 'loading'}>
+    <div data-tests-mobile className="md:hidden min-h-[calc(100dvh-80px)] bg-[#efebf6] px-6 py-12 max-md:min-h-[var(--mobile-page-available-height,100dvh)] max-md:px-6 max-md:pb-[var(--mobile-page-content-end-inset,0px)] max-md:pt-[var(--mobile-page-app-bar-offset)] md:flex md:justify-center">
+      <main className="w-full max-w-[382px] md:max-w-[720px]">
         <h1 className="text-[24px] font-medium leading-[24px] text-black">
           {t('tests.title', { defaultValue: 'Тесты' })}
         </h1>
@@ -52,7 +63,7 @@ export function TestsHubView({
               </Link>
             </article>
           ) : status === 'error' ? (
-            <article className="mt-6 rounded-[8px] bg-[#ded2f1] p-6" role="alert">
+            <div className="mt-6 rounded-[8px] bg-[#ded2f1] p-6" role="alert">
               <h3 className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">
                 {t('tests.loadErrorTitle', { defaultValue: 'Не удалось загрузить результаты анализа' })}
               </h3>
@@ -66,15 +77,14 @@ export function TestsHubView({
               >
                 {t('common.retry', { defaultValue: 'Повторить' })}
               </button>
-            </article>
+            </div>
           ) : (
           <div className="mt-6 rounded-[8px] bg-[#ded2f1] p-6">
             <h3 className="text-[16px] font-medium leading-[16px] text-[#6a37c3]">
               {t('tests.yourWeakTopicsTitle', { defaultValue: 'Ваши слабые темы' })}
             </h3>
             {status === 'loading' ? (
-              <div className="mt-4 flex flex-col gap-2" role="status" aria-live="polite">
-                <span className="sr-only leading-none">{t('common.loading', { defaultValue: 'Загрузка' })}</span>
+              <div className="mt-4 flex flex-col gap-2" aria-hidden="true">
                 {[0, 1, 2].map((item) => (
                   <Skeleton key={item} className="h-3 w-full bg-[rgba(134,91,207,0.25)]" />
                 ))}
@@ -140,6 +150,8 @@ export function TestsHubView({
           </div>
         </section>
       </main>
+    </div>
+    <DesktopTestsHubView dashboard={dashboard} status={dashboardStatus} analyzeStatus={status} onRetry={onDashboardRetry} questionLabel={desktopQuestionLabel} />
     </div>
   );
 }

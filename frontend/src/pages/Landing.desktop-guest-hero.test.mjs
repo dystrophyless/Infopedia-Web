@@ -27,8 +27,13 @@ assert.match(
 );
 assert.match(
   authenticated,
-  /<DesktopGuestLanding isAuthenticated=\{isAuthenticated\} \/>/,
-  'Authenticated desktop CTA routing should remain auth-aware',
+  /return null;/,
+  'Authenticated desktop home should be intentionally empty',
+);
+assert.doesNotMatch(
+  authenticated,
+  /DesktopGuestLanding|DesktopGuestHero|DesktopGuestSections/,
+  'Authenticated desktop home should not render the guest landing composition',
 );
 assert.match(
   sections,

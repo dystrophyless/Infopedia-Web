@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     ANTI_SCRAPE_DETAIL_LIMIT: int = 60
     ANTI_SCRAPE_MAX_SEARCH_RESULTS: int = 20
     ANTI_SCRAPE_MAX_TERMS_PAGE_SIZE: int = 20
+    TEST_CATALOG_STATS_READ_ENABLED: bool = False
 
     @property
     def google_redirect_uri(self) -> str:

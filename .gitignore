@@ -9,6 +9,7 @@ data/
 !src/data/chapterCatalog.json
 src/data/*
 !src/data/chapterCatalog.json
+!src/data/questions.json
 .worktrees/
 .claude/
 .codex/

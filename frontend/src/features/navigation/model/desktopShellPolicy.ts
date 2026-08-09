@@ -1,4 +1,4 @@
-export type DesktopShellItem = 'home' | 'tests' | 'search' | 'analyze' | 'algosha';
+export type DesktopShellItem = 'home' | 'tests' | 'search' | 'analyze' | 'algosha' | 'profile';
 
 export type DesktopShellLocation = {
   pathname: string;
@@ -29,6 +29,7 @@ function activeItemForPath(pathname: string): DesktopShellItem | null {
     return 'search';
   }
   if (pathname === '/analyze') return 'analyze';
+  if (pathname === '/profile') return 'profile';
   return null;
 }
 

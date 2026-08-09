@@ -78,22 +78,23 @@ export function getTestRunnerMetrics(
 ): TestRunnerMetrics {
   const currentQuestion = questions[state.currentQuestionIndex];
   const totalQuestions = questions.length;
-  const correctAnswerCount = state.answerRecords.filter((record) => record.correct).length;
+  const correctAnswerCount = state.completionSummary?.correctAnswerCount ?? 0;
   const progressPercent =
     totalQuestions > 0 ? ((state.currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
-  const scorePercent =
-    totalQuestions > 0 ? (correctAnswerCount / totalQuestions) * 100 : 0;
+  const scorePercent = state.completionSummary?.scorePercent ?? 0;
   const selectedOption = currentQuestion?.options.find(
     (option) => option.id === state.selectedOptionId,
   );
   const checked = state.checkedOptionId !== null;
   const checkDisabled = !selectedOption && !checked;
   const resultFinishedAt = state.completedAt ?? now;
-  const durationSeconds = Math.max(1, Math.round((resultFinishedAt - state.startedAt) / 1000));
+  const locallyMeasuredDuration = Math.max(1, Math.round((resultFinishedAt - state.startedAt) / 1000));
+  const durationSeconds = state.completionSummary?.durationSeconds ?? locallyMeasuredDuration;
   const averagePaceSeconds =
-    totalQuestions > 0 ? Math.max(1, Math.round(durationSeconds / totalQuestions)) : 0;
-  const weakTopicResult = state.resultVisible
-    ? buildWeakTopicResult(state.answerRecords, questions)
+    state.completionSummary?.averagePaceSeconds ??
+    (totalQuestions > 0 ? Math.max(1, Math.round(durationSeconds / totalQuestions)) : 0);
+  const weakTopicResult = state.completionSummary?.weakTopicResult
+    ? state.completionSummary.weakTopicResult
     : null;
 
   return {

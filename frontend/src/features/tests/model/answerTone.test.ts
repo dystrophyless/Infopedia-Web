@@ -12,7 +12,7 @@ describe('test answer tone characterization', () => {
     expect(
       getOptionTone({
         optionId: 'b',
-        correctOptionId: 'b',
+        correctOptionRef: 'b',
         selectedOptionId: 'b',
         checkedOptionId: null,
       }),
@@ -20,7 +20,8 @@ describe('test answer tone characterization', () => {
     expect(
       getOptionTone({
         optionId: 'b',
-        correctOptionId: 'b',
+        correctOptionRef: 'b',
+        answerCorrect: false,
         selectedOptionId: 'a',
         checkedOptionId: 'a',
       }),
@@ -28,7 +29,8 @@ describe('test answer tone characterization', () => {
     expect(
       getOptionTone({
         optionId: 'a',
-        correctOptionId: 'b',
+        correctOptionRef: 'b',
+        answerCorrect: false,
         selectedOptionId: 'a',
         checkedOptionId: 'a',
       }),
@@ -36,7 +38,8 @@ describe('test answer tone characterization', () => {
     expect(
       getOptionTone({
         optionId: 'c',
-        correctOptionId: 'b',
+        correctOptionRef: 'b',
+        answerCorrect: false,
         selectedOptionId: 'a',
         checkedOptionId: 'a',
       }),

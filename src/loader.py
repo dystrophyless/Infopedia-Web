@@ -13,6 +13,8 @@ from src.terms.models import (
     Definition,
     Term,
 )
+from src.tests.catalog_stats import publish_test_catalog_generation
+from src.topics.chapter_catalog import load_chapter_catalog
 from src.topics.models import (
     Book,
     BookChapterCoverage,
@@ -23,12 +25,24 @@ from src.topics.models import (
     TopicCodeTranslation,
     TopicMapping,
 )
-from src.topics.chapter_catalog import load_chapter_catalog
 from src.topics.repository import resolve_chapter_by_title
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 TOPIC_CODE_RE = re.compile(r"^\s*(\d+(?:\.\d+)+)")
 logger = logging.getLogger(__name__)
+
+
+def _in_outer_transaction(session: AsyncSession) -> bool:
+    """Avoid committing/rolling back when a caller owns an active transaction."""
+    try:
+        return bool(session.in_transaction())
+    except (AttributeError, TypeError):
+        return False
+
+
+async def _publish_owned_catalog_generation(session: AsyncSession, *, owns_transaction: bool) -> None:
+    if owns_transaction and hasattr(session, "get_bind"):
+        await publish_test_catalog_generation(session)
 
 
 def parse_book_key(book_key: str) -> tuple[str, int]:
@@ -197,7 +211,11 @@ def _load_json_file(json_path: str | Path):
         return json.load(file)
 
 
-async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
+async def _load_terms_from_json_impl(
+    session: AsyncSession,
+    embedder,
+    json_path: str,
+):
     data = await asyncio.to_thread(_load_json_file, json_path)
 
     for term_name, books in data.items():
@@ -261,14 +279,34 @@ async def load_terms_from_json(session: AsyncSession, embedder, json_path: str):
                     )
                     session.add(definition)
 
-    await session.commit()
+
+async def load_terms_from_json(
+    session: AsyncSession,
+    embedder,
+    json_path: str,
+    *,
+    manage_transaction: bool = True,
+):
+    owns_transaction = manage_transaction and not _in_outer_transaction(session)
+    try:
+        await _load_terms_from_json_impl(session, embedder, json_path)
+        if owns_transaction:
+            await _publish_owned_catalog_generation(session, owns_transaction=True)
+            await session.commit()
+    except Exception:
+        if owns_transaction:
+            await session.rollback()
+        raise
 
 
 async def load_chapters_and_topic_codes(
     session: AsyncSession,
     json_path: str,
     translations_json_path: str,
+    *,
+    manage_transaction: bool = True,
 ) -> None:
+    owns_transaction = manage_transaction and not _in_outer_transaction(session)
     data = await asyncio.to_thread(_load_json_file, json_path)
     translation_catalog = await asyncio.to_thread(
         _load_json_file,
@@ -378,17 +416,23 @@ async def load_chapters_and_topic_codes(
 
                     processed_codes.add(topic_code_name)
 
-        await session.commit()
+        if owns_transaction:
+            await _publish_owned_catalog_generation(session, owns_transaction=True)
+            await session.commit()
 
     except Exception:
-        await session.rollback()
+        if owns_transaction:
+            await session.rollback()
         raise
 
 
-async def load_books_topics_and_mappings(
+async def load_books_topics_and_mappings(  # noqa: PLR0912 - legacy loader complexity; transaction ownership adds one branch
     session: AsyncSession,
     json_path: str,
+    *,
+    manage_transaction: bool = True,
 ) -> None:
+    owns_transaction = manage_transaction and not _in_outer_transaction(session)
     data = await asyncio.to_thread(_load_json_file, json_path)
 
     try:
@@ -470,14 +514,22 @@ async def load_books_topics_and_mappings(
                             ),
                         )
 
-        await session.commit()
+        if owns_transaction:
+            await _publish_owned_catalog_generation(session, owns_transaction=True)
+            await session.commit()
 
     except Exception:
-        await session.rollback()
+        if owns_transaction:
+            await session.rollback()
         raise
 
 
-async def refresh_book_chapter_coverage(session: AsyncSession) -> None:
+async def refresh_book_chapter_coverage(
+    session: AsyncSession,
+    *,
+    manage_transaction: bool = True,
+) -> None:
+    owns_transaction = manage_transaction and not _in_outer_transaction(session)
     matching_topics = (
         select(
             TopicCode.chapter_id.label("chapter_id"),
@@ -518,8 +570,26 @@ async def refresh_book_chapter_coverage(session: AsyncSession) -> None:
             BookChapterCoverage(**coverage_row)
             for coverage_row in coverage_rows
         )
-        await session.commit()
+        if owns_transaction:
+            await session.commit()
 
     except Exception:
-        await session.rollback()
+        if owns_transaction:
+            await session.rollback()
         raise
+
+
+async def load_chapters_and_topic_codes_core(session: AsyncSession, json_path: str, translations_json_path: str) -> None:
+    await load_chapters_and_topic_codes(session, json_path, translations_json_path, manage_transaction=False)
+
+
+async def load_books_topics_and_mappings_core(session: AsyncSession, json_path: str) -> None:
+    await load_books_topics_and_mappings(session, json_path, manage_transaction=False)
+
+
+async def refresh_book_chapter_coverage_core(session: AsyncSession) -> None:
+    await refresh_book_chapter_coverage(session, manage_transaction=False)
+
+
+async def load_terms_from_json_core(session: AsyncSession, embedder, json_path: str) -> None:
+    await load_terms_from_json(session, embedder, json_path, manage_transaction=False)

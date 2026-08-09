@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import {
   MobileShellProvider,
@@ -14,9 +14,16 @@ import { Navbar } from './Navbar';
 export function Layout({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const authHydrated = useAuthHydration();
   const location = useLocation();
+  const navigate = useNavigate();
   const desktopShell = resolveDesktopShell(location, isAuthenticated, authHydrated);
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
+  }
 
   return (
     <MobileShellProvider authenticated={isAuthenticated}>
@@ -24,6 +31,7 @@ export function Layout({ children }: { children: ReactNode }) {
         authenticated={isAuthenticated}
         authHydrated={authHydrated}
         desktopShell={desktopShell}
+        onLogout={handleLogout}
         user={user}
       >
         {children}
@@ -52,12 +60,14 @@ function LayoutShell({
   authenticated,
   authHydrated,
   desktopShell,
+  onLogout,
   user,
 }: {
   children: ReactNode;
   authenticated: boolean;
   authHydrated: boolean;
   desktopShell: ReturnType<typeof resolveDesktopShell>;
+  onLogout: () => void;
   user: ReturnType<typeof useAuthStore.getState>['user'];
 }) {
   const decision = useMobileBottomNavDecision();
@@ -71,6 +81,7 @@ function LayoutShell({
       {desktopShell.visible && (
         <DesktopSidebar
           activeItem={desktopShell.activeItem}
+          onLogout={onLogout}
           user={user}
         />
       )}

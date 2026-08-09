@@ -33,10 +33,10 @@ describe('resolveDesktopShell', () => {
     });
   });
 
-  it('renders the authenticated sidebar on profile and account routes without a false active item', () => {
+  it('maps the profile route to the profile sidebar item for authenticated users', () => {
     expect(resolveDesktopShell({ pathname: '/profile' }, true, true)).toEqual({
       visible: true,
-      activeItem: null,
+      activeItem: 'profile',
     });
   });
 });

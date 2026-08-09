@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -43,7 +43,12 @@ import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
-import { shouldShowProfileLogout, type ProfileTabId } from '../utils/profileTabs';
+import {
+  parseProfileTab,
+  setProfileTab,
+  shouldShowProfileLogout,
+  type ProfileTabId,
+} from '../utils/profileTabs';
 import { BottomSheet } from '../ui/molecules/BottomSheet';
 import { Button, FormField, Input, MobilePinnedAppBar, PasswordField } from '../ui';
 import { validateUsername, type UsernameValidationErrorCode } from '../features/users/model/usernameValidation';
@@ -102,7 +107,12 @@ export function Profile() {
   const [profile, setProfile] = useState<User | null>(user);
   const [loading, setLoading] = useState(!user);
   const [fetchError, setFetchError] = useState(false);
-  const [activeTab, setActiveTab] = useState<ProfileTabId>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = parseProfileTab(searchParams);
+
+  function setActiveTab(nextTab: ProfileTabId) {
+    setSearchParams(setProfileTab(searchParams, nextTab));
+  }
 
   useEffect(() => {
     let cancelled = false;

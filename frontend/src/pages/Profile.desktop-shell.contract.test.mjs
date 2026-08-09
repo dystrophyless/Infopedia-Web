@@ -14,6 +14,23 @@ const desktopShell = profileSource.slice(
 );
 
 assert.match(
+  profileSource,
+  /const \[searchParams, setSearchParams\] = useSearchParams\(\)/,
+  'Profile should derive its tab from the URL so browser Back restores selection',
+);
+assert.match(profileSource, /const activeTab = parseProfileTab\(searchParams\)/);
+assert.match(
+  profileSource,
+  /setSearchParams\(setProfileTab\(searchParams, nextTab\)\)/,
+  'Profile tab writes should preserve unrelated query parameters through the shared codec',
+);
+assert.doesNotMatch(
+  profileSource,
+  /const \[activeTab, setActiveTab\] = useState<ProfileTabId>/,
+  'Profile must not keep a second tab source of truth outside the URL',
+);
+
+assert.match(
   desktopShell,
   /role="tablist"[\s\S]*profileNavItems\.map[\s\S]*role="tab"/,
   'Desktop Profile must expose page-local accessible tabs',

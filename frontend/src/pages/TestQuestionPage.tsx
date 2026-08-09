@@ -1,7 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getTestSession, type TestSession } from '../api/tests';
+import {
+  completeTestAttempt,
+  createTestAttempt,
+  getTestAttempt,
+  submitTestAnswer,
+  type TestCompletionSummary,
+  type TestMode,
+  type TestSession,
+} from '../api/tests';
 import {
   getTestRunnerMetrics,
   TestQuestionView,
@@ -18,28 +26,53 @@ export function TestQuestionPage() {
   const [testSession, setTestSession] = useState<TestSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [restartNonce, setRestartNonce] = useState(0);
+  const generationRef = useRef(0);
+  const completionPromiseRef = useRef<Promise<TestCompletionSummary | null> | null>(null);
   const {
     state: runnerState,
     resetTestState,
+    hydrateTestState,
     selectOption,
-    runPrimaryAction,
+    submitAnswer,
+    advanceQuestion,
+    completeAttempt,
   } = useTestRunner();
-  const topicCode = searchParams.get('topicCode') ?? undefined;
+  const chapterRef = searchParams.get('chapterRef') ?? searchParams.get('topicCode') ?? undefined;
+  const attemptRef = searchParams.get('attemptRef') ?? undefined;
+  const requestedMode: TestMode | 'default' =
+    testMode === 'weak' || testMode === 'mock' || testMode === 'chapter' || testMode === 'random'
+      ? testMode
+      : 'default';
 
   useEffect(() => {
     let active = true;
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
+    completionPromiseRef.current = null;
+    setActionError(false);
+    setSubmitting(false);
 
     setLoading(true);
     setLoadError(false);
-    getTestSession(testMode ?? 'default', topicCode)
+    const sessionRequest = attemptRef && restartNonce === 0
+      ? getTestAttempt(attemptRef)
+      : createTestAttempt(requestedMode, chapterRef);
+    sessionRequest
       .then((session) => {
-        if (!active) return;
+        if (!active || generationRef.current !== generation) return;
         setTestSession(session);
         resetTestState();
+        hydrateTestState(session.questions, session.answers ?? {}, session.currentQuestionIndex ?? 0);
+        if (session.status === 'completed' && session.summary) {
+          completeAttempt(session.summary);
+        }
         setLoading(false);
       })
       .catch(() => {
-        if (!active) return;
+        if (!active || generationRef.current !== generation) return;
         setTestSession(null);
         resetTestState();
         setLoadError(true);
@@ -48,13 +81,68 @@ export function TestQuestionPage() {
 
     return () => {
       active = false;
+      if (generationRef.current === generation) generationRef.current += 1;
     };
-  }, [resetTestState, testMode, topicCode]);
+  }, [attemptRef, chapterRef, completeAttempt, hydrateTestState, requestedMode, resetTestState, restartNonce]);
 
   const questions = testSession?.questions ?? [];
   const metrics = getTestRunnerMetrics(runnerState, questions, Date.now());
   const title = testSession?.title ?? t('tests.testTitleFallback', { defaultValue: 'Тест' });
   const onBack = () => navigate('/tests');
+  const onRestart = () => {
+    setRestartNonce((value) => value + 1);
+  };
+
+  const handlePrimaryAction = async () => {
+    if (submitting || !testSession?.attemptRef || !metrics.currentQuestion) return;
+
+    if (!runnerState.checkedOptionId) {
+      const selectedOptionId = runnerState.selectedOptionId;
+      if (!selectedOptionId) return;
+
+      const generation = generationRef.current;
+      setSubmitting(true);
+      setActionError(false);
+      try {
+        const feedback = await submitTestAnswer(
+          testSession.attemptRef,
+          metrics.currentQuestion.id,
+          selectedOptionId,
+        );
+        if (generationRef.current !== generation) return;
+        submitAnswer(metrics.currentQuestion, feedback);
+      } catch {
+        if (generationRef.current === generation) setActionError(true);
+      } finally {
+        if (generationRef.current === generation) setSubmitting(false);
+      }
+      return;
+    }
+
+    if (runnerState.currentQuestionIndex < metrics.totalQuestions - 1) {
+      advanceQuestion(metrics.totalQuestions);
+      return;
+    }
+
+    if (completionPromiseRef.current) return;
+    const generation = generationRef.current;
+    const completionPromise = completeTestAttempt(testSession.attemptRef);
+    completionPromiseRef.current = completionPromise;
+    setSubmitting(true);
+    setActionError(false);
+    try {
+      const summary = await completionPromise;
+      if (generationRef.current !== generation) return;
+      completeAttempt(summary);
+    } catch {
+      if (generationRef.current === generation) setActionError(true);
+    } finally {
+      if (generationRef.current === generation) {
+        setSubmitting(false);
+        completionPromiseRef.current = null;
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -100,16 +188,12 @@ export function TestQuestionPage() {
         averagePaceSeconds={metrics.averagePaceSeconds}
         weakTopicResult={metrics.weakTopicResult}
         onBack={onBack}
-        onRestart={resetTestState}
+        onRestart={onRestart}
       />
     );
   }
 
   const activeQuestion = metrics.currentQuestion;
-  const handlePrimaryAction = () => {
-    if (metrics.checkDisabled || !runnerState.selectedOptionId) return;
-    runPrimaryAction(activeQuestion, metrics.totalQuestions);
-  };
 
   return (
     <TestQuestionView
@@ -120,8 +204,10 @@ export function TestQuestionPage() {
       progressPercent={metrics.progressPercent}
       selectedOptionId={runnerState.selectedOptionId}
       checkedOptionId={runnerState.checkedOptionId}
+      answerFeedback={runnerState.answerFeedback}
       checked={metrics.checked}
-      checkDisabled={metrics.checkDisabled}
+      checkDisabled={metrics.checkDisabled || submitting}
+      actionError={actionError}
       onBack={onBack}
       onSelectOption={selectOption}
       onPrimaryAction={handlePrimaryAction}

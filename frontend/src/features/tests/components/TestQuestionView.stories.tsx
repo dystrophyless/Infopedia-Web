@@ -17,7 +17,6 @@ const question: TestQuestion = {
     { id: 'c', label: 'C', text: 'Шина' },
     { id: 'd', label: 'D', text: 'Жергілікті жад' },
   ],
-  correctOptionId: 'b',
   explanation: 'Регистрлер екілік кодтағы ақпаратты жазуға, сақтауға және түрлендіруге арналған.',
   topic: { id: 'hardware', title: 'Компьютер құрылғылары', questionCount: 10, estimatedMinutes: 5 },
 };
@@ -35,6 +34,7 @@ const meta = {
     progressPercent: 10,
     selectedOptionId: null,
     checkedOptionId: null,
+    answerFeedback: null,
     checked: false,
     checkDisabled: true,
     onBack: fn(),
@@ -49,10 +49,34 @@ type Story = StoryObj<typeof meta>;
 export const Neutral: Story = {};
 export const Selected: Story = { args: { selectedOptionId: 'b', checkDisabled: false } };
 export const CorrectFeedback: Story = {
-  args: { selectedOptionId: 'b', checkedOptionId: 'b', checked: true, checkDisabled: false },
+  args: {
+    selectedOptionId: 'b',
+    checkedOptionId: 'b',
+    answerFeedback: {
+      questionId: 'q-1',
+      optionId: 'b',
+      correct: true,
+      correctOptionRef: 'b',
+      explanation: 'Server explanation',
+    },
+    checked: true,
+    checkDisabled: false,
+  },
 };
 export const IncorrectFeedback: Story = {
-  args: { selectedOptionId: 'a', checkedOptionId: 'a', checked: true, checkDisabled: false },
+  args: {
+    selectedOptionId: 'a',
+    checkedOptionId: 'a',
+    answerFeedback: {
+      questionId: 'q-1',
+      optionId: 'a',
+      correct: false,
+      correctOptionRef: 'b',
+      explanation: 'Server explanation',
+    },
+    checked: true,
+    checkDisabled: false,
+  },
 };
 export const LongKazakhContent: Story = {
   args: {
@@ -77,7 +101,14 @@ export const DesktopFlow: Story = {
 const flowQuestions = [question, { ...question, id: 'q-2', prompt: 'Келесі сұрақ' }];
 
 function TestFlowDemo() {
-  const { state, resetTestState, selectOption, runPrimaryAction } = useTestRunner();
+  const {
+    state,
+    resetTestState,
+    selectOption,
+    submitAnswer,
+    advanceQuestion,
+    completeAttempt,
+  } = useTestRunner();
   const metrics = useMemo(() => getTestRunnerMetrics(state, flowQuestions, Date.now()), [state]);
 
   if (state.resultVisible) {
@@ -108,11 +139,34 @@ function TestFlowDemo() {
       progressPercent={metrics.progressPercent}
       selectedOptionId={state.selectedOptionId}
       checkedOptionId={state.checkedOptionId}
+      answerFeedback={state.answerFeedback}
       checked={metrics.checked}
       checkDisabled={metrics.checkDisabled}
       onBack={() => undefined}
       onSelectOption={selectOption}
-      onPrimaryAction={() => runPrimaryAction(active, metrics.totalQuestions)}
+      onPrimaryAction={() => {
+        if (!state.checkedOptionId && state.selectedOptionId) {
+          submitAnswer(active, {
+            questionId: active.id,
+            optionId: state.selectedOptionId,
+            correct: state.selectedOptionId === 'b',
+            correctOptionRef: 'b',
+            explanation: 'Server explanation',
+          });
+        } else if (state.currentQuestionIndex < metrics.totalQuestions - 1) {
+          advanceQuestion(metrics.totalQuestions);
+        } else {
+          completeAttempt({
+            correctAnswerCount: state.answerRecords.filter((record) => record.correct).length,
+            totalQuestions: metrics.totalQuestions,
+            answeredQuestions: metrics.totalQuestions,
+            scorePercent: 50,
+            durationSeconds: metrics.durationSeconds,
+            averagePaceSeconds: metrics.averagePaceSeconds,
+            weakTopicResult: null,
+          });
+        }
+      }}
     />
   );
 }

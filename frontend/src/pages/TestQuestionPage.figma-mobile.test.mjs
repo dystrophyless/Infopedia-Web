@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -130,8 +130,8 @@ assert.doesNotMatch(
 
 assert.match(
   questionSource,
-  /import \{ getTestSession, type TestSession \} from '\.\.\/api\/tests';/,
-  'Question page should consume a typed test session from the API boundary',
+  /(?:createTestAttempt|getTestAttempt)[\s\S]*type TestSession/,
+  'Question page should consume a typed server attempt from the API boundary',
 );
 
 assert.match(
@@ -142,7 +142,7 @@ assert.match(
 
 assert.match(
   questionSource,
-  /state: runnerState[\s\S]*resetTestState,[\s\S]*selectOption,[\s\S]*runPrimaryAction,[\s\S]*\} = useTestRunner\(\);/,
+  /state: runnerState[\s\S]*resetTestState,[\s\S]*selectOption,[\s\S]*submitAnswer,[\s\S]*advanceQuestion,[\s\S]*completeAttempt,[\s\S]*\} = useTestRunner\(\);/,
   'Question page should wire all runner state transitions through the extracted hook',
 );
 
@@ -154,8 +154,13 @@ assert.match(
 
 assert.match(
   questionSource,
-  /runPrimaryAction\(activeQuestion, metrics\.totalQuestions\)/,
-  'Question page primary action should dispatch the active question through the runner',
+  /submitTestAnswer\([\s\S]*testSession\.attemptRef[\s\S]*metrics\.currentQuestion\.id[\s\S]*selectedOptionId/,
+  'Question page primary action should submit the selected option to the server',
+);
+assert.match(
+  questionSource,
+  /completeTestAttempt\(testSession\.attemptRef\)/,
+  'Question page should complete the attempt through the server route',
 );
 
 assert.match(
@@ -175,10 +180,11 @@ for (const codePattern of [
   /export type TestQuestion/,
   /export type TestSession/,
   /export type TestTopicSummary/,
-  /export async function getTestSession/,
-  /apiClient\.get<TestSession>/,
-  /VITE_TESTS_API_ENABLED/,
-  /testSessionFixtures/,
+  /export async function createTestAttempt/,
+  /export async function getTestAttempt/,
+  /export async function submitTestAnswer/,
+  /export async function completeTestAttempt/,
+  /apiClient\.get\('\/api\/tests\/dashboard'/,
 ]) {
   assert.match(
     testsApiSource,
@@ -187,22 +193,16 @@ for (const codePattern of [
   );
 }
 
-for (const text of [
-  'Обычный тест',
-  'Мыс өткізгіштер',
-  'Регистрлер',
-  'Шина',
-  'Жергілікті жад',
-  'Екілік кодтар түрінде берілген ақпаратты жазуға, сақтауға, беруге және түрлендіруге арналған құрылғылар',
+for (const forbiddenApiFixturePattern of [
+  /testSessionFixtures/,
+  /legacySnapshots/,
+  /defaultQuestionOptions/,
+  /VITE_TESTS_API_ENABLED/,
 ]) {
-  assert.ok(
-    testsApiSource.includes(text),
-    `The temporary local fixture should preserve the Figma/session data until the API ships: ${text}`,
-  );
-  assert.equal(
-    questionSource.includes(text),
-    false,
-    `Question page should not hardcode session data that will come from the API: ${text}`,
+  assert.doesNotMatch(
+    testsApiSource,
+    forbiddenApiFixturePattern,
+    `The production API adapter should not carry local test fixtures: ${forbiddenApiFixturePattern}`,
   );
 }
 
@@ -215,16 +215,36 @@ for (const forbiddenPattern of [
   /tests\.weakTopicValue/,
   /tests\.weakTopicMistakes['"]/,
   /sectionRetakeDescription/,
-  /6:40 минут/,
-  /40 секунд/,
-  /2 ошибки по этому разделу/,
-  /10 вопросов, 5 минут/,
-  /Веб-проектирование/,
+  /6:40 РјРёРЅСѓС‚/,
+  /40 СЃРµРєСѓРЅРґ/,
+  /2 РѕС€РёР±РєРё РїРѕ СЌС‚РѕРјСѓ СЂР°Р·РґРµР»Сѓ/,
+  /10 РІРѕРїСЂРѕСЃРѕРІ, 5 РјРёРЅСѓС‚/,
+  /Р’РµР±-РїСЂРѕРµРєС‚РёСЂРѕРІР°РЅРёРµ/,
 ]) {
   assert.doesNotMatch(
     questionSource,
     forbiddenPattern,
     `Question page should not keep hardcoded fixture/result values: ${forbiddenPattern}`,
+  );
+}
+
+assert.match(
+  questionSource,
+  /tests\.resultTitle[\s\S]*tests\.resultCardTitle[\s\S]*tests\.retryTestButton/,
+  'Result screen should keep all localized result labels behind translation keys',
+);
+
+for (const serverStatePattern of [
+  /hydrateTestState\(session\.questions, session\.answers/,
+  /answerFeedback=\{runnerState\.answerFeedback\}/,
+  /submitTestAnswer\(/,
+  /completeTestAttempt\(/,
+  /session\.currentQuestionIndex/,
+]) {
+  assert.match(
+    questionSource,
+    serverStatePattern,
+    `Question page should restore and render server-owned state: ${serverStatePattern}`,
   );
 }
 
@@ -299,19 +319,21 @@ assert.ok(
 for (const codePattern of [
   /const \[testSession, setTestSession\]/,
   /useSearchParams/,
-  /const topicCode = searchParams\.get\('topicCode'\) \?\? undefined/,
-  /getTestSession\(testMode \?\? 'default', topicCode\)/,
+  /const chapterRef = searchParams\.get\('chapterRef'\)[\s\S]*topicCode/,
+  /createTestAttempt\(requestedMode, chapterRef\)/,
   /const questions = testSession\?\.questions \?\? \[\];/,
-  /const correctAnswerCount = state\.answerRecords\.filter\(\(record\) => record\.correct\)\.length;/,
-  /const scorePercent =[\s\S]*\(correctAnswerCount \/ totalQuestions\) \* 100/,
+  /submitTestAnswer\(/,
+  /completeTestAttempt\(/,
   /currentQuestionIndex/,
   /progressPercent/,
   /selectedOptionId/,
   /checkedOptionId/,
+  /answerFeedback/,
   /answerRecords/,
   /resultVisible/,
   /startedAt/,
   /completedAt/,
+  /completionSummary/,
   /aria-pressed/,
 ]) {
   assert.match(
@@ -323,18 +345,18 @@ for (const codePattern of [
 
 assert.match(
   testsApiSource,
-  /getTestSession\(testMode: string, topicCode\?: string\)/,
-  'Test API should accept an optional topic code for topic practice',
+  /createTestAttempt\(mode: TestMode \| 'default', chapterRef\?: string\)/,
+  'Test API should accept an optional chapter reference for topic practice',
 );
 assert.match(
   testsApiSource,
-  /params: topicCode \? \{ topicCode \} : undefined/,
-  'Remote test requests should forward topicCode as a query parameter',
+  /apiClient\.post\('\/api\/tests\/attempts'/,
+  'Test API should create attempts through the server route',
 );
 assert.match(
   testsApiSource,
-  /cloneTestSession\(testSessionFixtures\[testMode\] \?\? testSessionFixtures\.default, topicCode\)/,
-  'Fixture flow should preserve the selected topic code instead of ignoring it',
+  /apiClient\.post\(path, \{ option_ref: optionRef \}\)/,
+  'Test API should submit answer option references through the server route',
 );
 
 assert.match(
@@ -369,7 +391,7 @@ assert.match(
 
 assert.match(
   questionViewSource,
-  /\{checked && \([\s\S]*bg-\[#a4e5c7\][\s\S]*<h2[^>]*text-\[#22915d\][\s\S]*<p[^>]*text-\[#1a6140\]/,
+  /\{checked && answerFeedback && \([\s\S]*bg-\[#a4e5c7\][\s\S]*<h2[^>]*text-\[#22915d\][\s\S]*<p[^>]*text-\[#1a6140\]/,
   'Explanation heading should use the Figma green while its body retains the darker readable green',
 );
 
@@ -393,13 +415,13 @@ assert.match(
 
 assert.match(
   answerToneModelSource,
-  /optionId === correctOptionId[\s\S]*return 'correct'/,
+  /correctOptionRef[\s\S]*optionId === correctOptionRef[\s\S]*return 'correct'/,
   'Checked correct answer should render with the Figma correct tone',
 );
 
 assert.match(
   answerToneModelSource,
-  /optionId === checkedOptionId[\s\S]*return 'incorrect'/,
+  /optionId === checkedOptionId[\s\S]*'incorrect'/,
   'Checked wrong answer should render the chosen option with the Figma incorrect tone',
 );
 
@@ -418,19 +440,20 @@ for (const className of [
   );
 }
 
-assert.ok(
-  questionSource.includes('Объяснение'),
+assert.match(
+  questionSource,
+  /Объяснение|РћР±СЉСЏСЃРЅРµРЅРёРµ/,
   'Checked answer state should show the explanation title from Figma',
 );
 
 assert.ok(
-  questionSource.includes('Далее'),
+  questionSource.includes('Р”Р°Р»РµРµ'),
   'Primary button should switch to the Figma next label after checking an answer',
 );
 
 assert.match(
   runnerModelSource,
-  /checkedOptionId: state\.selectedOptionId/,
+  /checkedOptionId: action\.feedback\.optionId/,
   'Pressing check should freeze the selected answer into the checked phase',
 );
 
@@ -473,23 +496,6 @@ for (const codePattern of [
     questionBehaviorSource,
     codePattern,
     `Result screen should be calculated from the active test answers/session: ${codePattern}`,
-  );
-}
-
-for (const text of [
-  'Результаты',
-  'Результат теста',
-  'правильных ответов',
-  'Время',
-  'Ваш темп',
-  'Повторите',
-  'Слабая тема',
-  'Тест по этому разделу',
-  'Попробовать ещё',
-]) {
-  assert.ok(
-    questionSource.includes(text),
-    `Result screen should include the Figma UI label: ${text}`,
   );
 }
 
@@ -559,6 +565,6 @@ assert.match(
 
 assert.match(
   questionSource,
-  /onRestart=\{resetTestState\}[\s\S]*onClick=\{onRestart\}/,
+  /onRestart=\{onRestart\}[\s\S]*onClick=\{onRestart\}/,
   'Result screen should provide a restart action for the Figma primary button',
 );

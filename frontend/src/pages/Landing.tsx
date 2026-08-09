@@ -42,8 +42,7 @@ export function Landing() {
 }
 
 function DesktopAuthenticatedLanding() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return <DesktopGuestLanding isAuthenticated={isAuthenticated} />;
+  return null;
 }
 
 function DesktopGuestLanding({ isAuthenticated = false }: { isAuthenticated?: boolean }) {

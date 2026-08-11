@@ -43,9 +43,14 @@ assert.match(optionCard, /if \(!to\)/, 'a card without a destination must render
 assert.match(optionCard, /<Link[\s\S]*to=\{to\}/, 'the root link must consume the explicit destination without route inference');
 assert.match(view, /to=\{dashboardReady && modeAvailability\(dashboard, 'random'\)\?\.available === true \? '\/tests\/random' : undefined\}/);
 assert.match(view, /analyzeStatus === 'empty'[\s\S]*to="\/analyze"[\s\S]*contract="weak-pre-analysis"/);
-assert.match(view, /to=\{dashboardReady && analyzeStatus === 'ready' && modeAvailability\(dashboard, 'weak'\)\?\.available === true \? '\/tests\/weak' : undefined\}/);
+assert.match(view, /const weakAvailable = modeAvailability\(dashboard, 'weak'\)\?\.available === true/);
+assert.match(view, /weakAvailable \? <DesktopTestOptionCard[\s\S]*to="\/tests\/weak"/);
+assert.match(view, /weakAvailable \? [\s\S]*: analyzeStatus === 'empty'/);
+assert.doesNotMatch(view, /reason\?\.message/, 'server English availability messages must not leak into the UI');
+assert.match(view, /reason\?\.reason === 'no_weak_chapters'[\s\S]*t\('tests\.desktopWeakUnavailableNoAnalyze'/);
+assert.match(view, /reason\?\.reason === 'insufficient_question_pool'[\s\S]*t\('tests\.desktopInsufficientPool'/);
 assert.doesNotMatch(optionCard, /cursor-not-allowed/);
-assert.match(chapterCard, /data-chapter-metric=\{metric\}/);
+assert.match(chapterCard, /\{\.\.\.\(metric \? \{ 'data-chapter-metric': metric \} : \{\}\)\}/, 'metric state must be exposed through the conditional data attribute spread');
 assert.match(chapterCard, /data-chapter-navigation/, 'title and question navigation must have a dedicated non-overlapping hit target');
 assert.match(chapterCard, /aria-describedby=/, 'metric focus targets must expose their tooltip as an accessible description');
 assert.doesNotMatch(chapterCard, /a11y:\s*\{\s*test:\s*'todo'/, 'chapter-card stories must not downgrade all axe failures to warnings');
@@ -146,7 +151,7 @@ assert.match(story, /test:\s*'error'/);
 assert.match(story, /rules:\s*\[\{ id:\s*'color-contrast', enabled:\s*false \}\]/, 'hub stories may exclude only the mandated palette contrast rule');
 
 assert.equal(ru.tests.desktopWeakBadge, 'После анализа ЕНТ');
-assert.equal(ru.tests.desktopWeakDescription, 'Проанализируйте результаты ЕНТ, чтобы определить слабые темы');
+assert.equal(ru.tests.desktopWeakDescription, 'Подборка вопросов по разделам, где вы теряете баллы');
 assert.equal(ru.tests.desktopMockBadge, 'В процессе разработки');
 assert.equal(ru.tests.desktopMockTitle, 'Пробный тест');
 assert.equal(ru.tests.desktopMockDescription, 'Подборка из 40 вопросов в формате настоящего ЕНТ');
@@ -156,7 +161,7 @@ assert.equal(ru.tests.desktopStatisticsEmptyBody, 'после первого т�
 assert.equal(ru.tests.desktopRecentEmptyTitle, 'История тестов появится здесь');
 assert.equal(ru.tests.desktopRecentEmptyBody, 'после первого теста');
 assert.equal(kk.tests.desktopWeakBadge, 'ҰБТ талдауынан кейін');
-assert.equal(kk.tests.desktopWeakDescription, 'Әлсіз тақырыптарды анықтау үшін ҰБТ нәтижелерін талдаңыз');
+assert.equal(kk.tests.desktopWeakDescription, 'Балл жоғалтатын бөлімдер бойынша сұрақтар жинағы');
 assert.equal(kk.tests.desktopMockBadge, 'Әзірлену үстінде');
 assert.equal(kk.tests.desktopMockTitle, 'Сынақ тесті');
 assert.equal(kk.tests.desktopMockDescription, 'Нағыз ҰБТ форматындағы 40 сұрақтан тұратын жинақ');

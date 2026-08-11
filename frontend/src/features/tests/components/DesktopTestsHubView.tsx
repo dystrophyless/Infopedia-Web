@@ -82,8 +82,15 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
   const deltaTone = delta === null ? 'text-[#8c8698]' : delta > 0 ? 'text-[#29ae70]' : delta < 0 ? 'text-[#bc251a]' : 'text-[#8c8698]';
   const modeReason = (mode: TestMode) => {
     const reason = modeAvailability(dashboard, mode)?.disabledReason;
-    return reason?.message ?? t('tests.desktopUnavailable', { defaultValue: 'Пока недоступно' });
+    if (reason?.reason === 'no_weak_chapters') {
+      return t('tests.desktopWeakUnavailableNoAnalyze', { defaultValue: 'Загрузите анализ ЕНТ, чтобы открыть режим' });
+    }
+    if (reason?.reason === 'insufficient_question_pool') {
+      return t('tests.desktopInsufficientPool', { defaultValue: 'Вопросы для этого режима пока недоступны' });
+    }
+    return t('tests.desktopUnavailable', { defaultValue: 'Пока недоступно' });
   };
+  const weakAvailable = modeAvailability(dashboard, 'weak')?.available === true;
 
   return (
     <div className="hidden min-h-[1293px] bg-[#efeaf8] px-16 py-8 md:ml-px md:block" data-tests-desktop>
@@ -100,20 +107,28 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
                 to={dashboardReady && modeAvailability(dashboard, 'random')?.available === true ? '/tests/random' : undefined}
                 unavailableMessage={modeReason('random')}
               /> : <ModeCardSkeleton />}
-              {dashboardReady ? analyzeStatus === 'empty' ? <DesktopTestOptionCard
+              {dashboardReady ? weakAvailable ? <DesktopTestOptionCard
                 mode="weak"
                 title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
-                description={t('tests.desktopWeakDescription', { defaultValue: 'Проанализируйте результаты ЕНТ, чтобы определить слабые темы' })}
+                description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
+                icon={<HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.7} />}
+                iconTone="bg-[#f25f54] text-white"
+                to="/tests/weak"
+                unavailableMessage={modeReason('weak')}
+              /> : analyzeStatus === 'empty' ? <DesktopTestOptionCard
+                mode="weak"
+                title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
+                description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
                 statusBadge={t('tests.desktopWeakBadge', { defaultValue: 'После анализа ЕНТ' })}
                 to="/analyze"
                 contract="weak-pre-analysis"
               /> : <DesktopTestOptionCard
                 mode="weak"
                 title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
-                description={t('tests.desktopWeakDescription', { defaultValue: 'Проанализируйте результаты ЕНТ, чтобы определить слабые темы' })}
+                description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
                 icon={<HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.7} />}
                 iconTone="bg-[#f25f54] text-white"
-                to={dashboardReady && analyzeStatus === 'ready' && modeAvailability(dashboard, 'weak')?.available === true ? '/tests/weak' : undefined}
+                to={undefined}
                 unavailableMessage={modeReason('weak')}
               /> : <ModeCardSkeleton />}
             </div>

@@ -1,13 +1,13 @@
 import '../../../i18n';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Layout } from '../../../components/Layout';
-import { apiClient } from '../../../api/client';
 import i18n from '../../../i18n';
 import { useAuthStore } from '../../../stores/authStore';
 import { useSearchStore } from '../model';
+import { SearchRequestClientProvider, type SearchRequestClient } from '../api/searchRequestClient';
 import { TermSearchPage } from './TermSearchPage';
 
 const storyUser = {
@@ -32,12 +32,19 @@ function EmptySearchStory({
   fullShell?: boolean;
 }) {
   const [ready, setReady] = useState(false);
+  const requestClient = useMemo<SearchRequestClient>(() => ({
+    get: async (url: string) => {
+      if (url.includes('/topics/books')) return { data: [] } as never;
+      if (url.includes('/topics/chapters')) return { data: [] } as never;
+      if (url.includes('/search/terms')) {
+        return { data: { terms: [], total: 0, skip: 0, limit: 11, has_more: false } } as never;
+      }
+      return { data: [] } as never;
+    },
+  }), []);
 
   useEffect(() => {
     let active = true;
-    const previousLanguage = i18n.language;
-    const previousGet = apiClient.get;
-    apiClient.get = (async () => ({ data: [] })) as typeof apiClient.get;
     useAuthStore.setState({
       isAuthenticated: true,
       token: 'storybook-token',
@@ -45,21 +52,21 @@ function EmptySearchStory({
       user: { ...storyUser, language },
     });
     useSearchStore.getState().reset();
+    useSearchStore.getState().resetSearchFilters();
     void i18n.changeLanguage(language).then(() => {
       if (active) setReady(true);
     });
 
     return () => {
       active = false;
-      apiClient.get = previousGet;
       useSearchStore.getState().reset();
+      useSearchStore.getState().resetSearchFilters();
       useAuthStore.setState({
         isAuthenticated: false,
         token: null,
         refreshToken: null,
         user: null,
       });
-      void i18n.changeLanguage(previousLanguage);
     };
   }, [language]);
 
@@ -74,7 +81,9 @@ function EmptySearchStory({
 
   return (
     <MemoryRouter initialEntries={['/search?query=adaptive-empty-state']}>
-      {fullShell ? <Layout>{content}</Layout> : content}
+      <SearchRequestClientProvider client={requestClient} locale={language}>
+        {fullShell ? <Layout>{content}</Layout> : content}
+      </SearchRequestClientProvider>
     </MemoryRouter>
   );
 }
@@ -106,20 +115,104 @@ const desktopLoadMoreTerms = Array.from({ length: 6 }, (_, index) => ({
 function DesktopSearchStory({
   terms = desktopFeaturedTerms,
   fullShell = true,
+  bookCatalogFailuresBeforeSuccess = 0,
+  bookCatalogFailureRequests = [],
+  initialBookSelection = false,
+  deferSearch = false,
+  refreshCatalogOnReady = false,
+  deferCatalogFailure = false,
 }: {
   terms?: typeof desktopFeaturedTerms;
   fullShell?: boolean;
+  bookCatalogFailuresBeforeSuccess?: number;
+  bookCatalogFailureRequests?: number[];
+  initialBookSelection?: boolean;
+  deferSearch?: boolean;
+  refreshCatalogOnReady?: boolean;
+  deferCatalogFailure?: boolean;
 }) {
   const [ready, setReady] = useState(false);
+  const [searchRequestCount, setSearchRequestCount] = useState(0);
+  const [searchAbortCount, setSearchAbortCount] = useState(0);
+  const [bookCatalogRequestCount, setBookCatalogRequestCount] = useState(0);
+  const [bookCatalogFailureReleased, setBookCatalogFailureReleased] = useState(false);
+  const [catalogRefreshKey, setCatalogRefreshKey] = useState(0);
+  const [lastSearchBooks, setLastSearchBooks] = useState('');
+  const searchReleaseRef = useRef<Set<() => void>>(new Set());
+  const bookCatalogReleaseRef = useRef<(() => void) | null>(null);
+  const requestClientRef = useRef<SearchRequestClient | null>(null);
+  const catalogRefreshTriggeredRef = useRef(false);
+  const bookCatalogFailureRequestsKey = bookCatalogFailureRequests.join(',');
 
   useEffect(() => {
     let active = true;
-    const previousLanguage = i18n.language;
-    const previousGet = apiClient.get;
-    apiClient.get = (async (url: string) => {
+    let bookRequests = 0;
+    requestClientRef.current = { get: (async (url: string, config?: { params?: URLSearchParams; signal?: AbortSignal }) => {
       if (url.includes('/featured')) return { data: terms };
-      return { data: terms.map(({ term, featured_definition }) => ({ ...term, definitions: [featured_definition] })) };
-    }) as typeof apiClient.get;
+      if (url.includes('/topics/books')) {
+        bookRequests += 1;
+        setBookCatalogRequestCount(bookRequests);
+        if (
+          bookRequests <= bookCatalogFailuresBeforeSuccess ||
+          bookCatalogFailureRequests.includes(bookRequests)
+        ) {
+          if (deferCatalogFailure && bookCatalogFailureRequests.includes(bookRequests)) {
+            return new Promise<never>((_, reject) => {
+              bookCatalogReleaseRef.current = () => {
+                setBookCatalogFailureReleased(true);
+                reject(new Error('Deterministic Storybook book catalog failure'));
+              };
+            });
+          }
+          throw new Error('Deterministic Storybook book catalog failure');
+        }
+        return {
+          data: [
+            { public_id: 'book:signed:atamura:10', publisher: 'Атамұра', grade: 10 },
+            { public_id: 'book:signed:atamura:11', publisher: 'Атамұра', grade: 11 },
+            { public_id: 'book:signed:almaty:10', publisher: 'Алматыкітап', grade: 10 },
+            { public_id: 'book:signed:arman:11', publisher: 'Арман-ПВ', grade: 11 },
+          ],
+        };
+      }
+      if (url.includes('/topics/chapters')) {
+        return {
+          data: [
+            { public_id: 'chapter:signed:devices', title: 'Устройства компьютера' },
+            { public_id: 'chapter:signed:networks', title: 'Компьютерные сети. Организация компьютерных сетей' },
+            { public_id: 'chapter:signed:information', title: 'Представление и измерение информации. Кодирование информации' },
+            { public_id: 'chapter:signed:numeral', title: 'Системы счисления' },
+            { public_id: 'chapter:signed:logic', title: 'Логические основы компьютера' },
+            { public_id: 'chapter:signed:algorithms', title: 'Программирование алгоритмов на языке Python' },
+          ],
+        };
+      }
+      if (url.includes('/search/terms')) {
+        setSearchRequestCount((count) => count + 1);
+        setLastSearchBooks(config?.params?.getAll('book').join('|') ?? '');
+        const pageTerms = terms.map(({ term, featured_definition }) => ({
+          ...term,
+          definitions: [featured_definition],
+        }));
+        const skip = Number(config?.params?.get('skip') ?? 0);
+        const limit = Number(config?.params?.get('limit') ?? 11);
+        const response = {
+          data: {
+            terms: pageTerms.slice(skip, skip + limit),
+            total: pageTerms.length,
+            skip,
+            limit,
+            has_more: skip + limit < pageTerms.length,
+          },
+        };
+        if (!deferSearch) return response;
+        config?.signal?.addEventListener('abort', () => setSearchAbortCount((count) => count + 1), { once: true });
+        return new Promise<typeof response>((resolve) => {
+          searchReleaseRef.current.add(() => resolve(response));
+        });
+      }
+      return { data: [] };
+    }) as SearchRequestClient['get'] };
     useAuthStore.setState({
       isAuthenticated: true,
       token: 'storybook-token',
@@ -127,29 +220,82 @@ function DesktopSearchStory({
       user: { ...storyUser, language: 'ru' },
     });
     useSearchStore.getState().reset();
+    useSearchStore.getState().resetSearchFilters();
+    if (initialBookSelection) {
+      useSearchStore.getState().toggleSearchFilterOption('book', 'atamura', 'Атамұра');
+    }
     void i18n.changeLanguage('ru').then(() => {
       if (active) setReady(true);
     });
 
     return () => {
       active = false;
-      apiClient.get = previousGet;
+      requestClientRef.current = null;
+      searchReleaseRef.current.clear();
       useSearchStore.getState().reset();
+      useSearchStore.getState().resetSearchFilters();
       useAuthStore.setState({
         isAuthenticated: false,
         token: null,
         refreshToken: null,
         user: null,
       });
-      void i18n.changeLanguage(previousLanguage);
     };
-  }, [terms]);
+  }, [bookCatalogFailuresBeforeSuccess, bookCatalogFailureRequestsKey, deferSearch, initialBookSelection, terms]);
+
+  useEffect(() => {
+    if (!refreshCatalogOnReady || catalogRefreshTriggeredRef.current || bookCatalogRequestCount !== 1 || searchRequestCount === 0) return;
+    catalogRefreshTriggeredRef.current = true;
+    // Toggle from the current locale so the refresh is real even when a prior
+    // Storybook story left i18n in kk; do not rely on a no-op same-locale call.
+    setCatalogRefreshKey((key) => key + 1);
+  }, [bookCatalogRequestCount, refreshCatalogOnReady, searchRequestCount]);
 
   if (!ready) return null;
+  if (!requestClientRef.current) return null;
 
   return (
     <MemoryRouter initialEntries={['/search']}>
-      {fullShell ? <Layout><TermSearchPage /></Layout> : <TermSearchPage />}
+      <SearchRequestClientProvider client={requestClientRef.current} refreshKey={catalogRefreshKey} locale="ru">
+        {fullShell ? <Layout><TermSearchPage /></Layout> : <TermSearchPage />}
+      <output data-story-search-request-count className="sr-only">{searchRequestCount}</output>
+      <output data-story-search-abort-count className="sr-only">{searchAbortCount}</output>
+      <output data-story-book-catalog-request-count className="sr-only">{bookCatalogRequestCount}</output>
+      <output data-story-book-catalog-failure-released className="sr-only">{String(bookCatalogFailureReleased)}</output>
+      <output data-story-last-search-books className="sr-only">{lastSearchBooks}</output>
+      {deferCatalogFailure && (
+        <button
+          type="button"
+          data-story-release-book-catalog
+          className="sr-only"
+          onClick={() => bookCatalogReleaseRef.current?.()}
+        >
+          Release book catalog
+        </button>
+      )}
+      <button
+        type="button"
+        data-story-reset-search-request-count
+        className="sr-only"
+        onClick={() => setSearchRequestCount(0)}
+      >
+        Reset request count
+      </button>
+      {deferSearch && (
+        <button
+          type="button"
+          data-story-release-search
+          className="sr-only"
+          onClick={() => {
+            const releases = [...searchReleaseRef.current];
+            searchReleaseRef.current.clear();
+            releases.forEach((release) => release());
+          }}
+        >
+          Release search request
+        </button>
+      )}
+      </SearchRequestClientProvider>
     </MemoryRouter>
   );
 }
@@ -332,7 +478,10 @@ export const DesktopSelectedFill1024: Story = {
 
 export const DesktopQueryFilters: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: {
+    layout: 'fullscreen',
+    a11y: { context: { include: ['[data-search-result-filter="filter"]'] } },
+  },
   render: () => <DesktopSearchStory />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;
@@ -356,6 +505,11 @@ export const DesktopQueryFilters: Story = {
       'topic',
     ]);
     if (!filterRail) return;
+
+    const resultFilter = filters[0] as HTMLButtonElement;
+    expect(resultFilter).toHaveAccessibleName(/фильтр/i);
+    expect(resultFilter).toHaveAttribute('aria-controls', 'search-filter-page-sheet');
+    expect(resultFilter).toHaveAttribute('aria-expanded', 'false');
 
     expect(getComputedStyle(filterRail).overflowX).toBe('auto');
     const rects = filters.map((filter) => filter.getBoundingClientRect());
@@ -393,5 +547,463 @@ export const DesktopLoadMore: Story = {
     expect(getComputedStyle(loadMore).borderRadius).toBe('8px');
     await userEvent.click(loadMore);
     expect(canvasElement.querySelector('[data-desktop-search-load-more]')).toBeNull();
+  },
+};
+
+async function openDesktopFilters(canvasElement: HTMLElement) {
+  const trigger = canvasElement.querySelector<HTMLButtonElement>(
+    'button[aria-controls="search-filter-page-sheet"]:not([data-search-result-filter])',
+  );
+  expect(trigger).not.toBeNull();
+  if (!trigger) throw new Error('Desktop filter trigger not found');
+  await userEvent.click(trigger);
+  const body = within(canvasElement.ownerDocument.body);
+  return body.findByRole('dialog', { name: /Фильтры/i });
+}
+
+async function assertDesktopDialogGeometry(dialog: HTMLElement) {
+  await dialog.ownerDocument.fonts?.ready;
+  const rect = dialog.getBoundingClientRect();
+  expect(rect.x).toBeCloseTo(936, 0);
+  expect(rect.y).toBeCloseTo(24, 0);
+  expect(rect.width).toBeCloseTo(480, 0);
+  expect(rect.height).toBeCloseTo(600, 0);
+  expect(getComputedStyle(dialog).borderRadius).toBe('16px');
+  expect(getComputedStyle(dialog).padding).toBe('32px');
+}
+
+function assertTask5Typography(dialog: HTMLElement) {
+  const exactChecks: Array<[string, string, string]> = [
+    ['[data-desktop-search-filter-reset]', '18px', '27px'],
+    ['[data-desktop-search-filter-apply]', '18px', '27px'],
+    ['[data-desktop-search-filter-field="ent"]', '16px', '24px'],
+    ['[data-desktop-search-filter-field="book"]', '16px', '24px'],
+    ['[data-desktop-search-filter-field="grade"]', '16px', '24px'],
+    ['[data-desktop-search-filter-field="section"]', '16px', '24px'],
+  ];
+  for (const [selector, fontSize, lineHeight] of exactChecks) {
+    const element = dialog.querySelector<HTMLElement>(selector);
+    expect(element, `Task-5 typography selector missing: ${selector}`).not.toBeNull();
+    if (!element) continue;
+    const styles = getComputedStyle(element);
+    expect(styles.fontSize).toBe(fontSize);
+    expect(styles.lineHeight).toBe(lineHeight);
+  }
+  for (const alert of dialog.querySelectorAll<HTMLElement>('[role="alert"]')) {
+    const styles = getComputedStyle(alert);
+    if (alert.className.includes('text-[14px]')) {
+      expect(styles.fontSize).toBe('14px');
+      expect(styles.lineHeight).toBe('20px');
+    }
+    if (alert.className.includes('text-[16px]')) {
+      expect(styles.fontSize).toBe('16px');
+      expect(styles.lineHeight).toBe('20px');
+    }
+  }
+}
+
+async function assertEntUncheckedFigma(dialog: HTMLElement) {
+  const toggle = dialog.querySelector<HTMLButtonElement>('[data-desktop-search-filter-field="ent"]');
+  expect(toggle).not.toBeNull();
+  if (!toggle) return;
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  const track = toggle.querySelector<HTMLElement>('[aria-hidden="true"]');
+  expect(track).not.toBeNull();
+  if (!track) return;
+  expect(getComputedStyle(track).backgroundColor).toBe('rgb(165, 133, 219)');
+}
+
+const desktopFiltersA11yParameters = {
+  layout: 'fullscreen',
+  a11y: {
+    context: {
+      include: ['[aria-controls="search-filter-page-sheet"]', '[role="dialog"]'],
+      // Exact immutable Figma nodes retain the source colors (#a585db on white = 3.0,
+      // #865bcf on #ded2f1 = 3.3). Exclude only those nodes; dynamic alerts, retry,
+      // selected options, and dialog content remain covered by axe.
+      exclude: [
+        '[data-desktop-search-filter-field="book"] > button[aria-haspopup="listbox"] > .truncate',
+        '[data-desktop-search-filter-field="grade"] > button[aria-haspopup="listbox"] > .truncate',
+        '[data-desktop-search-filter-field="section"] > button[aria-haspopup="listbox"] > .truncate',
+        '[data-desktop-search-filter-reset="true"]',
+      ],
+    },
+  },
+} as const;
+
+export const DesktopFiltersDefault: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = await openDesktopFilters(canvasElement);
+    await assertEntUncheckedFigma(dialog);
+    await assertDesktopDialogGeometry(dialog);
+    assertTask5Typography(dialog);
+    expect(dialog.querySelectorAll('[data-desktop-search-filter-field]')).toHaveLength(4);
+    const selectTriggers = [...dialog.querySelectorAll<HTMLButtonElement>('[aria-haspopup="listbox"]')];
+    expect(selectTriggers).toHaveLength(6);
+    expect(selectTriggers.map((trigger) => trigger.getAttribute('aria-labelledby'))).toEqual([
+      'desktop-search-filter-label-book',
+      'desktop-search-filter-label-book',
+      'desktop-search-filter-label-grade',
+      'desktop-search-filter-label-grade',
+      'desktop-search-filter-label-section',
+      'desktop-search-filter-label-section',
+    ]);
+    expect(within(dialog).getAllByRole('button', { name: /Издание/i })[0]).toHaveAttribute(
+      'aria-labelledby',
+      'desktop-search-filter-label-book',
+    );
+    expect(within(dialog).getAllByRole('button', { name: /Класс/i })[0]).toHaveAttribute(
+      'aria-labelledby',
+      'desktop-search-filter-label-grade',
+    );
+    expect(within(dialog).getAllByRole('button', { name: /Раздел/i })[0]).toHaveAttribute(
+      'aria-labelledby',
+      'desktop-search-filter-label-section',
+    );
+  },
+};
+
+export const DesktopFiltersEditionMenu: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = await openDesktopFilters(canvasElement);
+    await assertEntUncheckedFigma(dialog);
+    await userEvent.click(within(dialog).getAllByRole('button', { name: /Издание/i })[0]);
+    const menu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="book"]');
+    expect(menu).not.toBeNull();
+    if (!menu) return;
+    expect(menu.getBoundingClientRect().x).toBeCloseTo(dialog.getBoundingClientRect().x + 32, 0);
+    expect(menu.getBoundingClientRect().y).toBeCloseTo(300, 0);
+    expect(menu.getBoundingClientRect().height).toBeCloseTo(176, 0);
+  },
+};
+
+export const DesktopFiltersGradeMenu: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = await openDesktopFilters(canvasElement);
+    await assertEntUncheckedFigma(dialog);
+    await userEvent.click(within(dialog).getAllByRole('button', { name: /Класс/i })[0]);
+    const menu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="grade"]');
+    expect(menu).not.toBeNull();
+    if (!menu) return;
+    expect(menu.getBoundingClientRect().y).toBeCloseTo(96, 0);
+    expect(menu.getBoundingClientRect().height).toBeCloseTo(238, 0);
+  },
+};
+
+export const DesktopFiltersChapterMenu: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = await openDesktopFilters(canvasElement);
+    await assertEntUncheckedFigma(dialog);
+    await userEvent.click(within(dialog).getAllByRole('button', { name: /Раздел/i })[0]);
+    const menu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="section"]');
+    expect(menu).not.toBeNull();
+    if (!menu) return;
+    expect(menu.getBoundingClientRect().y).toBeCloseTo(96, 0);
+    expect(menu.getBoundingClientRect().height).toBeCloseTo(336, 0);
+    expect([...menu.querySelectorAll<HTMLElement>('[role="option"]')].map((option) => option.getBoundingClientRect().height)).toEqual([
+      48,
+      56,
+      56,
+      48,
+      48,
+      56,
+    ]);
+  },
+};
+
+export const DesktopFiltersScrollableMenuContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const dialog = await openDesktopFilters(canvasElement);
+
+    const gradeTrigger = dialog.querySelector<HTMLButtonElement>(
+      '[data-desktop-search-filter-field="grade"] button[aria-haspopup="listbox"]',
+    );
+    expect(gradeTrigger).not.toBeNull();
+    for (let index = 0; index < 12 && gradeTrigger !== dialog.ownerDocument.activeElement; index += 1) {
+      await userEvent.tab();
+    }
+    expect(gradeTrigger).toHaveFocus();
+    expect(gradeTrigger).toHaveAttribute('aria-expanded', 'false');
+    expect(gradeTrigger).toHaveAttribute('aria-controls', 'desktop-search-filter-menu-grade');
+    await userEvent.keyboard('{Enter}');
+    const gradeMenu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="grade"]');
+    expect(gradeMenu).not.toBeNull();
+    expect(gradeMenu).toHaveAccessibleName(/Класс/i);
+    const gradeOptions = [...gradeMenu!.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+    expect(gradeTrigger).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(gradeOptions[0]).toHaveFocus());
+    expect(gradeMenu!.scrollTop).toBe(0);
+    await userEvent.keyboard('{End}');
+    await waitFor(() => expect(gradeOptions.at(-1)).toHaveFocus());
+    expect(gradeMenu!.scrollTop).toBeGreaterThan(0);
+    await userEvent.keyboard('{Enter}');
+    await expect(gradeOptions.at(-1)).toHaveAttribute('aria-selected', 'true');
+
+    const chapterTrigger = dialog.querySelector<HTMLButtonElement>(
+      '[data-desktop-search-filter-field="section"] button[aria-haspopup="listbox"]',
+    );
+    expect(chapterTrigger).not.toBeNull();
+    await userEvent.click(gradeTrigger!);
+    for (let index = 0; index < 12 && chapterTrigger !== dialog.ownerDocument.activeElement; index += 1) {
+      await userEvent.tab();
+    }
+    expect(chapterTrigger).toHaveFocus();
+    expect(chapterTrigger).toHaveAttribute('aria-controls', 'desktop-search-filter-menu-section');
+    await userEvent.keyboard('{End}');
+    const chapterMenu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="section"]');
+    expect(chapterMenu).not.toBeNull();
+    const chapterOptions = [...chapterMenu!.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+    await waitFor(() => expect(chapterOptions.at(-1)).toHaveFocus());
+    expect(chapterMenu!.scrollTop).toBeGreaterThan(0);
+    await userEvent.keyboard(' ');
+    await expect(chapterOptions.at(-1)).toHaveAttribute('aria-selected', 'true');
+  },
+};
+
+export const DesktopFiltersCatalogErrorRetryContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => (
+    <DesktopSearchStory bookCatalogFailureRequests={[1]} deferCatalogFailure initialBookSelection />
+  ),
+  play: async ({ canvasElement }) => {
+    const requestCount = () => canvasElement.querySelector('[data-story-book-catalog-request-count]');
+    await waitFor(() => expect(requestCount()).toHaveTextContent('1'));
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Release book catalog' }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-failure-released]')).toHaveTextContent('true'));
+    const dialog = await openDesktopFilters(canvasElement);
+    const bookTrigger = dialog.querySelector<HTMLButtonElement>(
+      '[data-desktop-search-filter-field="book"] button[aria-haspopup="listbox"]',
+    );
+    expect(bookTrigger).not.toBeNull();
+    assertTask5Typography(dialog);
+    await userEvent.click(bookTrigger!);
+    const body = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(body.getByRole('dialog').querySelector('[data-desktop-search-filter-field="book"] button[aria-haspopup="listbox"]')).toHaveAttribute('aria-expanded', 'true'));
+    await waitFor(() => expect(body.queryByRole('region')).not.toBeNull());
+    const menu = body.getByRole('region');
+    const alert = await within(menu).findByRole('alert');
+    assertTask5Typography(dialog);
+    expect(alert).toHaveTextContent(/\S/);
+    expect(within(menu).queryAllByRole('option')).toHaveLength(0);
+    const applyButton = dialog.querySelector<HTMLButtonElement>('[data-desktop-search-filter-apply]');
+    expect(applyButton).not.toBeNull();
+    if (!applyButton) return;
+    expect(applyButton).toBeDisabled();
+    await userEvent.click(within(menu).getByRole('button', { name: /Повторить|Қайталау|Retry/i }));
+    await waitFor(() => expect(requestCount()).toHaveTextContent('2'));
+    await waitFor(() => expect(within(menu).getAllByRole('option').length).toBeGreaterThan(0));
+    expect(within(menu).queryByRole('alert')).toBeNull();
+    expect(applyButton).not.toBeDisabled();
+  },
+};
+
+export const DesktopFiltersDraftApplyContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const requestCounter = () => canvasElement.querySelector('[data-story-search-request-count]');
+    await waitFor(() => expect(requestCounter()).not.toBeNull());
+    const resetCounter = canvasElement.querySelector<HTMLButtonElement>('[data-story-reset-search-request-count]');
+    expect(resetCounter).not.toBeNull();
+    resetCounter?.click();
+    await waitFor(() => expect(requestCounter()).toHaveTextContent('0'));
+    const baselineRequests = 0;
+    const firstDialog = await openDesktopFilters(canvasElement);
+    await userEvent.click(within(firstDialog).getByRole('button', { name: /Есть в спецификации/i }));
+    await userEvent.click(within(firstDialog).getByRole('button', { name: /закрыть|close/i }));
+    await waitFor(() => expect(firstDialog).not.toBeInTheDocument());
+    await waitFor(() => expect(requestCounter()).toHaveTextContent(String(baselineRequests)));
+
+    const secondDialog = await openDesktopFilters(canvasElement);
+    const entToggle = within(secondDialog).getByRole('button', { name: /Есть в спецификации/i });
+    await userEvent.click(entToggle);
+    await waitFor(() => expect(entToggle).toHaveAttribute('aria-pressed', 'true'));
+    const applyButton = within(secondDialog).getByRole('button', { name: /Искать/i });
+    expect(applyButton).not.toBeDisabled();
+    await userEvent.click(applyButton);
+    await waitFor(() => expect(useSearchStore.getState().entOnlyFilterActive).toBe(true));
+    await waitFor(() => expect(requestCounter()).toHaveTextContent(String(baselineRequests + 1)));
+
+    const thirdDialog = await openDesktopFilters(canvasElement);
+    await userEvent.click(within(thirdDialog).getByRole('button', { name: /Искать/i }));
+    await waitFor(() => expect(requestCounter()).toHaveTextContent(String(baselineRequests + 1)));
+    await openDesktopFilters(canvasElement);
+  },
+};
+
+export const DesktopFiltersBackdropFocusContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = await canvas.findByRole('button', { name: /Фильтры/i });
+    await userEvent.click(trigger);
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: /Фильтры/i });
+    const overlay = dialog.parentElement;
+    expect(overlay).not.toBeNull();
+    if (!overlay) return;
+    await userEvent.click(overlay);
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    await expect(trigger).toHaveFocus();
+    await userEvent.click(trigger);
+  },
+};
+
+export const DesktopFiltersDismissalMatrixContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => <DesktopSearchStory />,
+  play: async ({ canvasElement }) => {
+    const trigger = canvasElement.querySelector<HTMLButtonElement>('[aria-controls="search-filter-page-sheet"]');
+    expect(trigger).not.toBeNull();
+    if (!trigger) return;
+    const requestCount = () => canvasElement.querySelector('[data-story-search-request-count]');
+    await waitFor(() => expect(requestCount()).toHaveTextContent('0'));
+
+    const dismissAndAssert = async (dismiss: (dialog: HTMLElement) => Promise<void>) => {
+      const dialog = await openDesktopFilters(canvasElement);
+      const entToggle = dialog.querySelector<HTMLButtonElement>('[data-desktop-search-filter-field="ent"]');
+      expect(entToggle).not.toBeNull();
+      if (!entToggle) return;
+      await userEvent.click(entToggle);
+      await expect(entToggle).toHaveAttribute('aria-pressed', 'true');
+      await dismiss(dialog);
+      await waitFor(() => expect(dialog).not.toBeInTheDocument());
+      expect(useSearchStore.getState().entOnlyFilterActive).toBe(false);
+      await expect(requestCount()).toHaveTextContent('0');
+      await expect(trigger).toHaveFocus();
+    };
+
+    await dismissAndAssert(async (dialog) => {
+      const closeButton = dialog.querySelector<HTMLButtonElement>('button[aria-label]');
+      expect(closeButton).not.toBeNull();
+      if (closeButton) await userEvent.click(closeButton);
+    });
+    await dismissAndAssert(async (dialog) => {
+      const overlay = dialog.parentElement;
+      expect(overlay).not.toBeNull();
+      if (overlay) await userEvent.click(overlay);
+    });
+    await dismissAndAssert(async () => {
+      await userEvent.keyboard('{Escape}');
+    });
+    await userEvent.click(trigger);
+  },
+};
+
+export const DesktopFiltersCatalogRefreshInFlightContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => (
+    <DesktopSearchStory bookCatalogFailuresBeforeSuccess={1} deferSearch />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvasElement.querySelector<HTMLInputElement>('[data-desktop-search-controls] input');
+    expect(input).not.toBeNull();
+    if (!input) return;
+    await userEvent.type(input, 'algorithm');
+    await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-results][role="status"]')).not.toBeNull());
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-search-request-count]')).toHaveTextContent('1'));
+
+    const dialog = await openDesktopFilters(canvasElement);
+    const bookTrigger = dialog.querySelector<HTMLButtonElement>(
+      '[data-desktop-search-filter-field="book"] button[aria-haspopup="listbox"]',
+    );
+    expect(bookTrigger).not.toBeNull();
+    await userEvent.click(bookTrigger!);
+    const menu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="book"]');
+    expect(menu).not.toBeNull();
+    if (!menu) return;
+    await within(menu).findByRole('alert');
+    await userEvent.click(within(menu).getByRole('button', { name: /Повторить/i }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-request-count]')).toHaveTextContent('2'));
+    await userEvent.click(canvas.getByRole('button', { name: 'Release search request' }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-term-card-state]')).not.toBeNull());
+    await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-results][role="status"]')).toBeNull());
+  },
+};
+
+export const DesktopFiltersCatalogRefreshSelectedRaceContract: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: desktopFiltersA11yParameters,
+  render: () => (
+    <DesktopSearchStory
+      initialBookSelection
+      bookCatalogFailureRequests={[2]}
+      deferSearch
+      refreshCatalogOnReady
+      deferCatalogFailure
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvasElement.querySelector<HTMLInputElement>('[data-desktop-search-controls] input');
+    expect(input).not.toBeNull();
+    if (!input) return;
+    await waitFor(() => {
+      const count = Number(canvasElement.querySelector('[data-story-book-catalog-request-count]')?.textContent ?? 0);
+      expect(count).toBeGreaterThan(0);
+    });
+    await userEvent.type(input, 'algorithm');
+    await waitFor(() => {
+      const count = Number(canvasElement.querySelector('[data-story-search-request-count]')?.textContent ?? 0);
+      expect(count).toBeGreaterThan(0);
+    }, { timeout: 5000 });
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-request-count]')).toHaveTextContent('2'));
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Release book catalog' }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-failure-released]')).toHaveTextContent('true'));
+    await waitFor(() => {
+      const count = Number(canvasElement.querySelector('[data-story-search-request-count]')?.textContent ?? 0);
+      expect(count).toBeGreaterThan(0);
+    }, { timeout: 5000 });
+
+    const trigger = canvasElement.querySelector<HTMLButtonElement>('[aria-controls="search-filter-page-sheet"]');
+    expect(trigger).not.toBeNull();
+    if (!trigger) return;
+    await userEvent.click(trigger);
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog');
+    const bookMenuTrigger = dialog.querySelector<HTMLButtonElement>(
+      '[data-desktop-search-filter-field="book"] button[aria-haspopup="listbox"]',
+    );
+    expect(bookMenuTrigger).not.toBeNull();
+    await userEvent.click(bookMenuTrigger!);
+    await waitFor(() => expect(dialog.querySelector('[data-desktop-filter-menu="book"]')).not.toBeNull());
+    const menu = dialog.querySelector<HTMLElement>('[data-desktop-filter-menu="book"]');
+    expect(menu).not.toBeNull();
+    if (!menu) return;
+    await waitFor(() => expect(within(menu).getByRole('alert')).toBeInTheDocument());
+    assertTask5Typography(dialog);
+    expect(within(menu).getAllByRole('option').length).toBeGreaterThan(0);
+    await userEvent.click(within(menu).getByRole('button', { name: /retry|қайта|повторить/i }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-request-count]')).toHaveTextContent('3'));
+    await waitFor(() => {
+      const currentMenu = canvasElement.ownerDocument.body.querySelector<HTMLElement>('[data-desktop-filter-menu="book"]');
+      if (currentMenu) expect(within(currentMenu).queryByRole('alert')).toBeNull();
+      else expect(canvasElement.ownerDocument.body.querySelector('[role="alert"]')).toBeNull();
+    });
+    await expect(canvasElement.querySelector('[data-story-search-abort-count]')).toHaveTextContent('0');
+    await userEvent.click(canvas.getByRole('button', { name: 'Release search request' }));
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-last-search-books]')).toHaveTextContent('book:signed:atamura:10'));
+    await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-results][role="status"]')).toBeNull());
+    expect(canvasElement.querySelector('[data-story-last-search-books]')).toHaveTextContent('book:signed:atamura:10');
   },
 };

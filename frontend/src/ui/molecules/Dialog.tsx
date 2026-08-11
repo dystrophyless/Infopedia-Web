@@ -28,6 +28,7 @@ type DialogBaseProps = {
   open: boolean;
   onDismiss: () => void;
   children: ReactNode;
+  id?: string;
   descriptionId?: string;
   initialFocusRef?: RefObject<HTMLElement>;
   dismissOnOverlay?: boolean;
@@ -36,7 +37,7 @@ type DialogBaseProps = {
 };
 export type DialogProps = DialogBaseProps & DialogAccessibleName;
 
-export function Dialog({ open, onDismiss, children, titleId, descriptionId, initialFocusRef, dismissOnOverlay = true, className, overlayClassName, 'aria-label': ariaLabel }: DialogProps) {
+export function Dialog({ open, onDismiss, children, id, titleId, descriptionId, initialFocusRef, dismissOnOverlay = true, className, overlayClassName, 'aria-label': ariaLabel }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const dismissRef = useRef(onDismiss);
@@ -68,8 +69,13 @@ export function Dialog({ open, onDismiss, children, titleId, descriptionId, init
 
   if (!open || typeof document === 'undefined') return null;
   return createPortal(
-    <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4', overlayClassName)} onPointerDown={(event) => { if (dismissOnOverlay && event.target === event.currentTarget) dismissRef.current(); }}>
-      <Surface ref={dialogRef} role="dialog" aria-modal="true" aria-label={ariaLabel} aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className={cn('w-full outline-none', className)}>
+    <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4', overlayClassName)} onPointerDown={(event) => {
+      if (!dismissOnOverlay || event.target !== event.currentTarget) return;
+      const restoreTarget = restoreFocusRef.current;
+      dismissRef.current();
+      window.requestAnimationFrame(() => restoreTarget?.focus({ preventScroll: true }));
+    }}>
+      <Surface id={id} ref={dialogRef} role="dialog" aria-modal="true" aria-label={ariaLabel} aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className={cn('w-full outline-none', className)}>
         {children}
       </Surface>
     </div>, document.body,

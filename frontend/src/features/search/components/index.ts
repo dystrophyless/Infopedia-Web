@@ -1,5 +1,7 @@
 export { SearchChoiceModal } from './SearchChoiceModal';
 export type { SearchChoiceModalProps } from './SearchChoiceModal';
+export { DesktopSearchFiltersDialog } from './DesktopSearchFiltersDialog';
+export type { DesktopSearchFiltersDialogProps } from './DesktopSearchFiltersDialog';
 export {
   MobileSearchInputSheet,
   MobileSearchBrowseHeader as SearchBrowseHeader,

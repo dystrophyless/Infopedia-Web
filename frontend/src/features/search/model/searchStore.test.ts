@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSearchStore } from './searchStore';
 
 describe('search store characterization', () => {
@@ -73,5 +73,28 @@ describe('search store characterization', () => {
       isLoading: false,
       searchFilterSelections: { grade: [], book: ['book-1'], section: [] },
     });
+  });
+
+  it('applies a complete filter snapshot atomically and ignores an identical apply', () => {
+    const listener = vi.fn();
+    const unsubscribe = useSearchStore.subscribe(listener);
+    const snapshot = {
+      entOnly: true,
+      selections: { grade: ['10'], book: ['atamura'], section: [] },
+      labels: { grade: { '10': '10 класс' }, book: { atamura: 'Атамұра' }, section: {} },
+    };
+
+    useSearchStore.getState().applySearchFilters(snapshot);
+    expect(listener).toHaveBeenCalledOnce();
+    expect(useSearchStore.getState()).toMatchObject({
+      entOnlyFilterActive: true,
+      searchFilterSelections: snapshot.selections,
+      searchFilterSelectionLabels: snapshot.labels,
+    });
+
+    listener.mockClear();
+    useSearchStore.getState().applySearchFilters(snapshot);
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   PointerEvent as ReactPointerEvent,
   TouchEvent as ReactTouchEvent,
@@ -18,6 +18,14 @@ import {
   type FilterOption,
   type FilterSelectId,
 } from '../model';
+import {
+  createSearchFilterDraft,
+  removeSearchFilterDraftOption,
+  resetSearchFilterDraft,
+  resetSearchFilterDraftOptions,
+  toggleSearchFilterDraftOption,
+} from '../model/searchFilterDraft';
+import { buildSearchRequestDescriptor } from '../model/searchRequestKey';
 
 const DRAG_CLOSE_THRESHOLD = 72;
 const DRAG_CLOSE_ANIMATION_MS = 180;
@@ -34,18 +42,26 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedFilter = searchParams.get('select');
-  const quickSelectFilter = isFilterSelectId(requestedFilter) ? requestedFilter : null;
   const {
-    entOnlyFilterActive: entOnly,
-    searchFilterSelections: selections,
-    setEntOnlyFilterActive,
-    toggleSearchFilterOption,
-    removeSearchFilterOption,
-    resetSearchFilterOptions,
-    resetSearchFilters,
+    query,
+    entOnlyFilterActive,
+    searchFilterSelections,
+    searchFilterSelectionLabels,
+    applySearchFilters,
   } = useSearchStore();
+  const committed = useMemo(
+    () => ({
+      entOnly: entOnlyFilterActive,
+      selections: searchFilterSelections,
+      labels: searchFilterSelectionLabels,
+    }),
+    [entOnlyFilterActive, searchFilterSelectionLabels, searchFilterSelections],
+  );
+  const [draft, setDraft] = useState(() => createSearchFilterDraft(committed));
+  const entOnly = draft.entOnly;
+  const selections = draft.selections;
   const [activeFilter, setActiveFilter] = useState<FilterSelectId | null>(null);
-  const { selectOptions, catalogLoading, catalogError } = useSearchFilterCatalog(t);
+  const { selectOptions, catalogLoading, catalogError, bookCatalogSnapshot } = useSearchFilterCatalog(t);
   const [pageDragOffset, setPageDragOffset] = useState(0);
   const [isPageDragging, setIsPageDragging] = useState(false);
   const filterPageScrollRef = useRef<HTMLDivElement | null>(null);
@@ -89,8 +105,38 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
   }, [overlay]);
 
   function resetFiltersPage() {
-    resetSearchFilters();
+    setDraft((current) => resetSearchFilterDraft(current));
     setActiveFilter(null);
+  }
+
+  function toggleSearchFilterOptionDraft(
+    filterId: FilterSelectId,
+    optionId: string,
+    optionLabel: string,
+  ) {
+    setDraft((current) =>
+      toggleSearchFilterDraftOption(current, filterId, optionId, optionLabel),
+    );
+  }
+
+  function removeSearchFilterOptionDraft(filterId: FilterSelectId, optionId: string) {
+    setDraft((current) => removeSearchFilterDraftOption(current, filterId, optionId));
+  }
+
+  function resetSearchFilterOptionsDraft(filterId: FilterSelectId) {
+    setDraft((current) => resetSearchFilterDraftOptions(current, filterId));
+  }
+
+  function applyFiltersPage() {
+    const descriptor = buildSearchRequestDescriptor({
+      query,
+      selections: draft.selections,
+      entOnly: draft.entOnly,
+      bookCatalog: bookCatalogSnapshot,
+    });
+    if (!descriptor.ok) return;
+    applySearchFilters(draft);
+    closeFiltersPage();
   }
 
   function closeFiltersPage() {
@@ -103,11 +149,6 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
   }
 
   function closeActiveFilterDialog() {
-    if (quickSelectFilter) {
-      closeFiltersPage();
-      return;
-    }
-
     setActiveFilter(null);
   }
 
@@ -314,7 +355,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
               data-search-filter-toggle="ent"
               aria-pressed={entOnly}
               aria-label={t('searchFilters.toggleEntAria')}
-              onClick={() => setEntOnlyFilterActive(!entOnly)}
+              onClick={() => setDraft((current) => ({ ...current, entOnly: !current.entOnly }))}
               className="search-filter-control flex h-12 w-full items-center justify-between rounded-[8px] border border-[#a585db] bg-white px-4 py-2 text-left text-[16px] font-normal leading-none text-[#44237d]"
             >
               <span>{t('searchFilters.entToggleLabel')}</span>
@@ -339,7 +380,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
             options={selectOptions.grade}
             selectedIds={selections.grade}
             onOpen={() => setActiveFilter('grade')}
-            onRemove={(optionId) => removeSearchFilterOption('grade', optionId)}
+                  onRemove={(optionId) => removeSearchFilterOptionDraft('grade', optionId)}
             t={t}
           />
 
@@ -349,7 +390,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
             options={selectOptions.book}
             selectedIds={selections.book}
             onOpen={() => setActiveFilter('book')}
-            onRemove={(optionId) => removeSearchFilterOption('book', optionId)}
+                  onRemove={(optionId) => removeSearchFilterOptionDraft('book', optionId)}
             t={t}
           />
 
@@ -359,7 +400,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
             options={selectOptions.section}
             selectedIds={selections.section}
             onOpen={() => setActiveFilter('section')}
-            onRemove={(optionId) => removeSearchFilterOption('section', optionId)}
+                  onRemove={(optionId) => removeSearchFilterOptionDraft('section', optionId)}
             t={t}
           />
         </div>
@@ -379,7 +420,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
           <button
             type="button"
             data-search-filter-page-action="search"
-            onClick={closeFiltersPage}
+            onClick={applyFiltersPage}
             className="search-filter-action-button search-filter-save-button flex h-12 items-center justify-center rounded-[8px] bg-[#572d9f] px-4 text-[16px] font-medium leading-none text-[#f8f5fc]"
           >
             {t('searchFilters.search')}
@@ -395,8 +436,8 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
           selectedIds={selections[activeFilter]}
           isLoading={catalogLoading && activeFilter !== 'grade'}
           error={selectOptions[activeFilter].length === 0 ? catalogError : null}
-          onToggleOption={toggleSearchFilterOption}
-          onResetOptions={resetSearchFilterOptions}
+          onToggleOption={toggleSearchFilterOptionDraft}
+          onResetOptions={resetSearchFilterOptionsDraft}
           onClose={closeActiveFilterDialog}
           t={t}
         />

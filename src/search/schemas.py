@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from src.terms.schemas import TermDetailedResponse
+
 
 class SearchTaskCreateRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2048)
@@ -34,3 +36,11 @@ class SearchTaskResponse(BaseModel):
     status: Literal["pending", "started", "success", "failure"]
     result: SearchTaskResult | None = None
     error: SearchTaskError | None = None
+
+
+class SearchTermsResponse(BaseModel):
+    terms: list[TermDetailedResponse]
+    total: int = Field(ge=0)
+    skip: int = Field(ge=0)
+    limit: int = Field(ge=1)
+    has_more: bool

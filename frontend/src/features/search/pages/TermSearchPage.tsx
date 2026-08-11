@@ -14,10 +14,7 @@ import {
   HelpCircleIcon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
-import {
-  MOBILE_SEARCH_PAGE_SIZE,
-  useTermSearchController,
-} from '../hooks/useTermSearchController';
+import { useTermSearchController } from '../hooks/useTermSearchController';
 import {
   type SearchResultFilterChip,
   type SearchFilterSelectionLabels,
@@ -32,6 +29,25 @@ import { BetweenBlocks, EmptyState, MobilePageFrame, SegmentedControl } from '..
 import type { Term } from '../../../types';
 import { useAuthStore } from '../../../stores/authStore';
 import { SearchFilters } from './SearchFiltersPage';
+import { useSearchFilterCatalog } from '../hooks/useSearchFilterCatalog';
+import { useSearchRequestClient } from '../api/searchRequestClient';
+import { DesktopSearchFiltersDialog } from '../components/DesktopSearchFiltersDialog';
+
+const DESKTOP_QUERY = '(min-width: 768px)';
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(DESKTOP_QUERY).matches,
+  );
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(DESKTOP_QUERY);
+    const handleChange = () => setIsDesktop(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+  return isDesktop;
+}
 
 const DRAG_CLOSE_THRESHOLD = 72;
 const DRAG_CLOSE_ANIMATION_MS = 180;
@@ -73,12 +89,14 @@ function SearchResultFilterChips({
   onOpenFilters,
   className,
   desktop = false,
+  filtersOpen = false,
 }: {
   filters: SearchResultFilterChip[];
   activeFilterCount: number;
   onOpenFilters?: () => void;
   className: string;
   desktop?: boolean;
+  filtersOpen?: boolean;
 }) {
   return (
     <div
@@ -133,6 +151,9 @@ function SearchResultFilterChips({
             {...chipProps}
             className={chipClassName}
             aria-pressed={filter.active}
+            aria-label={filterIsIconOnly ? filter.label : undefined}
+            aria-controls={desktop && filterIsIconOnly ? 'search-filter-page-sheet' : undefined}
+            aria-expanded={desktop && filterIsIconOnly ? filtersOpen : undefined}
             onClick={filterIsIconOnly ? onOpenFilters : filter.onToggle}
           >
             {chipContent}
@@ -653,9 +674,12 @@ export function TermSearchPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [filtersOverlayOpen, setFiltersOverlayOpen] = useState(false);
+  const isDesktop = useIsDesktop();
   const filtersTriggerRef = useRef<HTMLButtonElement | null>(null);
   const previousFiltersOverlayOpenRef = useRef(false);
   const initialQuery = searchParams.get('query') ?? '';
+  const searchClient = useSearchRequestClient();
+  const filterCatalog = useSearchFilterCatalog(t, searchClient);
   const {
     query,
     searchFilterSelections,
@@ -664,15 +688,16 @@ export function TermSearchPage() {
     setQuery,
     submitSearch,
     setEntOnlyFilterActive,
+    applySearchFilters,
     hasSearched,
-    setVisibleCount,
-    setHasExpandedRandomResults,
+    loadMore,
     mobileSearchSheetOpen,
     setMobileSearchSheetOpen,
     debounced,
     showingSearchResults,
     displayResults,
     visibleResults,
+    resultTotal,
     hiddenResultsCount,
     pageIsLoading,
     pageHasError,
@@ -684,7 +709,7 @@ export function TermSearchPage() {
     setSelectedTermId,
     searchResultViewActive,
     handleMobileResultsBack,
-  } = useTermSearchController(initialQuery);
+  } = useTermSearchController(initialQuery, filterCatalog.bookCatalogSnapshot, searchClient);
 
   useEffect(() => {
     if (previousFiltersOverlayOpenRef.current && !filtersOverlayOpen) {
@@ -718,6 +743,14 @@ export function TermSearchPage() {
     [entOnlyFilterActive, searchFilterSelectionLabels, searchFilterSelections, setEntOnlyFilterActive, t],
   );
   const desktopQueryHasText = query.trim().length > 0;
+  const committedFilters = useMemo(
+    () => ({
+      entOnly: entOnlyFilterActive,
+      selections: searchFilterSelections,
+      labels: searchFilterSelectionLabels,
+    }),
+    [entOnlyFilterActive, searchFilterSelectionLabels, searchFilterSelections],
+  );
 
   const mobileSearchResultAppBar = searchResultViewActive
     ? {
@@ -791,6 +824,7 @@ export function TermSearchPage() {
             filters={desktopFilterChips}
             activeFilterCount={desktopFilterChips.find((filter) => filter.id === 'filter')?.selectedCount ?? 0}
             onOpenFilters={() => setFiltersOverlayOpen(true)}
+            filtersOpen={filtersOverlayOpen}
             desktop
             className="mt-8 flex w-[684px] items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           />
@@ -804,7 +838,7 @@ export function TermSearchPage() {
       <div data-mobile-outcome-header={mobileSearchEmptyActive ? '' : undefined} className={`hidden max-md:block ${mobileSearchEmptyActive ? '[&>*:last-child]:mb-0' : ''}`}>
         {searchResultViewActive ? <MobileSearchResultHeader
           query={query}
-          resultCount={displayResults.length}
+          resultCount={resultTotal}
            entOnlyFilterActive={entOnlyFilterActive}
            searchFilterSelections={searchFilterSelections}
            searchFilterSelectionLabels={searchFilterSelectionLabels}
@@ -904,10 +938,7 @@ export function TermSearchPage() {
                 type="button"
                 data-desktop-search-load-more
                 className="mt-2 flex h-12 w-[684px] items-center justify-center rounded-[8px] bg-[#ded2f1] px-4 text-center text-[16px] font-medium leading-none text-[#6a37c3] transition-opacity hover:opacity-90"
-                onClick={() => {
-                  if (!showingSearchResults) setHasExpandedRandomResults(true);
-                  setVisibleCount((count) => count + MOBILE_SEARCH_PAGE_SIZE);
-                }}
+                onClick={() => void loadMore()}
               >
                 {t('search.loadMore', { count: hiddenResultsCount })}
               </button>
@@ -929,10 +960,7 @@ export function TermSearchPage() {
             <button
               type="button"
               className="mt-6 flex h-12 w-full items-center justify-center rounded-[8px] bg-[#44237d] px-4 text-center text-[16px] font-medium leading-none text-[#f8f5fc] max-md:-mx-[2px] max-md:w-[calc(100%+4px)] transition-opacity hover:opacity-90 max-md:mt-6 md:hidden"
-              onClick={() => {
-                if (!showingSearchResults) setHasExpandedRandomResults(true);
-                setVisibleCount((count) => count + MOBILE_SEARCH_PAGE_SIZE);
-              }}
+              onClick={() => void loadMore()}
             >
               {t('search.loadMore', { count: hiddenResultsCount })}
             </button>
@@ -948,7 +976,27 @@ export function TermSearchPage() {
           onClose={() => setMobileSearchSheetOpen(false)}
         />
       )}
-      {filtersOverlayOpen && <SearchFilters overlay onDismiss={() => setFiltersOverlayOpen(false)} />}
+      {filtersOverlayOpen && isDesktop && (
+        <DesktopSearchFiltersDialog
+          open
+          query={query}
+          committed={committedFilters}
+          options={filterCatalog.selectOptions}
+          bookCatalogSnapshot={filterCatalog.bookCatalogSnapshot}
+          catalogLoading={filterCatalog.catalogLoading}
+          catalogError={filterCatalog.catalogError}
+          onRetryCatalog={filterCatalog.retryCatalog}
+          onApply={(snapshot) => {
+            applySearchFilters(snapshot);
+            setFiltersOverlayOpen(false);
+          }}
+          onDismiss={() => setFiltersOverlayOpen(false)}
+          t={t}
+        />
+      )}
+      {filtersOverlayOpen && !isDesktop && (
+        <SearchFilters overlay onDismiss={() => setFiltersOverlayOpen(false)} />
+      )}
       </div>
     </MobilePageFrame>
   );

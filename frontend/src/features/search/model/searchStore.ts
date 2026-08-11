@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import type { Term } from '../../../types';
+import {
+  createSearchFilterDraft,
+  searchFilterDraftMatchesCommitted,
+  type SearchFilterSnapshot,
+} from './searchFilterDraft';
 
 export type SearchFilterSelectId = 'grade' | 'book' | 'section';
 
@@ -48,6 +53,7 @@ export interface SearchState {
   setResults: (results: Term[]) => void;
   setLoading: (loading: boolean) => void;
   setEntOnlyFilterActive: (active: boolean) => void;
+  applySearchFilters: (snapshot: SearchFilterSnapshot) => void;
   toggleSearchFilterOption: (
     filterId: SearchFilterSelectId,
     optionId: string,
@@ -70,6 +76,21 @@ export const useSearchStore = create<SearchState>()((set) => ({
   setResults: (results) => set({ results }),
   setLoading: (isLoading) => set({ isLoading }),
   setEntOnlyFilterActive: (entOnlyFilterActive) => set({ entOnlyFilterActive }),
+  applySearchFilters: (snapshot) =>
+    set((state) => {
+      const committed: SearchFilterSnapshot = {
+        entOnly: state.entOnlyFilterActive,
+        selections: state.searchFilterSelections,
+        labels: state.searchFilterSelectionLabels,
+      };
+      if (searchFilterDraftMatchesCommitted(snapshot, committed)) return state;
+      const next = createSearchFilterDraft(snapshot);
+      return {
+        entOnlyFilterActive: next.entOnly,
+        searchFilterSelections: next.selections,
+        searchFilterSelectionLabels: next.labels,
+      };
+    }),
   toggleSearchFilterOption: (filterId, optionId, optionLabel) =>
     set((state) => {
       const selectedIds = state.searchFilterSelections[filterId];

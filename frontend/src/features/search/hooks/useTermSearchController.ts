@@ -3,7 +3,11 @@ import { getFeaturedTerms } from '../../../api/terms';
 import { useDebounce } from '../../../hooks/useDebounce';
 import type { FeaturedTerm, Term } from '../../../types';
 import { searchTerms } from '../api/termSearch';
-import { filterTermsBySearchFilters } from '../model/filterTerms';
+import type { SearchRequestClient } from '../api/searchRequestClient';
+import type { BookCatalogSnapshot } from '../model/publisherBookResolver';
+import { appendSearchPage, replaceSearchPage } from '../model/searchPageState';
+import { chooseSearchLoadMoreAction, shouldReplaceSearchRequest } from '../model/searchRequestPolicy';
+import { buildSearchRequestDescriptor } from '../model/searchRequestKey';
 import { useSearchStore } from '../model/searchStore';
 
 export const SEARCH_RESULT_LIMIT = 11;
@@ -17,7 +21,11 @@ function toFeaturedTerm({ term, featured_definition }: FeaturedTerm): Term {
   return { ...term, definitions: [featured_definition] };
 }
 
-export function useTermSearchController(initialQuery: string) {
+export function useTermSearchController(
+  initialQuery: string,
+  bookCatalogSnapshot: BookCatalogSnapshot | null,
+  client: SearchRequestClient,
+) {
   const {
     query,
     results,
@@ -29,6 +37,7 @@ export function useTermSearchController(initialQuery: string) {
     setResults,
     setLoading,
     setEntOnlyFilterActive,
+    applySearchFilters,
   } = useSearchStore();
   const [hasSearched, setHasSearched] = useState(false);
   const [featuredTerms, setFeaturedTerms] = useState<Term[]>([]);
@@ -42,6 +51,8 @@ export function useTermSearchController(initialQuery: string) {
   const [submitRequestNonce, setSubmitRequestNonce] = useState(0);
   const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(MOBILE_SEARCH_PAGE_SIZE);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [serverHasMore, setServerHasMore] = useState(false);
   const [hasExpandedRandomResults, setHasExpandedRandomResults] = useState(false);
   const [mobileSearchSheetOpen, setMobileSearchSheetOpen] = useState(false);
   const debounced = useDebounce(query, 400);
@@ -49,7 +60,7 @@ export function useTermSearchController(initialQuery: string) {
   const searchAbortRef = useRef<AbortController | null>(null);
   const featuredGenerationRef = useRef(0);
   const searchGenerationRef = useRef(0);
-  const lastSearchQueryRef = useRef('');
+  const lastSearchKeyRef = useRef<string | null>(null);
   const consumedSubmitNonceRef = useRef(0);
   const handledRetryRef = useRef(0);
 
@@ -70,6 +81,35 @@ export function useTermSearchController(initialQuery: string) {
   );
 
   useEffect(() => {
+    if (submittedQuery !== null && submittedQuery !== query.trim()) setSubmittedQuery(null);
+  }, [query, submittedQuery]);
+
+  const effectiveQuery = submittedQuery ?? debounced;
+  const requestBookCatalog = searchFilterSelections.book.length > 0 ? bookCatalogSnapshot : null;
+  const requestDescriptor = useMemo(
+    () =>
+      buildSearchRequestDescriptor({
+        query: effectiveQuery,
+        selections: searchFilterSelections,
+        entOnly: entOnlyFilterActive,
+        bookCatalog: requestBookCatalog,
+      }),
+    [effectiveQuery, entOnlyFilterActive, requestBookCatalog, searchFilterSelections],
+  );
+  const requestDescriptorKey = requestDescriptor.ok ? requestDescriptor.key : requestDescriptor.code;
+
+  useEffect(() => {
+    setVisibleCount(MOBILE_SEARCH_PAGE_SIZE);
+    setHasExpandedRandomResults(false);
+    setSelectedTermId(null);
+  }, [requestDescriptorKey]);
+
+  useEffect(() => {
+    if (!requestDescriptor.ok || !requestDescriptor.useFeaturedTerms) {
+      featuredAbortRef.current?.abort();
+      setFeaturedStatus('idle');
+      return undefined;
+    }
     const controller = new AbortController();
     featuredAbortRef.current?.abort();
     featuredAbortRef.current = controller;
@@ -77,7 +117,7 @@ export function useTermSearchController(initialQuery: string) {
     setFeaturedStatus('loading');
     setFeaturedError(null);
 
-    getFeaturedTerms(RANDOM_TERM_LIMIT)
+    getFeaturedTerms(RANDOM_TERM_LIMIT, client)
       .then((data) => {
         if (controller.signal.aborted || generation !== featuredGenerationRef.current) return;
         const next = data.map(toFeaturedTerm);
@@ -90,71 +130,80 @@ export function useTermSearchController(initialQuery: string) {
         setFeaturedError(error);
         setFeaturedStatus('error');
       });
-
     return () => controller.abort();
-  }, [featuredRetry]);
+  }, [client, featuredRetry, requestDescriptorKey]);
 
   useEffect(() => {
-    setVisibleCount(MOBILE_SEARCH_PAGE_SIZE);
-    setHasExpandedRandomResults(false);
-  }, [debounced, searchFilterSelections]);
-
-  useEffect(() => {
-    setSelectedTermId(null);
-  }, [query, searchFilterSelections]);
-
-  useEffect(() => {
-    if (submittedQuery !== null && submittedQuery !== query) {
-      setSubmittedQuery(null);
-    }
-  }, [query, submittedQuery]);
-
-  useEffect(() => {
-    if (query.trim() === debounced.trim()) return;
-    searchAbortRef.current?.abort();
-    searchGenerationRef.current += 1;
-  }, [debounced, query]);
-
-  useEffect(() => {
-    searchAbortRef.current?.abort();
-    const immediateRequest = submitRequestNonce !== consumedSubmitNonceRef.current;
     const retryRequest = searchRetry !== handledRetryRef.current;
-    const normalizedQuery = (submittedQuery ?? debounced).trim();
-    if (!normalizedQuery) {
+    const immediateRequest = submitRequestNonce !== consumedSubmitNonceRef.current;
+    if (immediateRequest) consumedSubmitNonceRef.current = submitRequestNonce;
+
+    if (!requestDescriptor.ok) {
+      searchAbortRef.current?.abort();
       setResults([]);
+      setServerTotal(0);
+      setServerHasMore(false);
+      setHasSearched(true);
+      setLoading(false);
+      setSearchError(new Error(requestDescriptor.code));
+      setSearchStatus('error');
+      lastSearchKeyRef.current = null;
+      return undefined;
+    }
+    if (requestDescriptor.useFeaturedTerms) {
+      searchAbortRef.current?.abort();
+      setResults([]);
+      setServerTotal(0);
+      setServerHasMore(false);
       setHasSearched(false);
       setLoading(false);
       setSearchError(null);
       setSearchStatus('idle');
-      lastSearchQueryRef.current = '';
-      consumedSubmitNonceRef.current = submitRequestNonce;
-      handledRetryRef.current = searchRetry;
+      lastSearchKeyRef.current = null;
       return undefined;
     }
-
-    if (!immediateRequest && !retryRequest && normalizedQuery === lastSearchQueryRef.current) return undefined;
-
-    if (immediateRequest) consumedSubmitNonceRef.current = submitRequestNonce;
+    if (
+      !shouldReplaceSearchRequest(
+        lastSearchKeyRef.current,
+        requestDescriptor.key,
+        retryRequest || immediateRequest,
+      )
+    ) {
+      return undefined;
+    }
     if (retryRequest) handledRetryRef.current = searchRetry;
 
+    // Only replace an active request after the canonical-key dedupe check.
+    // Catalog refreshes may recreate descriptor inputs without changing the
+    // request key; aborting before this check strands that request.
+    searchAbortRef.current?.abort();
     const controller = new AbortController();
     searchAbortRef.current = controller;
     const generation = ++searchGenerationRef.current;
+    lastSearchKeyRef.current = requestDescriptor.key;
     setLoading(true);
     setHasSearched(true);
     setSearchError(null);
     setSearchStatus('loading');
 
-    lastSearchQueryRef.current = normalizedQuery;
-    searchTerms(normalizedQuery, SEARCH_RESULT_LIMIT)
-      .then((data) => {
+    searchTerms(
+      { ...requestDescriptor.request, skip: 0, limit: SEARCH_RESULT_LIMIT },
+      controller.signal,
+      client,
+    )
+      .then((page) => {
         if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
-        setResults(data);
-        setSearchStatus(data.length > 0 ? 'ready' : 'empty');
+        const next = replaceSearchPage(page);
+        setResults(next.terms);
+        setServerTotal(next.total);
+        setServerHasMore(next.hasMore);
+        setSearchStatus(next.terms.length > 0 ? 'ready' : 'empty');
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
         setResults([]);
+        setServerTotal(0);
+        setServerHasMore(false);
         setSearchError(error);
         setSearchStatus('error');
       })
@@ -162,32 +211,31 @@ export function useTermSearchController(initialQuery: string) {
         if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
         setLoading(false);
       });
-
     return () => controller.abort();
-  }, [debounced, searchRetry, submitRequestNonce, submittedQuery, setLoading, setResults]);
+  }, [
+    requestDescriptorKey,
+    searchRetry,
+    setLoading,
+    setResults,
+    submitRequestNonce,
+    client,
+  ]);
 
-  const queryHasText = Boolean(query.trim());
-  const activeQuery = (submittedQuery ?? debounced).trim();
-  const showingSearchResults = Boolean(activeQuery);
-  const unfilteredDisplayResults = showingSearchResults ? results : featuredTerms;
-  const displayResults = useMemo(
-    () => filterTermsBySearchFilters(unfilteredDisplayResults, searchFilterSelections),
-    [unfilteredDisplayResults, searchFilterSelections],
-  );
+  const showingSearchResults = !requestDescriptor.ok || !requestDescriptor.useFeaturedTerms;
+  const displayResults = showingSearchResults ? results : featuredTerms;
   const visibleResults = useMemo(
     () => displayResults.slice(0, visibleCount),
     [displayResults, visibleCount],
   );
-  const hiddenResultsCount = Math.max(displayResults.length - visibleResults.length, 0);
+  const resultTotal = showingSearchResults ? serverTotal : displayResults.length;
+  const hiddenResultsCount = Math.max(resultTotal - visibleResults.length, 0);
   const resourceStatus = showingSearchResults ? searchStatus : featuredStatus;
   const resourceError = showingSearchResults ? searchError : featuredError;
-  const pageIsLoading =
-    isLoading || (queryHasText && !showingSearchResults) || resourceStatus === 'loading';
+  const queryAwaitingDebounce = query.trim() !== effectiveQuery.trim();
+  const pageIsLoading = isLoading || queryAwaitingDebounce || resourceStatus === 'loading';
   const pageHasError = !pageIsLoading && resourceStatus === 'error';
-  const filterNoMatch =
-    !pageIsLoading && !pageHasError && unfilteredDisplayResults.length > 0 && displayResults.length === 0;
-  const displayStatus: SearchDisplayStatus = filterNoMatch ? 'filter-no-match' : resourceStatus;
-  const searchResultViewActive = queryHasText || hasExpandedRandomResults;
+  const displayStatus: SearchDisplayStatus = resourceStatus;
+  const searchResultViewActive = showingSearchResults || hasExpandedRandomResults;
 
   const handleSelectedTermId = useCallback(
     (nextId: string | null) => {
@@ -197,15 +245,66 @@ export function useTermSearchController(initialQuery: string) {
     },
     [displayResults],
   );
-  const currentSelectedTermId = selectedTermId && displayResults.some((term) => term.public_id === selectedTermId)
-    ? selectedTermId
-    : null;
+  const currentSelectedTermId =
+    selectedTermId && displayResults.some((term) => term.public_id === selectedTermId)
+      ? selectedTermId
+      : null;
 
-  useEffect(() => {
-    if (selectedTermId !== null && !displayResults.some((term) => term.public_id === selectedTermId)) {
-      setSelectedTermId(null);
+  const loadMore = useCallback(async () => {
+    if (!showingSearchResults) setHasExpandedRandomResults(true);
+    const action = chooseSearchLoadMoreAction({
+      visible: visibleCount,
+      loaded: displayResults.length,
+      hasMore: showingSearchResults && serverHasMore,
+    });
+    if (action.type === 'reveal') {
+      setVisibleCount(action.nextVisible);
+      return;
     }
-  }, [displayResults, selectedTermId]);
+    if (action.type !== 'append' || !requestDescriptor.ok || requestDescriptor.useFeaturedTerms) {
+      return;
+    }
+
+    const controller = new AbortController();
+    searchAbortRef.current?.abort();
+    searchAbortRef.current = controller;
+    const generation = ++searchGenerationRef.current;
+    setLoading(true);
+    try {
+      const page = await searchTerms(
+        { ...requestDescriptor.request, skip: action.skip, limit: SEARCH_RESULT_LIMIT },
+        controller.signal,
+        client,
+      );
+      if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
+      const next = appendSearchPage(
+        { terms: results, total: serverTotal, hasMore: serverHasMore },
+        page,
+      );
+      setResults(next.terms);
+      setServerTotal(next.total);
+      setServerHasMore(next.hasMore);
+      setVisibleCount((count) => Math.min(count + MOBILE_SEARCH_PAGE_SIZE, next.terms.length));
+      setSearchStatus(next.terms.length > 0 ? 'ready' : 'empty');
+    } catch (error: unknown) {
+      if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
+      setSearchError(error);
+      setSearchStatus('error');
+    } finally {
+      if (!controller.signal.aborted && generation === searchGenerationRef.current) setLoading(false);
+    }
+  }, [
+    displayResults.length,
+    requestDescriptor,
+    results,
+    serverHasMore,
+    serverTotal,
+    setLoading,
+    setResults,
+    showingSearchResults,
+    visibleCount,
+    client,
+  ]);
 
   function handleMobileResultsBack() {
     setQuery('');
@@ -223,9 +322,11 @@ export function useTermSearchController(initialQuery: string) {
     setQuery,
     submitSearch,
     setEntOnlyFilterActive,
+    applySearchFilters,
     hasSearched,
     visibleCount,
     setVisibleCount,
+    loadMore,
     hasExpandedRandomResults,
     setHasExpandedRandomResults,
     mobileSearchSheetOpen,
@@ -234,6 +335,7 @@ export function useTermSearchController(initialQuery: string) {
     showingSearchResults,
     displayResults,
     visibleResults,
+    resultTotal,
     hiddenResultsCount,
     pageIsLoading,
     pageHasError,
@@ -241,12 +343,13 @@ export function useTermSearchController(initialQuery: string) {
     featuredStatus,
     searchStatus,
     displayStatus,
-    filterNoMatch,
+    filterNoMatch: false,
     retryFeatured,
     retrySearch,
     selectedTermId: currentSelectedTermId,
     setSelectedTermId: handleSelectedTermId,
     searchResultViewActive,
+    requestBlocked: !requestDescriptor.ok,
     handleMobileResultsBack,
   };
 }

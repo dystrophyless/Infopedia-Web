@@ -152,8 +152,8 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /const \{[\s\S]*entOnlyFilterActive: entOnly,[\s\S]*searchFilterSelections: selections,[\s\S]*setEntOnlyFilterActive,[\s\S]*toggleSearchFilterOption,[\s\S]*removeSearchFilterOption,[\s\S]*resetSearchFilterOptions,[\s\S]*resetSearchFilters,[\s\S]*\} = useSearchStore\(\);/,
-  'Search filters page should read and mutate filter state through the shared search store',
+  /const \{[\s\S]*entOnlyFilterActive,[\s\S]*searchFilterSelections,[\s\S]*searchFilterSelectionLabels,[\s\S]*applySearchFilters,[\s\S]*\} = useSearchStore\(\);/,
+  'Search filters page should read committed filters and expose one atomic apply action',
 );
 
 assert.match(
@@ -175,12 +175,6 @@ assert.match(
 );
 
 assert.match(
-  searchFiltersSource,
-  /const quickSelectFilter = isFilterSelectId\(requestedFilter\) \? requestedFilter : null;/,
-  'Search filters page should distinguish a result-chip quick filter from the regular all-filters page',
-);
-
-assert.match(
   filterOptionsSource,
   /function isFilterSelectId\(value: string \| null\): value is FilterSelectId[\s\S]*value === 'grade'[\s\S]*value === 'book'[\s\S]*value === 'section'/,
   'Search filters page should only accept known popup deep-link values',
@@ -194,8 +188,8 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /function closeActiveFilterDialog\(\) \{[\s\S]*if \(quickSelectFilter\) \{[\s\S]*closeFiltersPage\(\);[\s\S]*return;[\s\S]*\}[\s\S]*setActiveFilter\(null\);[\s\S]*\}/,
-  'Saving a result-chip quick filter should return directly to the search results instead of the all-filters page',
+  /function closeActiveFilterDialog\(\) \{[\s\S]*setActiveFilter\(null\);[\s\S]*\}/,
+  'Saving a deep-linked option menu should return to the local draft so only the main Search action commits it',
 );
 
 assert.match(
@@ -280,13 +274,13 @@ assert.match(
 
 assert.match(
   filterCatalogHookSource,
-  /getSearchFilterBooks[\s\S]*mapBookOptions\(books, t\)/,
-  'Book popup should derive visible book names from the catalog API response',
+  /getSearchFilterBooks[\s\S]*updateBookCatalogSnapshot\(previous, books\)[\s\S]*mapBookOptions\(update\.snapshot\?\.books \?\? \[\], t\)/,
+  'Book popup should derive visible publishers from the validated authoritative catalog snapshot',
 );
 
 assert.match(
   filterOptionsSource,
-  /function mapBookOptions\(books: BookCatalogItem\[\],[\s\S]*SEARCH_FILTER_BOOKS\.filter/,
+  /function mapBookOptions\(books: readonly BookCatalogItem\[\],[\s\S]*canonicalPublisherId\(book\.publisher\)[\s\S]*SEARCH_FILTER_BOOKS\.filter/,
   'Book popup options should canonicalize publisher ids and preserve fallback labels',
 );
 
@@ -316,14 +310,14 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /activeFilter[\s\S]*<SearchFilterOptionsDialog[\s\S]*onToggleOption=\{toggleSearchFilterOption\}/,
+  /activeFilter[\s\S]*<SearchFilterOptionsDialog[\s\S]*onToggleOption=\{toggleSearchFilterOptionDraft\}/,
   'Clicking a filter select should open the reusable Figma-style options dialog',
 );
 
 assert.match(
   searchFiltersSource,
-  /function resetFiltersPage\(\) \{[\s\S]*resetSearchFilters\(\);[\s\S]*setActiveFilter\(null\);[\s\S]*\}/,
-  'Search filters page reset action should restore shared ENT and selectable filter state',
+  /function resetFiltersPage\(\) \{[\s\S]*setDraft\(\(current\) => resetSearchFilterDraft\(current\)\);[\s\S]*setActiveFilter\(null\);[\s\S]*\}/,
+  'Search filters page reset action should only reset the local draft',
 );
 
 assert.match(
@@ -340,14 +334,14 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /data-search-filter-page-action="search"[\s\S]*onClick=\{closeFiltersPage\}[\s\S]*searchFilters\.search/,
-  'Main search filters sheet should expose a Search action that returns to search',
+  /data-search-filter-page-action="search"[\s\S]*onClick=\{applyFiltersPage\}[\s\S]*searchFilters\.search/,
+  'Main Search action should validate and atomically apply the complete local draft',
 );
 
 assert.match(
   searchFiltersSource,
-  /onResetOptions=\{resetSearchFilterOptions\}/,
-  'Options dialog should receive a reset handler for the active filter',
+  /onResetOptions=\{resetSearchFilterOptionsDraft\}/,
+  'Options dialog reset should remain local to the active draft filter',
 );
 
 assert.match(
@@ -394,8 +388,8 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /onRemove=\{\(optionId\) => removeSearchFilterOption\('book', optionId\)\}/,
-  'Search filter chips should remove only the clicked selected variant through the shared store',
+  /onRemove=\{\(optionId\) => removeSearchFilterOptionDraft\('book', optionId\)\}/,
+  'Search filter chips should remove only the clicked selected variant from the local draft',
 );
 
 assert.match(
@@ -599,7 +593,7 @@ assert.match(
 assert.match(
   searchFiltersSource,
   /data-search-filter-action="save"[\s\S]*onClick=\{onClose\}[\s\S]*searchFilters\.save/,
-  'Options dialog should use the injected close handler so quick filters can return straight to results',
+  'Options dialog should use the injected close handler and return to the uncommitted draft',
 );
 
 assert.match(

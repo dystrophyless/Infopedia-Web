@@ -10,6 +10,7 @@ from src.tests.service import (
     TestsService,
     _chapter_ranks,
     _mode_availability_row,
+    _resolve_weak_chapter_ids,
     _select_attribution_chapter,
     _weak_chapter_ids,
     compute_attempt_summary,
@@ -85,6 +86,7 @@ async def create_attempt_with_repository_stubs(  # noqa: PLR0913
         patch("src.tests.service.question_counts_by_chapter", new=AsyncMock(return_value=counts)),
         patch("src.tests.service.list_chapters", new=AsyncMock(return_value=chapters)),
         patch("src.tests.service.get_attempt", new=AsyncMock(side_effect=lambda *_args, **_kwargs: session.attempt)),
+        patch("src.tests.service.get_latest_analyze_result_for_tests", new=AsyncMock(return_value=None)),
         patch("src.tests.service._chapter_rank_by_code", return_value=catalog_ranks),
     ):
         return await TestsService(session, now=TEST_NOW, sampler=sampler).create_attempt(
@@ -173,7 +175,7 @@ class TestServiceMathTests(unittest.TestCase):
 
         weak_row = _mode_availability_row("weak", 0, has_weak_history=False)
         self.assertFalse(weak_row["available"])
-        self.assertEqual(weak_row["reason"], "insufficient_weak_history")
+        self.assertEqual(weak_row["reason"], "no_weak_chapters")
 
     def test_dashboard_uses_half_open_utc_windows_and_answer_weighting(self):
         now = datetime(2026, 8, 3, 12, 0, tzinfo=UTC)
@@ -211,6 +213,104 @@ class TestServiceMathTests(unittest.TestCase):
         )
         tied = [SimpleNamespace(completed_at=now, score_percent=50, questions_total=30, chapter_scores={1: (1, 10), 2: (1, 10), 3: (1, 10), 4: (1, 10)})]
         self.assertEqual(_weak_chapter_ids(tied, now=now, chapter_ranks={1: 4, 2: 1, 3: 2, 4: 3}), {2, 3, 4})
+
+
+class AnalyzeWeakBridgeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_latest_analyze_result_wins_and_allows_fewer_than_three_weak_chapters(self):
+        latest = SimpleNamespace(
+            items=[
+                SimpleNamespace(chapter_id=20, max_score=10, score=2, percentage=20, question_count=5),
+                SimpleNamespace(chapter_id=10, max_score=10, score=10, percentage=100, question_count=20),
+                SimpleNamespace(chapter_id=30, max_score=10, score=10, percentage=100, question_count=20),
+            ],
+        )
+        with patch(
+            "src.tests.service.get_latest_analyze_result_for_tests",
+            new=AsyncMock(return_value=latest),
+        ):
+            self.assertEqual(
+                await _resolve_weak_chapter_ids(
+                    SimpleNamespace(),
+                    user_id=7,
+                    attempts=[],
+                    now=TEST_NOW,
+                    chapter_ranks={10: 1, 20: 2, 30: 3},
+                ),
+                {20},
+            )
+
+    async def test_latest_analyze_tie_breaks_by_lost_points_percentage_questions_rank_and_id(self):
+        latest = SimpleNamespace(
+            items=[
+                SimpleNamespace(chapter_id=30, max_score=10, score=5, percentage=50, question_count=2),
+                SimpleNamespace(chapter_id=20, max_score=10, score=5, percentage=50, question_count=5),
+                SimpleNamespace(chapter_id=10, max_score=10, score=5, percentage=50, question_count=5),
+                SimpleNamespace(chapter_id=40, max_score=10, score=5, percentage=50, question_count=5),
+            ],
+        )
+        with patch(
+            "src.tests.service.get_latest_analyze_result_for_tests",
+            new=AsyncMock(return_value=latest),
+        ):
+            self.assertEqual(
+                await _resolve_weak_chapter_ids(
+                    SimpleNamespace(),
+                    user_id=7,
+                    attempts=[],
+                    now=TEST_NOW,
+                    chapter_ranks={10: 3, 20: 1, 30: 2, 40: 4},
+                ),
+                {10, 20, 40},
+            )
+
+    async def test_missing_latest_analyze_falls_back_to_history(self):
+        attempts = [
+            SimpleNamespace(
+                completed_at=TEST_NOW,
+                score_percent=50,
+                questions_total=10,
+                chapter_scores={1: (1, 10), 2: (2, 10), 3: (3, 10)},
+            ),
+        ]
+        with patch(
+            "src.tests.service.get_latest_analyze_result_for_tests",
+            new=AsyncMock(return_value=None),
+        ):
+            self.assertEqual(
+                await _resolve_weak_chapter_ids(
+                    SimpleNamespace(),
+                    user_id=7,
+                    attempts=attempts,
+                    now=TEST_NOW,
+                    chapter_ranks={1: 1, 2: 2, 3: 3},
+                ),
+                {1, 2, 3},
+            )
+
+    async def test_latest_perfect_or_empty_analyze_does_not_fall_back_to_history(self):
+        attempts = [
+            SimpleNamespace(
+                completed_at=TEST_NOW,
+                score_percent=50,
+                questions_total=10,
+                chapter_scores={1: (1, 10), 2: (2, 10), 3: (3, 10)},
+            ),
+        ]
+        for latest in (SimpleNamespace(items=[]), SimpleNamespace(items=[SimpleNamespace(chapter_id=1, max_score=10, score=10, percentage=100, question_count=10)])):
+            with patch(
+                "src.tests.service.get_latest_analyze_result_for_tests",
+                new=AsyncMock(return_value=latest),
+            ):
+                self.assertEqual(
+                    await _resolve_weak_chapter_ids(
+                        SimpleNamespace(),
+                        user_id=7,
+                        attempts=attempts,
+                        now=TEST_NOW,
+                        chapter_ranks={1: 1, 2: 2, 3: 3},
+                    ),
+                    set(),
+                )
 
 
 class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
@@ -281,6 +381,7 @@ class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
             patch("src.tests.service.list_chapters", new=AsyncMock(return_value=chapters)),
             patch("src.tests.service.read_dashboard_history", new=AsyncMock(return_value=history_payload)),
             patch("src.tests.service.read_dashboard_catalog_snapshot", new=AsyncMock(return_value=catalog)),
+            patch("src.tests.service.get_latest_analyze_result_for_tests", new=AsyncMock(return_value=None)),
             patch("src.tests.service._chapter_rank_by_code", return_value={"a": 1, "b": 2}),
         ):
             dashboard = await TestsService(SimpleNamespace(), now=TEST_NOW)._dashboard_from_catalog_stats(

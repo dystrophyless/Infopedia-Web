@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.analyze.repository import get_latest_analyze_result_for_tests
 from src.config import settings
 from src.security.public_refs import (
     InvalidPublicRef,
@@ -310,7 +311,7 @@ def _mode_availability_row(
     required = _mode_requirement(mode)
     is_available = available_questions >= required
     reason = (
-        "insufficient_weak_history"
+        "no_weak_chapters"
         if mode == "weak" and not has_weak_history
         else "insufficient_question_pool"
     )
@@ -350,6 +351,41 @@ def _weak_chapter_ids(
     if len(ranked) < WEAK_CHAPTER_COUNT:
         return set()
     return {chapter_id for _, chapter_id in ranked[:WEAK_CHAPTER_COUNT]}
+
+
+async def _resolve_weak_chapter_ids(
+    session: AsyncSession,
+    *,
+    user_id: int,
+    attempts: Sequence[TestAttempt],
+    now: datetime,
+    chapter_ranks: dict[int, int],
+) -> set[int]:
+    """Resolve weak chapters from the user's latest Analyze, then history."""
+    latest = await get_latest_analyze_result_for_tests(session, user_id=user_id)
+    if latest is None:
+        return _weak_chapter_ids(attempts, now=now, chapter_ranks=chapter_ranks)
+
+    ranked: list[tuple[float, float, int, int, int]] = []
+    for item in latest.items or ():
+        chapter_id = int(item.chapter_id)
+        lost_points = int(item.max_score) - int(item.score)
+        if lost_points <= 0:
+            continue
+        if chapter_id not in chapter_ranks:
+            message = f"Analyze chapters are missing from the chapter catalog mapping: [{chapter_id}]"
+            raise ValueError(message)
+        ranked.append(
+            (
+                -lost_points,
+                float(item.percentage),
+                -int(item.question_count),
+                chapter_ranks[chapter_id],
+                chapter_id,
+            ),
+        )
+    ranked.sort()
+    return {row[4] for row in ranked[:WEAK_CHAPTER_COUNT]}
 
 
 class TestsService:
@@ -413,7 +449,12 @@ class TestsService:
             }
             for attempt in attempts[:3]
         ]
-        mode_availability = await self._mode_availability(attempts, chapters, counts)
+        mode_availability = await self._mode_availability(
+            attempts,
+            chapters,
+            counts,
+            user_id=user_id,
+        )
         return {
             "completed_attempt_count": completed_attempt_count,
             "overall_accuracy": metrics["overall_accuracy"],
@@ -489,15 +530,13 @@ class TestsService:
                     else None
                 ),
             }
-        weak_ranked = sorted(
-            (
-                (float(value["accuracy"]), chapter_id)
-                for chapter_id, value in chapter_metrics.items()
-                if value["accuracy"] is not None and value["accuracy"] < WEAK_ACCURACY_THRESHOLD
-            ),
-            key=lambda item: (item[0], chapter_ranks.get(item[1], 10**9)),
+        weak_ids = await _resolve_weak_chapter_ids(
+            self.session,
+            user_id=user_id,
+            attempts=history,
+            now=self.now,
+            chapter_ranks=chapter_ranks,
         )
-        weak_ids = {chapter_id for _, chapter_id in weak_ranked[:WEAK_CHAPTER_COUNT]} if len(weak_ranked) >= WEAK_CHAPTER_COUNT else set()
         catalog = await read_dashboard_catalog_snapshot(
             self.session,
             weak_chapter_ids=sorted(weak_ids),
@@ -587,12 +626,20 @@ class TestsService:
         attempts: Sequence[TestAttempt],
         chapters: Sequence[Chapter],
         counts: dict[int, int],
+        *,
+        user_id: int,
     ) -> list[dict[str, Any]]:
         questions = await list_questions(self.session)
         total = len(questions)
         catalog_ranks = _chapter_rank_by_code()
         chapter_ranks = _chapter_ranks(chapters, catalog_ranks)
-        weak_chapters = _weak_chapter_ids(attempts, now=self.now, chapter_ranks=chapter_ranks)
+        weak_chapters = await _resolve_weak_chapter_ids(
+            self.session,
+            user_id=user_id,
+            attempts=attempts,
+            now=self.now,
+            chapter_ranks=chapter_ranks,
+        )
         availability: list[dict[str, Any]] = []
         for mode, available_count in (
             ("random", total),
@@ -658,7 +705,13 @@ class TestsService:
             (chapter for chapters in eligible.values() for chapter in chapters),
             catalog_ranks,
         )
-        weak_ids = _weak_chapter_ids(completed, now=self.now, chapter_ranks=chapter_ranks)
+        weak_ids = await _resolve_weak_chapter_ids(
+            self.session,
+            user_id=user_id,
+            attempts=completed,
+            now=self.now,
+            chapter_ranks=chapter_ranks,
+        )
         if mode == "weak":
             questions = [
                 question

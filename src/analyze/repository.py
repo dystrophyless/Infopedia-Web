@@ -175,6 +175,10 @@ def _analyze_result_options():
     )
 
 
+def _analyze_result_weak_options():
+    return (selectinload(AnalyzeResult.items),)
+
+
 def _apply_chapter_locale(result: AnalyzeResult | None, locale: str) -> AnalyzeResult | None:
     if result is None:
         return None
@@ -308,9 +312,26 @@ async def get_analyze_result_by_user_id(
     query = (
         select(AnalyzeResult)
         .where(AnalyzeResult.user_id == user_id)
-        .order_by(AnalyzeResult.created_at.desc())
+        .order_by(AnalyzeResult.created_at.desc(), AnalyzeResult.id.desc())
         .limit(1)
         .options(*_analyze_result_options())
     )
     result = await session.execute(query)
     return _apply_chapter_locale(result.scalar_one_or_none(), locale)
+
+
+async def get_latest_analyze_result_for_tests(
+    session: AsyncSession,
+    *,
+    user_id: int,
+) -> AnalyzeResult | None:
+    """Read only the latest user's Analyze items for the Tests weak bridge."""
+    query = (
+        select(AnalyzeResult)
+        .where(AnalyzeResult.user_id == user_id)
+        .order_by(AnalyzeResult.created_at.desc(), AnalyzeResult.id.desc())
+        .limit(1)
+        .options(*_analyze_result_weak_options())
+    )
+    result = await session.execute(query)
+    return result.scalar_one_or_none()

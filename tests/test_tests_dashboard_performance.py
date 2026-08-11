@@ -116,6 +116,7 @@ class TestTestsDashboardPerformance(unittest.IsolatedAsyncioTestCase):
             patch("src.tests.service._chapter_rank_by_code", return_value={"c1": 1, "c2": 2, "c3": 3}),
             patch("src.tests.service.read_dashboard_history", new=AsyncMock(return_value={"history": snapshot["history"], "recent": snapshot["recent"]})),
             patch("src.tests.service.read_dashboard_catalog_snapshot", new=AsyncMock(return_value=snapshot["catalog"])),
+            patch("src.tests.service.get_latest_analyze_result_for_tests", new=AsyncMock(return_value=None)),
         ):
             dashboard = await TestsService(SimpleNamespace(), now=NOW).dashboard(user_id=7)
 
@@ -139,6 +140,7 @@ class TestTestsDashboardPerformance(unittest.IsolatedAsyncioTestCase):
             patch("src.tests.service.question_counts_by_chapter", new=AsyncMock(return_value={})),
             patch("src.tests.service.list_completed_attempts", new=AsyncMock(return_value=[])),
             patch("src.tests.service.list_questions", new=AsyncMock(return_value=[])),
+            patch("src.tests.service.get_latest_analyze_result_for_tests", new=AsyncMock(return_value=None)),
         ):
             dashboard = await TestsService(SimpleNamespace(), now=NOW).dashboard(user_id=7)
 

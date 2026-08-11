@@ -14,14 +14,22 @@ describe('typed search API adapters', () => {
     get.mockReset();
   });
 
-  it('keeps ordinary term search on the GET /api/search/ contract', async () => {
-    const payload = [{ public_id: 'term-1', name: 'Term one' }];
+  it('serializes the authenticated filtered term page with repeated canonical parameters', async () => {
+    const payload = { terms: [{ public_id: 'term-1', name: 'Term one' }], total: 1, skip: 0, limit: 11, has_more: false };
     get.mockResolvedValueOnce({ data: payload });
 
-    await expect(searchTerms(' python ', 11)).resolves.toBe(payload);
-    expect(get).toHaveBeenCalledWith('/api/search/', {
-      params: { query: ' python ', limit: 11 },
-    });
+    await expect(searchTerms({
+      query: 'python', grades: [7, 10], bookRefs: ['book:signed:a', 'book:signed:b'],
+      chapterRefs: ['chapter:signed:a'], entOnly: true, skip: 0, limit: 11,
+    })).resolves.toBe(payload);
+    expect(get).toHaveBeenCalledOnce();
+    const [url, config] = get.mock.calls[0];
+    expect(url).toBe('/api/search/terms');
+    expect(config.params).toBeInstanceOf(URLSearchParams);
+    expect(config.params.toString()).toBe(
+      'query=python&skip=0&limit=11&grade=7&grade=10&book=book%3Asigned%3Aa&book=book%3Asigned%3Ab&chapter=chapter%3Asigned%3Aa&ent_only=true',
+    );
+    expect(config.params.toString()).not.toMatch(/publisher|section|label|\[\]/);
   });
 
   it('keeps filter catalogs on topic book and chapter endpoints', async () => {

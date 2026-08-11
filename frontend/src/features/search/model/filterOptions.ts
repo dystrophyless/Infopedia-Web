@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { BookCatalogItem, ChapterCatalogItem } from '../../../types';
 import type { SearchFilterSelectId } from './searchStore';
+import { canonicalPublisherId } from './publisherBookResolver';
 
 export type FilterSelectId = SearchFilterSelectId;
 
@@ -43,27 +44,12 @@ export function resolveOptionLabel(option: FilterOption, t: TFunction): string {
   return option.id;
 }
 
-function normalizePublisher(value: string): string {
-  return value.trim().toLocaleLowerCase().replace(/[\s._-]+/g, '');
-}
-
-const PUBLISHER_ALIASES: Readonly<Record<string, string>> = {
-  атамұра: 'atamura',
-  атамура: 'atamura',
-  atamura: 'atamura',
-  алматыкітап: 'almatykitap',
-  алматыкитап: 'almatykitap',
-  almatykitap: 'almatykitap',
-  арманпв: 'armanPv',
-  armanpv: 'armanPv',
-};
-
-export function mapBookOptions(books: BookCatalogItem[], t: TFunction): FilterOption[] {
+export function mapBookOptions(books: readonly BookCatalogItem[], t: TFunction): FilterOption[] {
   void t;
   const available = new Set<string>();
 
   books.forEach((book) => {
-    const canonicalId = PUBLISHER_ALIASES[normalizePublisher(book.publisher)];
+    const canonicalId = canonicalPublisherId(book.publisher);
     if (canonicalId) available.add(canonicalId);
   });
 
@@ -91,7 +77,7 @@ export function createFilterOptionCatalog(
 ): FilterOptionCatalog {
   return {
     grade: SEARCH_FILTER_GRADES,
-    book: bookOptions.length > 0 ? bookOptions : SEARCH_FILTER_BOOKS,
+    book: bookOptions,
     section: chapterOptions,
   };
 }

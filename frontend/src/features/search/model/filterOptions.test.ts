@@ -67,8 +67,8 @@ describe('search filter option characterization', () => {
     ]);
   });
 
-  it('uses live catalogs only when they contain valid options', () => {
-    expect(createFilterOptionCatalog([], []).book).toBe(SEARCH_FILTER_BOOKS);
+  it('never synthesizes selectable publishers without an authoritative catalog', () => {
+    expect(createFilterOptionCatalog([], []).book).toEqual([]);
     expect(createFilterOptionCatalog([], []).section).toEqual(SEARCH_FILTER_CHAPTERS);
 
     const liveBook = [{ id: 'book-1', label: 'Book one' }];

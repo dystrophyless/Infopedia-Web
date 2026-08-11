@@ -33,10 +33,6 @@ const searchControllerSource = readFileSync(
   path.resolve(searchFeatureDir, 'hooks/useTermSearchController.ts'),
   'utf8',
 );
-const filterTermsSource = readFileSync(
-  path.resolve(searchFeatureDir, 'model/filterTerms.ts'),
-  'utf8',
-);
 const filterOptionsSource = readFileSync(
   path.resolve(searchFeatureDir, 'model/filterOptions.ts'),
   'utf8',
@@ -202,8 +198,8 @@ assert.match(
 );
 assert.match(
   searchControllerSource,
-  /getFeaturedTerms\(RANDOM_TERM_LIMIT\)/,
-  'Featured browsing must request ten terms while regular search keeps its eleven-term limit',
+  /getFeaturedTerms\(RANDOM_TERM_LIMIT,\s*client\)/,
+  'Featured browsing must request ten terms through the injected request client while regular search keeps its eleven-term limit',
 );
 
 assert.match(
@@ -292,8 +288,8 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /filtersOverlayOpen && <SearchFilters overlay onDismiss=\{\(\) => setFiltersOverlayOpen\(false\)\} \/>/,
-  'The overlay should be rendered alongside the mounted search view and dismiss locally',
+  /filtersOverlayOpen && isDesktop[\s\S]*<DesktopSearchFiltersDialog[\s\S]*filtersOverlayOpen && !isDesktop[\s\S]*<SearchFilters overlay onDismiss=\{\(\) => setFiltersOverlayOpen\(false\)\} \/>/,
+  'The mounted search view should choose the desktop dialog or mobile overlay at the current viewport',
 );
 
 assert.doesNotMatch(
@@ -409,8 +405,8 @@ assert.match(
 
 assert.match(
   searchControllerSource,
-  /const queryHasText = Boolean\(query\.trim\(\)\);[\s\S]*const searchResultViewActive = queryHasText \|\| hasExpandedRandomResults;/,
-  'Term search should use the typed Figma result page after searching or expanding random results',
+  /const searchResultViewActive = showingSearchResults \|\| hasExpandedRandomResults;/,
+  'Term search should use the typed result page for non-featured server searches or expanded featured results',
 );
 
 assert.match(
@@ -439,8 +435,8 @@ assert.match(
 
 assert.match(
   searchStoreSource,
-  /toggleSearchFilterOption: \([\s\S]*filterId: SearchFilterSelectId,[\s\S]*optionId: string,[\s\S]*optionLabel\?: string,[\s\S]*\) => void;[\s\S]*resetSearchFilters: \(\) => void;/,
-  'Search store should expose shared filter mutation helpers for the filters page and result page',
+  /applySearchFilters: \(snapshot: SearchFilterSnapshot\) => void;[\s\S]*applySearchFilters: \(snapshot\) =>[\s\S]*searchFilterDraftMatchesCommitted/,
+  'Search store should expose one atomic committed-filter apply action with identical-state dedupe',
 );
 
 assert.match(
@@ -449,28 +445,10 @@ assert.match(
   'Result-page filter chips should render the filter-count chip first, then selected/used filters before unused filters',
 );
 
-assert.match(
-  filterTermsSource,
-  /function filterTermsBySearchFilters\([\s\S]*searchFilterSelections: SearchFilterSelections[\s\S]*terms\.filter\(\(term\) => termMatchesSearchFilters\(term, searchFilterSelections\)\)/,
-  'Result-page term data should be filtered by the selected search filters before rendering cards',
-);
-
-assert.match(
-  filterTermsSource,
-  /function definitionMatchesSearchFilters\([\s\S]*definition\.topic\?\.book[\s\S]*searchFilterSelections\.book[\s\S]*searchFilterSelections\.grade[\s\S]*searchFilterSelections\.section/,
-  'Result-page filtering should inspect definition topic metadata for book, grade, and section filters',
-);
-
-assert.match(
-  filterTermsSource,
-  /const matchesBook =[\s\S]*book\?\.public_id[\s\S]*book\?\.publisher[\s\S]*getBookFilterCandidates/,
-  'Result-page book filtering should prefer book public refs while keeping fallback publisher slugs working',
-);
-
-assert.match(
-  filterTermsSource,
-  /const matchesSection =[\s\S]*chapter\?\.public_id[\s\S]*chapter\?\.code/,
-  'Result-page section filtering should match chapter public refs before falling back to stable chapter codes',
+assert.doesNotMatch(
+  searchControllerSource,
+  /filterTermsBySearchFilters|sort\(|definitions\.sort/,
+  'Server search order and qualifying definition order should reach cards without client-side filtering or sorting',
 );
 
 assert.match(
@@ -481,14 +459,14 @@ assert.match(
 
 assert.match(
   searchControllerSource,
-  /const unfilteredDisplayResults = showingSearchResults \? results : featuredTerms;[\s\S]*const displayResults = useMemo\(\s*\(\) => filterTermsBySearchFilters\(unfilteredDisplayResults, searchFilterSelections\),[\s\S]*\[unfilteredDisplayResults, searchFilterSelections\]/,
-  'Term search should derive visible result data from filterTermsBySearchFilters rather than raw API results',
+  /const displayResults = showingSearchResults \? results : featuredTerms;/,
+  'Term search should render server results in the exact order returned by the authenticated endpoint',
 );
 
 assert.match(
   searchControllerSource,
-  /useEffect\(\(\) => \{[\s\S]*setVisibleCount\(MOBILE_SEARCH_PAGE_SIZE\);[\s\S]*setHasExpandedRandomResults\(false\);[\s\S]*\}, \[debounced, searchFilterSelections\]\);/,
-  'Changing selected filters should reset the visible mobile result slice before rendering updated results',
+  /const requestDescriptorKey = requestDescriptor\.ok \? requestDescriptor\.key : requestDescriptor\.code;[\s\S]*setVisibleCount\(MOBILE_SEARCH_PAGE_SIZE\);[\s\S]*setHasExpandedRandomResults\(false\);[\s\S]*setSelectedTermId\(null\);[\s\S]*\}, \[requestDescriptorKey\]\)/,
+  'Changing the canonical query or committed filters should reset reveal and selection state',
 );
 
 assert.match(
@@ -582,8 +560,8 @@ assert.doesNotMatch(
 );
 
 assert.match(
-  termSearchSource,
-  /onClick=\{\(\) => \{\s*if \(!showingSearchResults\) setHasExpandedRandomResults\(true\);/,
+  searchControllerSource,
+  /const loadMore = useCallback\(async \(\) => \{[\s\S]*if \(!showingSearchResults\) setHasExpandedRandomResults\(true\);/,
   'Random load-more should move the empty-query random tab into the result-page state',
 );
 
@@ -680,14 +658,14 @@ assert.match(
 
 assert.match(
   searchControllerSource,
-  /const hiddenResultsCount = Math\.max\(displayResults\.length - visibleResults\.length, 0\);/,
-  'Load-more count should be based on the updated 11-result total and four visible cards',
+  /const resultTotal = showingSearchResults \? serverTotal : displayResults\.length;[\s\S]*const hiddenResultsCount = Math\.max\(resultTotal - visibleResults\.length, 0\);/,
+  'Load-more count should be based on the authoritative server total and visible cards',
 );
 
 assert.match(
   termSearchSource,
-  /resultCount=\{displayResults\.length\}[\s\S]*onQueryChange=\{setQuery\}/,
-  'Typed/result search header should receive the current result total and query behavior',
+  /resultCount=\{resultTotal\}[\s\S]*onQueryChange=\{setQuery\}/,
+  'Typed/result search header should receive the authoritative total and current query behavior',
 );
 
 assert.match(

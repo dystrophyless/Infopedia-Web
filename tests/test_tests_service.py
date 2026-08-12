@@ -239,6 +239,95 @@ class AnalyzeWeakBridgeTests(unittest.IsolatedAsyncioTestCase):
                 {20},
             )
 
+
+class AttemptCompletionDeltaTests(unittest.IsolatedAsyncioTestCase):
+    @staticmethod
+    def _attempt(*, status="active", summary_json=None):
+        answer = SimpleNamespace(awarded_weight=1)
+        question = SimpleNamespace(
+            id=1,
+            answer=answer,
+            chapter_id=10,
+            topic_title="Chapter",
+        )
+        return SimpleNamespace(
+            id=42,
+            user_id=7,
+            mode="random",
+            status=status,
+            completed_at=TEST_NOW if status == "completed" else None,
+            started_at=TEST_NOW - timedelta(seconds=20),
+            questions=[question],
+            summary_json=summary_json,
+            answered_questions=0,
+            correct_answer_count=0,
+            score_percent=None,
+            duration_seconds=None,
+            average_pace_seconds=None,
+        )
+
+    async def test_completion_persists_delta_against_previous_same_mode_attempt(self):
+        attempt = self._attempt()
+        session = SimpleNamespace(commit=AsyncMock())
+        previous = SimpleNamespace(score_percent=65)
+        with (
+            patch("src.tests.service.get_attempt_for_update", new=AsyncMock(return_value=attempt)),
+            patch("src.tests.service.lock_attempt_questions", new=AsyncMock(return_value=attempt.questions)),
+            patch("src.tests.service.get_previous_completed_attempt", new=AsyncMock(return_value=previous)) as lookup,
+        ):
+            summary = await TestsService(session, now=TEST_NOW).complete_attempt(
+                user_id=7,
+                attempt_ref=encode_public_ref("attempt", 42),
+            )
+
+        self.assertEqual(summary["previous_score_percent"], 65)
+        self.assertEqual(summary["accuracy_delta_points"], 35)
+        self.assertEqual(attempt.summary_json, summary)
+        lookup.assert_awaited_once_with(
+            session,
+            user_id=7,
+            mode="random",
+            exclude_attempt_id=42,
+        )
+
+    async def test_completion_uses_null_delta_when_no_previous_attempt_exists(self):
+        attempt = self._attempt()
+        session = SimpleNamespace(commit=AsyncMock())
+        with (
+            patch("src.tests.service.get_attempt_for_update", new=AsyncMock(return_value=attempt)),
+            patch("src.tests.service.lock_attempt_questions", new=AsyncMock(return_value=attempt.questions)),
+            patch("src.tests.service.get_previous_completed_attempt", new=AsyncMock(return_value=None)),
+        ):
+            summary = await TestsService(session, now=TEST_NOW).complete_attempt(
+                user_id=7,
+                attempt_ref=encode_public_ref("attempt", 42),
+            )
+
+        self.assertIsNone(summary["previous_score_percent"])
+        self.assertIsNone(summary["accuracy_delta_points"])
+
+    async def test_repeated_completion_returns_persisted_delta_without_lookup(self):
+        persisted = {
+            "score_percent": 70,
+            "previous_score_percent": 70,
+            "accuracy_delta_points": 0,
+        }
+        attempt = self._attempt(status="completed", summary_json=persisted)
+        session = SimpleNamespace(commit=AsyncMock())
+        lookup = AsyncMock()
+        with (
+            patch("src.tests.service.get_attempt_for_update", new=AsyncMock(return_value=attempt)),
+            patch("src.tests.service.get_previous_completed_attempt", new=lookup),
+        ):
+            summary = await TestsService(session, now=TEST_NOW).complete_attempt(
+                user_id=7,
+                attempt_ref=encode_public_ref("attempt", 42),
+            )
+
+        self.assertIs(summary, persisted)
+        lookup.assert_not_awaited()
+        session.commit.assert_not_awaited()
+
     async def test_latest_analyze_tie_breaks_by_lost_points_percentage_questions_rank_and_id(self):
         latest = SimpleNamespace(
             items=[

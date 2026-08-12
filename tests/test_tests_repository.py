@@ -9,6 +9,7 @@ from sqlalchemy.dialects import postgresql
 import src.models  # noqa: F401
 from src.tests.repository import (
     eligible_chapters,
+    previous_completed_attempt_statement,
     question_counts_by_chapter_statement,
     questions_statement,
 )
@@ -47,6 +48,23 @@ class TestsRepositoryTests(unittest.TestCase):
 
         self.assertIn("count(distinct(test_question.id))", sql)
         self.assertIn("GROUP BY chapter.id", sql)
+
+    def test_previous_attempt_query_is_owner_and_mode_scoped_and_excludes_current(self):
+        sql = str(
+            previous_completed_attempt_statement(
+                user_id=7,
+                mode="random",
+                exclude_attempt_id=42,
+            ).compile(dialect=postgresql.dialect()),
+        )
+
+        self.assertIn("test_attempt.user_id =", sql)
+        self.assertIn("test_attempt.mode =", sql)
+        self.assertIn("test_attempt.status =", sql)
+        self.assertIn("test_attempt.completed_at IS NOT NULL", sql)
+        self.assertIn("test_attempt.id !=", sql)
+        self.assertIn("ORDER BY test_attempt.completed_at DESC, test_attempt.id DESC", sql)
+        self.assertIn("LIMIT", sql)
 
 
 if __name__ == "__main__":

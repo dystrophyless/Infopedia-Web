@@ -1,0 +1,13 @@
+{
+  "fileKey": "aa8qReawBBhHIXDAbS18OP",
+  "scale": 1,
+  "states": {
+    "default": { "nodeId": "880:4071", "width": 1440, "height": 1080 },
+    "question-7": { "nodeId": "886:4620", "width": 1440, "height": 1080 },
+    "selected": { "nodeId": "891:4728", "width": 1440, "height": 1080 },
+    "correct": { "nodeId": "918:4311", "width": 1440, "height": 1080 },
+    "wrong": { "nodeId": "891:5134", "width": 1440, "height": 1080 },
+    "results": { "nodeId": "910:4101", "width": 1440, "height": 1450 },
+    "review": { "nodeId": "921:4432", "width": 1440, "height": 1450 }
+  }
+}

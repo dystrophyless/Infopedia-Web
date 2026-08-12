@@ -260,3 +260,38 @@ export const VerifyError430: Story = {
     }
   },
 };
+
+const desktop1440x1080 = {
+  viewport: { value: 'desktop1440x1080', isRotated: false },
+};
+
+export const DesktopRegisterEmpty1440: Story = {
+  render: (_args, context) => (
+    <GuestRussianRegisterStory
+      previousDraftRaw={context.loaded.previousDraftRaw}
+      registerRequests={context.loaded.registerRequests}
+    />
+  ),
+  loaders: [seedPendingDraft],
+  globals: desktop1440x1080,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: 'Получить код' })).toBeDisabled();
+  },
+};
+
+export const DesktopRegisterFilled1440: Story = {
+  render: (_args, context) => (
+    <GuestRussianRegisterStory
+      previousDraftRaw={context.loaded.previousDraftRaw}
+      registerRequests={context.loaded.registerRequests}
+    />
+  ),
+  loaders: [seedPendingDraft],
+  globals: desktop1440x1080,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await fillAccount(canvas);
+    await expect(canvas.getByRole('button', { name: 'Получить код' })).toBeEnabled();
+  },
+};

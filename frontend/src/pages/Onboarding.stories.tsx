@@ -215,3 +215,69 @@ export const UsernameRequestError430: Story = {
     );
   },
 };
+
+const desktop1440x1080 = {
+  viewport: { value: 'desktop1440x1080', isRotated: false },
+};
+
+export const DesktopGradeEmpty1440: Story = {
+  render: (_args, context) => (
+    <GuestRussianOnboardingStory previousDraftRaw={context.loaded.previousDraftRaw} />
+  ),
+  loaders: [seedPendingDraft],
+  globals: desktop1440x1080,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: '11 класс' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  },
+};
+
+export const DesktopGradeSelected1440: Story = {
+  render: (_args, context) => (
+    <GuestRussianOnboardingStory previousDraftRaw={context.loaded.previousDraftRaw} />
+  ),
+  loaders: [seedPendingDraft],
+  globals: desktop1440x1080,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const grade = canvas.getByRole('button', { name: '11 класс' });
+    await userEvent.click(grade);
+    await expect(grade).toHaveAttribute('aria-pressed', 'true');
+  },
+};
+
+export const DesktopUsernameEmpty1440: Story = {
+  render: (_args, context) => (
+    <GuestRussianOnboardingStory previousDraftRaw={context.loaded.previousDraftRaw} />
+  ),
+  loaders: [seedPendingDraft],
+  globals: desktop1440x1080,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await advanceToUsername(canvas);
+    await expect(canvas.getByRole('button', { name: 'Продолжить' })).toBeDisabled();
+  },
+};
+
+export const DesktopUsernameValid1440: Story = {
+  render: (_args, context) => (
+    <GuestRussianOnboardingStory previousDraftRaw={context.loaded.previousDraftRaw} />
+  ),
+  loaders: [seedPendingDraft],
+  globals: desktop1440x1080,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await advanceToUsername(canvas);
+    const input = canvas.getByRole('textbox', { name: 'Имя пользователя' });
+    await userEvent.type(input, 'dystrophyless');
+    await waitFor(
+      async () => {
+        await expect(canvas.getByRole('button', { name: 'Продолжить' })).toBeEnabled();
+      },
+      { timeout: 2000 },
+    );
+  },
+};

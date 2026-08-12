@@ -38,6 +38,7 @@ export function TestQuestionPage() {
     selectOption,
     submitAnswer,
     advanceQuestion,
+    goToQuestion,
     completeAttempt,
   } = useTestRunner();
   const chapterRef = searchParams.get('chapterRef') ?? searchParams.get('topicCode') ?? undefined;
@@ -119,8 +120,16 @@ export function TestQuestionPage() {
       return;
     }
 
-    if (runnerState.currentQuestionIndex < metrics.totalQuestions - 1) {
-      advanceQuestion(metrics.totalQuestions);
+    const answeredCount = Object.keys(runnerState.feedbackByQuestionId ?? {}).length;
+    if (answeredCount < metrics.totalQuestions) {
+      const nextIndex = questions.findIndex((question, index) => index > runnerState.currentQuestionIndex && !runnerState.feedbackByQuestionId?.[question.id]);
+      const fallbackIndex = questions.findIndex((question) => !runnerState.feedbackByQuestionId?.[question.id]);
+      const destination = nextIndex >= 0 ? nextIndex : fallbackIndex;
+      if (destination === runnerState.currentQuestionIndex + 1 && !runnerState.feedbackByQuestionId?.[questions[destination]?.id]) {
+        advanceQuestion(metrics.totalQuestions);
+      } else {
+        goToQuestion(questions, destination);
+      }
       return;
     }
 

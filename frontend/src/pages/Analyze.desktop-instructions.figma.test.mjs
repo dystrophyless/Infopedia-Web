@@ -48,10 +48,16 @@ assert.match(componentSource, /Clock01Icon/, 'duration should use the exact Huge
 assert.match(componentSource, /DocumentAttachmentIcon/, 'dropzone should use the exact HugeIcons attachment glyph');
 assert.match(componentSource, /ArrowLeft01Icon[\s\S]*ArrowRight01Icon/, 'tutorial navigation should use HugeIcons arrows');
 
-assert.match(pageSource, /const showDesktopUploadGuide = showUploadForm;/, 'new composition should cover both desktop upload states');
-assert.match(pageSource, /showDesktopUploadGuide \? ANALYZE_EMPTY_DESKTOP_PAGE_CLASS/, 'the desktop upload branch should adopt the Figma page rail');
-assert.match(pageSource, /<div className="hidden min-\[1440px\]:block">[\s\S]*<AnalyzeDesktopUploadGuide/, 'new composition should activate only at 1440px and wider');
-assert.match(pageSource, /showDesktopUploadGuide \? 'min-\[1440px\]:hidden'/, 'legacy upload composition should remain below 1440px');
+assert.match(pageSource, /showUploadForm && \(\s*<AnalyzeDesktopUploadGuide/, 'the adaptive guide should own every upload viewport');
+assert.doesNotMatch(pageSource, /showDesktopUploadGuide/, 'Analyze should not retain a breakpoint-only guide branch');
+assert.doesNotMatch(pageSource, /hidden min-\[1440px\]:block[\s\S]*<AnalyzeDesktopUploadGuide/, 'the adaptive guide must not be hidden below 1440px');
+assert.doesNotMatch(pageSource, /(?:function )?InstructionStep|(?:function )?AnalyzeBenefitCards|<form\b|type="file"|id="analyze-file/, 'Analyze should not retain legacy upload markup or helpers');
+assert.equal((componentSource.match(/<form\b/g) ?? []).length, 1, 'adaptive guide should own exactly one form');
+assert.equal((componentSource.match(/type="file"/g) ?? []).length, 1, 'adaptive guide should own exactly one native file input');
+assert.equal((componentSource.match(/id="analyze-file"/g) ?? []).length, 1, 'adaptive guide should expose one stable input id');
+assert.equal((componentSource.match(/htmlFor="analyze-file"/g) ?? []).length, 1, 'adaptive guide should expose one matching file label');
+assert.doesNotMatch(componentSource, /analyze-file-desktop/, 'adaptive guide should not retain a duplicate desktop input id');
+assert.match(storiesSource, /export const UploadEmptyDesktop1231:/, 'Storybook should expose the adaptive guide at the reported 1231px viewport');
 
 for (const [localeName, locale] of [['ru', ru], ['kk', kk]]) {
   const guide = locale.analyze.desktopGuide;

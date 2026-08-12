@@ -70,7 +70,7 @@ try {
         return { top: rounded(box.top), bottom: rounded(box.bottom) };
       };
       const submit = document.querySelector('[data-analyze-desktop-submit]');
-      const icon = document.querySelector('[data-analyze-desktop-selected-icon] svg');
+      const icon = document.querySelector('[data-analyze-desktop-selected-icon] svg.hidden');
 
       return {
         viewport: { width: innerWidth, height: innerHeight },
@@ -81,7 +81,7 @@ try {
         dropzone: rect('[data-analyze-desktop-dropzone]'),
         selected: rect('[data-analyze-desktop-selected]'),
         circle: rect('[data-analyze-desktop-selected-icon]'),
-        icon: rect('[data-analyze-desktop-selected-icon] svg'),
+        icon: rect('[data-analyze-desktop-selected-icon] svg.hidden'),
         text: rect('[data-analyze-desktop-selected-text]'),
         filename: rect('[data-analyze-desktop-selected-filename]'),
         helper: rect('[data-analyze-desktop-selected-helper]'),
@@ -117,7 +117,8 @@ try {
         iconStrokeWidth: icon?.querySelector('[stroke-width]')?.getAttribute('stroke-width'),
         activeStep: document.querySelector('[data-analyze-desktop-active-step]')?.getAttribute('data-analyze-desktop-active-step'),
         visibleFilenameCount: [...document.querySelectorAll('*')].filter((node) => node.childElementCount === 0 && node.textContent?.trim() === 'analysis.pdf' && node.checkVisibility()).length,
-        legacyVisible: document.querySelector('#analyze-file')?.checkVisibility() ?? false,
+        formCount: document.querySelectorAll('form').length,
+        fileInputCount: document.querySelectorAll('input[type="file"]').length,
       };
     });
 
@@ -145,7 +146,8 @@ try {
     assert.ok(result.descriptionTextBounds.bottom < result.divider.y, `${story.language}: rendered description should clear divider`);
     assert.ok(result.description.bottom < result.divider.y, `${story.language}: description should not overlap divider`);
     assert.equal(result.visibleFilenameCount, 1, `${story.language}: only the desktop filename should be visible`);
-    assert.equal(result.legacyVisible, false, `${story.language}: legacy upload must stay hidden`);
+    assert.equal(result.formCount, 1, `${story.language}: one adaptive form`);
+    assert.equal(result.fileInputCount, 1, `${story.language}: one native file input`);
     assert.equal(result.activeStep, '1', `${story.language}: tutorial should remain active`);
 
     assert.deepEqual(result.cardStyle, {

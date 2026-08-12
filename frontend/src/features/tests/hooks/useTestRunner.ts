@@ -38,6 +38,14 @@ export function useTestRunner() {
     dispatch({ type: 'next-question', totalQuestions, now: Date.now() });
   }, []);
 
+  const goToQuestion = useCallback((questions: TestQuestion[], questionIndex: number) => {
+    dispatch({ type: 'go-to-question', questions, questionIndex });
+  }, []);
+
+  const previousQuestion = useCallback((questions: TestQuestion[]) => {
+    dispatch({ type: 'go-to-question', questions, questionIndex: state.currentQuestionIndex - 1 });
+  }, [state.currentQuestionIndex]);
+
   const completeAttempt = useCallback((summary: TestCompletionSummary | null) => {
     dispatch({ type: 'complete', summary, now: Date.now() });
   }, []);
@@ -49,6 +57,8 @@ export function useTestRunner() {
     selectOption,
     submitAnswer,
     advanceQuestion,
+    goToQuestion,
+    previousQuestion,
     completeAttempt,
   };
 }

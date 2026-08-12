@@ -16,6 +16,8 @@ export type TestRunnerState = {
   selectedOptionId: string | null;
   checkedOptionId: string | null;
   answerFeedback: TestAnswerFeedback | null;
+  feedbackByQuestionId?: Record<string, TestAnswerFeedback>;
+  furthestVisitedIndex?: number;
   answerRecords: TestAnswerRecord[];
   resultVisible: boolean;
   startedAt: number;
@@ -42,6 +44,7 @@ export type TestRunnerAction =
       now: number;
     }
   | { type: 'next-question'; totalQuestions: number; now: number }
+  | { type: 'go-to-question'; questions: TestQuestion[]; questionIndex: number }
   | { type: 'complete'; summary: TestCompletionSummary | null; now: number };
 
 export function createTestRunnerState(now: number): TestRunnerState {
@@ -50,6 +53,8 @@ export function createTestRunnerState(now: number): TestRunnerState {
     selectedOptionId: null,
     checkedOptionId: null,
     answerFeedback: null,
+    feedbackByQuestionId: {},
+    furthestVisitedIndex: 0,
     answerRecords: [],
     resultVisible: false,
     startedAt: now,
@@ -104,6 +109,13 @@ export function reduceTestRunner(
       selectedOptionId: currentFeedback?.optionId ?? null,
       checkedOptionId: currentFeedback?.optionId ?? null,
       answerFeedback: currentFeedback ?? null,
+      feedbackByQuestionId: Object.fromEntries(
+        action.questions.flatMap((question) => {
+          const feedback = action.answers[question.id] ?? Object.values(action.answers).find((item) => item.questionId === question.id);
+          return feedback ? [[question.id, feedback]] : [];
+        }),
+      ),
+      furthestVisitedIndex: Math.max(0, Math.min(action.currentQuestionIndex, Math.max(0, action.questions.length - 1))),
       answerRecords,
     };
   }
@@ -119,6 +131,7 @@ export function reduceTestRunner(
       ...state,
       checkedOptionId: action.feedback.optionId,
       answerFeedback: action.feedback,
+      feedbackByQuestionId: { ...(state.feedbackByQuestionId ?? {}), [action.question.id]: action.feedback },
       answerRecords: [...state.answerRecords, createAnswerRecord(action.question, state.selectedOptionId, action.feedback)],
     };
   }
@@ -132,9 +145,25 @@ export function reduceTestRunner(
     return {
       ...state,
       currentQuestionIndex: state.currentQuestionIndex + 1,
+      furthestVisitedIndex: Math.max(state.furthestVisitedIndex ?? state.currentQuestionIndex, state.currentQuestionIndex + 1),
       selectedOptionId: null,
       checkedOptionId: null,
       answerFeedback: null,
+    };
+  }
+
+  if (action.type === 'go-to-question') {
+    if (state.resultVisible || action.questionIndex < 0 || action.questionIndex >= action.questions.length) return state;
+    const question = action.questions[action.questionIndex];
+    if (!question) return state;
+    const feedback = state.feedbackByQuestionId?.[question.id];
+    return {
+      ...state,
+      currentQuestionIndex: action.questionIndex,
+      furthestVisitedIndex: Math.max(state.furthestVisitedIndex ?? state.currentQuestionIndex, action.questionIndex),
+      selectedOptionId: feedback?.optionId ?? null,
+      checkedOptionId: feedback?.optionId ?? null,
+      answerFeedback: feedback ?? null,
     };
   }
 
@@ -151,4 +180,17 @@ export function reduceTestRunner(
   }
 
   return state;
+}
+
+export type TestQuestionStatus = 'current' | 'answered' | 'skipped' | 'upcoming';
+
+export function getQuestionStatus(
+  state: TestRunnerState,
+  questionId: string,
+  questionIndex: number,
+): TestQuestionStatus {
+  if (questionIndex === state.currentQuestionIndex) return 'current';
+  if (state.feedbackByQuestionId?.[questionId]) return 'answered';
+  if (questionIndex <= (state.furthestVisitedIndex ?? state.currentQuestionIndex)) return 'skipped';
+  return 'upcoming';
 }

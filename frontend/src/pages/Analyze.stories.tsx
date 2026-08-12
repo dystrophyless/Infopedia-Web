@@ -540,7 +540,7 @@ export const ProcessingMobile: Story = {
   parameters: {
     a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
   },
-  render: () => <AnalyzeProcessingViews currentTask={processingTask} />,
+  render: () => <AnalyzeProcessingViews currentTask={processingTask} onBack={() => undefined} />,
 };
 
 export const ProcessingUploadedFileMobile430: Story = {
@@ -549,27 +549,27 @@ export const ProcessingUploadedFileMobile430: Story = {
   parameters: {
     a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
   },
-  // This story mirrors the processing page composition; the authenticated shell's
-  // fixed bottom navigation is covered by MobileShell.contract.test.mjs.
+  // The adaptive progress component owns the canonical mobile app bar and content frame.
+  // The authenticated shell's fixed bottom navigation is covered by MobileShell.contract.test.mjs.
   render: () => (
-    <div className="min-h-dvh bg-[#efebf6] pb-[88px]">
-      <main className="mx-auto w-full max-w-none px-6 pt-[88px]">
-        <h1 className="mb-12 text-[24px] font-medium leading-none text-[#000000]">Анализ ЕНТ</h1>
-        <AnalyzeProcessingViews
-          currentTask={{ ...processingTask, stage: 'parsing' }}
-          file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
-          progressOverride={78}
-        />
-      </main>
-    </div>
+    <AnalyzeProcessingViews
+      currentTask={{ ...processingTask, stage: 'parsing' }}
+      file={new File([new Uint8Array(1363149)], 'analysis.pdf', { type: 'application/pdf' })}
+      onBack={() => undefined}
+      progressOverride={78}
+    />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('progressbar')).toBeVisible();
+    await expect(canvasElement.querySelector('[data-mobile-page-app-bar-rail]')).toBeVisible();
+    await expect(canvasElement.querySelector('[data-analyze-mobile-progress]')).toBeVisible();
+    await expect(canvasElement.querySelector('[data-analyze-desktop-progress]')).not.toBeVisible();
     const visibleFilenames = canvas.getAllByText('analysis.pdf').filter((node) => node.checkVisibility());
     await expect(visibleFilenames).toHaveLength(1);
     const visibleSizes = canvas.getAllByText('1.3MB').filter((node) => node.checkVisibility());
     await expect(visibleSizes).toHaveLength(1);
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
   },
 };
 

@@ -182,6 +182,11 @@ assert.match(
 );
 assert.match(
   analyzeSource,
-  /<AnalyzeProgress[\s\S]*onBack=\{onBack\}/,
-  'The responsive processing wrapper should preserve the mobile back callback below 1440px',
+  /<AnalyzeDesktopProgress[\s\S]*progressSnapshot=\{progressSnapshot\}[\s\S]*file=\{file\}[\s\S]*onBack=\{onBack\}/,
+  'The adaptive processing wrapper should preserve the shared snapshot, selected file, and mobile back callback',
+);
+assert.doesNotMatch(
+  analyzeSource,
+  /(?:function|export function) AnalyzeProgress|<AnalyzeProgress\s|data-analyze-legacy-progress/,
+  'The latest-result flow must not reintroduce the legacy AnalyzeProgress branch or marker',
 );

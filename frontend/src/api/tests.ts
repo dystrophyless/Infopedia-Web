@@ -35,6 +35,8 @@ export type TestCompletionSummary = {
   scorePercent: number;
   durationSeconds: number;
   averagePaceSeconds: number;
+  previousScorePercent?: number | null;
+  accuracyDeltaPoints?: number | null;
   weakTopicResult: {
     topicId: string;
     topicTitle: string;
@@ -186,6 +188,8 @@ const normalizeSummary = (value: unknown): TestCompletionSummary | null => {
     scorePercent: firstNumber(record, 'accuracy', 'score_percent', 'scorePercent') ?? 0,
     durationSeconds: firstNumber(record, 'duration_seconds', 'durationSeconds') ?? 0,
     averagePaceSeconds: firstNumber(record, 'average_pace_seconds', 'averagePaceSeconds') ?? 0,
+    previousScorePercent: firstNumber(record, 'previous_score_percent', 'previousScorePercent'),
+    accuracyDeltaPoints: firstNumber(record, 'accuracy_delta_points', 'accuracyDeltaPoints'),
     weakTopicResult: Object.keys(weakRecord).length
       ? {
           topicId: firstString(weakRecord, 'topic_id', 'topicId', 'chapter_ref', 'chapterRef'),

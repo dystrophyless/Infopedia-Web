@@ -10,3 +10,5 @@ export * from './WeakTopicRecommendation';
 export * from './DesktopTestsHubView';
 export * from './DesktopTestOptionCard';
 export * from './DesktopChapterTestCard';
+export * from './DesktopTestAnswerOption';
+export * from './DesktopTestQuestionView';

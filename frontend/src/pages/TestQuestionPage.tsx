@@ -12,6 +12,7 @@ import {
 } from '../api/tests';
 import {
   getTestRunnerMetrics,
+  DesktopTestQuestionView,
   TestQuestionView,
   TestResultView,
   TestStatusView,
@@ -39,6 +40,7 @@ export function TestQuestionPage() {
     submitAnswer,
     advanceQuestion,
     goToQuestion,
+    previousQuestion,
     completeAttempt,
   } = useTestRunner();
   const chapterRef = searchParams.get('chapterRef') ?? searchParams.get('topicCode') ?? undefined;
@@ -205,7 +207,20 @@ export function TestQuestionPage() {
   const activeQuestion = metrics.currentQuestion;
 
   return (
-    <TestQuestionView
+    <>
+    <DesktopTestQuestionView
+      title={title}
+      questions={questions}
+      state={runnerState}
+      submitting={submitting}
+      actionError={actionError}
+      onExit={onBack}
+      onSelectOption={selectOption}
+      onPrimaryAction={handlePrimaryAction}
+      onGoToQuestion={(index) => goToQuestion(questions, index)}
+      onPrevious={() => previousQuestion(questions)}
+    />
+    <div className="md:hidden"><TestQuestionView
       title={title}
       question={activeQuestion}
       currentQuestionIndex={runnerState.currentQuestionIndex}
@@ -220,6 +235,7 @@ export function TestQuestionPage() {
       onBack={onBack}
       onSelectOption={selectOption}
       onPrimaryAction={handlePrimaryAction}
-    />
+    /></div>
+    </>
   );
 }

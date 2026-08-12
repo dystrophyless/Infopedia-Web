@@ -1,6 +1,12 @@
 import { HugeiconsIcon } from '@hugeicons/react';
-import { File02Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowLeft01Icon,
+  DocumentAttachmentIcon,
+  File02Icon,
+  Tick02Icon,
+} from '@hugeicons/core-free-icons';
 import { useTranslation } from 'react-i18next';
+import { MobilePageFrame } from '../../../ui';
 import {
   getAnalyzeDesktopProgressSteps,
   type AnalyzeProgressSnapshot,
@@ -17,10 +23,12 @@ interface DesktopProgressStepTranslation {
 export function AnalyzeDesktopProgress({
   progressSnapshot,
   file,
+  onBack,
   sourceReferenceFillOverride,
 }: {
   progressSnapshot: AnalyzeProgressSnapshot;
   file?: File | null;
+  onBack?: () => void;
   sourceReferenceFillOverride?: number;
 }) {
   const { t } = useTranslation();
@@ -28,8 +36,12 @@ export function AnalyzeDesktopProgress({
   const stepStates = getAnalyzeDesktopProgressSteps(progressSnapshot);
   const clampedProgress = clampPercent(progressSnapshot.percent);
   const fillPercent = clampPercent(sourceReferenceFillOverride ?? clampedProgress);
+  const mobileProgressCaption =
+    t('analyze.mobileProgressCaption') === 'analyze.mobileProgressCaption'
+      ? t('analyze.stages.parsing')
+      : t('analyze.mobileProgressCaption');
 
-  return (
+  const desktopContent = (
     <section
       role="status"
       aria-live="polite"
@@ -99,7 +111,7 @@ export function AnalyzeDesktopProgress({
         <HugeiconsIcon
           icon={File02Icon}
           size={32}
-          strokeWidth={2}
+          strokeWidth={1.5}
           aria-hidden="true"
           className="size-8 shrink-0 text-[#6a37c3]"
         />
@@ -120,6 +132,94 @@ export function AnalyzeDesktopProgress({
         </div>
       </div>
     </section>
+  );
+
+  const mobileContent = (
+    <section data-analyze-mobile-progress>
+      <div className="w-full rounded-[8px] bg-[#ffffff] p-8">
+        <div
+          className="relative mx-auto flex size-36 items-center justify-center rounded-full p-[8px]"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={clampedProgress}
+          aria-valuetext={t('analyze.progressPercent', { percent: clampedProgress })}
+          aria-label={t('analyze.progressTitle')}
+        >
+          <svg
+            className="pointer-events-none absolute inset-0 size-full -rotate-90"
+            viewBox="0 0 144 144"
+            aria-hidden="true"
+          >
+            <circle cx="72" cy="72" r="68" fill="none" stroke="#ded2f1" strokeWidth="8" />
+            {clampedProgress > 0 && (
+              <circle
+                cx="72"
+                cy="72"
+                r="68"
+                fill="none"
+                stroke="#6a37c3"
+                strokeWidth="8"
+                strokeLinecap="round"
+                pathLength="100"
+                strokeDasharray={clampedProgress >= 100 ? '100' : `${clampedProgress} 100`}
+              />
+            )}
+          </svg>
+          <div className="flex size-full items-center justify-center rounded-full bg-[#ffffff]">
+            <span className="text-[32px] font-medium leading-none text-[#000000]">{clampedProgress}%</span>
+          </div>
+        </div>
+        <p className="mt-6 text-center text-[16px] leading-none text-[#524d5b]">
+          {mobileProgressCaption}
+        </p>
+      </div>
+
+      {file && (
+        <div className="mt-3 flex w-full items-center gap-6 rounded-[8px] bg-[#ffffff] px-6 py-4">
+          <HugeiconsIcon icon={DocumentAttachmentIcon} size={32} strokeWidth={1.5} className="shrink-0 text-[#6a37c3]" />
+          <div className="min-w-0">
+            <p className="text-[12px] font-medium leading-3 text-[#865bcf]">{t('analyze.fileEyebrow')}</p>
+            <p className="mt-1 truncate text-[16px] leading-4 text-[#161519]">{file.name}</p>
+            <p className="mt-2 text-[12px] leading-3 text-[#b1acb9]">{formatAnalyzeFileSize(file.size)}</p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+
+  return (
+    <>
+      <div className="hidden h-full w-full items-center justify-center md:flex">
+        {desktopContent}
+      </div>
+      {onBack ? (
+        <MobilePageFrame
+          className="md:hidden"
+          appBar={{
+            title: t('analyze.mobileResultTitle'),
+            headingLevel: 2,
+            titleAlign: 'start',
+            compactLayout: 'leading-only',
+            tone: 'canvas',
+            leading: (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label={t('analyze.mobileResultBack')}
+                className="rounded-[8px] text-[#252329] outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-[#572d9f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efebf6]"
+              >
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} aria-hidden="true" />
+              </button>
+            ),
+          }}
+        >
+          {mobileContent}
+        </MobilePageFrame>
+      ) : (
+        <div className="md:hidden">{mobileContent}</div>
+      )}
+    </>
   );
 }
 
@@ -181,4 +281,15 @@ function clampPercent(value: number) {
 
 function formatAnalyzeDesktopFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function formatAnalyzeFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+
+  const megabytes = bytes / (1024 * 1024);
+  if (megabytes >= 1) {
+    return `${megabytes.toFixed(megabytes < 10 ? 1 : 0)}MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))}KB`;
 }

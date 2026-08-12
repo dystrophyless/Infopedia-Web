@@ -40,16 +40,21 @@ assert.match(componentSource, /role="status"[\s\S]*aria-live="polite"/, 'desktop
 assert.match(componentSource, /role="progressbar"[\s\S]*aria-valuemin=\{0\}[\s\S]*aria-valuemax=\{100\}/, 'desktop progress should expose an inner progressbar');
 assert.match(componentSource, /Tick02Icon/, 'completed steps should use the exact HugeIcons tick glyph');
 assert.match(componentSource, /File02Icon/, 'file metadata should use the exact HugeIcons file glyph');
-assert.doesNotMatch(componentSource, /<svg|DocumentAttachmentIcon|animate-|dialog|dropzone|button/i, 'desktop progress must not add custom SVG, interactions, or unrelated UI');
+assert.match(
+  componentSource,
+  /icon=\{File02Icon\}[\s\S]*size=\{32\}[\s\S]*strokeWidth=\{1\.5\}/,
+  'desktop progress file metadata should use the 32px File02 glyph with a 1.5px stroke',
+);
 
-assert.match(pageSource, /<AnalyzeDesktopProgress[\s\S]*progressSnapshot=\{progressSnapshot\}[\s\S]*file=\{file\}/, 'processing should receive the shared snapshot and selected file');
-assert.equal((pageSource.match(/const progressSnapshot = useAnalyzeProgressSnapshot\(/g) ?? []).length, 1, 'desktop and legacy processing should share one progress hook');
+assert.match(pageSource, /<AnalyzeDesktopProgress[\s\S]*progressSnapshot=\{progressSnapshot\}[\s\S]*file=\{file\}[\s\S]*onBack=\{onBack\}/, 'adaptive processing should receive the shared snapshot, selected file, and mobile back action');
+assert.equal((pageSource.match(/const progressSnapshot = useAnalyzeProgressSnapshot\(/g) ?? []).length, 1, 'adaptive processing should keep exactly one shared progress hook');
 assert.doesNotMatch(pageSource, /useSmoothAnalyzeProgress|SMOOTH_PROGRESS_MAX/, 'the duplicate unbounded timer should be removed');
 assert.match(pageSource, /currentTask=\{activeCurrentTask\}/, 'runtime processing should be gated to the active task id');
-assert.match(pageSource, /hidden min-\[1440px\]:flex/, 'new desktop shell should activate only at 1440px and above');
-assert.match(pageSource, /min-\[1440px\]:hidden/, 'the legacy processing branch should remain intact below 1440px');
-assert.match(processingPageClass, /min-\[1440px\]:h-dvh/, 'desktop processing should follow the real viewport height');
-assert.match(processingPageClass, /min-\[1440px\]:min-h-\[573px\]/, 'desktop processing should preserve the full readable card height');
+assert.doesNotMatch(pageSource, /(?:function|export function) AnalyzeProgress|data-analyze-legacy-progress/, 'legacy AnalyzeProgress and its marker should be removed completely');
+assert.match(componentSource, /hidden h-full w-full items-center justify-center md:flex/, 'adaptive progress should render the Figma desktop composition from md upward');
+assert.match(componentSource, /className="md:hidden"/, 'adaptive progress should render its mobile composition only below md');
+assert.match(processingPageClass, /md:h-dvh/, 'desktop processing should follow the real viewport height from md upward');
+assert.match(processingPageClass, /md:min-h-\[573px\]/, 'desktop processing should preserve the full readable card height from md upward');
 assert.doesNotMatch(processingPageClass, /h-\[1080px\]/, 'desktop processing must not force a Figma-only 1080px canvas at runtime');
 
 assert.equal(ru.analyze.desktopProgress.title, 'Анализируем результаты ЕНТ');
@@ -83,7 +88,14 @@ for (const [width, height] of [[1534, 862], [1534, 730], [1534, 600], [1920, 915
     `visual runner should cover ${width}x${height} without document scroll`,
   );
 }
-assert.match(visualSource, /width:\s*1439[^}]*height:\s*800/, 'visual runner should preserve the below-1440 legacy branch');
+assert.match(visualSource, /width:\s*1439[^}]*height:\s*800/, 'visual runner should cover the adaptive desktop branch at 1439px');
+for (const width of [320, 360, 390, 430]) {
+  assert.match(
+    visualSource,
+    new RegExp(`width:\\s*${width}[^}]*height:\\s*932`),
+    `visual runner should cover ${width}px mobile overflow`,
+  );
+}
 assert.match(visualSource, /document\.fonts\.ready/, 'visual runner should wait for fonts');
 assert.match(visualSource, /overlay\.png/, 'visual runner should save overlay evidence');
 assert.match(visualSource, /diff\.png/, 'visual runner should save diff evidence');

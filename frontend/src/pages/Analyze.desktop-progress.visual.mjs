@@ -20,7 +20,13 @@ const responsiveCases = [
   { name: '1900x980', width: 1900, height: 980 },
 ];
 const fallbackViewport = { width: 1534, height: 500 };
-const legacyViewport = { width: 1439, height: 800 };
+const adaptiveDesktopViewport = { width: 1439, height: 800 };
+const mobileCases = [
+  { name: '320x932', width: 320, height: 932 },
+  { name: '360x932', width: 360, height: 932 },
+  { name: '390x932', width: 390, height: 932 },
+  { name: '430x932', width: 430, height: 932 },
+];
 
 await Promise.all([
   fs.mkdir(outputDir, { recursive: true }),
@@ -30,7 +36,8 @@ const browser = await chromium.launch({ headless: true });
 let measurements;
 const responsiveMeasurements = [];
 let fallbackMeasurement;
-let below1440;
+let adaptive1439;
+const mobileMeasurements = [];
 
 try {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
@@ -212,22 +219,61 @@ try {
   await fallbackPage.screenshot({ path: path.join(responsiveOutputDir, '1534x500-scroll-fallback.png'), fullPage: false });
   await fallbackPage.close();
 
-  const belowPage = await browser.newPage({ viewport: legacyViewport, deviceScaleFactor: 1 });
-  await belowPage.goto(`${storybook}/iframe.html?id=pages-analyze--desktop-progress-figma-russian&viewMode=story`, {
+  const adaptivePage = await browser.newPage({ viewport: adaptiveDesktopViewport, deviceScaleFactor: 1 });
+  await adaptivePage.goto(`${storybook}/iframe.html?id=pages-analyze--desktop-progress-figma-russian&viewMode=story`, {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
-  await belowPage.locator('[data-analyze-legacy-progress]').waitFor({ state: 'visible', timeout: 15_000 });
-  await belowPage.evaluate(async () => { await document.fonts.ready; });
-  below1440 = await belowPage.evaluate(() => ({
+  await adaptivePage.locator('[data-analyze-desktop-progress]').waitFor({ state: 'visible', timeout: 15_000 });
+  await adaptivePage.evaluate(async () => { await document.fonts.ready; });
+  adaptive1439 = await adaptivePage.evaluate(() => ({
     width: innerWidth,
     height: innerHeight,
     desktopVisible: Boolean(document.querySelector('[data-analyze-desktop-progress]')?.getClientRects().length),
-    legacyVisible: Boolean(document.querySelector('[data-analyze-legacy-progress]')?.getClientRects().length),
+    mobileVisible: Boolean(document.querySelector('[data-analyze-mobile-progress]')?.getClientRects().length),
+    scrollWidth: document.documentElement.scrollWidth,
   }));
-  assert.deepEqual(below1440, { ...legacyViewport, desktopVisible: false, legacyVisible: true });
-  await belowPage.screenshot({ path: path.join(responsiveOutputDir, '1439x800-legacy.png'), fullPage: false });
-  await belowPage.close();
+  assert.deepEqual(adaptive1439, {
+    ...adaptiveDesktopViewport,
+    desktopVisible: true,
+    mobileVisible: false,
+    scrollWidth: adaptiveDesktopViewport.width,
+  });
+  await adaptivePage.screenshot({ path: path.join(responsiveOutputDir, '1439x800-desktop.png'), fullPage: false });
+  await adaptivePage.close();
+
+  for (const mobileCase of mobileCases) {
+    const mobileViewport = { width: mobileCase.width, height: mobileCase.height };
+    const mobilePage = await browser.newPage({ viewport: mobileViewport, deviceScaleFactor: 1 });
+    await mobilePage.goto(`${storybook}/iframe.html?id=pages-analyze--processing-uploaded-file-mobile-430&viewMode=story`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+    await mobilePage.locator('[data-analyze-mobile-progress]').waitFor({ state: 'visible', timeout: 15_000 });
+    await mobilePage.evaluate(async () => { await document.fonts.ready; });
+    const mobileMeasurement = await mobilePage.evaluate(() => ({
+      viewport: { width: innerWidth, height: innerHeight },
+      scrollWidth: document.documentElement.scrollWidth,
+      desktopVisible: Boolean(document.querySelector('[data-analyze-desktop-progress]')?.getClientRects().length),
+      mobileVisible: Boolean(document.querySelector('[data-analyze-mobile-progress]')?.getClientRects().length),
+      appBarVisible: Boolean(document.querySelector('[data-mobile-page-app-bar-rail]')?.getClientRects().length),
+      progressbarVisible: Boolean(document.querySelector('[data-analyze-mobile-progress] [role="progressbar"]')?.getClientRects().length),
+      filename: document.querySelector('[data-analyze-mobile-progress]')?.textContent?.includes('analysis.pdf') ?? false,
+    }));
+    assert.deepEqual(mobileMeasurement.viewport, mobileViewport, `${mobileCase.name}: viewport`);
+    assert.ok(mobileMeasurement.scrollWidth <= mobileCase.width, `${mobileCase.name}: no horizontal overflow`);
+    assert.equal(mobileMeasurement.desktopVisible, false, `${mobileCase.name}: desktop composition hidden`);
+    assert.equal(mobileMeasurement.mobileVisible, true, `${mobileCase.name}: mobile composition visible`);
+    assert.equal(mobileMeasurement.appBarVisible, true, `${mobileCase.name}: canonical app bar visible`);
+    assert.equal(mobileMeasurement.progressbarVisible, true, `${mobileCase.name}: progressbar visible`);
+    assert.equal(mobileMeasurement.filename, true, `${mobileCase.name}: file metadata visible`);
+    mobileMeasurements.push({ name: mobileCase.name, ...mobileMeasurement });
+    await mobilePage.screenshot({
+      path: path.join(responsiveOutputDir, `${mobileCase.name}-mobile.png`),
+      fullPage: false,
+    });
+    await mobilePage.close();
+  }
 } finally {
   await browser.close();
 }
@@ -239,7 +285,7 @@ await fs.writeFile(
 );
 await fs.writeFile(
   path.join(responsiveOutputDir, 'measurements.json'),
-  `${JSON.stringify({ responsive: responsiveMeasurements, fallback: fallbackMeasurement, below1440 }, null, 2)}\n`,
+  `${JSON.stringify({ responsive: responsiveMeasurements, fallback: fallbackMeasurement, adaptive1439, mobile: mobileMeasurements }, null, 2)}\n`,
 );
 console.log(`Analyze desktop progress visual evidence saved to ${outputDir}`);
 console.log(`Analyze desktop progress responsive evidence saved to ${responsiveOutputDir}`);

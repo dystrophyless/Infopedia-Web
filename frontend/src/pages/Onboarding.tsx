@@ -317,13 +317,15 @@ export function Onboarding() {
     <AuthShell
       title={step === 'grade' ? t('onboarding.gradeQuestionTitle') : t('onboarding.usernameQuestionTitle')}
       mobileHeaderMode="status-aware"
+      desktopFlowStep={step === 'grade' ? 1 : 2}
+      desktopContentWidth={step === 'grade' ? 'full' : 'narrow'}
     >
       {step === 'grade' ? (
         <form onSubmit={handleGradeSubmit} noValidate>
-          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-7 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
+          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-7 max-md:text-[16px] max-md:text-[#8c8698] min-[1440px]:text-[16px] min-[1440px]:text-[#8c8698]">
             {t('onboarding.gradeQuestionHelper')}
           </p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {gradeOptions.map((option) => (
               <GradeOptionButton
                 key={option}
@@ -339,13 +341,18 @@ export function Onboarding() {
             ))}
           </div>
           <FormError error={error} />
-          <AuthSubmit loading={loading} disabled={!grade} mobileVisual="figma-auth">
+          <AuthSubmit
+            loading={loading}
+            disabled={!grade}
+            mobileVisual="figma-auth"
+            desktopVisual="onboarding"
+          >
             {loading ? t('common.loading') : t('common.continue')}
           </AuthSubmit>
         </form>
       ) : (
         <form onSubmit={handleUsernameSubmit} noValidate>
-          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-6 max-md:text-[16px] max-md:leading-none max-md:text-[#8c8698]">
+          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-6 max-md:text-[16px] max-md:text-[#8c8698] min-[1440px]:mb-6 min-[1440px]:h-7 min-[1440px]:text-[16px] min-[1440px]:text-[#8c8698]">
             {t('onboarding.usernameQuestionHelper')}
           </p>
           <AuthUsernameInput
@@ -361,6 +368,8 @@ export function Onboarding() {
             helperTone={usernameHelperTone}
             hideMobileLeadingIconWhenFilled
             mobileFieldLayout="figma-auth"
+            desktopVisual="onboarding"
+            desktopShowSuccessIcon={usernameHelperTone === 'success'}
           />
           <button
             type="button"
@@ -368,7 +377,7 @@ export function Onboarding() {
               setStep('grade');
               setError(null);
             }}
-            className="mb-2 text-[14px] font-medium text-accent hover:underline max-md:hidden"
+            className="max-md:hidden min-[1440px]:hidden"
           >
             {t('common.previous')}
           </button>
@@ -376,6 +385,7 @@ export function Onboarding() {
             loading={loading}
             disabled={!usernameCanSubmit}
             mobileVisual="figma-auth"
+            desktopVisual="onboarding"
           >
             {loading
               ? t('common.loading')
@@ -417,15 +427,28 @@ function GradeOptionButton({
       disabled={disabled}
       variant="surface"
       fullWidth
-      className={`relative flex h-12 w-full items-center justify-start gap-4 rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 ${
+      className={`relative flex h-12 w-full items-center justify-start gap-4 rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 min-[1440px]:justify-between min-[1440px]:bg-[#f8f5fc] ${
+        grade === '11' ? 'min-[1440px]:order-1' : grade === '10' ? 'min-[1440px]:order-2' : 'min-[1440px]:order-3'
+      } ${
         selected
-          ? 'border-[1.5px] border-[#6a37c3] text-[#44237d] hover:!bg-white'
-          : 'border border-transparent text-[#161519] hover:text-[#44237d]'
+          ? 'border-[1.5px] border-[#6a37c3] text-[#44237d] hover:!bg-white min-[1440px]:border-transparent min-[1440px]:text-[#161519] min-[1440px]:hover:!bg-[#f8f5fc]'
+          : 'border border-transparent text-[#161519] hover:text-[#44237d] min-[1440px]:hover:text-[#161519]'
       }`}
       aria-pressed={selected}
     >
-      <HugeiconsIcon icon={icon} size={16} strokeWidth={1.8} className="shrink-0 text-[#44237d]" />
+      <HugeiconsIcon
+        icon={icon}
+        size={16}
+        strokeWidth={1.8}
+        className="shrink-0 text-[#44237d] min-[1440px]:hidden"
+      />
       <span className="min-w-0 flex-1">{label}</span>
+      {!selected && (
+        <span
+          aria-hidden="true"
+          className="hidden size-5 shrink-0 rounded-full border border-[#c5b1e7] min-[1440px]:block"
+        />
+      )}
       {selected && (
         <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6a37c3] text-white">
           <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />

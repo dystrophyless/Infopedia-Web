@@ -5,67 +5,199 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Globe02Icon,
   Mail01Icon,
+  Tick02Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { useLangStore, type Language } from '../stores/langStore';
 import { Button, Divider, FormField, Input, PasswordField, Text } from '../ui';
 
 type MobileFieldLayout = 'default' | 'figma-auth';
+type DesktopVisual = 'default' | 'onboarding';
 
 export function AuthShell({
   title,
   children,
   footer,
   mobileHeaderMode = 'compact',
+  desktopFlowStep,
+  desktopContentWidth = 'full',
 }: {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
   mobileHeaderMode?: 'compact' | 'status-aware';
+  desktopFlowStep?: 1 | 2 | 3;
+  desktopContentWidth?: 'full' | 'narrow';
 }) {
+  const desktopOnboarding = desktopFlowStep !== undefined;
+
   return (
-    <div className="min-h-screen w-full bg-bg flex flex-col max-lg:mx-auto max-lg:min-h-[932px] max-lg:max-w-[430px] max-lg:bg-[#efebf6]">
-      <header className="w-full px-[60px] max-lg:hidden py-6 flex items-center justify-between">
+    <div
+      data-testid={desktopOnboarding ? 'desktop-onboarding-shell' : undefined}
+      className={`flex min-h-screen w-full flex-col bg-bg max-lg:mx-auto max-lg:min-h-[932px] max-lg:max-w-[430px] max-lg:bg-[#efebf6] ${
+        desktopOnboarding ? 'min-[1440px]:flex-row min-[1440px]:bg-[#efebf6]' : ''
+      }`}
+    >
+      {desktopOnboarding && <DesktopOnboardingSidebar currentStep={desktopFlowStep} />}
+      <header
+        className={`w-full items-center justify-between px-[60px] py-6 ${
+          desktopOnboarding ? 'hidden lg:flex min-[1440px]:hidden' : 'flex max-lg:hidden'
+        }`}
+      >
         <Link to="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="Infopedia" className="h-[40px] w-auto" />
         </Link>
       </header>
 
-      <header
-        className={`relative flex w-full justify-center px-8 lg:hidden ${
-          mobileHeaderMode === 'status-aware' ? 'h-[112px]' : 'h-16'
-        }`}
-      >
-        <Link
-          to="/"
-          className={`absolute left-1/2 -translate-x-1/2 ${
-            mobileHeaderMode === 'status-aware' ? 'top-16' : 'top-4'
-          }`}
-        >
-          <img src="/logo.svg" alt="Infopedia" className="h-8 w-auto" />
-        </Link>
-        <div
-          className={`absolute right-8 ${
-            mobileHeaderMode === 'status-aware' ? 'top-16' : 'top-4'
-          }`}
-        >
-          <AuthMobileLanguageToggle />
-        </div>
+      <header className="relative flex w-full justify-center px-8 lg:hidden">
+        <span
+          aria-hidden="true"
+          className={mobileHeaderMode === 'status-aware' ? 'h-[112px]' : 'h-16'}
+        />
+          <Link
+            to="/"
+            className={`absolute left-1/2 -translate-x-1/2 ${
+              mobileHeaderMode === 'status-aware' ? 'top-16' : 'top-4'
+            }`}
+          >
+            <img src="/logo.svg" alt="Infopedia" className="h-8 w-auto" />
+          </Link>
+          <div
+            className={`absolute right-8 ${
+              mobileHeaderMode === 'status-aware' ? 'top-16' : 'top-4'
+            }`}
+          >
+            <AuthMobileLanguageToggle />
+          </div>
         <div className="absolute bottom-0 left-0 h-px w-full bg-[#eae9ec]" />
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:pt-[65px] max-md:px-8">
-        <div className="w-full max-w-[520px] p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:p-0 max-md:max-w-[366px]">
-          <h1 className="mb-3 text-left text-[26px] font-medium leading-none text-text max-lg:mb-3 max-lg:text-[24px] max-lg:leading-none max-lg:text-[#161519]">{title}</h1>
-          {children}
-          {footer && (
-            <div className="mt-4 text-center text-[14px] text-muted max-lg:mt-6 max-lg:text-[#c5b1e7]">
-              {footer}
-            </div>
-          )}
+      <div
+        data-testid={desktopOnboarding ? 'desktop-onboarding-main' : undefined}
+        className={`flex flex-1 items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:pt-[65px] max-md:px-8 ${
+          desktopOnboarding
+            ? 'min-[1440px]:min-h-screen min-[1440px]:w-[960px] min-[1440px]:flex-none min-[1440px]:bg-[#efebf6] min-[1440px]:p-12'
+            : ''
+        }`}
+      >
+        <div
+          data-testid={desktopOnboarding ? 'desktop-onboarding-card' : undefined}
+          className={`w-full max-w-[520px] p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:p-0 max-md:max-w-[366px] ${
+            desktopOnboarding
+              ? 'min-[1440px]:w-[480px] min-[1440px]:max-w-none min-[1440px]:rounded-[16px] min-[1440px]:bg-white min-[1440px]:p-12'
+              : ''
+          } ${
+            desktopFlowStep === 1
+              ? 'min-[1440px]:h-[408px]'
+              : desktopFlowStep === 2
+                ? 'min-[1440px]:h-[308px]'
+                : desktopFlowStep === 3
+                  ? 'min-[1440px]:h-[508px]'
+                  : ''
+          }`}
+        >
+          <div className={desktopContentWidth === 'narrow' ? 'min-[1440px]:w-[366px]' : undefined}>
+            <h1
+              className={`mb-3 text-left text-[26px] font-medium leading-none text-text max-lg:mb-3 max-lg:text-[24px] max-lg:leading-none max-lg:text-[#161519] ${
+                desktopOnboarding
+                  ? 'min-[1440px]:mb-4 min-[1440px]:text-[24px] min-[1440px]:leading-none min-[1440px]:text-[#161519]'
+                  : ''
+              }`}
+            >
+              {title}
+            </h1>
+            {children}
+            {footer && (
+              <div
+                className={`mt-4 text-center text-[14px] text-muted max-lg:mt-6 max-lg:text-[#c5b1e7] ${
+                  desktopOnboarding
+                    ? 'min-[1440px]:mt-6 min-[1440px]:text-[12px] min-[1440px]:text-[#a585db]'
+                    : ''
+                }`}
+              >
+                {footer}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function DesktopOnboardingSidebar({ currentStep }: { currentStep: 1 | 2 | 3 }) {
+  const { t } = useTranslation();
+  const steps = [
+    {
+      title: t('onboarding.desktopGradeStepTitle'),
+      description: t('onboarding.desktopGradeStepDescription'),
+    },
+    {
+      title: t('onboarding.desktopUsernameStepTitle'),
+      description: t('onboarding.desktopUsernameStepDescription'),
+    },
+    {
+      title: t('onboarding.desktopRegistrationStepTitle'),
+      description: t('onboarding.desktopRegistrationStepDescription'),
+    },
+  ];
+
+  return (
+    <aside
+      data-testid="desktop-onboarding-sidebar"
+      className="hidden bg-white min-[1440px]:flex min-[1440px]:min-h-screen min-[1440px]:w-[480px] min-[1440px]:flex-none min-[1440px]:flex-col min-[1440px]:border-r min-[1440px]:border-[#ded2f1] min-[1440px]:px-16 min-[1440px]:py-8"
+    >
+      <Link to="/" className="block w-fit">
+        <img
+          data-testid="desktop-onboarding-logo"
+          src="/logo.svg"
+          alt="Infopedia"
+          className="min-[1440px]:h-[44px] min-[1440px]:w-[171px]"
+        />
+      </Link>
+      <div
+        data-testid="desktop-onboarding-stepper"
+        className="relative mt-20 flex w-[352px] flex-col gap-16"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute bottom-6 left-[23px] top-6 w-[2px] bg-[#f8f5fc]"
+        />
+        {steps.map((step, index) => {
+          const stepNumber = (index + 1) as 1 | 2 | 3;
+          const completed = stepNumber < currentStep;
+          const current = stepNumber === currentStep;
+
+          return (
+            <div
+              key={stepNumber}
+              data-step-state={completed ? 'completed' : current ? 'current' : 'future'}
+              className="relative flex w-full items-center gap-6"
+            >
+              <span
+                className={`relative z-10 flex size-12 shrink-0 items-center justify-center rounded-full ${
+                  current ? 'bg-[#efeaf8] text-[#6a37c3]' : 'bg-[#f8f5fc] text-[#c5b1e7]'
+                }`}
+              >
+                {completed ? (
+                  <HugeiconsIcon icon={Tick02Icon} size={24} strokeWidth={1.8} />
+                ) : (
+                  <span className="text-[24px] font-medium leading-none">{stepNumber}</span>
+                )}
+              </span>
+              <span className="flex flex-col gap-2 font-medium leading-none">
+                <span className={`text-[20px] ${current ? 'text-[#161519]' : 'text-[#6e6779]'}`}>
+                  {step.title}
+                </span>
+                <span className={`text-[16px] ${current ? 'text-[#6e6779]' : 'text-[#b1acb9]'}`}>
+                  {step.description}
+                </span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </aside>
   );
 }
 
@@ -133,12 +265,14 @@ export function AuthSubmit({
   children,
   mobileVisual = 'default',
   mobileTopClassName = 'max-lg:mt-6',
+  desktopVisual = 'default',
 }: {
   loading?: boolean;
   disabled?: boolean;
   children: ReactNode;
   mobileVisual?: 'default' | 'figma-auth';
   mobileTopClassName?: string;
+  desktopVisual?: DesktopVisual;
 }) {
   const unavailable = Boolean(loading || disabled);
 
@@ -155,6 +289,12 @@ export function AuthSubmit({
             ? `${mobileTopClassName} max-lg:h-12 max-lg:rounded-[8px] max-lg:bg-[#ded2f1] max-lg:p-0 max-lg:font-medium max-lg:text-[#a585db] max-lg:disabled:opacity-100`
             : `${mobileTopClassName} max-lg:h-12 max-lg:rounded-[8px] max-lg:bg-[#6a37c3] max-lg:p-0 max-lg:font-medium max-lg:text-white`
           : 'mt-2 max-lg:mt-6 max-lg:h-12 max-lg:rounded-[8px] max-lg:bg-[#44237d] max-lg:p-0 max-lg:font-medium max-lg:text-white'
+      } ${
+        desktopVisual === 'onboarding'
+          ? unavailable
+            ? 'min-[1440px]:mt-6 min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:bg-[#efeaf8] min-[1440px]:p-0 min-[1440px]:font-medium min-[1440px]:text-[#c5b1e7] min-[1440px]:hover:opacity-100 min-[1440px]:disabled:opacity-100'
+            : 'min-[1440px]:mt-6 min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:bg-[#6a37c3] min-[1440px]:p-0 min-[1440px]:font-medium min-[1440px]:text-white'
+          : ''
       }`}
     >
       {children}
@@ -165,45 +305,43 @@ export function AuthSubmit({
 export function AuthDivider({
   label,
   mobileClassName = 'max-lg:my-6',
+  desktopVisual = 'default',
 }: {
   label: string;
   mobileClassName?: string;
+  desktopVisual?: DesktopVisual;
 }) {
   return (
     <div
-      className={`my-5 flex items-center gap-3 text-[13px] text-muted max-lg:text-[14px] max-lg:text-[#c5b1e7] ${mobileClassName}`}
+      className={`my-5 flex items-center gap-3 text-[13px] text-muted max-lg:text-[14px] max-lg:text-[#c5b1e7] ${mobileClassName} ${
+        desktopVisual === 'onboarding' ? 'min-[1440px]:my-6 min-[1440px]:text-[#c5b1e7]' : ''
+      }`}
     >
-      <Divider className="h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7]" />
+      <Divider
+        className={`h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7] ${
+          desktopVisual === 'onboarding' ? 'min-[1440px]:bg-[#c5b1e7]' : ''
+        }`}
+      />
       <Text as="span" tone="inherit" size="caption">
         {label}
       </Text>
-      <Divider className="h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7]" />
+      <Divider
+        className={`h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7] ${
+          desktopVisual === 'onboarding' ? 'min-[1440px]:bg-[#c5b1e7]' : ''
+        }`}
+      />
     </div>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="size-5 text-accent"
-      fill="currentColor"
-    >
-      <path d="M21.6 12.23c0-.78-.07-1.53-.2-2.23H12v4.22h5.38a4.6 4.6 0 0 1-2 3.02v2.52h3.24c1.9-1.75 2.98-4.32 2.98-7.53Z" />
-      <path d="M12 22c2.7 0 4.97-.9 6.62-2.44l-3.24-2.52c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.76-5.6-4.12H3.05v2.6A10 10 0 0 0 12 22Z" />
-      <path d="M6.4 13.88a6 6 0 0 1 0-3.76v-2.6H3.05a10 10 0 0 0 0 8.96l3.35-2.6Z" />
-      <path d="M12 6c1.47 0 2.78.5 3.82 1.5l2.87-2.88A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.95 5.52l3.35 2.6C7.2 7.76 9.4 6 12 6Z" />
-    </svg>
   );
 }
 
 export function GoogleAuthButton({
   children,
   onClick,
+  desktopVisual = 'default',
 }: {
   children: ReactNode;
   onClick: () => void;
+  desktopVisual?: DesktopVisual;
 }) {
   return (
     <Button
@@ -212,9 +350,19 @@ export function GoogleAuthButton({
       variant="surface"
       size="lg"
       fullWidth
-      className="flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:p-0 max-lg:text-[#161519]"
+      className={`flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:p-0 max-lg:text-[#161519] ${
+        desktopVisual === 'onboarding'
+          ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:p-0 min-[1440px]:text-[#161519] min-[1440px]:hover:bg-[#f8f5fc]'
+          : ''
+      }`}
     >
-      <GoogleIcon />
+      <img
+        src="/figma/onboarding/google-black-icon.svg"
+        aria-hidden="true"
+        width={16}
+        height={16}
+        alt=""
+      />
       <span>{children}</span>
     </Button>
   );
@@ -228,6 +376,7 @@ export function AuthEmailInput({
   invalid,
   hideMobileLeadingIconWhenFilled = false,
   mobileFieldLayout = 'default',
+  desktopVisual = 'default',
 }: {
   label: string;
   value: string;
@@ -236,13 +385,16 @@ export function AuthEmailInput({
   invalid?: boolean;
   hideMobileLeadingIconWhenFilled?: boolean;
   mobileFieldLayout?: MobileFieldLayout;
+  desktopVisual?: DesktopVisual;
 }) {
   const hideMobileLeadingIcon = hideMobileLeadingIconWhenFilled && value;
 
   return (
     <FormField
       error={error}
-      className={mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'}
+      className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
+        desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
+      }`}
     >
       {(controlProps) => (
         <span className="relative block">
@@ -250,9 +402,9 @@ export function AuthEmailInput({
             aria-hidden="true"
             className={`pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7] ${
               hideMobileLeadingIcon ? 'max-lg:hidden' : ''
-            }`}
+            } ${desktopVisual === 'onboarding' ? 'min-[1440px]:left-6 min-[1440px]:size-4 min-[1440px]:text-[#c5b1e7]' : ''}`}
           >
-            <HugeiconsIcon icon={Mail01Icon} size={18} strokeWidth={1.7} />
+            <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.7} />
           </span>
           <Input
             {...controlProps}
@@ -270,6 +422,12 @@ export function AuthEmailInput({
               error || invalid
                 ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
                 : 'border-border bg-surface focus:border-accent'
+            } ${
+              desktopVisual === 'onboarding'
+                ? error || invalid
+                  ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border min-[1440px]:border-danger min-[1440px]:bg-[#fff5f5] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-6'
+                  : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-6 min-[1440px]:placeholder:text-[#c5b1e7]'
+                : ''
             }`}
           />
         </span>
@@ -288,6 +446,8 @@ export function AuthUsernameInput({
   helperTone = 'muted',
   hideMobileLeadingIconWhenFilled = false,
   mobileFieldLayout = 'default',
+  desktopVisual = 'default',
+  desktopShowSuccessIcon = false,
 }: {
   label: string;
   value: string;
@@ -298,6 +458,8 @@ export function AuthUsernameInput({
   helperTone?: 'muted' | 'success';
   hideMobileLeadingIconWhenFilled?: boolean;
   mobileFieldLayout?: MobileFieldLayout;
+  desktopVisual?: DesktopVisual;
+  desktopShowSuccessIcon?: boolean;
 }) {
   const hideMobileLeadingIcon = hideMobileLeadingIconWhenFilled && value;
 
@@ -306,7 +468,10 @@ export function AuthUsernameInput({
       error={error}
       helperText={helperText}
       helperTone={helperTone}
-      className={mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'}
+      messageClassName={!error && desktopShowSuccessIcon ? 'min-[1440px]:hidden' : undefined}
+      className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
+        desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
+      }`}
     >
       {(controlProps) => (
         <span className="relative block">
@@ -314,9 +479,9 @@ export function AuthUsernameInput({
             aria-hidden="true"
             className={`pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7] ${
               hideMobileLeadingIcon ? 'max-lg:hidden' : ''
-            }`}
+            } ${desktopVisual === 'onboarding' ? 'min-[1440px]:left-6 min-[1440px]:size-4 min-[1440px]:text-[#c5b1e7]' : ''}`}
           >
-            <HugeiconsIcon icon={UserIcon} size={18} strokeWidth={1.7} />
+            <HugeiconsIcon icon={UserIcon} size={16} strokeWidth={1.7} />
           </span>
           <Input
             {...controlProps}
@@ -335,8 +500,22 @@ export function AuthUsernameInput({
               error
                 ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
                 : 'border-border bg-surface focus:border-accent'
+            } ${
+              desktopVisual === 'onboarding'
+                ? error
+                  ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border min-[1440px]:border-danger min-[1440px]:bg-[#fff5f5] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-10'
+                  : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-10 min-[1440px]:placeholder:text-[#c5b1e7]'
+                : ''
             }`}
           />
+          {desktopShowSuccessIcon && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute right-6 top-1/2 hidden size-4 -translate-y-1/2 items-center justify-center text-[#19b978] min-[1440px]:flex"
+            >
+              <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2} />
+            </span>
+          )}
         </span>
       )}
     </FormField>
@@ -355,6 +534,7 @@ export function AuthPasswordInput({
   autoComplete = 'current-password',
   hideMobileLeadingIconWhenFilled = false,
   mobileFieldLayout = 'default',
+  desktopVisual = 'default',
 }: {
   label: string;
   value: string;
@@ -367,6 +547,7 @@ export function AuthPasswordInput({
   autoComplete?: string;
   hideMobileLeadingIconWhenFilled?: boolean;
   mobileFieldLayout?: MobileFieldLayout;
+  desktopVisual?: DesktopVisual;
 }) {
   const hideMobileLeadingIcon = hideMobileLeadingIconWhenFilled && value;
 
@@ -381,18 +562,30 @@ export function AuthPasswordInput({
       error={error}
       invalid={invalid}
       autoComplete={autoComplete}
-      className={mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'}
+      className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
+        desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
+      }`}
       leadingIconClassName={`max-lg:size-4 max-lg:text-[#c5b1e7] ${
         hideMobileLeadingIcon ? 'max-lg:hidden' : ''
-      }`}
+      } ${desktopVisual === 'onboarding' ? 'min-[1440px]:left-6 min-[1440px]:size-4 min-[1440px]:text-[#c5b1e7]' : ''}`}
       inputClassName={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
         hideMobileLeadingIcon ? 'max-lg:pl-6' : 'max-lg:pl-[52px]'
       } ${
         error || invalid
           ? 'auth-field-error border-danger bg-[#fff5f5] focus:border-danger'
           : 'border-border bg-surface focus:border-accent'
+      } ${
+        desktopVisual === 'onboarding'
+          ? error || invalid
+            ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border min-[1440px]:border-danger min-[1440px]:bg-[#fff5f5] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-12'
+            : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-12 min-[1440px]:placeholder:text-[#c5b1e7]'
+          : ''
       }`}
-      toggleClassName="right-3 flex size-8 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:text-[#8c8698]"
+      toggleClassName={`right-3 flex size-8 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:text-[#8c8698] ${
+        desktopVisual === 'onboarding'
+          ? 'min-[1440px]:right-4 min-[1440px]:text-[#c5b1e7] min-[1440px]:hover:bg-transparent'
+          : ''
+      }`}
     />
   );
 }

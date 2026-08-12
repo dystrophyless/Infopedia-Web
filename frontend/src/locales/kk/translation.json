@@ -226,6 +226,12 @@
     "resendIn": "{{seconds}}с кейін қайта жіберу"
   },
   "onboarding": {
+    "desktopGradeStepTitle": "Оқу сыныбы",
+    "desktopGradeStepDescription": "Бағдарламаны саған бейімдейміз",
+    "desktopUsernameStepTitle": "Пайдаланушы аты",
+    "desktopUsernameStepDescription": "Сені жақынырақ танимыз",
+    "desktopRegistrationStepTitle": "Тіркелу",
+    "desktopRegistrationStepDescription": "Саған аккаунт құрамыз",
     "title": "Профильді баптау",
     "progress": "Профильді баптау прогресі",
     "stepUsername": "Пайдаланушы аты",

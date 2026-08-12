@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from src.tests.errors import TestCatalogNotReadyError, TestCatalogStaleError
 from src.tests.router import _attempt_response, _raise_http
 from src.tests.router import router as tests_router
-from src.tests.schemas import TestDashboardChapter, TestsDashboardResponse
+from src.tests.schemas import TestCompletionResponse, TestDashboardChapter, TestsDashboardResponse
 
 ROOT = Path(__file__).resolve().parents[1]
 ROUTER_SOURCE = (ROOT / "src" / "tests" / "router.py").read_text(encoding="utf-8")
@@ -18,6 +18,10 @@ MAIN_SOURCE = (ROOT / "src" / "main.py").read_text(encoding="utf-8")
 
 
 class TestTestsRouterContract(unittest.TestCase):
+    def test_completion_schema_exposes_nullable_server_accuracy_comparison(self):
+        self.assertFalse(TestCompletionResponse.model_fields["previous_score_percent"].is_required())
+        self.assertFalse(TestCompletionResponse.model_fields["accuracy_delta_points"].is_required())
+
     def test_dashboard_schema_requires_authoritative_completed_attempt_counts(self):
         self.assertIn("completed_attempt_count", TestsDashboardResponse.model_fields)
         self.assertTrue(TestsDashboardResponse.model_fields["completed_attempt_count"].is_required())

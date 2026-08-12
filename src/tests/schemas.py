@@ -57,6 +57,8 @@ class TestCompletionResponse(BaseModel):
     duration_seconds: int
     average_pace_seconds: int
     weak_topic: dict[str, object] | None = None
+    previous_score_percent: float | None = None
+    accuracy_delta_points: float | None = None
 
 
 class TestAttemptResponse(BaseModel):

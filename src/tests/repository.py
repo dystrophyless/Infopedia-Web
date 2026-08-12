@@ -167,6 +167,43 @@ async def list_completed_attempts(session: AsyncSession, *, user_id: int) -> lis
     return list(result.scalars().unique().all())
 
 
+def previous_completed_attempt_statement(
+    *,
+    user_id: int,
+    mode: str,
+    exclude_attempt_id: int,
+) -> Select:
+    return (
+        select(TestAttempt)
+        .where(
+            TestAttempt.user_id == user_id,
+            TestAttempt.mode == mode,
+            TestAttempt.status == "completed",
+            TestAttempt.completed_at.is_not(None),
+            TestAttempt.id != exclude_attempt_id,
+        )
+        .order_by(TestAttempt.completed_at.desc(), TestAttempt.id.desc())
+        .limit(1)
+    )
+
+
+async def get_previous_completed_attempt(
+    session: AsyncSession,
+    *,
+    user_id: int,
+    mode: str,
+    exclude_attempt_id: int,
+) -> TestAttempt | None:
+    result = await session.execute(
+        previous_completed_attempt_statement(
+            user_id=user_id,
+            mode=mode,
+            exclude_attempt_id=exclude_attempt_id,
+        ),
+    )
+    return result.scalar_one_or_none()
+
+
 def dashboard_history_statement(*, user_id: int) -> Select:
     """Return immutable per-question answer rows for one user's completed attempts."""
     return (

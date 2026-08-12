@@ -35,6 +35,7 @@ from src.tests.repository import (
     get_attempt,
     get_attempt_for_update,
     get_attempt_question_for_update,
+    get_previous_completed_attempt,
     list_chapters,
     list_completed_attempts,
     list_questions,
@@ -878,6 +879,23 @@ class TestsService:
             answers,
             started_at=attempt.started_at,
             completed_at=completed_at,
+        )
+        previous = (
+            await get_previous_completed_attempt(
+                self.session,
+                user_id=user_id,
+                mode=attempt.mode,
+                exclude_attempt_id=attempt.id,
+            )
+            if attempt.mode != "chapter"
+            else None
+        )
+        previous_score = previous.score_percent if previous is not None else None
+        summary["previous_score_percent"] = previous_score
+        summary["accuracy_delta_points"] = (
+            _round_metric(float(summary["score_percent"]) - float(previous_score))
+            if previous_score is not None
+            else None
         )
         attempt.status = "completed"
         attempt.completed_at = completed_at

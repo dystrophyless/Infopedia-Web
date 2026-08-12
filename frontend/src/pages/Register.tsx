@@ -172,19 +172,21 @@ export function Register() {
         step === 'account' ? (
           <>
             {t('auth.haveAccount')}{' '}
-            <Link to="/login" className="text-accent hover:underline">
+            <Link to="/login" className="text-accent hover:underline lg:text-[#44237d]">
               {t('auth.signIn')}
             </Link>
           </>
         ) : undefined
       }
+      desktopFlowStep={3}
+      desktopContentWidth="narrow"
     >
       {step === 'account' ? (
         <form onSubmit={handleAccountSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:mb-7 max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
+          <p className="mb-6 max-w-full break-words text-[16px] leading-none text-[#8c8698] max-lg:mb-7">
             {t('auth.registerHelper')}
           </p>
-          <div className="max-lg:space-y-4">
+          <div className="space-y-4">
             <AuthEmailInput
               label={t('auth.email')}
               value={email}
@@ -195,6 +197,7 @@ export function Register() {
               error={accountFieldErrors.email}
               hideMobileLeadingIconWhenFilled
               mobileFieldLayout="figma-auth"
+              desktopVisual="onboarding"
             />
             <AuthPasswordInput
               label={t('auth.password')}
@@ -210,23 +213,25 @@ export function Register() {
               error={accountFieldErrors.password}
               hideMobileLeadingIconWhenFilled
               mobileFieldLayout="figma-auth"
+              desktopVisual="onboarding"
             />
           </div>
           <AuthSubmit
             loading={loading}
             disabled={!accountCanSubmit}
             mobileVisual="figma-auth"
+            desktopVisual="onboarding"
           >
             {loading ? t('common.loading') : t('auth.sendCodeButton')}
           </AuthSubmit>
-          <AuthDivider label={t('auth.or')} />
-          <GoogleAuthButton onClick={handleGoogleAuth}>
+          <AuthDivider label={t('auth.or')} desktopVisual="onboarding" />
+          <GoogleAuthButton onClick={handleGoogleAuth} desktopVisual="onboarding">
             {t('auth.continueWithGoogle')}
           </GoogleAuthButton>
         </form>
       ) : (
         <form onSubmit={handleCodeSubmit} noValidate>
-          <p className="mb-5 max-w-full break-words text-[15px] leading-none text-text-body max-lg:mb-7 max-lg:text-[16px] max-lg:leading-none max-lg:text-[#8c8698]">
+          <p className="mb-6 max-w-full break-words text-[16px] leading-none text-[#8c8698] max-lg:mb-7">
             {t('auth.verifyHelperShort')}
           </p>
           <VerificationCodeInput
@@ -240,6 +245,7 @@ export function Register() {
             loading={loading}
             disabled={!/^\d{6}$/.test(code)}
             mobileVisual="figma-auth"
+            desktopVisual="onboarding"
           >
             {loading ? t('common.loading') : t('auth.verifyButton')}
           </AuthSubmit>

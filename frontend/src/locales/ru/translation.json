@@ -226,6 +226,12 @@
     "resendIn": "Отправить снова через {{seconds}}с"
   },
   "onboarding": {
+    "desktopGradeStepTitle": "Класс обучения",
+    "desktopGradeStepDescription": "Подбираем программу под тебя",
+    "desktopUsernameStepTitle": "Юзернейм",
+    "desktopUsernameStepDescription": "Узнаем тебя поближе",
+    "desktopRegistrationStepTitle": "Регистрация",
+    "desktopRegistrationStepDescription": "Создаем тебе аккаунт",
     "title": "Настройка профиля",
     "progress": "Прогресс настройки профиля",
     "stepUsername": "Имя пользователя",

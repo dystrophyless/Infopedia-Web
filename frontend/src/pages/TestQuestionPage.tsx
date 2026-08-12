@@ -13,6 +13,7 @@ import {
 import {
   getTestRunnerMetrics,
   DesktopTestQuestionView,
+  DesktopTestResultView,
   TestQuestionView,
   TestResultView,
   TestStatusView,
@@ -190,7 +191,16 @@ export function TestQuestionPage() {
 
   if (runnerState.resultVisible) {
     return (
-      <TestResultView
+      <>
+      {runnerState.completionSummary && <DesktopTestResultView
+        title={title}
+        questions={questions}
+        feedbackByQuestionId={runnerState.feedbackByQuestionId ?? {}}
+        summary={runnerState.completionSummary}
+        onBack={onBack}
+        onRestart={onRestart}
+      />}
+      <div className="md:hidden"><TestResultView
         title={title}
         correctAnswerCount={metrics.correctAnswerCount}
         totalQuestions={metrics.totalQuestions}
@@ -200,7 +210,8 @@ export function TestQuestionPage() {
         weakTopicResult={metrics.weakTopicResult}
         onBack={onBack}
         onRestart={onRestart}
-      />
+      /></div>
+      </>
     );
   }
 

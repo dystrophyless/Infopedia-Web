@@ -6,6 +6,14 @@ const analyzeSource = readFileSync(
   path.resolve(import.meta.dirname, 'Analyze.tsx'),
   'utf8',
 );
+const progressSource = readFileSync(
+  path.resolve(import.meta.dirname, '../features/analyze/components/AnalyzeDesktopProgress.tsx'),
+  'utf8',
+);
+const uploadSource = readFileSync(
+  path.resolve(import.meta.dirname, '../features/analyze/components/AnalyzeDesktopUploadGuide.tsx'),
+  'utf8',
+);
 const storiesSource = readFileSync(
   path.resolve(import.meta.dirname, 'Analyze.stories.tsx'),
   'utf8',
@@ -29,9 +37,10 @@ const tokensSource = readFileSync(
 
 assert.match(
   analyzeSource,
-  /<AnalyzeProgress\s+progressSnapshot=\{progressSnapshot\}\s+file=\{file\}/,
-  'Analyze should pass the shared snapshot and selected uploaded file into the legacy progress view',
+  /<AnalyzeDesktopProgress[\s\S]*progressSnapshot=\{progressSnapshot\}[\s\S]*file=\{file\}[\s\S]*onBack=\{onBack\}/,
+  'Analyze should pass the shared snapshot, selected uploaded file, and back action into the adaptive progress view',
 );
+assert.doesNotMatch(analyzeSource, /(?:function|export function) AnalyzeProgress|<AnalyzeProgress\s|data-analyze-legacy-progress/, 'Analyze should not retain the legacy progress component or marker');
 assert.match(
   analyzeSource,
   /const ANALYZE_PROCESSING_HEADER_CLASS = '[^']*max-md:[^']*\[&>div>div>div\]:hidden[^']*\[&>div>div>p\]:hidden/,
@@ -54,18 +63,18 @@ assert.doesNotMatch(
 );
 assert.match(
   analyzeSource,
-  /className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\} \$\{showDesktopUploadGuide \? 'min-\[1440px\]:hidden' : ''\}`\}/,
+  /className=\{`\$\{showUploadForm \? ANALYZE_UPLOAD_HEADER_CLASS : isProcessing \? ANALYZE_PROCESSING_HEADER_CLASS : ANALYZE_HEADER_CLASS\} \$\{isMobileResult \? 'max-md:hidden' : ''\} \$\{showUploadForm \? 'min-\[1440px\]:hidden' : ''\}`\}/,
   'Analyze should select processing-specific mobile header spacing without changing desktop result/header behavior',
 );
 assert.match(
-  analyzeSource,
-  /export function AnalyzeProgress\(\{[\s\S]*file\?: File \| null[\s\S]*onBack\?: \(\) => void/,
-  'AnalyzeProgress should accept optional file metadata and a mobile back callback',
+  progressSource,
+  /export function AnalyzeDesktopProgress\(\{[\s\S]*file\?: File \| null[\s\S]*onBack\?: \(\) => void/,
+  'adaptive AnalyzeDesktopProgress should accept optional file metadata and a mobile back callback',
 );
 assert.match(
-  analyzeSource,
-  /export function AnalyzeProgress\([\s\S]*const content = \([\s\S]*if \(!onBack\) return content;[\s\S]*<MobilePageFrame[\s\S]*appBar=\{\{[\s\S]*title: t\('analyze\.mobileResultTitle'\)[\s\S]*titleAlign: 'start'[\s\S]*compactLayout: 'leading-only'[\s\S]*leading:/,
-  'AnalyzeProgress should wrap mobile processing content in a leading-only structured frame app bar',
+  progressSource,
+  /<MobilePageFrame[\s\S]*className="md:hidden"[\s\S]*appBar=\{\{[\s\S]*title: t\('analyze\.mobileResultTitle'\)[\s\S]*titleAlign: 'start'[\s\S]*compactLayout: 'leading-only'[\s\S]*leading:/,
+  'adaptive progress should wrap mobile processing content in a leading-only structured frame app bar',
 );
 assert.match(
   frameSource,
@@ -88,53 +97,43 @@ assert.match(appBarSource, /grid h-6 min-h-6 grid-cols-\[24px_minmax\(0,1fr\)_24
 assert.match(appBarSource, /absolute left-1\/2 top-1\/2 flex size-11/, 'Compact app bar should own the centered 44px action target');
 assert.equal(80 + 24 + 32, 136, 'Processing content should begin at canonical y=136');
 assert.match(
-  analyzeSource,
-  /<section[^>]*className="overflow-hidden[^\"]*md:mt-6[^\"]*max-md:overflow-visible/,
-  'Processing content should have no mobile margin while retaining desktop spacing',
+  progressSource,
+  /data-analyze-mobile-progress/,
+  'adaptive progress should expose a dedicated mobile composition without the legacy marker',
 );
 assert.doesNotMatch(
-  analyzeSource,
+  progressSource,
   /aria-label=\{t\('analyze\.mobileResultBack'\)\}\s+className="[^"]*(?:size-10|size-6)[^"]*"/,
   'Analyze frame leading actions must not override the compact action-slot geometry',
 );
 assert.match(
-  analyzeSource,
-  /hidden max-md:block[\s\S]*size-36[\s\S]*<svg[\s\S]*viewBox="0 0 144 144"[\s\S]*text-\[32px\]/,
+  progressSource,
+  /data-analyze-mobile-progress[\s\S]*size-36[\s\S]*<svg[\s\S]*viewBox="0 0 144 144"[\s\S]*text-\[32px\]/,
   'AnalyzeProgress should expose the 144px mobile SVG circular percentage visual',
 );
-assert.doesNotMatch(analyzeSource, /conic-gradient/, 'AnalyzeProgress mobile ring should not use a conic-gradient');
+assert.doesNotMatch(progressSource, /conic-gradient/, 'adaptive progress mobile ring should not use a conic-gradient');
 assert.match(
-  analyzeSource,
+  progressSource,
   /r="68"[\s\S]*strokeWidth="8"[\s\S]*strokeLinecap="round"[\s\S]*pathLength="100"/,
   'AnalyzeProgress mobile ring should use the restored 8px stroke, 68px radius, and rounded cap',
 );
 assert.match(
-  analyzeSource,
-  /progressPercent > 0[\s\S]*progressPercent >= 100 \? '100' : `\$\{progressPercent\} 100`/,
+  progressSource,
+  /clampedProgress > 0[\s\S]*clampedProgress >= 100 \? '100' : `\$\{clampedProgress\} 100`/,
   'AnalyzeProgress mobile ring should avoid zero-progress caps and full-circle seam overlap',
 );
 assert.match(
-  analyzeSource,
-  /const \{ percent: progressPercent, effectiveStage \} = progressSnapshot/,
-  'AnalyzeProgress should consume the shared displayed, aria, fill, and effective-stage snapshot',
+  progressSource,
+  /const clampedProgress = clampPercent\(progressSnapshot\.percent\)/,
+  'adaptive progress should consume the shared displayed, aria, and fill percentage snapshot',
 );
 assert.match(
-  analyzeSource,
-  /max-md:w-full max-md:rounded-\[8px\] max-md:bg-\[#ffffff\] max-md:p-8/,
-  'AnalyzeProgress mobile processing card should use the Figma white 32px-padded surface',
+  progressSource,
+  /w-full rounded-\[8px\] bg-\[#ffffff\] p-8/,
+  'adaptive progress mobile processing card should use the Figma white 32px-padded surface',
 );
 assert.match(
-  analyzeSource,
-  /getStageLabel\(effectiveStage, t\)/,
-  'AnalyzeProgress legacy label should use the monotonic effective phase instead of a stale raw stage',
-);
-assert.match(
-  analyzeSource,
-  /<div className="p-8 max-md:p-5 max-md:hidden">/,
-  'AnalyzeProgress desktop progress body should be hidden in the mobile composition',
-);
-assert.match(
-  analyzeSource,
+  progressSource,
   /t\('analyze\.mobileProgressCaption'\)/,
   'AnalyzeProgress mobile caption should use the exact Figma-specific localized copy',
 );
@@ -148,39 +147,39 @@ assert.match(
   'RU mobile progress caption should match the exact Figma ellipsis copy',
 );
 assert.match(
-  analyzeSource,
+  progressSource,
   /Ваш файл|t\('analyze\.fileEyebrow'\)/,
   'AnalyzeProgress mobile file card should include the selected-file eyebrow',
 );
 assert.match(
-  analyzeSource,
+  progressSource,
   /DocumentAttachmentIcon/,
   'AnalyzeProgress mobile file metadata should use the HugeIcons attachment icon',
 );
 assert.match(
-  analyzeSource,
+  progressSource,
   /<HugeiconsIcon icon=\{DocumentAttachmentIcon\} size=\{32\} strokeWidth=\{1\.5\} className="shrink-0 text-\[#6a37c3\]" \/>/,
   'AnalyzeProgress mobile file metadata icon should use a 1.5px stroke',
 );
 assert.match(
-  analyzeSource,
-  /<HugeiconsIcon icon=\{DocumentAttachmentIcon\} size=\{32\} strokeWidth=\{1\.5\} \/>/,
-  'Analyze upload dropzone should use the DocumentAttachmentIcon at the original size and stroke',
+  uploadSource,
+  /icon=\{File02Icon\} size=\{32\}[\s\S]*md:hidden[\s\S]*icon=\{DocumentAttachmentIcon\} size=\{24\}/,
+  'Analyze upload dropzone should use File02Icon when empty while retaining the attachment icon for a selected file',
 );
 assert.match(
-  analyzeSource,
+  progressSource,
   /<p className="text-\[12px\] font-medium leading-3 text-\[#865bcf\]">\{t\('analyze\.fileEyebrow'\)\}/,
   'AnalyzeProgress mobile file eyebrow should use Medium weight',
 );
 assert.match(
-  analyzeSource,
+  progressSource,
   /formatAnalyzeFileSize\(file\.size\)/,
   'AnalyzeProgress mobile file card should show a formatted uploaded-file size',
 );
 assert.match(
   storiesSource,
-  /export const ProcessingUploadedFileMobile430:[\s\S]*value: 'mobile430'[\s\S]*pt-\[88px\][\s\S]*Анализ ЕНТ[\s\S]*new File\(\[[\s\S]*analysis\.pdf/,
-  'Analyze should expose a 430px processing page composition with title offset and an actual uploaded PDF file',
+  /export const ProcessingUploadedFileMobile430:[\s\S]*value: 'mobile430'[\s\S]*<AnalyzeProcessingViews[\s\S]*new File\(\[[\s\S]*analysis\.pdf[\s\S]*onBack=\{\(\) => undefined\}/,
+  'Analyze should expose the canonical adaptive 430px processing frame with back action and an actual uploaded PDF file',
 );
 assert.match(
   storiesSource,

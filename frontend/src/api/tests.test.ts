@@ -34,14 +34,28 @@ describe('tests API adapter', () => {
 
   it('normalizes the backend snake_case completion count without local recomputation', () => {
     expect(normalizeTestCompletion({
-      correct_answer_count: 17,
+      correct_answer_count: 14,
       total_questions: 20,
       answered_questions: 20,
-      score_percent: 85,
+      score_percent: 70,
       duration_seconds: 91,
       average_pace_seconds: 5,
       weak_topic: null,
-    })).toMatchObject({ correctAnswerCount: 17, scorePercent: 85, durationSeconds: 91 });
+      previous_score_percent: 65,
+      accuracy_delta_points: 5,
+    })).toMatchObject({
+      correctAnswerCount: 14,
+      scorePercent: 70,
+      durationSeconds: 91,
+      previousScorePercent: 65,
+      accuracyDeltaPoints: 5,
+    });
+  });
+
+  it('keeps missing and malformed accuracy comparison values unavailable while preserving zero', () => {
+    expect(normalizeTestCompletion({ score_percent: 70 })?.accuracyDeltaPoints).toBeNull();
+    expect(normalizeTestCompletion({ score_percent: 70, accuracy_delta_points: '5' })?.accuracyDeltaPoints).toBeNull();
+    expect(normalizeTestCompletion({ score_percent: 70, accuracyDeltaPoints: 0 })?.accuracyDeltaPoints).toBe(0);
   });
 
   it('preserves additive availability counts from the dashboard payload', () => {

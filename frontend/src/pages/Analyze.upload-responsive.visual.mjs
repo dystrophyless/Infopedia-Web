@@ -16,6 +16,8 @@ const viewports = [
   ['ru-430x932', 'ru', 430, 932],
   ['kk-320x568', 'kk', 320, 568],
   ['kk-390x844', 'kk', 390, 844],
+  ['desktop-1231x800', 'ru', 1231, 800],
+  ['desktop-1439x900', 'ru', 1439, 900],
   ['desktop-1440x900', 'ru', 1440, 900],
 ];
 
@@ -50,7 +52,7 @@ try {
       const label = document.querySelector('label[for="analyze-file"]');
       const form = document.querySelector('form');
       const button = form?.querySelector('button[type="submit"]');
-      const cards = [...document.querySelectorAll('form article')];
+      const cards = [...document.querySelectorAll('[data-analyze-mobile-benefits] article')];
       const nav = [...document.querySelectorAll('nav')].find((node) => getComputedStyle(node).position === 'fixed' && node.getBoundingClientRect().bottom >= innerHeight - 2);
       return {
         innerWidth,
@@ -94,7 +96,7 @@ try {
       await page.mouse.wheel(0, 10000);
       await page.waitForTimeout(100);
       const bottom = await page.evaluate(() => {
-        const lastCard = [...document.querySelectorAll('form article')].at(-1);
+        const lastCard = [...document.querySelectorAll('[data-analyze-mobile-benefits] article')].at(-1);
         const card = lastCard?.getBoundingClientRect();
         const nav = [...document.querySelectorAll('nav')].find((node) => getComputedStyle(node).position === 'fixed' && node.getBoundingClientRect().bottom >= innerHeight - 2);
         const navTop = nav?.getBoundingClientRect().top ?? innerHeight;
@@ -103,6 +105,17 @@ try {
       postScroll = bottom;
       assert.ok(bottom && bottom.bottom <= bottom.navTop - 32, `${name}: last card accessible with 32px fixed-nav clearance (${JSON.stringify(bottom)})`);
       assert.ok(result.nav && result.navAnalyzeActive, `${name}: fixed Analyze navigation active`);
+    } else {
+      const desktop = await page.evaluate(() => ({
+        adaptiveVisible: document.querySelector('[data-analyze-adaptive-upload]')?.checkVisibility() ?? false,
+        guideVisible: document.querySelector('[data-analyze-desktop-guide]')?.checkVisibility() ?? false,
+        formCount: document.querySelectorAll('form').length,
+        fileInputCount: document.querySelectorAll('input[type="file"]').length,
+      }));
+      assert.equal(desktop.adaptiveVisible, true, `${name}: adaptive upload visible`);
+      assert.equal(desktop.guideVisible, true, `${name}: tutorial visible`);
+      assert.equal(desktop.formCount, 1, `${name}: one form`);
+      assert.equal(desktop.fileInputCount, 1, `${name}: one native file input`);
     }
 
     await page.mouse.wheel(0, 10000);

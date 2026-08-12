@@ -71,7 +71,7 @@ try {
         upload: rect('[data-analyze-desktop-upload]'),
         benefits: rect('[data-analyze-desktop-benefits]'),
         browser: rect('[data-analyze-desktop-browser]'),
-        dropzone: rect('label[for="analyze-file-desktop"]'),
+        dropzone: rect('label[for="analyze-file"]'),
         image: image && {
           src: image.getAttribute('src'),
           complete: image.complete,

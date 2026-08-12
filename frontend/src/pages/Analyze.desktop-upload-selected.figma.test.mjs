@@ -27,13 +27,12 @@ assert.match(componentSource, /t\('analyze\.selectedFileHint'\)/, 'selected uplo
 assert.match(componentSource, /onSubmit=\{onSubmit\}/, 'desktop form should forward submit into the real Analyze flow');
 assert.match(componentSource, /disabled=\{!file \|\| submitting\}/, 'desktop submit should be enabled only for a selected idle file');
 
-assert.match(pageSource, /const showDesktopUploadGuide = showUploadForm;/, 'desktop guide should remain mounted after file selection');
-assert.match(pageSource, /showDesktopUploadGuide \? ANALYZE_EMPTY_DESKTOP_PAGE_CLASS/, 'selected desktop upload should retain the Figma page rail');
 assert.match(pageSource, /<AnalyzeDesktopUploadGuide[\s\S]*file=\{file\}[\s\S]*submitting=\{submitting\}[\s\S]*onFileChange=\{handleFileChange\}[\s\S]*onSubmit=\{handleSubmit\}/, 'Analyze should pass its real controlled upload state and handlers');
-assert.match(pageSource, /showDesktopUploadGuide \? 'min-\[1440px\]:hidden'/, 'legacy upload form should stay hidden at 1440px in both empty and selected states');
+assert.doesNotMatch(pageSource, /showDesktopUploadGuide|<form\b|type="file"|analyze-file-desktop/, 'Analyze should delegate selected upload state to the only adaptive form');
 
 assert.match(storiesSource, /export const DesktopUploadSelected:/, 'Storybook should expose the uploaded desktop state');
 assert.match(storiesSource, /new File\(\['sample'\], 'analysis\.pdf'/, 'Storybook should upload the deterministic selected filename');
+assert.match(storiesSource, /querySelector<HTMLInputElement>\('#analyze-file'\)/, 'Storybook should exercise the only adaptive native file input');
 assert.match(storiesSource, /data-analyze-desktop-composition/, 'Storybook should prove the guide remains mounted');
 assert.match(storiesSource, /data-analyze-desktop-active-step/, 'Storybook should prove tutorial state remains active');
 assert.equal(existsSync(visualPath), true, 'deterministic selected-state visual runner should exist');

@@ -259,7 +259,17 @@ function AuthenticatedAnalyzeFailureStory({ language }: { language: 'ru' | 'kk' 
   );
 }
 
-export const UploadEmpty: Story = {};
+function renderUploadStory() {
+  return (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <AuthenticatedAnalyzeStory />
+    </MemoryRouter>
+  );
+}
+
+export const UploadEmpty: Story = {
+  render: renderUploadStory,
+};
 
 function renderDesktopGuide(language: 'ru' | 'kk' = 'ru') {
   return (
@@ -333,9 +343,9 @@ function playDesktopUploadSelected(language: 'ru' | 'kk') {
   return async ({ canvasElement }: { canvasElement: HTMLElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
-      expect(canvasElement.querySelector('#analyze-file-desktop')).toBeInTheDocument();
+      expect(canvasElement.querySelector('#analyze-file')).toBeInTheDocument();
     });
-    const desktopInput = canvasElement.querySelector<HTMLInputElement>('#analyze-file-desktop') as HTMLInputElement;
+    const desktopInput = canvasElement.querySelector<HTMLInputElement>('#analyze-file') as HTMLInputElement;
     await userEvent.upload(desktopInput, new File(['sample'], 'analysis.pdf', { type: 'application/pdf' }));
 
     await expect(canvasElement.querySelector('[data-analyze-desktop-composition]')).toBeVisible();
@@ -345,7 +355,8 @@ function playDesktopUploadSelected(language: 'ru' | 'kk') {
       language === 'ru' ? 'Нажмите, что бы выбрать другой файл' : 'Басқа файлды таңдау үшін басыңыз',
     );
     await expect(canvasElement.querySelector('[data-analyze-desktop-submit]')).toBeEnabled();
-    await expect(canvasElement.querySelector('#analyze-file')).not.toBeVisible();
+    await expect(canvasElement.querySelectorAll('form')).toHaveLength(1);
+    await expect(canvasElement.querySelectorAll('input[type="file"]')).toHaveLength(1);
 
     const visibleFilenames = canvas.getAllByText('analysis.pdf').filter((node) => node.checkVisibility());
     await expect(visibleFilenames).toHaveLength(1);
@@ -378,12 +389,32 @@ export const UploadEmptyResponsiveShell: Story = {
     ),
 };
 
+export const UploadEmptyDesktop1231: Story = {
+  globals: { viewport: { value: 'desktop1231', isRotated: false } },
+  parameters: {
+    a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
+  },
+  render: () => (
+    <MemoryRouter initialEntries={['/analyze']}>
+      <AuthenticatedAnalyzeStory />
+    </MemoryRouter>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-analyze-adaptive-upload]')).toBeVisible();
+    await expect(canvasElement.querySelector('[data-analyze-desktop-guide]')).toBeVisible();
+    await expect(canvasElement.querySelectorAll('form')).toHaveLength(1);
+    await expect(canvasElement.querySelectorAll('input[type="file"]')).toHaveLength(1);
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
+  },
+};
+
 export const UploadEmptyMobile430: Story = {
   // The mobile430 viewport is configured as 430x932 in .storybook/preview.ts.
   globals: { viewport: { value: 'mobile430', isRotated: false } },
   parameters: {
     a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
   },
+  render: renderUploadStory,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: /анализ/i })).toBeDisabled();
@@ -391,6 +422,7 @@ export const UploadEmptyMobile430: Story = {
 };
 
 export const UploadFileSelected: Story = {
+  render: renderUploadStory,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const input = canvas.getByLabelText(/загрузить|выберите|pdf/i);
@@ -398,7 +430,7 @@ export const UploadFileSelected: Story = {
     await expect(canvas.getAllByText('analysis.pdf')[0]).toBeVisible();
     await expect(canvas.getByText('Нажмите, что бы выбрать другой файл')).toBeVisible();
     await expect(canvas.getByRole('button', { name: /Начать анализ/ })).toBeEnabled();
-    await expect(canvas.getAllByText('analysis.pdf')).toHaveLength(2);
+    await expect(canvas.getAllByText('analysis.pdf')).toHaveLength(1);
   },
 };
 
@@ -408,14 +440,15 @@ export const UploadFileSelectedMobile430: Story = {
   parameters: {
     a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } },
   },
+  render: renderUploadStory,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const input = canvas.getByLabelText(/Р·Р°РіСЂСѓР·РёС‚СЊ|РІС‹Р±РµСЂРёС‚Рµ|pdf/i);
+    const input = canvasElement.querySelector<HTMLInputElement>('#analyze-file') as HTMLInputElement;
     await userEvent.upload(input, new File(['sample'], 'analysis.pdf', { type: 'application/pdf' }));
     await expect(canvas.getAllByText('analysis.pdf')[0]).toBeVisible();
     await expect(canvas.getByText('Нажмите, что бы выбрать другой файл')).toBeVisible();
     await expect(canvas.getByRole('button', { name: /Начать анализ/ })).toBeEnabled();
-    await expect(canvas.getAllByText('analysis.pdf')).toHaveLength(2);
+    await expect(canvas.getAllByText('analysis.pdf')).toHaveLength(1);
   },
 };
 

@@ -6,6 +6,7 @@ import type {
 } from '../../../api/tests';
 import {
   createTestRunnerState,
+  getQuestionStatus,
   getTestRunnerPhase,
   reduceTestRunner,
 } from './runner';
@@ -41,6 +42,8 @@ const summary: TestCompletionSummary = {
   scorePercent: 50,
   durationSeconds: 3,
   averagePaceSeconds: 2,
+  previousScorePercent: null,
+  accuracyDeltaPoints: null,
   weakTopicResult: null,
 };
 
@@ -181,5 +184,45 @@ describe('test runner state transitions', () => {
     expect(hydrated.selectedOptionId).toBe('b');
     expect(hydrated.checkedOptionId).toBe('b');
     expect(hydrated.answerFeedback).toMatchObject({ questionId: 'q2', correct: true });
+  });
+
+  it('tracks current answered skipped and upcoming questions from the furthest visit', () => {
+    let state = reduceTestRunner(createTestRunnerState(1_000), {
+      type: 'hydrate',
+      questions: [question('q1'), question('q2'), question('q3'), question('q4')],
+      answers: { q1: feedback('q1', 'b', true) },
+      currentQuestionIndex: 2,
+      now: 2_000,
+    });
+
+    expect(getQuestionStatus(state, 'q1', 0)).toBe('answered');
+    expect(getQuestionStatus(state, 'q2', 1)).toBe('skipped');
+    expect(getQuestionStatus(state, 'q3', 2)).toBe('current');
+    expect(getQuestionStatus(state, 'q4', 3)).toBe('upcoming');
+
+    state = reduceTestRunner(state, {
+      type: 'go-to-question',
+      questions: [question('q1'), question('q2'), question('q3'), question('q4')],
+      questionIndex: 0,
+    });
+    expect(state.currentQuestionIndex).toBe(0);
+    expect(state.selectedOptionId).toBe('b');
+    expect(state.answerFeedback).toMatchObject({ questionId: 'q1', correct: true });
+  });
+
+  it('clears selection on an unanswered destination and records forward navigation as a visit', () => {
+    const questions = [question('q1'), question('q2'), question('q3')];
+    const hydrated = reduceTestRunner(createTestRunnerState(1_000), {
+      type: 'hydrate',
+      questions,
+      answers: { q1: feedback('q1', 'b', true) },
+      currentQuestionIndex: 1,
+      now: 2_000,
+    });
+    const skipped = reduceTestRunner(hydrated, { type: 'go-to-question', questions, questionIndex: 1 });
+    expect(skipped).toMatchObject({ selectedOptionId: null, checkedOptionId: null, answerFeedback: null });
+    const forward = reduceTestRunner(skipped, { type: 'go-to-question', questions, questionIndex: 2 });
+    expect(forward).toMatchObject({ currentQuestionIndex: 2, furthestVisitedIndex: 2, selectedOptionId: null });
+    expect(getQuestionStatus(forward, 'q2', 1)).toBe('skipped');
   });
 });

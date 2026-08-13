@@ -346,7 +346,7 @@ export const BehaviorRussian: Story = {
 
 export const DesktopModes: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: { layout: 'fullscreen' },
   render: () => <DesktopSearchStory />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;
@@ -377,6 +377,62 @@ export const DesktopModes: Story = {
     expect(cards[1].getBoundingClientRect().top - cards[0].getBoundingClientRect().bottom).toBeCloseTo(16, 0);
     await userEvent.click(modes[1]);
     expect(modes[1]).toHaveAttribute('aria-selected', 'true');
+  },
+};
+
+export const DesktopNotFound: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  parameters: { layout: 'fullscreen' },
+  render: () => <DesktopSearchStory terms={[]} fullShell={false} />,
+  play: async ({ canvasElement }) => {
+    const input = await within(canvasElement).findByRole('textbox');
+    await userEvent.type(input, 'несуществующий термин');
+    await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-not-found]')).toBeInTheDocument());
+    const heading = canvasElement.querySelector<HTMLElement>('[data-desktop-search-query-heading]');
+    const outcome = canvasElement.querySelector<HTMLElement>('[data-desktop-search-not-found]');
+    const clear = canvasElement.querySelector<HTMLButtonElement>('[data-desktop-search-clear]');
+    expect(heading).toHaveTextContent('По запросу «несуществующий термин» ничего не найдено');
+    expect(clear).toBeInTheDocument();
+    expect(input.id).toBe('desktop-search-input');
+    const field = canvasElement.querySelector<HTMLElement>('[data-desktop-search-field]');
+    expect(field).not.toBeNull();
+    expect(field?.getBoundingClientRect().height).toBeCloseTo(40, 0);
+    expect(input.getBoundingClientRect().height).toBeLessThanOrEqual(24);
+    expect(getComputedStyle(heading!).fontSize).toBe('18px');
+    expect(getComputedStyle(heading!).lineHeight).toBe('18px');
+    expect(getComputedStyle(heading!).color).toBe('rgb(22, 21, 25)');
+    const rail = heading?.closest<HTMLElement>('[data-desktop-search-results]');
+    expect(rail).not.toBeNull();
+    if (rail && heading) {
+      expect(getComputedStyle(heading).textAlign).toBe('left');
+      expect(heading.getBoundingClientRect().left).toBeCloseTo(rail.getBoundingClientRect().left, 0);
+      expect(heading.getBoundingClientRect().width).toBeCloseTo(rail.getBoundingClientRect().width, 0);
+    }
+    expect(clear!.getBoundingClientRect().width).toBeGreaterThanOrEqual(24);
+    expect(outcome).not.toBeNull();
+    if (outcome && heading) {
+      const circle = outcome.querySelector<HTMLElement>('[data-empty-state-icon]');
+      const glyph = circle?.querySelector<HTMLElement>('span');
+      const title = outcome.querySelector<HTMLElement>('h2');
+      const description = outcome.querySelector<HTMLElement>('p');
+      expect(outcome.getBoundingClientRect().width).toBeCloseTo(382, 0);
+      expect(outcome.getBoundingClientRect().left).toBeCloseTo(
+        rail!.getBoundingClientRect().left + (rail!.getBoundingClientRect().width - outcome.getBoundingClientRect().width) / 2,
+        0,
+      );
+      expect(circle?.getBoundingClientRect().width).toBeCloseTo(64, 0);
+      expect(getComputedStyle(circle!).backgroundColor).toBe('rgb(222, 210, 241)');
+      expect(getComputedStyle(circle!).borderRadius).toBe('64px');
+      expect(getComputedStyle(circle!).padding).toBe('16px');
+      expect(glyph?.getBoundingClientRect().width).toBeCloseTo(32, 0);
+      expect(title).toHaveTextContent('Нет таких терминов');
+      expect(description).toHaveTextContent('Попробуйте изменить параметры поиска');
+      expect(outcome.getBoundingClientRect().top - heading.getBoundingClientRect().bottom).toBeGreaterThanOrEqual(144);
+    }
+    await userEvent.click(clear!);
+    await expect(input).toHaveValue('');
+    expect(canvasElement.querySelector('[data-desktop-search-clear]')).toBeNull();
+    await expect(input).toHaveFocus();
   },
 };
 

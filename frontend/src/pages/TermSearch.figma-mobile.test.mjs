@@ -188,7 +188,7 @@ assert.match(
 );
 assert.match(
   termSearchSource,
-  /pageIsLoading && \([\s\S]*className="hidden flex-col gap-4 md:flex[^"\n]*"[\s\S]*<SkeletonCard \/>[\s\S]*className="hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[^"\n]*"[\s\S]*<SkeletonCard variant="mobile-term-card" \/>/,
+  /pageIsLoading && \([\s\S]*className="hidden [^"\n]*flex-col gap-4[^"\n]*md:flex"[\s\S]*<SkeletonCard \/>[\s\S]*className="hidden flex-col gap-4 max-md:[^"\n]*max-md:flex[^"\n]*"[\s\S]*<SkeletonCard variant="mobile-term-card" \/>/,
   'Search loading state should use breakpoint-exclusive default and mobile term-card skeletons',
 );
 assert.match(
@@ -270,7 +270,7 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /const \[filtersOverlayOpen, setFiltersOverlayOpen\] = useState\(false\);/,
+  /const \[filtersOverlayRequest, setFiltersOverlayRequest\] = useState<SearchFilterSelectId \| null \| undefined>\(undefined\);/,
   'Term search should track the contextual filters overlay locally',
 );
 
@@ -282,15 +282,18 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /onOpenFilters=\{\(\) => setFiltersOverlayOpen\(true\)\}/,
+  /onOpenFilters=\{\(\) => setFiltersOverlayRequest\(null\)\}/,
   'Typed-result filter control should open the same contextual overlay',
 );
 
 assert.match(
   termSearchSource,
-  /filtersOverlayOpen && isDesktop[\s\S]*<DesktopSearchFiltersDialog[\s\S]*filtersOverlayOpen && !isDesktop[\s\S]*<SearchFilters overlay onDismiss=\{\(\) => setFiltersOverlayOpen\(false\)\} \/>/,
+  /filtersOverlayOpen && isDesktop[\s\S]*<DesktopSearchFiltersDialog[\s\S]*filtersOverlayOpen && !isDesktop[\s\S]*<SearchFilters overlay initialFilter=\{filtersOverlayRequest\} onDismiss=\{\(\) => setFiltersOverlayRequest\(undefined\)\} \/>/,
   'The mounted search view should choose the desktop dialog or mobile overlay at the current viewport',
 );
+
+assert.match(termSearchSource, /function MobileSearchResultHeader[\s\S]*onOpenFilter\?: \(filterId: SearchFilterSelectId\)/, 'Mobile result header should type category popup callback');
+assert.match(termSearchSource, /else if \(filter\.selectId\) onOpenFilter\?\.\(filter\.selectId\)/, 'Mobile category chips should open popup without navigation');
 
 assert.doesNotMatch(
   termSearchSource,
@@ -369,7 +372,7 @@ assert.match(
 
 assert.match(
   termSearchSource,
-  /<MobilePageFrame[\s\S]*className="hidden flex-col gap-4 md:flex[^"\n]*"[\s\S]*<TermCard[\s\S]*className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<MobileSearchTermCard/,
+  /<MobilePageFrame[\s\S]*className="hidden [^"\n]*flex-col gap-4[^"\n]*md:flex[^"\n]*"[\s\S]*<TermCard[\s\S]*className="hidden flex-col gap-4 max-md:-mx-\[2px\] max-md:flex max-md:w-\[calc\(100%\+4px\)\]"[\s\S]*<MobileSearchTermCard/,
   'Typed/result cards should use breakpoint-exclusive desktop and mobile card lists',
 );
 
@@ -441,7 +444,7 @@ assert.match(
 
 assert.match(
   resultFilterChipsSource,
-  /function getSearchResultFilterChips\([\s\S]*const usedFilters = filterChips\.filter\(\(filter\) => filter\.active\);[\s\S]*const unusedFilters = filterChips\.filter\(\(filter\) => !filter\.active\);[\s\S]*return \[filterCountChip, \.\.\.usedFilters, \.\.\.unusedFilters\];/,
+  /function getSearchResultFilterChips\([\s\S]*normalizeSearchFilterActivationOrder[\s\S]*const usedFilters = normalizedOrder\.map[\s\S]*const unusedFilters = filterChips\.filter\(\(filter\) => !filter\.active\);[\s\S]*return \[filterCountChip, \.\.\.usedFilters, \.\.\.unusedFilters\];/,
   'Result-page filter chips should render the filter-count chip first, then selected/used filters before unused filters',
 );
 
@@ -531,13 +534,13 @@ assert.match(
 
 assert.match(
   resultFilterChipsSource,
-  /id: 'book'[\s\S]*to: '\/search\/filters\?select=book'[\s\S]*id: 'grade'[\s\S]*to: '\/search\/filters\?select=grade'/,
+  /id: 'book'[\s\S]*selectId: 'book'[\s\S]*id: 'grade'[\s\S]*selectId: 'grade'/,
   'Book and grade result chips should deep-link to their corresponding filter popups',
 );
 
 assert.match(
   resultFilterIntegrationSource,
-  /id: 'specification'[\s\S]*toggle: true[\s\S]*aria-pressed=\{filter\.active\}[\s\S]*onClick=\{filterIsIconOnly \? onOpenFilters : filter\.onToggle\}/,
+  /id: 'specification'[\s\S]*toggle: true[\s\S]*aria-pressed=\{filter\.active\}[\s\S]*if \(filterIsIconOnly\) onOpenFilters\?\.\(\)[\s\S]*else if \(filter\.selectId\) onOpenFilter\?\.\(filter\.selectId\)[\s\S]*else filter\.onToggle\?\.\(\)/,
   'ENT specification chip should toggle inline instead of navigating to the filters page',
 );
 

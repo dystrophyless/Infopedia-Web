@@ -18,8 +18,9 @@ assert.match(src, /hover:w-\[716px\]|focus-within:w-\[716px\]/, 'wrapper must ex
 assert.match(src, /w-\[951px\]/, 'clicked state should reserve 684px main plus 266px source panel');
 assert.match(src, /fill-parent[\s\S]*w-full|w-full[\s\S]*fill-parent/, 'fill-parent selected cards should fill the available results rail');
 assert.match(src, /min-w-0 flex-1[\s\S]*data-term-card-source-panel|data-term-card-source-panel[\s\S]*min-w-0 flex-1/, 'fill-parent source panel should flex to the right edge');
-assert.match(src, /max-\[1100px\]:flex-wrap/, 'fill-parent selected cards should stack at the narrow desktop breakpoint');
-assert.match(src, /max-\[1100px\]:basis-full[\s\S]*w-\[684px\]/, 'narrow stacked source panel should retain the 684px accessible layout width');
+assert.match(src, /max-\[1131px\]:flex-wrap/, 'fill-parent selected cards should stack while the fixed sidebar narrows the main column');
+assert.match(src, /max-\[1131px\]:basis-full[\s\S]*max-\[1131px\]:w-full/, 'narrow stacked source panel should fit the available main-column width');
+assert.match(src, /w-full max-w-\[684px\]/, 'collapsed card main should shrink fluidly and cap at 684px');
 assert.match(src, /h-\[208px\]/, 'desktop card should preserve the Figma 208px vertical anatomy');
 assert.doesNotMatch(src, /data-term-card-main[^\n]*overflow-hidden|data-term-card-body[^\n]*overflow-hidden/, 'inspect anatomy should not rely on structural clipping');
 assert.match(src, /MeasuredTextPreview/, 'inspect definition should use the measured reusable preview');

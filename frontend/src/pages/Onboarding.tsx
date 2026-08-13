@@ -4,9 +4,6 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Backpack02Icon,
-  GraduationCapIcon,
-  AnonymousIcon,
   Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
@@ -27,7 +24,7 @@ type OnboardingStep = 'grade' | 'username';
 type SelectableGrade = UserGrade;
 type UsernameAvailabilityStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 
-const gradeOptions: SelectableGrade[] = ['10', '11', 'undefined'];
+const gradeOptions: SelectableGrade[] = ['11', '10', 'undefined'];
 const USERNAME_CHECK_DELAY_MS = 450;
 
 function getErrorMessage(err: unknown, fallback: string) {
@@ -317,6 +314,10 @@ export function Onboarding() {
     <AuthShell
       title={step === 'grade' ? t('onboarding.gradeQuestionTitle') : t('onboarding.usernameQuestionTitle')}
       mobileHeaderMode="status-aware"
+      mobileProgress={{
+        step: step === 'grade' ? 1 : 2,
+        completedSegments: step === 'grade' ? (grade ? 1 : 0) : usernameCanSubmit ? 2 : 1,
+      }}
       desktopFlowStep={step === 'grade' ? 1 : 2}
       desktopContentWidth={step === 'grade' ? 'full' : 'narrow'}
     >
@@ -366,7 +367,6 @@ export function Onboarding() {
             error={usernameFieldError ?? undefined}
             helperText={usernameHelperText}
             helperTone={usernameHelperTone}
-            hideMobileLeadingIconWhenFilled
             mobileFieldLayout="figma-auth"
             desktopVisual="onboarding"
             desktopShowSuccessIcon={usernameHelperTone === 'success'}
@@ -418,8 +418,6 @@ function GradeOptionButton({
   disabled: boolean;
   onClick: () => void;
 }) {
-  const icon = grade === '10' ? Backpack02Icon : grade === '11' ? GraduationCapIcon : AnonymousIcon;
-
   return (
     <Button
       type="button"
@@ -427,30 +425,38 @@ function GradeOptionButton({
       disabled={disabled}
       variant="surface"
       fullWidth
-      className={`relative flex h-12 w-full items-center justify-start gap-4 rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 min-[1440px]:justify-between min-[1440px]:bg-[#f8f5fc] ${
+      className={`relative flex h-12 w-full items-center justify-start rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 min-[1440px]:justify-between min-[1440px]:bg-[#f8f5fc] ${
         grade === '11' ? 'min-[1440px]:order-1' : grade === '10' ? 'min-[1440px]:order-2' : 'min-[1440px]:order-3'
       } ${
         selected
-          ? 'border-[1.5px] border-[#6a37c3] text-[#44237d] hover:!bg-white min-[1440px]:border-transparent min-[1440px]:text-[#161519] min-[1440px]:hover:!bg-[#f8f5fc]'
+          ? 'border-transparent text-[#44237d] hover:!bg-white min-[1440px]:text-[#161519] min-[1440px]:hover:!bg-[#f8f5fc]'
           : 'border border-transparent text-[#161519] hover:text-[#44237d] min-[1440px]:hover:text-[#161519]'
       }`}
       aria-pressed={selected}
     >
-      <HugeiconsIcon
-        icon={icon}
-        size={16}
-        strokeWidth={1.8}
-        className="shrink-0 text-[#44237d] min-[1440px]:hidden"
-      />
       <span className="min-w-0 flex-1">{label}</span>
+      <span
+        aria-hidden="true"
+        data-onboarding-indicator="mobile"
+        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-[#c5b1e7] text-white min-[1440px]:hidden ${
+          selected ? '!border-[#6a37c3] bg-[#6a37c3]' : ''
+        }`}
+      >
+        {selected && <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />}
+      </span>
       {!selected && (
         <span
           aria-hidden="true"
+          data-onboarding-indicator="desktop"
           className="hidden size-5 shrink-0 rounded-full border border-[#c5b1e7] min-[1440px]:block"
         />
       )}
       {selected && (
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6a37c3] text-white">
+        <span
+          aria-hidden="true"
+          data-onboarding-indicator="desktop"
+          className="hidden size-5 shrink-0 items-center justify-center rounded-full bg-[#6a37c3] text-white min-[1440px]:flex"
+        >
           <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />
         </span>
       )}

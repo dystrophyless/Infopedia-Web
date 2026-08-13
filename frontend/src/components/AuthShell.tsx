@@ -19,6 +19,7 @@ export function AuthShell({
   children,
   footer,
   mobileHeaderMode = 'compact',
+  mobileProgress,
   desktopFlowStep,
   desktopContentWidth = 'full',
 }: {
@@ -26,6 +27,7 @@ export function AuthShell({
   children: ReactNode;
   footer?: ReactNode;
   mobileHeaderMode?: 'compact' | 'status-aware';
+  mobileProgress?: { step: 1 | 2 | 3; completedSegments: 0 | 1 | 2 | 3 };
   desktopFlowStep?: 1 | 2 | 3;
   desktopContentWidth?: 'full' | 'narrow';
 }) {
@@ -74,7 +76,9 @@ export function AuthShell({
 
       <div
         data-testid={desktopOnboarding ? 'desktop-onboarding-main' : undefined}
-        className={`flex flex-1 items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:pt-[65px] max-md:px-8 ${
+        className={`flex flex-1 items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:px-8 ${
+          mobileProgress ? 'max-lg:pt-[17px]' : 'max-lg:pt-[65px]'
+        } ${
           desktopOnboarding
             ? 'min-[1440px]:min-h-screen min-[1440px]:w-[960px] min-[1440px]:flex-none min-[1440px]:bg-[#efebf6] min-[1440px]:p-12'
             : ''
@@ -97,6 +101,21 @@ export function AuthShell({
           }`}
         >
           <div className={desktopContentWidth === 'narrow' ? 'min-[1440px]:w-[366px]' : undefined}>
+            {mobileProgress && (
+              <div data-testid="mobile-onboarding-progress" className="mb-[29px] max-lg:block lg:hidden">
+                <div className="flex h-[8px] w-[366px] max-w-full gap-[4px]" aria-hidden="true">
+                  {[0, 1, 2].map((segment) => (
+                    <span
+                      key={segment}
+                      className={`h-[8px] flex-1 rounded-[4px] ${
+                        segment < mobileProgress.completedSegments ? 'bg-[#6a37c3]' : 'bg-[#ded2f1]'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-[14px] leading-[17px] text-[#8c8698]">Шаг {mobileProgress.step} из 3</p>
+              </div>
+            )}
             <h1
               className={`mb-3 text-left text-[26px] font-medium leading-none text-text max-lg:mb-3 max-lg:text-[24px] max-lg:leading-none max-lg:text-[#161519] ${
                 desktopOnboarding
@@ -416,7 +435,7 @@ export function AuthEmailInput({
             aria-label={label}
             required
             invalid={Boolean(error || invalid)}
-            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:placeholder:text-[#c5b1e7] ${
+            className={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-4 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
               hideMobileLeadingIcon ? 'max-lg:pl-6' : 'max-lg:pl-[52px]'
             } ${
               error || invalid
@@ -468,7 +487,7 @@ export function AuthUsernameInput({
       error={error}
       helperText={helperText}
       helperTone={helperTone}
-      messageClassName={!error && desktopShowSuccessIcon ? 'min-[1440px]:hidden' : undefined}
+      messageClassName={!error && desktopShowSuccessIcon ? 'max-lg:hidden min-[1440px]:hidden' : undefined}
       className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
         desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
       }`}
@@ -511,7 +530,7 @@ export function AuthUsernameInput({
           {desktopShowSuccessIcon && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute right-6 top-1/2 hidden size-4 -translate-y-1/2 items-center justify-center text-[#19b978] min-[1440px]:flex"
+              className="pointer-events-none absolute right-4 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-[#19b978] min-[1440px]:right-6"
             >
               <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2} />
             </span>

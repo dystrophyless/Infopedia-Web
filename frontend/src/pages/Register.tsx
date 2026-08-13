@@ -168,6 +168,7 @@ export function Register() {
     <AuthShell
       title={step === 'account' ? t('auth.registerTitle') : t('auth.verifyTitle')}
       mobileHeaderMode="status-aware"
+      mobileProgress={step === 'account' ? { step: 3, completedSegments: accountCanSubmit ? 3 : 2 } : undefined}
       footer={
         step === 'account' ? (
           <>

@@ -11,7 +11,6 @@ import {
   Bookmark02Icon,
   Cancel01Icon,
   FilterHorizontalIcon,
-  HelpCircleIcon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
 import { useTermSearchController } from '../hooks/useTermSearchController';
@@ -678,6 +677,7 @@ export function TermSearchPage() {
   const [filtersOverlayRequest, setFiltersOverlayRequest] = useState<SearchFilterSelectId | null | undefined>(undefined);
   const isDesktop = useIsDesktop();
   const filtersTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement | null>(null);
   const previousFiltersOverlayOpenRef = useRef(false);
   const initialQuery = searchParams.get('query') ?? '';
   const searchClient = useSearchRequestClient();
@@ -736,6 +736,8 @@ export function TermSearchPage() {
 
   const mobileSearchEmptyActive =
     !pageIsLoading && !pageHasError && !filterNoMatch && hasSearched && showingSearchResults && displayResults.length === 0;
+  const desktopSearchNotFoundActive =
+    !pageIsLoading && !pageHasError && hasSearched && showingSearchResults && displayResults.length === 0 && debounced.trim().length > 0;
   const desktopFilterChips = useMemo(
     () =>
       getSearchResultFilterChips({
@@ -800,17 +802,35 @@ export function TermSearchPage() {
           }}
           data-desktop-search-controls
         >
-          <label className="relative flex h-10 min-w-0 flex-1 items-center rounded-[8px] bg-white px-3 py-2 min-[1132px]:w-[400px] min-[1132px]:flex-none">
-            <span className="sr-only">{t('search.title')}</span>
+          <div data-desktop-search-field className="relative flex h-10 min-w-0 flex-1 items-center rounded-[8px] bg-white px-3 py-2 min-[1132px]:w-[400px] min-[1132px]:flex-none">
+            <label htmlFor="desktop-search-input" className="sr-only">{t('search.title')}</label>
             <HugeiconsIcon icon={Search01Icon} size={24} strokeWidth={1.6} className="mr-4 shrink-0 text-[#c5b1e7]" />
             <input
-              type="search"
+              ref={desktopSearchInputRef}
+              id="desktop-search-input"
+              type="text"
+              inputMode="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('search.placeholderShort')}
-              className="min-w-0 flex-1 bg-transparent text-[16px] leading-6 text-[#39363f] outline-none placeholder:text-[#c5b1e7]"
+              className="min-w-0 flex-1 bg-transparent text-[16px] leading-[16px] text-[#39363f] outline-none placeholder:text-[#c5b1e7] [&::-ms-clear]:hidden [&::-webkit-search-cancel-button]:appearance-none"
             />
-          </label>
+            {query.length > 0 && (
+              <button
+                type="button"
+                data-desktop-search-clear
+                aria-label={t('search.clearInput')}
+                className="flex size-6 shrink-0 items-center justify-center rounded-full text-[#7650b4] transition-colors hover:text-[#572d9f]"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setQuery('');
+                  desktopSearchInputRef.current?.focus();
+                }}
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={1.8} />
+              </button>
+            )}
+          </div>
           <button
             ref={filtersTriggerRef}
             type="button"
@@ -873,11 +893,42 @@ export function TermSearchPage() {
           >
             <MobileSearchEmptyState query={debounced.trim()} />
           </BetweenBlocks>
-          <div data-adaptive-outcome-desktop data-desktop-search-results className="mt-6 flex w-full max-w-[684px] flex-col items-center gap-3 py-16 text-center text-muted max-md:hidden">
-            <HugeiconsIcon icon={HelpCircleIcon} size={48} strokeWidth={1.4} />
-            <p className="text-[16px] leading-none" children={t('search.empty')} />
-          </div>
         </>
+      )}
+
+      {desktopSearchNotFoundActive && (
+        <div data-desktop-search-results className="mt-6 hidden w-full max-w-[684px] flex-col items-center text-center md:flex">
+          <h2 data-desktop-search-query-heading className="w-full self-start text-left text-[18px] leading-[18px] font-medium text-[#161519]">{t('search.notFoundHeading', { query: debounced.trim() })}</h2>
+          <EmptyState
+            data-desktop-search-not-found
+            variant="outcome"
+            icon={<HugeiconsIcon icon={Search01Icon} size={32} strokeWidth={1.6} />}
+            title={t('search.notFoundTitle')}
+            description={t('search.notFoundDescription')}
+            className="mt-[144px]"
+            partProps={{
+              icon: {
+                className: 'mb-6 size-16 rounded-full bg-[#ded2f1] p-4 text-[#6a37c3]',
+                'data-empty-state-icon': '',
+                style: {
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '64px',
+                  backgroundColor: '#ded2f1',
+                  padding: '16px',
+                },
+              },
+              title: {
+                className: 'text-[18px] leading-[18px] font-medium',
+                style: { fontSize: '18px', lineHeight: '18px', fontWeight: 500 },
+              },
+              description: {
+                className: 'text-[16px] leading-[16px]',
+                style: { fontSize: '16px', lineHeight: '16px', color: '#6e6779' },
+              },
+            }}
+          />
+        </div>
       )}
 
       {pageIsLoading && (
@@ -923,10 +974,6 @@ export function TermSearchPage() {
 
       {!pageIsLoading && !pageHasError && !filterNoMatch && !showingSearchResults && displayResults.length === 0 && (
         <p data-desktop-search-results className="w-full max-w-[684px] py-12 text-center leading-none text-muted md:mt-6">{t('search.startTyping')}</p>
-      )}
-
-      {!pageIsLoading && !pageHasError && filterNoMatch && (
-        <p data-desktop-search-results className="hidden w-full max-w-[684px] py-12 text-center leading-none text-muted md:mt-6 md:block">{t('search.empty')}</p>
       )}
 
       {!pageIsLoading && !pageHasError && displayResults.length > 0 && (

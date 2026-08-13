@@ -13,6 +13,7 @@ import {
   createSearchFilterDraft,
   removeSearchFilterDraftOption,
   resetSearchFilterDraft,
+  setSearchFilterDraftEntOnly,
   toggleSearchFilterDraftOption,
   type SearchFilterDraft,
   type SearchFilterSnapshot,
@@ -23,6 +24,7 @@ import { getSelectedFilterOptions, resolveOptionLabel } from '../model/filterOpt
 
 export interface DesktopSearchFiltersDialogProps {
   open: boolean;
+  initialFilter?: FilterSelectId | null;
   query: string;
   committed: SearchFilterSnapshot;
   options: FilterOptionCatalog;
@@ -37,6 +39,7 @@ export interface DesktopSearchFiltersDialogProps {
 
 export function DesktopSearchFiltersDialog({
   open,
+  initialFilter,
   query,
   committed,
   options,
@@ -53,6 +56,10 @@ export function DesktopSearchFiltersDialog({
   const [keyboardFocusTarget, setKeyboardFocusTarget] = useState<'first' | 'last' | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) setActiveMenu(initialFilter ?? null);
+  }, [initialFilter, open]);
 
   const descriptor = useMemo(
     () =>
@@ -131,7 +138,7 @@ export function DesktopSearchFiltersDialog({
         <div className="mt-10 flex flex-col gap-6">
           <DesktopEntField
             checked={draft.entOnly}
-            onToggle={() => setDraft((current) => ({ ...current, entOnly: !current.entOnly }))}
+            onToggle={() => setDraft((current) => setSearchFilterDraftEntOnly(current, !current.entOnly))}
             t={t}
           />
           <DesktopSelectField

@@ -28,7 +28,7 @@ export function SkeletonCard({ variant = 'default' }: SkeletonCardProps) {
   }
 
   return (
-    <div data-skeleton-card className="flex min-h-[208px] w-[684px] animate-pulse flex-col gap-8 rounded-[16px] bg-white p-6" aria-hidden="true">
+    <div data-skeleton-card className="flex min-h-[208px] w-full max-w-[684px] animate-pulse flex-col gap-8 rounded-[16px] bg-white p-6" aria-hidden="true">
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div data-skeleton-header className="flex min-h-6 items-start justify-between gap-12">
           <div data-skeleton-title className="h-6 w-1/3 rounded bg-bg" />

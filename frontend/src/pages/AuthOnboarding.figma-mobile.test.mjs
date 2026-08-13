@@ -79,6 +79,13 @@ assert.match(
   'AuthShell mobile title type should match the Figma onboarding heading',
 );
 
+assert.match(authShellSource, /mobileProgress\?: \{ step: 1 \| 2 \| 3; completedSegments: 0 \| 1 \| 2 \| 3 \}/,
+  'AuthShell should expose the mobile onboarding progress contract');
+assert.match(authShellSource, /data-testid="mobile-onboarding-progress"[\s\S]*h-\[8px\][\s\S]*w-\[366px\][\s\S]*gap-\[4px\]/,
+  'Mobile progress should match the 366x8 segmented Figma rail');
+assert.match(authShellSource, /Шаг \{mobileProgress\.step\} из 3/,
+  'Mobile progress should render the localized step label');
+
 assert.match(
   authShellSource,
   /max-lg:h-12[\s\S]*max-lg:mt-6[\s\S]*max-lg:rounded-\[8px\][\s\S]*max-lg:bg-\[#44237d\]/,
@@ -102,6 +109,10 @@ assert.match(
   /<AuthShell[\s\S]*title=\{step === 'grade' \? t\('onboarding\.gradeQuestionTitle'\) : t\('onboarding\.usernameQuestionTitle'\)\}[\s\S]*mobileHeaderMode="status-aware"/,
   'Both onboarding steps should opt into the shared Figma status-aware header',
 );
+assert.match(onboardingSource, /mobileProgress=\{\{[\s\S]*step: step === 'grade' \? 1 : 2[\s\S]*completedSegments:/,
+  'Onboarding should derive mobile progress from grade and username completion');
+assert.match(onboardingSource, /const gradeOptions: SelectableGrade\[\] = \['11', '10', 'undefined'\]/,
+  'Mobile grade options should follow the Figma 11/10/Other order');
 
 assert.match(
   onboardingSource,
@@ -121,13 +132,11 @@ assert.match(
   'Grade supporting copy should reserve the extra 8px needed for Figma options y257 and CTA y449',
 );
 
-for (const iconName of ['Backpack02Icon', 'GraduationCapIcon', 'AnonymousIcon']) {
-  assert.match(
-    onboardingSource,
-    new RegExp(iconName),
-    `Grade options should include ${iconName} from the Figma design`,
-  );
-}
+assert.doesNotMatch(
+  onboardingSource,
+  /Backpack02Icon|GraduationCapIcon|AnonymousIcon|icon=\{icon\}/,
+  'Grade options must not render leading grade-specific glyphs at any breakpoint',
+);
 
 assert.doesNotMatch(
   onboardingSource,
@@ -137,8 +146,8 @@ assert.doesNotMatch(
 
 assert.match(
   onboardingSource,
-  /className=\{`relative flex h-12 w-full items-center justify-start gap-4 rounded-\[8px\] bg-white px-6/,
-  'Grade options should match the Figma 48px control, 24px left inset, and 16px icon/text gap',
+  /className=\{`relative flex h-12 w-full items-center justify-start rounded-\[8px\] bg-white px-6/,
+  'Grade options should match the Figma 48px control and 24px left inset',
 );
 
 assert.match(
@@ -149,8 +158,19 @@ assert.match(
 
 assert.match(
   onboardingSource,
-    /selected[\s\S]*border-\[1\.5px\][\s\S]*border-\[#6a37c3\]/,
-    'Grade option selected state should use a 1.5px purple border',
+  /data-onboarding-indicator="mobile"[\s\S]*min-\[1440px\]:hidden[\s\S]*!border-\[#6a37c3\]/,
+  'Mobile grade indicators should expose explicit anatomy and keep the selected purple border above the base lavender border',
+);
+assert.match(
+  onboardingSource,
+  /data-onboarding-indicator="desktop"[\s\S]*min-\[1440px\]:block|data-onboarding-indicator="desktop"[\s\S]*min-\[1440px\]:flex/,
+  'Desktop grade indicators should expose explicit anatomy for breakpoint-specific visual checks',
+);
+
+assert.match(
+  onboardingSource,
+  /selected[\s\S]*border-transparent[\s\S]*rounded-\[4px\][\s\S]*border-\[1\.5px\][\s\S]*border-\[#c5b1e7\]/,
+  'Grade rows should stay borderless while their square indicators use a 1.5px lavender border',
 );
 
 assert.match(
@@ -167,14 +187,14 @@ assert.match(
 
 assert.match(
   onboardingSource,
-  /<AuthUsernameInput[\s\S]*hideMobileLeadingIconWhenFilled[\s\S]*mobileFieldLayout="figma-auth"/,
-  'Username should keep the UserIcon for the empty state and opt into exact visible-message spacing',
+  /<AuthUsernameInput[\s\S]*mobileFieldLayout="figma-auth"[\s\S]*desktopShowSuccessIcon=\{usernameHelperTone === 'success'\}/,
+  'Username should keep the UserIcon and opt into exact visible-message spacing',
 );
 
-assert.doesNotMatch(
+assert.match(
   authShellSource,
-  /hideMobileHelperTextWhenValid|max-lg:sr-only[^\n]*helper/i,
-  'Username availability must remain visibly rendered on mobile',
+  /messageClassName=\{!error && desktopShowSuccessIcon \? 'max-lg:hidden min-\[1440px\]:hidden' : undefined\}/,
+  'Valid username helper copy must be hidden while preserving checking and error messages',
 );
 
 assert.match(
@@ -206,6 +226,8 @@ assert.match(
   /<AuthShell[\s\S]*mobileHeaderMode="status-aware"/,
   'Register and verify states should use the shared status-aware header',
 );
+assert.match(registerSource, /mobileProgress=\{step === 'account' \? \{ step: 3, completedSegments: accountCanSubmit \? 3 : 2 \} : undefined\}/,
+  'Register account should expose completion-aware mobile progress while verify stays progress-free');
 
 assert.equal(
   (registerSource.match(/max-lg:mb-7/g) ?? []).length,

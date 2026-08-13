@@ -97,6 +97,18 @@ try {
     const result = await page.evaluate(({ kind, filled }) => {
       const visible = (elements) => elements.find((element) => element.getClientRects().length > 0);
       const isVisible = (element) => Boolean(element && element.getClientRects().length > 0 && getComputedStyle(element).display !== 'none');
+      const isPainted = (element) => {
+        if (!element) return false;
+        const box = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return Boolean(
+          box.width > 0 &&
+            box.height > 0 &&
+            style.display !== 'none' &&
+            style.visibility !== 'hidden' &&
+            style.opacity !== '0',
+        );
+      };
       const rect = (element) => {
         if (!element) return null;
         const box = element.getBoundingClientRect();
@@ -149,15 +161,24 @@ try {
 
       if (kind === 'grade') {
         const options = [...document.querySelectorAll('button[aria-pressed]')].filter(isVisible);
+        const indicators = options.map((option) => option.querySelector('[data-onboarding-indicator="mobile"]'));
         const tick = visible([...document.querySelectorAll('button[aria-pressed="true"] span')].filter((element) => element.classList.contains('size-5')));
         const message = form?.querySelector('[role="alert"]');
         return {
           ...common,
           options: options.map(rect),
-          selected: options[0]?.getAttribute('aria-pressed') === 'true',
+          selected: options.find((option) => option.getAttribute('aria-pressed') === 'true')?.textContent?.trim() ?? null,
           optionTexts: options.map((option) => option.textContent?.trim()),
-          optionIconCounts: options.map((option) => [...option.querySelectorAll('svg')].filter(isVisible).length),
-          tick: rect(tick),
+          // Count only direct leading SVG children; the selected Tick02Icon is
+          // nested in the right indicator and is intentionally excluded here.
+          optionIconCounts: options.map((option) => [...option.children].filter((child) => child.tagName.toLowerCase() === 'svg' && isVisible(child)).length),
+          indicatorStyles: indicators.map((indicator) => {
+            const style = indicator ? getComputedStyle(indicator) : null;
+            return style
+              ? { borderColor: style.borderColor, borderWidth: style.borderWidth, borderRadius: style.borderRadius, backgroundColor: style.backgroundColor }
+              : null;
+          }),
+        tick: rect(tick),
           message: rect(message),
         };
       }
@@ -165,9 +186,12 @@ try {
       if (kind === 'username') {
         const input = document.querySelector('input[autocomplete="username"]');
         const field = input?.parentElement;
-        const leadingIcon = field?.querySelector('span[aria-hidden="true"]');
+        const fieldIcons = [...(field?.querySelectorAll('span[aria-hidden="true"]') ?? [])];
+        const leadingIcon = fieldIcons[0];
+        const successIcon = fieldIcons.find((element) => element.classList.contains('text-[#19b978]'));
         const describedBy = input?.getAttribute('aria-describedby');
-        const message = describedBy ? document.getElementById(describedBy) : null;
+        const messageElement = describedBy ? document.getElementById(describedBy) : null;
+        const message = isPainted(messageElement) ? messageElement : null;
         return {
           ...common,
           field: rect(input),
@@ -175,6 +199,8 @@ try {
           placeholder: input?.getAttribute('placeholder'),
           leadingIcon: rect(leadingIcon),
           leadingIconVisible: isVisible(leadingIcon),
+          successIcon: rect(successIcon),
+          successIconVisible: isVisible(successIcon),
           describedBy,
           message: rect(message),
         };
@@ -237,7 +263,8 @@ try {
     assert.ok(Math.abs(result.logo.x - 152) <= 2, `logo x should be approximately 152, got ${result.logo.x}`);
     assert.equal(Math.round(result.logo.y), 64);
     assert.equal(Math.round(result.title.x), 32);
-    assert.equal(Math.round(result.title.y), 177);
+    const progressOffset = kind === 'verify' ? 0 : 14;
+    assert.equal(Math.round(result.title.y), 177 + progressOffset);
     assert.equal(result.title.fontSize, '24px');
     assert.equal(result.title.color, 'rgb(22, 21, 25)');
     assert.equal(Math.round(result.helper.x), 32);
@@ -252,9 +279,9 @@ try {
     if (kind === 'grade') {
       assert.equal(result.titleText, 'В каком классе ты учишься?');
       assert.equal(result.helperText, 'Это поможет нам адаптировать программу');
-      assert.deepEqual(result.optionTexts, ['10 класс', '11 класс', 'Другое']);
+      assert.deepEqual(result.optionTexts, ['11 класс', '10 класс', 'Другое']);
       assert.equal(Math.round(result.options[0].x), 32);
-      assert.equal(Math.round(result.options[0].y), 257);
+      assert.equal(Math.round(result.options[0].y), 257 + progressOffset);
       assert.equal(Math.round(result.options[0].width), 366);
       assert.deepEqual(result.options.map((option) => Math.round(option.height)), [48, 48, 48]);
       assert.deepEqual(result.options.slice(1).map((option, index) => Math.round(option.y - result.options[index].bottom)), [8, 8]);
@@ -265,15 +292,23 @@ try {
         assert.equal(Math.round(result.cta.y - result.message.bottom), 24, `${state}: message to CTA gap`);
       } else {
         assert.equal(Math.round(result.cta.y - lastOption.bottom), 24, `${state}: options to CTA gap`);
-        assert.equal(Math.round(result.cta.y), 441);
+        assert.equal(Math.round(result.cta.y), 441 + progressOffset);
       }
       assert.equal(result.cta.backgroundColor, filled ? 'rgb(106, 55, 195)' : 'rgb(222, 210, 241)');
       assert.equal(result.ctaDisabled, !filled);
-      assert.equal(result.selected, filled);
-      assert.deepEqual(result.optionIconCounts, filled ? [2, 1, 1] : [1, 1, 1]);
+      assert.equal(result.selected, filled ? '10 класс' : null);
+      // The redesigned grade options have no leading glyph at any state.
+      // The selected-state Tick02Icon is rendered inside the right indicator
+      // and is verified independently by the indicator/tick assertions below.
+      assert.deepEqual(result.optionIconCounts, [0, 0, 0]);
+      assert.equal(result.options[1].borderColor, 'rgba(0, 0, 0, 0)', `${state}: selected row has no selected border`);
+      assert.deepEqual(result.indicatorStyles.map((indicator) => indicator?.borderRadius), ['4px', '4px', '4px']);
       if (filled) {
-        assert.equal(result.options[0].borderColor, 'rgb(106, 55, 195)');
-        assert.equal(result.options[0].borderWidth, '1px');
+        assert.equal(result.indicatorStyles[0].borderColor, 'rgb(197, 177, 231)');
+        assert.ok(['1px', '1.5px'].includes(result.indicatorStyles[0].borderWidth));
+        assert.equal(result.indicatorStyles[1].backgroundColor, 'rgb(106, 55, 195)');
+        assert.equal(result.indicatorStyles[1].borderColor, 'rgb(106, 55, 195)');
+        assert.ok(['1px', '1.5px'].includes(result.indicatorStyles[1].borderWidth));
         assert.equal(Math.round(result.tick.width), 20);
         assert.equal(Math.round(result.tick.height), 20);
         await page.hover('button[aria-pressed="true"]');
@@ -282,31 +317,32 @@ try {
     } else if (kind === 'username') {
       assert.equal(result.titleText, 'Придумай себе юзернейм');
       assert.equal(result.helperText, 'Благодаря нему мы сможем отличать тебя от других пользователей.');
-      assert.deepEqual([Math.round(result.field.x), Math.round(result.field.y), Math.round(result.field.width), Math.round(result.field.height)], [32, 269, 366, 48]);
+      assert.deepEqual([Math.round(result.field.x), Math.round(result.field.y), Math.round(result.field.width), Math.round(result.field.height)], [32, 269 + progressOffset, 366, 48]);
       assert.equal(result.field.backgroundColor, 'rgb(255, 255, 255)');
       assert.equal(result.field.borderRadius, '8px');
       const expectedUsername = state === 'username-validation-error' ? 'ab' : state === 'username-empty' ? '' : 'dystrophyless';
       assert.equal(result.value, expectedUsername);
-      assert.equal(result.leadingIconVisible, expectedUsername.length === 0);
-      assert.equal(Boolean(result.message), state !== 'username-empty', `${state}: username message visibility`);
+      assert.equal(result.leadingIconVisible, true);
+      assert.equal(result.successIconVisible, state === 'username-typed', `${state}: valid username success tick visibility`);
+      assert.equal(Boolean(result.message), state === 'username-validation-error' || state === 'username-request-error', `${state}: username message visibility`);
       if (result.message) {
         assert.equal(Math.round(result.message.y - result.field.bottom), 8, `${state}: username input to message gap`);
         assert.equal(Math.round(result.cta.y - result.message.bottom), 24, `${state}: username message to CTA gap`);
         assert.ok(result.describedBy, `${state}: visible username message should describe the input`);
       } else {
         assert.equal(Math.round(result.cta.y - result.field.bottom), 24, `${state}: username input to CTA gap`);
-        assert.equal(Math.round(result.cta.y), 341);
-        assert.equal(result.describedBy, null, `${state}: absent username message should not reserve a description`);
+        assert.equal(Math.round(result.cta.y), 341 + progressOffset);
+        assert.equal(Boolean(result.describedBy), state === 'username-typed', `${state}: accessibility description state`);
       }
       assert.equal(result.cta.backgroundColor, filled ? 'rgb(106, 55, 195)' : 'rgb(222, 210, 241)');
       assert.equal(result.ctaDisabled, !filled);
     } else if (kind === 'register') {
       assert.equal(result.titleText, 'Создать аккаунт');
       assert.equal(result.helperText, 'Мы отправим 6-значный код для подтверждения.');
-      assert.deepEqual([Math.round(result.email.x), Math.round(result.email.y), Math.round(result.email.width), Math.round(result.email.height)], [32, 257, 366, 48]);
+      assert.deepEqual([Math.round(result.email.x), Math.round(result.email.y), Math.round(result.email.width), Math.round(result.email.height)], [32, 257 + progressOffset, 366, 48]);
       assert.deepEqual(
         [Math.round(result.password.x), Math.round(result.password.y), Math.round(result.password.width), Math.round(result.password.height)],
-        [32, result.emailMessage ? 345 : 321, 366, 48],
+        [32, (result.emailMessage ? 345 : 321) + progressOffset, 366, 48],
       );
       assert.equal(result.emailValue, filled ? 'dystrophyless@gmail.com' : '');
       assert.equal(result.passwordValue, filled ? 'password' : '');
@@ -324,7 +360,7 @@ try {
       assert.equal(Boolean(result.passwordMessage), state === 'register-errors', `${state}: password message visibility`);
       const registerPredecessor = result.passwordMessage ?? result.password;
       assert.equal(Math.round(result.cta.y - registerPredecessor.bottom), 24, `${state}: last register field/message to CTA gap`);
-      if (!result.emailMessage && !result.passwordMessage) assert.equal(Math.round(result.cta.y), 393);
+      if (!result.emailMessage && !result.passwordMessage) assert.equal(Math.round(result.cta.y), 393 + progressOffset);
       assert.equal(result.cta.backgroundColor, filled ? 'rgb(106, 55, 195)' : 'rgb(222, 210, 241)');
       assert.equal(result.ctaDisabled, !filled);
 

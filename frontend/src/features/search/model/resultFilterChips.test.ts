@@ -43,7 +43,11 @@ describe('result filter chip view model characterization', () => {
       'grade',
       'topic',
     ]);
-    expect(chips[0]).toMatchObject({ active: false, to: '/search/filters' });
+    expect(chips[0]).toMatchObject({ active: false });
+    expect(chips[0]).not.toHaveProperty('selectId');
+    expect(chips.find(({ id }) => id === 'book')).toMatchObject({ selectId: 'book' });
+    expect(chips.find(({ id }) => id === 'grade')).toMatchObject({ selectId: 'grade' });
+    expect(chips.find(({ id }) => id === 'topic')).toMatchObject({ selectId: 'section' });
   });
 
   it('sorts active categories before inactive categories and counts categories, not values', () => {
@@ -51,14 +55,15 @@ describe('result filter chip view model characterization', () => {
       entOnlyFilterActive: true,
       searchFilterSelections: selections({ grade: ['10', '11'] }),
       searchFilterSelectionLabels: labels(),
+      searchFilterActivationOrder: ['grade', 'ent'],
       onEntOnlyFilterToggle: vi.fn(),
       t,
     });
 
     expect(chips.map(({ id }) => id)).toEqual([
       'filter',
-      'specification',
       'grade',
+      'specification',
       'book',
       'topic',
     ]);
@@ -68,6 +73,25 @@ describe('result filter chip view model characterization', () => {
       selectedCount: 2,
       active: true,
     });
+  });
+
+  it('orders active chips by first activation and leaves inactive chips canonical', () => {
+    const chips = getSearchResultFilterChips({
+      entOnlyFilterActive: false,
+      searchFilterSelections: selections({ grade: ['10'], book: ['atamura'] }),
+      searchFilterSelectionLabels: labels(),
+      searchFilterActivationOrder: ['grade', 'book'],
+      onEntOnlyFilterToggle: vi.fn(),
+      t,
+    });
+
+    expect(chips.map(({ id }) => id)).toEqual([
+      'filter',
+      'grade',
+      'book',
+      'specification',
+      'topic',
+    ]);
   });
 
   it('prefers persisted readable labels for a single canonical selection', () => {
@@ -84,7 +108,7 @@ describe('result filter chip view model characterization', () => {
     expect(chips.find(({ id }) => id === 'book')).toMatchObject({
       label: 'Арман · 10',
       active: true,
-      to: '/search/filters?select=book',
+      selectId: 'book',
     });
   });
 
@@ -110,9 +134,9 @@ describe('result filter chip view model characterization', () => {
     expect(chips.find(({ id }) => id === 'topic')?.label).toBe(
       'PYTHON_PROGRAMMING',
     );
-    expect(chips.find(({ id }) => id === 'topic')?.to).toBe(
-      '/search/filters?select=section',
-    );
+    expect(chips.find(({ id }) => id === 'book')?.selectId).toBe('book');
+    expect(chips.find(({ id }) => id === 'grade')?.selectId).toBe('grade');
+    expect(chips.find(({ id }) => id === 'topic')?.selectId).toBe('section');
   });
 
   it('keeps the ENT chip as a toggle view model without applying result filtering', () => {

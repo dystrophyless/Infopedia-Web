@@ -3,6 +3,7 @@ export * from './filterTerms';
 export * from './publisherBookResolver';
 export * from './resultFilterChips';
 export * from './searchFilterDraft';
+export * from './searchFilterActivationOrder';
 export * from './searchPageState';
 export * from './searchRequestKey';
 export * from './searchRequestPolicy';

@@ -3,14 +3,22 @@ import type {
   SearchFilterSelections,
   SearchFilterSelectId,
 } from './searchStore';
+import {
+  normalizeSearchFilterActivationOrder,
+  updateSearchFilterActivationOrder,
+  type SearchFilterActivationOrder,
+} from './searchFilterActivationOrder';
 
 export interface SearchFilterSnapshot {
   entOnly: boolean;
   selections: SearchFilterSelections;
   labels: SearchFilterSelectionLabels;
+  activationOrder?: readonly SearchFilterActivationOrder[number][];
 }
 
-export type SearchFilterDraft = SearchFilterSnapshot;
+export type SearchFilterDraft = Omit<SearchFilterSnapshot, 'activationOrder'> & {
+  activationOrder: SearchFilterActivationOrder;
+};
 
 function cloneSelections(selections: SearchFilterSelections): SearchFilterSelections {
   return {
@@ -33,6 +41,7 @@ export function createSearchFilterDraft(snapshot: SearchFilterSnapshot): SearchF
     entOnly: snapshot.entOnly,
     selections: cloneSelections(snapshot.selections),
     labels: cloneLabels(snapshot.labels),
+    activationOrder: normalizeSearchFilterActivationOrder(snapshot.activationOrder, snapshot),
   };
 }
 
@@ -41,6 +50,7 @@ export function resetSearchFilterDraft(_: SearchFilterDraft): SearchFilterDraft 
     entOnly: false,
     selections: { grade: [], book: [], section: [] },
     labels: { grade: {}, book: {}, section: {} },
+    activationOrder: [],
   };
 }
 
@@ -56,15 +66,33 @@ export function toggleSearchFilterDraftOption(
   if (isSelected) delete labels[optionId];
   else if (optionLabel) labels[optionId] = optionLabel;
 
+  const nextSelections = {
+    ...draft.selections,
+    [filterId]: isSelected
+      ? selectedIds.filter((selectedId) => selectedId !== optionId)
+      : [...selectedIds, optionId],
+  };
+
   return {
     ...draft,
-    selections: {
-      ...draft.selections,
-      [filterId]: isSelected
-        ? selectedIds.filter((selectedId) => selectedId !== optionId)
-        : [...selectedIds, optionId],
-    },
+    selections: nextSelections,
     labels: { ...draft.labels, [filterId]: labels },
+    activationOrder: updateSearchFilterActivationOrder(
+      draft.activationOrder,
+      filterId,
+      nextSelections[filterId].length > 0,
+    ),
+  };
+}
+
+export function setSearchFilterDraftEntOnly(
+  draft: SearchFilterDraft,
+  entOnly: boolean,
+): SearchFilterDraft {
+  return {
+    ...draft,
+    entOnly,
+    activationOrder: updateSearchFilterActivationOrder(draft.activationOrder, 'ent', entOnly),
   };
 }
 
@@ -85,6 +113,7 @@ export function resetSearchFilterDraftOptions(
     ...draft,
     selections: { ...draft.selections, [filterId]: [] },
     labels: { ...draft.labels, [filterId]: {} },
+    activationOrder: updateSearchFilterActivationOrder(draft.activationOrder, filterId, false),
   };
 }
 
@@ -94,14 +123,21 @@ function sameIds(left: readonly string[], right: readonly string[]) {
   return sortedLeft.length === sortedRight.length && sortedLeft.every((value, index) => value === sortedRight[index]);
 }
 
+function sameOrder(left: readonly string[], right: readonly string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 export function searchFilterDraftMatchesCommitted(
-  draft: SearchFilterDraft,
+  draft: SearchFilterSnapshot,
   committed: SearchFilterSnapshot,
 ): boolean {
+  const draftOrder = normalizeSearchFilterActivationOrder(draft.activationOrder, draft);
+  const committedOrder = normalizeSearchFilterActivationOrder(committed.activationOrder, committed);
   return (
     draft.entOnly === committed.entOnly &&
     sameIds(draft.selections.grade, committed.selections.grade) &&
     sameIds(draft.selections.book, committed.selections.book) &&
-    sameIds(draft.selections.section, committed.selections.section)
+    sameIds(draft.selections.section, committed.selections.section) &&
+    sameOrder(draftOrder, committedOrder)
   );
 }

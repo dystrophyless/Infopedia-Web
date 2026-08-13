@@ -23,6 +23,7 @@ import {
   removeSearchFilterDraftOption,
   resetSearchFilterDraft,
   resetSearchFilterDraftOptions,
+  setSearchFilterDraftEntOnly,
   toggleSearchFilterDraftOption,
 } from '../model/searchFilterDraft';
 import { buildSearchRequestDescriptor } from '../model/searchRequestKey';
@@ -34,10 +35,11 @@ const TOUCH_DRAG_INTENT_THRESHOLD = 6;
 
 export interface SearchFiltersProps {
   overlay?: boolean;
+  initialFilter?: FilterSelectId | null;
   onDismiss?: () => void;
 }
 
-export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps) {
+export function SearchFilters({ overlay = false, initialFilter, onDismiss }: SearchFiltersProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -47,6 +49,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
     entOnlyFilterActive,
     searchFilterSelections,
     searchFilterSelectionLabels,
+    searchFilterActivationOrder,
     applySearchFilters,
   } = useSearchStore();
   const committed = useMemo(
@@ -54,8 +57,9 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
       entOnly: entOnlyFilterActive,
       selections: searchFilterSelections,
       labels: searchFilterSelectionLabels,
+      activationOrder: searchFilterActivationOrder,
     }),
-    [entOnlyFilterActive, searchFilterSelectionLabels, searchFilterSelections],
+    [entOnlyFilterActive, searchFilterActivationOrder, searchFilterSelectionLabels, searchFilterSelections],
   );
   const [draft, setDraft] = useState(() => createSearchFilterDraft(committed));
   const entOnly = draft.entOnly;
@@ -86,10 +90,14 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
   );
 
   useEffect(() => {
+    if (initialFilter !== undefined) {
+      setActiveFilter(initialFilter);
+      return;
+    }
     if (isFilterSelectId(requestedFilter)) {
       setActiveFilter(requestedFilter);
     }
-  }, [requestedFilter]);
+  }, [initialFilter, requestedFilter]);
 
   useEffect(() => {
     if (!overlay) return undefined;
@@ -355,7 +363,7 @@ export function SearchFilters({ overlay = false, onDismiss }: SearchFiltersProps
               data-search-filter-toggle="ent"
               aria-pressed={entOnly}
               aria-label={t('searchFilters.toggleEntAria')}
-              onClick={() => setDraft((current) => ({ ...current, entOnly: !current.entOnly }))}
+              onClick={() => setDraft((current) => setSearchFilterDraftEntOnly(current, !current.entOnly))}
               className="search-filter-control flex h-12 w-full items-center justify-between rounded-[8px] border border-[#a585db] bg-white px-4 py-2 text-left text-[16px] font-normal leading-none text-[#44237d]"
             >
               <span>{t('searchFilters.entToggleLabel')}</span>

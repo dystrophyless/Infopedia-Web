@@ -87,7 +87,7 @@ function LayoutShell({
       )}
       {!authenticated && authHydrated && <Navbar />}
       <main
-        className={`flex-1 w-full max-md:min-h-0 max-md:min-w-0 ${mobileMainClass}`}
+        className={`min-w-0 flex-1 w-full max-md:min-h-0 ${mobileMainClass}`}
       >
         {children}
       </main>

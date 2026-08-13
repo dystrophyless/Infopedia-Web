@@ -68,6 +68,11 @@ const preview = {
           styles: { width: '1024px', height: '768px' },
           type: 'desktop',
         },
+        desktop875x831: {
+          name: 'Desktop 875 × 831',
+          styles: { width: '875px', height: '831px' },
+          type: 'desktop',
+        },
       },
     },
   },

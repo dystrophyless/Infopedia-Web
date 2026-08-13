@@ -477,7 +477,7 @@ export const DesktopSelectedFill1024: Story = {
 };
 
 export const DesktopQueryFilters: Story = {
-  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  globals: { viewport: { value: 'desktop1440x1080', isRotated: false } },
   parameters: {
     layout: 'fullscreen',
     a11y: { context: { include: ['[data-search-result-filter="filter"]'] } },
@@ -485,8 +485,9 @@ export const DesktopQueryFilters: Story = {
   render: () => <DesktopSearchStory />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;
+    expect(canvasElement.ownerDocument.defaultView?.devicePixelRatio).toBe(1);
+    await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-controls] input')).not.toBeNull());
     const input = canvasElement.querySelector<HTMLInputElement>('[data-desktop-search-controls] input');
-    expect(input).not.toBeNull();
     if (!input) return;
 
     expect(canvasElement.querySelector('[data-desktop-search-modes]')).not.toBeNull();
@@ -526,6 +527,89 @@ export const DesktopQueryFilters: Story = {
     await userEvent.clear(input);
     expect(canvasElement.querySelector('[data-desktop-search-filters]')).toBeNull();
     expect(canvasElement.querySelector('[data-desktop-search-modes]')).not.toBeNull();
+  },
+};
+
+export const DesktopQueryAtamura: Story = {
+  globals: { viewport: { value: 'desktop1440x1080', isRotated: false } },
+  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  render: () => <DesktopSearchStory initialBookSelection />,
+  play: async ({ canvasElement }) => {
+    await canvasElement.ownerDocument?.fonts?.ready;
+    expect(canvasElement.ownerDocument.defaultView?.devicePixelRatio).toBe(1);
+    const input = canvasElement.querySelector<HTMLInputElement>('[data-desktop-search-controls] input');
+    expect(input).not.toBeNull();
+    if (!input) return;
+    await userEvent.type(input, 'algorithm');
+    await waitFor(() => {
+      const filters = [...canvasElement.querySelectorAll<HTMLElement>('[data-desktop-search-filter]')];
+      expect(filters.map((filter) => filter.dataset.desktopSearchFilter)).toEqual([
+        'filter',
+        'book',
+        'specification',
+        'grade',
+        'topic',
+      ]);
+      expect(filters[1]).toHaveTextContent('Атамұра');
+      expect(filters[1].querySelector('svg')).not.toBeNull();
+      expect(getComputedStyle(filters[1]).backgroundColor).toBe('rgb(68, 35, 125)');
+    });
+  },
+};
+
+export const DesktopResponsive875: Story = {
+  globals: { viewport: { value: 'desktop875x831', isRotated: false } },
+  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  render: () => <DesktopSearchStory fullShell initialBookSelection />,
+  play: async ({ canvasElement }) => {
+    await canvasElement.ownerDocument?.fonts?.ready;
+    expect(canvasElement.ownerDocument.defaultView?.devicePixelRatio).toBe(1);
+    const ownerDocument = canvasElement.ownerDocument;
+    const input = canvasElement.querySelector<HTMLInputElement>('[data-desktop-search-controls] input');
+    expect(input).not.toBeNull();
+    if (!input) return;
+    await userEvent.type(input, 'algorithm');
+    await waitFor(() => {
+      const count = Number(canvasElement.querySelector('[data-story-search-request-count]')?.textContent ?? 0);
+      expect(count).toBeGreaterThanOrEqual(2);
+    });
+    await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-results][role="status"]')).toBeNull());
+    await waitFor(() => expect(canvasElement.querySelector('[data-term-card-main]')).not.toBeNull());
+
+    const controls = canvasElement.querySelector<HTMLElement>('[data-desktop-search-controls]');
+    const rail = canvasElement.querySelector<HTMLElement>('[data-desktop-search-filters]');
+    const card = canvasElement.querySelector<HTMLElement>('[data-term-card-main]');
+    await waitFor(() => {
+      expect(controls).not.toBeNull();
+      expect(rail).not.toBeNull();
+      expect(card).not.toBeNull();
+    });
+    if (!controls || !rail || !card) return;
+    const geometry = {
+      innerWidth: ownerDocument.defaultView?.innerWidth,
+      documentWidth: ownerDocument.documentElement.clientWidth,
+      controls: Math.round(controls.getBoundingClientRect().width),
+      rail: Math.round(rail.getBoundingClientRect().width),
+      card: Math.round(card.getBoundingClientRect().width),
+    };
+    expect(geometry).toEqual({
+      innerWidth: 875,
+      documentWidth: 875,
+      controls: 535,
+      rail: 535,
+      card: 535,
+    });
+    expect(ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(875);
+
+    await waitFor(() => expect(canvasElement.querySelector('[data-term-card-title]')).not.toBeNull());
+    const title = canvasElement.querySelector<HTMLElement>('[data-term-card-title]');
+    if (!title) return;
+    await userEvent.click(title);
+    await waitFor(() => expect(canvasElement.querySelector('[data-term-card-source-panel]')).not.toBeNull());
+    const panel = canvasElement.querySelector<HTMLElement>('[data-term-card-source-panel]');
+    if (!panel) return;
+    expect(panel.getBoundingClientRect().width).toBeCloseTo(535, 0);
+    expect(ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(875);
   },
 };
 

@@ -118,9 +118,11 @@ assert.doesNotMatch(
 
 assert.match(
   searchFiltersSource,
-  /export function SearchFilters\(\{ overlay = false, onDismiss \}: SearchFiltersProps\)/,
+  /export function SearchFilters\(\{ overlay = false, initialFilter, onDismiss \}: SearchFiltersProps\)/,
   'Search filters page should export reusable standalone and overlay modes',
 );
+
+assert.match(searchFiltersSource, /initialFilter !== undefined/, 'Overlay should distinguish explicit full-filter null from route-query fallback');
 
 assert.ok(
   searchFiltersSource.includes("? 'fixed inset-0 z-50 bg-transparent max-md:overflow-y-auto'"),
@@ -182,7 +184,7 @@ assert.match(
 
 assert.match(
   searchFiltersSource,
-  /useEffect\(\(\) => \{[\s\S]*if \(isFilterSelectId\(requestedFilter\)\) \{[\s\S]*setActiveFilter\(requestedFilter\);[\s\S]*\}[\s\S]*\}, \[requestedFilter\]\);/,
+  /useEffect\(\(\) => \{[\s\S]*if \(initialFilter !== undefined\)[\s\S]*if \(isFilterSelectId\(requestedFilter\)\)[\s\S]*setActiveFilter\(requestedFilter\);[\s\S]*\}, \[initialFilter, requestedFilter\]\);/,
   'Search filters page should open the corresponding options popup from /search/filters?select=...',
 );
 

@@ -8,6 +8,7 @@ import type {
   SearchFilterSelectionLabels,
   SearchFilterSelections,
 } from './searchStore';
+import { normalizeSearchFilterActivationOrder, type SearchFilterActivationOrder, type SearchFilterCategoryId } from './searchFilterActivationOrder';
 
 export type SearchResultFilterChipId =
   | 'filter'
@@ -23,7 +24,7 @@ export interface SearchResultFilterChip {
   active: boolean;
   selectedCount?: number;
   toggle?: boolean;
-  to?: string;
+  selectId?: SearchFilterSelectId;
   onToggle?: () => void;
 }
 
@@ -90,12 +91,14 @@ export function getSearchResultFilterChips({
   entOnlyFilterActive,
   searchFilterSelections,
   searchFilterSelectionLabels,
+  searchFilterActivationOrder,
   onEntOnlyFilterToggle,
   t,
 }: {
   entOnlyFilterActive: boolean;
   searchFilterSelections: SearchFilterSelections;
   searchFilterSelectionLabels: SearchFilterSelectionLabels;
+  searchFilterActivationOrder?: readonly SearchFilterActivationOrder[number][];
   onEntOnlyFilterToggle: () => void;
   t: TFunction;
 }): SearchResultFilterChip[] {
@@ -132,7 +135,7 @@ export function getSearchResultFilterChips({
       icon: PlusSignIcon,
       active: Boolean(bookLabel),
       selectedCount: bookLabel?.selectedCount,
-      to: '/search/filters?select=book',
+      selectId: 'book',
     },
     {
       id: 'grade',
@@ -140,7 +143,7 @@ export function getSearchResultFilterChips({
       icon: PlusSignIcon,
       active: Boolean(gradeLabel),
       selectedCount: gradeLabel?.selectedCount,
-      to: '/search/filters?select=grade',
+      selectId: 'grade',
     },
     {
       id: 'topic',
@@ -148,7 +151,7 @@ export function getSearchResultFilterChips({
       icon: PlusSignIcon,
       active: Boolean(sectionLabel),
       selectedCount: sectionLabel?.selectedCount,
-      to: '/search/filters?select=section',
+      selectId: 'section',
     },
   ];
   const activeFilterCount = filterChips.filter((filter) => filter.active).length;
@@ -158,9 +161,20 @@ export function getSearchResultFilterChips({
     icon: FilterHorizontalIcon,
     active: activeFilterCount > 0,
     selectedCount: activeFilterCount > 0 ? activeFilterCount : undefined,
-    to: '/search/filters',
   };
-  const usedFilters = filterChips.filter((filter) => filter.active);
+  const chipIdByCategory: Record<SearchFilterCategoryId, SearchResultFilterChipId> = {
+    ent: 'specification',
+    book: 'book',
+    grade: 'grade',
+    section: 'topic',
+  };
+  const normalizedOrder = normalizeSearchFilterActivationOrder(searchFilterActivationOrder, {
+    entOnly: entOnlyFilterActive,
+    selections: searchFilterSelections,
+  });
+  const usedFilters = normalizedOrder.map((category) =>
+    filterChips.find((filter) => filter.id === chipIdByCategory[category])!,
+  );
   const unusedFilters = filterChips.filter((filter) => !filter.active);
 
   return [filterCountChip, ...usedFilters, ...unusedFilters];

@@ -5,6 +5,7 @@ import {
   searchFilterDraftMatchesCommitted,
   type SearchFilterSnapshot,
 } from './searchFilterDraft';
+import { updateSearchFilterActivationOrder, type SearchFilterActivationOrder } from './searchFilterActivationOrder';
 
 export type SearchFilterSelectId = 'grade' | 'book' | 'section';
 
@@ -49,6 +50,7 @@ export interface SearchState {
   searchFilterSelections: SearchFilterSelections;
   searchFilterSelectionLabels: SearchFilterSelectionLabels;
   entOnlyFilterActive: boolean;
+  searchFilterActivationOrder: SearchFilterActivationOrder;
   setQuery: (query: string) => void;
   setResults: (results: Term[]) => void;
   setLoading: (loading: boolean) => void;
@@ -72,16 +74,25 @@ export const useSearchStore = create<SearchState>()((set) => ({
   searchFilterSelections: createInitialSearchFilterSelections(),
   searchFilterSelectionLabels: createInitialSearchFilterSelectionLabels(),
   entOnlyFilterActive: false,
+  searchFilterActivationOrder: [],
   setQuery: (query) => set({ query }),
   setResults: (results) => set({ results }),
   setLoading: (isLoading) => set({ isLoading }),
-  setEntOnlyFilterActive: (entOnlyFilterActive) => set({ entOnlyFilterActive }),
+  setEntOnlyFilterActive: (entOnlyFilterActive) => set((state) => ({
+    entOnlyFilterActive,
+    searchFilterActivationOrder: updateSearchFilterActivationOrder(
+      state.searchFilterActivationOrder,
+      'ent',
+      entOnlyFilterActive,
+    ),
+  })),
   applySearchFilters: (snapshot) =>
     set((state) => {
       const committed: SearchFilterSnapshot = {
         entOnly: state.entOnlyFilterActive,
         selections: state.searchFilterSelections,
         labels: state.searchFilterSelectionLabels,
+        activationOrder: state.searchFilterActivationOrder,
       };
       if (searchFilterDraftMatchesCommitted(snapshot, committed)) return state;
       const next = createSearchFilterDraft(snapshot);
@@ -89,6 +100,7 @@ export const useSearchStore = create<SearchState>()((set) => ({
         entOnlyFilterActive: next.entOnly,
         searchFilterSelections: next.selections,
         searchFilterSelectionLabels: next.labels,
+        searchFilterActivationOrder: next.activationOrder,
       };
     }),
   toggleSearchFilterOption: (filterId, optionId, optionLabel) =>
@@ -115,6 +127,11 @@ export const useSearchStore = create<SearchState>()((set) => ({
           ...state.searchFilterSelectionLabels,
           [filterId]: nextLabels,
         },
+        searchFilterActivationOrder: updateSearchFilterActivationOrder(
+          state.searchFilterActivationOrder,
+          filterId,
+          nextIds.length > 0,
+        ),
       };
     }),
   removeSearchFilterOption: (filterId, optionId) =>
@@ -131,6 +148,11 @@ export const useSearchStore = create<SearchState>()((set) => ({
           ...state.searchFilterSelectionLabels,
           [filterId]: nextLabels,
         },
+        searchFilterActivationOrder: updateSearchFilterActivationOrder(
+          state.searchFilterActivationOrder,
+          filterId,
+          state.searchFilterSelections[filterId].filter((id) => id !== optionId).length > 0,
+        ),
       };
     }),
   resetSearchFilterOptions: (filterId) =>
@@ -143,12 +165,18 @@ export const useSearchStore = create<SearchState>()((set) => ({
         ...state.searchFilterSelectionLabels,
         [filterId]: {},
       },
+      searchFilterActivationOrder: updateSearchFilterActivationOrder(
+        state.searchFilterActivationOrder,
+        filterId,
+        false,
+      ),
     })),
   resetSearchFilters: () =>
     set({
       searchFilterSelections: createInitialSearchFilterSelections(),
       searchFilterSelectionLabels: createInitialSearchFilterSelectionLabels(),
       entOnlyFilterActive: false,
+      searchFilterActivationOrder: [],
     }),
   reset: () => set({ query: '', results: [], isLoading: false }),
 }));

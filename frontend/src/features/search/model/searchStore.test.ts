@@ -44,6 +44,32 @@ describe('search store characterization', () => {
     expect(useSearchStore.getState().searchFilterSelectionLabels.grade).toEqual({});
   });
 
+  it('records category activation order and preserves it while an active category changes', () => {
+    useSearchStore.getState().toggleSearchFilterOption('book', 'book-1', 'Book one');
+    useSearchStore.getState().toggleSearchFilterOption('grade', '10', 'Grade 10');
+    useSearchStore.getState().toggleSearchFilterOption('book', 'book-2', 'Book two');
+
+    expect(useSearchStore.getState().searchFilterActivationOrder).toEqual(['book', 'grade']);
+  });
+
+  it('removes an empty category and appends it when activated again', () => {
+    useSearchStore.getState().toggleSearchFilterOption('grade', '10', 'Grade 10');
+    useSearchStore.getState().toggleSearchFilterOption('book', 'book-1', 'Book one');
+    useSearchStore.getState().toggleSearchFilterOption('grade', '10');
+    useSearchStore.getState().toggleSearchFilterOption('grade', '11', 'Grade 11');
+
+    expect(useSearchStore.getState().searchFilterActivationOrder).toEqual(['book', 'grade']);
+  });
+
+  it('tracks direct ENT activation in the same order and clears order on reset', () => {
+    useSearchStore.getState().toggleSearchFilterOption('book', 'book-1', 'Book one');
+    useSearchStore.getState().setEntOnlyFilterActive(true);
+    expect(useSearchStore.getState().searchFilterActivationOrder).toEqual(['book', 'ent']);
+
+    useSearchStore.getState().resetSearchFilters();
+    expect(useSearchStore.getState().searchFilterActivationOrder).toEqual([]);
+  });
+
   it('resetSearchFilters clears filter state and ENT but preserves the current query/results', () => {
     const result = { public_id: 'term-1', name: 'Term one' };
     useSearchStore.getState().setQuery('python');
@@ -90,6 +116,7 @@ describe('search store characterization', () => {
       entOnlyFilterActive: true,
       searchFilterSelections: snapshot.selections,
       searchFilterSelectionLabels: snapshot.labels,
+      searchFilterActivationOrder: ['ent', 'book', 'grade'],
     });
 
     listener.mockClear();

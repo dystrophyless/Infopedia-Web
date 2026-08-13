@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const source = fs.readFileSync(path.resolve(import.meta.dirname, 'TermSearchPage.tsx'), 'utf8');
+const storySource = fs.readFileSync(path.resolve(import.meta.dirname, 'TermSearchPage.stories.tsx'), 'utf8');
+const desktopNotFoundStory = storySource.match(/export const DesktopNotFound:[\s\S]*?(?=\nexport const |$)/)?.[0] ?? '';
 
 assert.match(source, /w-full max-w-\[684px\]/, 'desktop search rails should shrink fluidly and cap at the 684px Figma width');
 assert.match(source, /min-\[1132px\]:w-\[400px\]/, 'desktop search input should restore exactly 400px when the Figma rail fits');
@@ -33,6 +35,21 @@ assert.match(source, /getSearchResultFilterChips/, 'desktop quick filters should
 assert.match(source, /overflow-x-auto/, 'desktop quick filters should preserve responsive horizontal overflow');
 assert.match(source, /Cancel01Icon/, 'active desktop quick filters should use the Figma cancel HugeIcon');
 assert.match(source, /min-w-0/, 'desktop search flex geometry should allow narrow main columns to shrink');
+assert.match(source, /type="text"[\s\S]*inputMode="search"/, 'desktop search input should use text/search semantics without browser native clear affordance');
+assert.match(source, /text-\[16px\] leading-\[16px\]/, 'desktop search input typography should use the Figma 16px/16px pair');
+assert.match(source, /data-desktop-search-clear[\s\S]*Cancel01Icon/, 'desktop search should expose the custom HugeIcons clear affordance');
+assert.match(source, /query\.length > 0/, 'desktop clear affordance should only render for a non-empty query');
+assert.match(source, /data-desktop-search-not-found[\s\S]*variant="outcome"/, 'desktop not-found should reuse the outcome EmptyState variant');
+assert.match(source, /data-empty-state-icon|size-16 size-16 rounded-full bg-\[#ded2f1\]/, 'desktop not-found icon circle should expose deterministic Figma geometry and paint');
+assert.match(source, /data-desktop-search-query-heading[\s\S]*notFoundHeading[\s\S]*debounced\.trim\(\)/, 'desktop not-found heading should use localized settled trimmed query copy');
+assert.match(source, /data-desktop-search-query-heading[^>]*className="[^"]*w-full[^\"]*self-start[^\"]*text-left/, 'desktop not-found heading should fill and left-align the 684px rail');
+assert.match(source, /<label htmlFor="desktop-search-input"[\s\S]*<input[\s\S]*id="desktop-search-input"/, 'desktop search input should have an explicit accessible label without nesting the clear button');
+assert.doesNotMatch(source, /<label className="relative flex h-10/, 'desktop search controls must not nest an interactive clear button inside a label');
+assert.match(source, /text-\[#161519\]/, 'desktop query heading should use the approved Figma text color');
+assert.match(source, /notFoundTitle|notFoundDescription/, 'desktop not-found should use dedicated localized copy');
+assert.doesNotMatch(source, /data-adaptive-outcome-desktop[\s\S]*HelpCircleIcon/, 'desktop not-found must not render the legacy help-circle empty state');
+assert.notEqual(desktopNotFoundStory, '', 'DesktopNotFound story should remain present');
+assert.doesNotMatch(desktopNotFoundStory, /a11y\s*:\s*\{\s*disable\s*:\s*true\s*\}/, 'DesktopNotFound must keep a11y checks enabled');
 assert.match(source, /data-desktop-search-content/, 'desktop search content should expose a stable geometry selector');
 assert.match(source, /md:px-\[10px\]/, 'narrow desktop search should use 10px horizontal gutters');
 assert.match(source, /min-\[1132px\]:px-16/, 'desktop search should restore 64px gutters once the full rail fits');

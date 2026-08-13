@@ -79,8 +79,18 @@ assert.match(
 );
 assert.match(
   onboardingSource,
-  /HugeiconsIcon[\s\S]*icon=\{icon\}[\s\S]*min-\[1440px\]:hidden[\s\S]*hidden size-5[\s\S]*min-\[1440px\]:block/,
-  'Desktop grade rows should hide fallback glyphs and expose radio circles only at the 1440px Figma reference width',
+  /data-onboarding-indicator="desktop"[\s\S]*hidden size-5 shrink-0 rounded-full border[\s\S]*min-\[1440px\]:block/,
+  'Desktop grade rows should expose radio circles only at the 1440px Figma reference width',
+);
+assert.doesNotMatch(
+  onboardingSource,
+  /Backpack02Icon|GraduationCapIcon|AnonymousIcon|icon=\{icon\}/,
+  'Desktop grade rows must not render leading grade-specific glyphs',
+);
+assert.match(
+  onboardingSource,
+  /data-onboarding-indicator="mobile"[\s\S]*min-\[1440px\]:hidden[\s\S]*data-onboarding-indicator="desktop"[\s\S]*min-\[1440px\]:block/,
+  'Grade indicators should expose distinct mobile and desktop anatomy for responsive visual assertions',
 );
 assert.match(
   onboardingSource,

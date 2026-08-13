@@ -123,6 +123,7 @@ try {
           borderRightColor: style.borderRightColor,
           borderRightWidth: style.borderRightWidth,
           borderRadius: style.borderRadius,
+          display: style.display,
           color: style.color,
           paddingTop: style.paddingTop,
           paddingRight: style.paddingRight,
@@ -195,6 +196,14 @@ try {
         googleButton: googleButton ? inspect(googleButton) : null,
         control: inspect(target),
         gradeRows: gradeRows.map(inspect).sort((a, b) => a.y - b.y),
+        gradeMobileIndicators: gradeRows.map((row) => {
+          const indicator = row.querySelector('[data-onboarding-indicator="mobile"]');
+          return indicator ? inspect(indicator) : null;
+        }),
+        gradeDesktopIndicators: gradeRows.map((row) => {
+          const indicator = row.querySelector('[data-onboarding-indicator="desktop"]');
+          return indicator ? inspect(indicator) : null;
+        }),
         fieldControls: fieldControls.map(inspect).sort((a, b) => a.y - b.y),
         submit: inspect(submit),
       };
@@ -271,6 +280,10 @@ try {
       assert.equal(result.control.fontSize, '16px');
       if (reference.step === 1) {
         assert.equal(result.gradeRows.length, 3);
+        assert.equal(result.gradeMobileIndicators.length, 3);
+        assert.equal(result.gradeDesktopIndicators.length, 3);
+        assert.ok(result.gradeMobileIndicators.every((indicator) => indicator?.display === 'none'), `${reference.state} mobile square indicators should be hidden at 1440px`);
+        assert.ok(result.gradeDesktopIndicators.every((indicator) => indicator && indicator.display !== 'none'), `${reference.state} desktop radio indicators should be visible at 1440px`);
         for (let index = 1; index < result.gradeRows.length; index += 1) {
           closeTo(
             result.gradeRows[index].y - result.gradeRows[index - 1].bottom,
@@ -350,7 +363,7 @@ try {
       const gradeGlyph =
         kind === 'grade' ? target.querySelector(':scope > svg') : null;
       const gradeRadio =
-        kind === 'grade' ? target.querySelector(':scope > span[aria-hidden="true"]') : null;
+        kind === 'grade' ? target.querySelector(':scope > [data-onboarding-indicator="desktop"]') : null;
       const isVisible = (element) => {
         if (!element) return false;
         const box = element.getBoundingClientRect();
@@ -397,7 +410,7 @@ try {
       assert.ok(result.grade, `${profile.name} grade fallback measurements should exist`);
       assert.notEqual(result.grade.justifyContent, 'space-between', `${profile.name} grade should not use desktop alignment`);
       assert.equal(result.grade.backgroundColor, 'rgb(255, 255, 255)', `${profile.name} grade should keep fallback surface`);
-      assert.equal(result.grade.glyphVisible, true, `${profile.name} grade should keep its fallback glyph`);
+      assert.equal(result.grade.glyphVisible, false, `${profile.name} grade should not render a leading glyph`);
       assert.equal(result.grade.radioVisible, false, `${profile.name} grade should not expose desktop radio anatomy`);
     }
     if (reference.kind === 'username') {

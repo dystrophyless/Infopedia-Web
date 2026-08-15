@@ -6,15 +6,15 @@ Audit date: 2026-08-15. Scope: the whole repository, excluding `node_modules`, `
 
 The scan covered physical `*.svg` files, JSX/HTML inline `<svg>`, `*.svg?react`, `data:image/svg+xml`, and CSS/Tailwind `url()`, background, and mask forms. It found:
 
-- 22 unique physical SVG entities;
-- 0 inline JSX/HTML SVG entities outside the physical files themselves;
+- 22 physical SVG entities and 23 unique SVG entities in total;
+- 1 inline JSX SVG entity outside the physical files;
 - 7 `?react` references, all pointing to entities already counted below;
 - 0 SVG data URIs;
 - 3 runtime SVG-mask consumers (the duplicated standard/WebKit declarations are one consumer each).
 
-Status totals: 9 `replace`, 7 `unused`, 2 `needs-user-selection`, 2 `keep-brand`, 1 `keep-decoration`, and 1 `keep-data-viz`.
+Status totals: 9 `replace`, 7 `unused`, 2 `needs-user-selection`, 2 `keep-brand`, 1 `keep-decoration`, and 2 `keep-data-viz`.
 
-Figma exports are generated-origin assets, but their status below reflects the runtime decision rather than double-counting them as `generated`. No standalone vendor-only, generated-only, or test-fixture-only SVG entity remains in the included tree. Test assertions, manifests, and detector regexes that merely mention an SVG are reference-only usage sites, not separate SVG entities.
+Figma exports are generated-origin assets, but their status below reflects the runtime decision rather than double-counting them as `generated`. No standalone vendor-only, generated-only, or test-fixture-only SVG entity remains in the included tree. Test assertions, manifests, and detector regexes that merely mention an SVG are reference-only usage sites, not separate SVG entities. In particular, the `<svg` detector references in `frontend/src/pages/Analyze.results.figma-mobile.test.mjs:137`, `frontend/src/pages/AuthOnboarding.figma-mobile.test.mjs:143`, and `frontend/src/pages/Onboarding.desktop.test.mjs:122` do not define additional SVGs.
 
 Exact export candidates were verified against the installed `@hugeicons/core-free-icons@4.2.2`. A “search name” is intentionally not claimed as an installed exact export.
 
@@ -251,6 +251,16 @@ Exact export candidates were verified against the installed `@hugeicons/core-fre
 - Origin/category: Figma export; data visualization.
 - HugeIcons candidate: none; `ChartRingIcon` is an icon glyph, not a value-bearing progress visualization.
 - Confidence: High — replacing this with a static icon would lose the visualized score contract.
+- Status: `keep-data-viz`.
+
+### 23. Analyze mobile progress ring
+
+- Inline entity and runtime usage: `frontend/src/features/analyze/components/AnalyzeDesktopProgress.tsx:149` (circles continue through line 167 inside the progressbar at line 142).
+- Reference-only site: `frontend/src/pages/Analyze.progress.figma-mobile.test.mjs:111`.
+- Visual/form: inline 144×144 SVG with a neutral circular track and a purple rounded progress arc whose dash length is driven by `clampedProgress`; hidden from accessibility because the containing element exposes the live progressbar semantics.
+- Origin/category: product-authored inline SVG; value-bearing data visualization.
+- HugeIcons candidate: none; a static `ChartRingIcon` or other glyph cannot encode the current progress value and would duplicate rather than replace the progressbar semantics.
+- Confidence: High — the SVG paint depends on runtime data, so an icon-library replacement is not appropriate.
 - Status: `keep-data-viz`.
 
 ## Replacement order

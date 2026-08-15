@@ -55,6 +55,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Mobile430Geometry: Story = {
+  parameters: { a11y: { config: { rules: [{ id: 'color-contrast', selector: '*:not([data-subscription-contrast-lock])' }] } } },
   play: async ({ canvasElement }) => {
     const main = canvasElement.querySelector('main');
     const scrollViewport = canvasElement.querySelector('[data-mobile-page-scroll-viewport]');

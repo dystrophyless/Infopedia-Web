@@ -16,6 +16,6 @@ assert.match(desktopSource, /role="tab"/);
 assert.match(desktopSource, /aria-selected=\{isActive\}/);
 assert.match(desktopSource, /profileNavItems\.map/);
 assert.match(desktopSource, /activeTab === 'favorites'[\s\S]*<FavoritesContent embedded[\s\S]*detailBackTo="\/profile"/);
-assert.match(desktopSource, /activeTab === 'settings'[\s\S]*SettingsPanel/);
+assert.match(profileSource, /activeTab === 'settings'[\s\S]*DesktopSettingsPanel/);
 
 console.log('Profile desktop workspace contract passed');

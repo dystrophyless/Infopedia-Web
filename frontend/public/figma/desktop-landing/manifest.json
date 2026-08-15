@@ -1,0 +1,61 @@
+{
+  "source": "Figma node screenshots from aa8qReawBBhHIXDAbS18OP",
+  "assets": [
+    {
+      "file": "feature-gaps.png",
+      "bytes": 79195,
+      "width": 366,
+      "height": 250,
+      "sha256": "71a7c9cb98502658293690cb942683a675bfbdf669192444a8ea7845ab074990"
+    },
+    {
+      "file": "feature-practice.png",
+      "bytes": 73167,
+      "width": 366,
+      "height": 272,
+      "sha256": "5e9c436dcfcba9589a71d37c74ed0c32717b482d12d3e481c444122954dbbce2"
+    },
+    {
+      "file": "feature-term.png",
+      "bytes": 75109,
+      "width": 336,
+      "height": 268,
+      "sha256": "912ed016db6c27fe15182a3a98d3d4230517c6a17aa0a421dec65e9ccff2f290"
+    },
+    {
+      "file": "feature-ask.png",
+      "bytes": 3628,
+      "width": 86,
+      "height": 215,
+      "sha256": "7a223faa3476a2aca074bfa1368bca02ab717a664e2a360105c083773fe738ec"
+    },
+    {
+      "file": "analyze-1.png",
+      "bytes": 4143,
+      "width": 284,
+      "height": 88,
+      "sha256": "7ad03a1ece015750ec8ece7a0bc1dc14403bd96ebc825e4c27ea227a6560fb84"
+    },
+    {
+      "file": "analyze-2.png",
+      "bytes": 11124,
+      "width": 290,
+      "height": 163,
+      "sha256": "75b0125429b8b7caad6dac508da90064f73ed0ee07e325e78a898fb7ab34a91b"
+    },
+    {
+      "file": "analyze-3.png",
+      "bytes": 28179,
+      "width": 293,
+      "height": 257,
+      "sha256": "ce2d4a4b6e80608ab4fdc1106de29cc43fd73525d0e4485f6b091162c1b28354"
+    },
+    {
+      "file": "decor-ellipse.png",
+      "bytes": 948,
+      "width": 48,
+      "height": 48,
+      "sha256": "e34d86afea3bd96725a4fa56e94dd62102493a2fa1326a40945f4352a5fe2f88"
+    }
+  ]
+}

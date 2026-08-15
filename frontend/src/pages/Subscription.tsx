@@ -142,12 +142,12 @@ export function Subscription() {
     </section>
     <div data-subscription-actions className="mx-auto mt-6 w-full max-w-[430px] px-6 pb-4"><button data-subscription-cta type="button" disabled className="flex h-12 w-full items-center justify-center rounded-[4px] bg-[#6A37C3] text-[16px] font-medium leading-[16px] text-white opacity-60">{t('profile.mobileSubscriptionUnavailable')}</button><p data-subscription-disclosure className="mt-4 text-center text-[12px] leading-[12px] text-[#8C8698]"><span className="block">{plan === 'annual' ? t('profile.subscriptionAnnualDisclosure') : t('profile.subscriptionMonthlyDisclosure')}</span><span className="mt-1 block">{t('profile.subscriptionCancel')}</span></p><p className="sr-only" role="status" aria-live="polite">{t('profile.mobileSubscriptionUnavailable')}</p></div>
   </MobilePageFrame>
-  <div data-subscription-desktop className="hidden relative min-h-screen w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-[#EFEAF8] px-[clamp(32px,8.8889vw,128px)] py-16 md:flex">
+  <div data-subscription-desktop className="hidden relative min-h-screen w-full min-w-0 max-w-full justify-center overflow-x-hidden bg-[#EFEAF8] md:flex md:items-start md:px-8 md:pb-8 md:pt-24 lg:items-center lg:py-16 xl:px-16 min-[1440px]:px-32">
     <IconButton data-subscription-desktop-back aria-label={t('common.previous')} onClick={handleDesktopBack} size="lg" className="absolute left-8 top-8 z-10 cursor-pointer !text-[#6A37C3] transition-[background-color,color,box-shadow] duration-[140ms] hover:!bg-[#f8f5fc] hover:!text-[#6A37C3] focus-visible:!bg-[#f8f5fc] focus-visible:!text-[#6A37C3] focus-visible:!ring-[#6A37C3] focus-visible:!ring-offset-[#efeaf8] motion-reduce:transition-none">
       <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
     </IconButton>
-    <div data-subscription-desktop-row className="grid w-full max-w-[1184px] min-w-0 grid-cols-2 gap-4">
-      <section data-subscription-desktop-left className="flex min-w-0 flex-col items-start justify-between rounded-[16px] bg-white p-[clamp(32px,4.4444vw,64px)]">
+    <div data-subscription-desktop-row className="grid w-full max-w-[1184px] min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+      <section data-subscription-desktop-left className="flex min-h-[551px] min-w-0 flex-col items-start justify-between rounded-[16px] bg-white p-8 xl:p-12 min-[1440px]:p-16">
         <div>
           <h1 className="text-[28px] font-medium leading-[28px] text-black">{t('profile.subscriptionDesktopHeading')}</h1>
           <p className="mt-4 whitespace-pre-line text-[18px] leading-[18px] text-[#6E6779]">{t('profile.subscriptionDesktopSubtitle')}</p>
@@ -158,7 +158,7 @@ export function Subscription() {
           <SubscriptionDesktopFeature icon={PieChart02Icon} title={t('profile.subscriptionDesktopFeatureAnalyzeTitle')} description={t('profile.subscriptionDesktopFeatureAnalyzeDescription')} />
         </div>
       </section>
-      <section data-subscription-desktop-right className="flex min-w-0 min-h-[551px] flex-col rounded-[16px] bg-white p-[clamp(32px,4.4444vw,64px)]">
+      <section data-subscription-desktop-right className="flex min-h-[551px] min-w-0 flex-col rounded-[16px] bg-white p-8 xl:p-12 min-[1440px]:p-16">
         <div data-subscription-desktop-plan-area className="flex h-[325px] min-h-[325px] flex-col justify-between">
           <div>
             <h2 className="text-[28px] font-medium leading-[28px] text-black">{t('profile.subscriptionDesktopPlanHeading')}</h2>

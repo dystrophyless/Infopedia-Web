@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const analyzeSource = readFileSync(path.resolve(import.meta.dirname, 'Analyze.tsx'), 'utf8');
@@ -48,7 +48,14 @@ assert.match(
 );
 assert.match(uploadSource, /DocumentAttachmentIcon[\s\S]*File02Icon/, 'adaptive dropzone should use HugeIcons in both responsive states');
 assert.doesNotMatch(uploadSource, /figma-document-attachment\.svg/, 'adaptive dropzone should not use a custom attachment SVG');
-assert.match(uploadSource, /src="\/figma-user-ai\.svg"[\s\S]*width=\{32\} height=\{32\}/, 'mobile benefits should retain the exact local Figma asset');
+assert.match(uploadSource, /UserAiIcon,[\s\S]*} from '@hugeicons\/core-free-icons';/, 'mobile benefits should import the selected HugeIcons export');
+assert.match(
+  uploadSource,
+  /<HugeiconsIcon icon=\{UserAiIcon\} size=\{32\} strokeWidth=\{1\.5\} className="shrink-0 text-\[#6a37c3\]" aria-hidden="true" \/>/,
+  'mobile benefits should render the exact decorative 32px purple UserAiIcon contract',
+);
+assert.doesNotMatch(uploadSource, /figma-user-ai\.svg/, 'mobile benefits should not retain the migrated public SVG path');
+assert.equal(existsSync(path.resolve(import.meta.dirname, '../../public/figma-user-ai.svg')), false, 'the migrated public SVG file must stay removed');
 assert.match(
   uploadSource,
   /<section className="mt-12 pb-8 md:hidden" data-analyze-mobile-benefits>[\s\S]*\{t\('analyze\.benefitsTitle'\)\}[\s\S]*<MobileBenefitCard/,

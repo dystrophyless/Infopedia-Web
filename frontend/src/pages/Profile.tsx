@@ -14,6 +14,7 @@ import {
   Delete02Icon,
   InformationCircleIcon,
   Invoice03Icon,
+  Languages as LanguagesIcon,
   GoogleDocIcon,
   LogOut as LogOutIcon,
   MentorIcon,
@@ -46,7 +47,6 @@ import type { AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
-import languagesAsset from '../assets/figma-profile/languages.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
 import {
   parseProfileTab,
@@ -2121,7 +2121,7 @@ function DesktopSettingsPanel({
                   aria-controls={languageMenuId}
                   className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
                 >
-                  <img src={languagesAsset} alt="" className="size-5 shrink-0" />
+                  <HugeiconsIcon icon={LanguagesIcon} size={20} strokeWidth={1.5} className="shrink-0 text-[#865bcf]" aria-hidden="true" />
                   <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
                   <span className="text-[14px] font-normal leading-[14px] text-[#161519]">{t(lang === 'kk' ? 'common.kazakh' : 'common.russian')}</span>
                   <HugeiconsIcon icon={ArrowDown01Icon} size={18} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />

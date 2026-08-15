@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit --incremental false && tsc -p tsconfig.node.json --noEmit --incremental false",
     "lint": "tsc -b --noEmit",
     "test": "npm run test:contracts && npm run test:unit",
-    "test:contracts": "node src/ui/design-system.contract.test.mjs && node src/styles/theme.generated-css.test.mjs && node src/styles/typography.contract.test.mjs",
+    "test:contracts": "node src/custom-svg-hugeicons.contract.test.mjs && node src/ui/design-system.contract.test.mjs && node src/styles/theme.generated-css.test.mjs && node src/styles/typography.contract.test.mjs",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:design-system": "node src/ui/design-system.contract.test.mjs",
     "test:ui": "npm run test:design-system && npm run test-storybook",

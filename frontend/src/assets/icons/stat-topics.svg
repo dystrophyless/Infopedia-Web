@@ -1,7 +1,0 @@
-<svg viewBox="0 0 60 80" fill="none" aria-hidden="true" shape-rendering="geometricPrecision" xmlns="http://www.w3.org/2000/svg">
-  <rect y="10.667" width="50" height="69.333" rx="1" fill="var(--color-accent, #44237d)"/>
-  <g transform="translate(10)">
-    <path d="M29.567 0c.276 0 .54.114.729.316L49.73 21.045c.174.185.27.429.27.683V68.333c0 .552-.448 1-1 1H1c-.552 0-1-.448-1-1V1c0-.552.448-1 1-1h28.567Z" fill="var(--color-secondary, #623f9f)"/>
-    <path d="M30 .1c.109.052.209.124.294.214L49.733 21.049c.078.084.139.181.184.284H30V.1Z" fill="var(--color-accent, #44237d)"/>
-  </g>
-</svg>

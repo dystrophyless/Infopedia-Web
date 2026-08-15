@@ -7,6 +7,7 @@ import {
   Clock01Icon,
   DocumentAttachmentIcon,
   File02Icon,
+  UserAiIcon,
 } from '@hugeicons/core-free-icons';
 import {
   ANALYZE_DESKTOP_INSTRUCTIONS,
@@ -329,7 +330,7 @@ function MobileBenefitCard({
   if (featured) {
     return (
       <article className="flex min-h-[96px] items-center gap-6 rounded-[8px] bg-[#ffffff] px-6 py-4 max-[359px]:gap-4 max-[359px]:px-4 min-[360px]:col-span-2">
-        <img src="/figma-user-ai.svg" alt="" width={32} height={32} className="shrink-0" />
+        <HugeiconsIcon icon={UserAiIcon} size={32} strokeWidth={1.5} className="shrink-0 text-[#6a37c3]" aria-hidden="true" />
         {content}
       </article>
     );

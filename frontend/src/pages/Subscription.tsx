@@ -6,6 +6,8 @@ import {
   ArrowLeft01Icon,
   CheckIcon,
   CheckmarkSquare02Icon,
+  CreditCardIcon,
+  Notification01Icon,
   PieChart02Icon,
   SearchingIcon,
   Tick02Icon,
@@ -14,8 +16,6 @@ import { IconButton, MobilePageFrame } from '../ui';
 import { useMobileBottomNavOverride } from '../features/navigation';
 import premiumAsset from '../assets/figma-profile/ai-co-editing.svg';
 import timelineToday from '../assets/figma-subscription/timeline-today.svg';
-import timelineDay6 from '../assets/figma-subscription/timeline-day-6.svg';
-import timelineDay7 from '../assets/figma-subscription/timeline-day-7.svg';
 
 type Plan = 'monthly' | 'annual';
 
@@ -126,7 +126,11 @@ export function Subscription() {
     }
     navigate('/profile', { replace: true });
   };
-  const timeline = [[timelineToday, 'subscriptionTimelineToday', 'subscriptionTimelineTodayBody'], [timelineDay6, 'subscriptionTimelineDay6', 'subscriptionTimelineDay6Body'], [timelineDay7, 'subscriptionTimelineDay7', 'subscriptionTimelineDay7Body']] as const;
+  const timeline = [
+    { icon: <img src={timelineToday} alt="" className="size-6 shrink-0" />, title: 'subscriptionTimelineToday', body: 'subscriptionTimelineTodayBody' },
+    { icon: <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#EFEAF8] text-[#6A37C3]" aria-hidden="true"><HugeiconsIcon icon={CreditCardIcon} size={14} strokeWidth={1} aria-hidden="true" /></span>, title: 'subscriptionTimelineDay6', body: 'subscriptionTimelineDay6Body' },
+    { icon: <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#EFEAF8] text-[#6A37C3]" aria-hidden="true"><HugeiconsIcon icon={Notification01Icon} size={14} strokeWidth={1} aria-hidden="true" /></span>, title: 'subscriptionTimelineDay7', body: 'subscriptionTimelineDay7Body' },
+  ] as const;
   const benefits = ['subscriptionBenefitPlan', 'subscriptionBenefitTests', 'subscriptionBenefitTopics'] as const;
   return <>
   <MobilePageFrame className="bg-[#EFEBF6] md:hidden" tone="canvas" scrollMode="content" safeAreaBottom={false} contentClassName="!pt-[26px]"
@@ -136,7 +140,7 @@ export function Subscription() {
       <div className="h-px w-full bg-[#EFEAF8]" />
       <fieldset className="grid min-w-0 grid-cols-2 gap-4 border-0 p-0"><legend className="sr-only">{t('profile.subscriptionPlanLabel')}</legend><SubscriptionPlanCard value="monthly" selected={plan === 'monthly'} onSelect={() => { setPlanTouched(true); setPlan('monthly'); }} price="2490₸" meta={t('profile.subscriptionMonthlyMeta')} /><SubscriptionPlanCard value="annual" selected={plan === 'annual'} onSelect={() => { setPlanTouched(true); setPlan('annual'); }} price="9900₸" meta={t('profile.subscriptionAnnualMeta')} indicator={<span data-subscription-contrast-lock="mobile-discount" className="rounded-[4px] bg-[#DED2F1] px-2 py-1 text-[14px] font-medium leading-[14px] text-[#865BCF]">-67%</span>} /></fieldset>
       <div className="h-px w-full bg-[#EFEAF8]" />
-      <div className="relative"><div className="absolute left-[11px] top-[26px] h-[67px] w-0.5 bg-[#C5B1E7]" /> <div className="relative flex flex-col gap-4">{timeline.map(([icon, title, body]) => <div key={title} className="flex min-w-0 items-center gap-2"><img src={icon} alt="" className="size-6 shrink-0" /><div className="min-w-0 text-[12px] leading-[12px]"><p className="font-medium text-[#6A37C3]">{t(`profile.${title}`)}</p><p className="mt-1 text-[#6E6779]">{t(`profile.${body}`)}</p></div></div>)}</div></div>
+      <div className="relative"><div className="absolute left-[11px] top-[26px] h-[67px] w-0.5 bg-[#C5B1E7]" /> <div className="relative flex flex-col gap-4">{timeline.map(({ icon, title, body }) => <div key={title} className="flex min-w-0 items-center gap-2">{icon}<div className="min-w-0 text-[12px] leading-[12px]"><p className="font-medium text-[#6A37C3]">{t(`profile.${title}`)}</p><p className="mt-1 text-[#6E6779]">{t(`profile.${body}`)}</p></div></div>)}</div></div>
       <div className="h-px w-full bg-[#EFEAF8]" />
       <section><p className="text-[12px] font-medium leading-[12px] text-[#6A37C3]">{t('profile.subscriptionBenefitsEyebrow')}</p><h2 className="mt-1 text-[16px] leading-[16px] text-black">{t('profile.subscriptionPremiumTitle')}</h2><ul className="mt-4 flex flex-col gap-2 px-2">{benefits.map(key => <li key={key} className="flex items-center gap-2 text-left text-[12px] leading-[12px] text-[#6E6779]"><HugeiconsIcon icon={Tick02Icon} size={14.4} strokeWidth={1.8} className="shrink-0 text-[#6A37C3]" /><span>{t(`profile.${key}`)}</span></li>)}</ul></section>
     </section>

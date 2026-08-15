@@ -1518,6 +1518,7 @@ function ProfileOverview({
 
 function SubscriptionPromo() {
   const { i18n, t } = useTranslation();
+  const navigate = useNavigate();
   const isKazakh = i18n.resolvedLanguage?.startsWith('kk') ?? i18n.language.startsWith('kk');
   const priceText = isKazakh ? 'айына 1 490 тг-ден' : 'от 1 490 тг/мес';
   const progressBenefitText = isKazakh
@@ -1571,6 +1572,7 @@ function SubscriptionPromo() {
 
       <button
         type="button"
+        onClick={() => navigate('/subscription')}
         className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[8px] bg-primary px-4 text-[15px] font-medium leading-none text-surface transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <span>{t('profile.subscriptionUpgradeButton')}</span>

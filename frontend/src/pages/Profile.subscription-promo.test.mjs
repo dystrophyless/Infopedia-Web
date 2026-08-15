@@ -27,6 +27,8 @@ assert.doesNotMatch(
   'Subscription card should not render a separate descriptive paragraph before the feature list',
 );
 
+assert.match(subscriptionPromoSource, /onClick=\{\(\) => navigate\('\/subscription'\)\}/, 'Subscription promo CTA should open the protected subscription page');
+
 assert.match(
   subscriptionPromoSource,
   /const benefits = \[[\s\S]*subscriptionBenefitWeakTopics[\s\S]*subscriptionBenefitRecommendations[\s\S]*progressBenefitText/,

@@ -1,5 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ChartUpIcon } from '@hugeicons/core-free-icons';
 import {
   formatDelta,
   formatPercent,
@@ -116,8 +118,11 @@ export function DesktopChapterTestCard({
           className={`gap-1.5 text-[12px] font-medium leading-[12px] ${deltaToneClasses[deltaTone]}`}
         >
           {chapter.deltaPoints === 0 ? null : (
-            <span
-              className={`block size-[20px] shrink-0 bg-current [mask-image:url('/figma/tests/trending-up.svg')] [mask-position:center] [mask-repeat:no-repeat] [mask-size:100%_100%] [-webkit-mask-image:url('/figma/tests/trending-up.svg')] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:100%_100%] ${chapter.deltaPoints !== null && chapter.deltaPoints > 0 ? '-scale-x-100' : ''}`}
+            <HugeiconsIcon
+              icon={ChartUpIcon}
+              size={20}
+              strokeWidth={1.5}
+              className={`block shrink-0 ${chapter.deltaPoints !== null && chapter.deltaPoints > 0 ? '-scale-x-100' : ''}`}
               data-chapter-delta-icon
               aria-hidden="true"
             />

@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { LockKeyIcon, Target03Icon } from '@hugeicons/core-free-icons';
 
 export type DesktopTestOptionCardContract = 'weak-pre-analysis' | 'mock-inactive';
 
@@ -20,13 +22,13 @@ function ContractIcon({ contract }: { contract: DesktopTestOptionCardContract })
   if (contract === 'weak-pre-analysis') {
     return (
       <span className="flex size-12 shrink-0 items-center justify-center rounded-[8px] bg-[#f25f54] text-white" aria-hidden data-option-card-icon>
-        <img src="/figma/tests/target-03.svg" alt="" className="size-6" data-option-card-icon-glyph />
+        <HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.5} aria-hidden="true" data-option-card-icon-glyph />
       </span>
     );
   }
   return (
-    <span className="flex size-12 shrink-0 items-center justify-center rounded-[8px] bg-[#cbf0df]" aria-hidden data-option-card-icon>
-      <img src="/figma/tests/lock-keyhole.svg" alt="" className="size-6" data-option-card-icon-glyph />
+    <span className="flex size-12 shrink-0 items-center justify-center rounded-[8px] bg-[#cbf0df] text-white" aria-hidden data-option-card-icon>
+      <HugeiconsIcon icon={LockKeyIcon} size={24} strokeWidth={1.5} aria-hidden="true" data-option-card-icon-glyph />
     </span>
   );
 }

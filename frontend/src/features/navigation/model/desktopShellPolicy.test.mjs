@@ -31,5 +31,9 @@ assert.deepEqual(resolveDesktopShell({ pathname: '/help' }, true, true), {
   visible: true,
   activeItem: null,
 });
+assert.deepEqual(resolveDesktopShell({ pathname: '/subscription' }, true, true), {
+  visible: false,
+  activeItem: null,
+});
 
 console.log('Desktop shell policy contract passed');

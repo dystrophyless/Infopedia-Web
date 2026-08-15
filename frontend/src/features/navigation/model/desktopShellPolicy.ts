@@ -39,5 +39,6 @@ export function resolveDesktopShell(
   hydrated: boolean,
 ): DesktopShellDecision {
   if (!hydrated || !authenticated) return HIDDEN_DECISION;
+  if (location.pathname === '/subscription') return HIDDEN_DECISION;
   return { visible: true, activeItem: activeItemForPath(location.pathname) };
 }

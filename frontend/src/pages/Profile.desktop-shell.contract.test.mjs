@@ -40,12 +40,13 @@ assert.doesNotMatch(desktopShell, /activeTab === 'favorites'[\s\S]*navigate\('\/
 assert.doesNotMatch(desktopShell, /grid-cols-\[300px_minmax\(0,1fr\)\]/);
 assert.doesNotMatch(desktopShell, /<aside[\s\S]*FigmaProfileIcon/);
 assert.match(profileSource, /type SettingsView = 'home' \| 'account' \| 'email' \| 'username' \| 'password' \| 'subscription' \| 'about' \| 'delete'/);
-assert.match(profileSource, /<SettingsPanel[\s\S]*profile=\{profile\}[\s\S]*onProfileUpdated=/);
-const settingsPanel = profileSource.slice(profileSource.indexOf('function SettingsPanel('), profileSource.indexOf('function LanguageSettingsPanel'));
+assert.match(profileSource, /<DesktopSettingsPanel[\s\S]*profile=\{profile\}[\s\S]*onProfileUpdated=/);
+const settingsPanel = profileSource.slice(profileSource.indexOf('function DesktopSettingsPanel('), profileSource.indexOf('function SettingsActionButton('));
 assert.match(settingsPanel, /useState<SettingsView>\('home'\)/);
-assert.match(settingsPanel, /view === 'home'[\s\S]*SettingsActionButton[\s\S]*Account[\s\S]*Subscription[\s\S]*About/);
+assert.match(settingsPanel, /view === 'home'[\s\S]*desktopSettingsGeneralSection[\s\S]*desktopSettingsManagementSection[\s\S]*desktopSettingsAboutSection[\s\S]*desktopSettingsServiceRules[\s\S]*desktopSettingsPrivacyPolicy/);
+assert.doesNotMatch(settingsPanel, /desktopSettingsAccountSection/);
 assert.match(settingsPanel, /view === 'account'[\s\S]*SettingsActionButton[\s\S]*Email[\s\S]*Username[\s\S]*Password[\s\S]*Delete/);
-assert.doesNotMatch(settingsPanel, /view === 'home'[\s\S]*settingsLanguageTitle/);
+assert.match(settingsPanel, /view === 'home'[\s\S]*common\.language/);
 assert.match(settingsPanel, /view === 'email'[\s\S]*onBack=\{\(\) => setView\('account'\)\}/);
 assert.match(settingsPanel, /view === 'username'[\s\S]*onSaved=\{\(nextProfile\) => onProfileUpdated\?\.\(nextProfile\)\}/);
 assert.match(settingsPanel, /view === 'delete'[\s\S]*DeleteAccountPanel/);

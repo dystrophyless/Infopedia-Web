@@ -55,8 +55,7 @@ function compareReference(referencePath, actualPath) {
   writeFileSync(path.join(artifactDir, 'overlay.png'), PNG.sync.write(overlay));
   writeFileSync(path.join(artifactDir, 'diff.png'), PNG.sync.write(diff));
   const ratio = differingPixels / (reference.width * reference.height);
-  if (ratio > 0.020913 || differingPixels > 32524) throw new Error(`reference visual diff exceeds threshold: ${(ratio * 100).toFixed(2)}% pixels differ (${differingPixels})`);
-  return { differingPixels, ratio };
+  return { differingPixels, ratio, passed: ratio <= 0.020913 && differingPixels <= 32524 };
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -334,6 +333,7 @@ try {
       await page.screenshot({ path: path.join(artifactDir, 'monthly-cta-hover.png'), fullPage: true });
     }
     const diffSummary = diff ? `${(diff.ratio * 100).toFixed(2)}% (${diff.differingPixels} pixels)` : 'NOT RUN (reference unavailable)';
+    if (diff && !diff.passed) throw new Error(`reference visual diff exceeds threshold after responsive gates: ${diffSummary}`);
     console.log(`Subscription desktop visual contract passed; source ${JSON.stringify(sourceProvenance)}; 1440 reference diff ${diffSummary}.`);
   }
 } finally {

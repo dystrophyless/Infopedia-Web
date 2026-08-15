@@ -91,6 +91,47 @@ export const Mobile430Geometry: Story = {
   },
 };
 
+async function assertAdaptiveDesktopGeometry(
+  canvasElement: HTMLElement,
+  expected: { rowX: number; rowWidth: number; panelWidth: number; panelPadding: number },
+) {
+  const row = canvasElement.querySelector('[data-subscription-desktop-row]');
+  const left = canvasElement.querySelector('[data-subscription-desktop-left]');
+  const right = canvasElement.querySelector('[data-subscription-desktop-right]');
+  const back = canvasElement.querySelector('[data-subscription-desktop-back]');
+  expect(row).not.toBeNull();
+  expect(left).not.toBeNull();
+  expect(right).not.toBeNull();
+  expect(back).not.toBeNull();
+  if (!row || !left || !right || !back) return;
+
+  const rowRect = row.getBoundingClientRect();
+  const leftRect = left.getBoundingClientRect();
+  const rightRect = right.getBoundingClientRect();
+  const backRect = back.getBoundingClientRect();
+  expect(Math.round(rowRect.x)).toBe(expected.rowX);
+  expect(Math.round(rowRect.width)).toBe(expected.rowWidth);
+  expect(Math.round(leftRect.width)).toBe(expected.panelWidth);
+  expect(Math.round(rightRect.width)).toBe(expected.panelWidth);
+  expect(Math.round(rightRect.x - leftRect.right)).toBe(16);
+  expect(Math.round(Number.parseFloat(getComputedStyle(left).paddingLeft))).toBe(expected.panelPadding);
+  expect(Math.round(Number.parseFloat(getComputedStyle(right).paddingLeft))).toBe(expected.panelPadding);
+  expect(backRect.right <= rowRect.left || backRect.bottom <= rowRect.top).toBe(true);
+  expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
+}
+
+export const Desktop1024AdaptiveGeometry: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false }, locale: 'ru' },
+  parameters: { a11y: { config: { rules: [{ id: 'color-contrast', selector: '*:not([data-subscription-contrast-lock="annual-equivalent"])' }] } } },
+  play: async ({ canvasElement }) => assertAdaptiveDesktopGeometry(canvasElement, { rowX: 32, rowWidth: 960, panelWidth: 472, panelPadding: 32 }),
+};
+
+export const Desktop1280AdaptiveGeometry: Story = {
+  globals: { viewport: { value: 'desktop1280', isRotated: false }, locale: 'ru' },
+  parameters: { a11y: { config: { rules: [{ id: 'color-contrast', selector: '*:not([data-subscription-contrast-lock="annual-equivalent"])' }] } } },
+  play: async ({ canvasElement }) => assertAdaptiveDesktopGeometry(canvasElement, { rowX: 64, rowWidth: 1152, panelWidth: 568, panelPadding: 48 }),
+};
+
 export const Desktop1440x1080AnnualSelected: Story = {
   globals: { viewport: { value: 'desktop1440x1080', isRotated: false }, locale: 'ru' },
   parameters: { a11y: { config: { rules: [{ id: 'color-contrast', selector: '*:not([data-subscription-contrast-lock="annual-equivalent"])' }] } } },

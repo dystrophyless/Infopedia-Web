@@ -211,31 +211,85 @@ try {
     await page.screenshot({ path: path.join(artifactDir, 'annual-cta-hover.png'), fullPage: true });
     await page.mouse.move(200, 200);
     const referencePath = path.join(artifactDir, 'reference.png');
-    let diff;
+    let diff = null;
     try {
       diff = compareReference(referencePath, path.join(artifactDir, 'actual.png'));
     } catch (error) {
       if (error?.code === 'ENOENT' && error?.path === referencePath) {
         console.log(`NOT RUN: Figma reference unavailable at ${referencePath}`);
-        process.exitCode = 2;
       } else {
         throw error;
       }
     }
 
-    if (!process.exitCode) for (const [width, height] of [[1024, 768], [768, 1024]]) {
-      await page.setViewportSize({ width, height });
-      await page.reload({ waitUntil: 'domcontentloaded' });
+    const responsiveCases = [
+      { width: 768, height: 1024, rowX: 32, rowWidth: 704, panelWidth: 704, panelPadding: 32, columns: 1 },
+      { width: 1024, height: 768, rowX: 32, rowWidth: 960, panelWidth: 472, panelPadding: 32, columns: 2 },
+      { width: 1280, height: 800, rowX: 64, rowWidth: 1152, panelWidth: 568, panelPadding: 48, columns: 2 },
+      { width: 1440, height: 1080, rowX: 128, rowWidth: 1184, panelWidth: 584, panelPadding: 64, columns: 2 },
+    ];
+    const responsiveMeasurements = [];
+    for (const expected of responsiveCases) {
+      await page.setViewportSize({ width: expected.width, height: expected.height });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
       await page.locator('[data-subscription-desktop]').waitFor({ state: 'visible', timeout: 15_000 });
+      await page.evaluate(async () => { await document.fonts.ready; });
       const smoke = await page.evaluate(() => {
+        const rect = (selector) => { const node = document.querySelector(selector); const value = node?.getBoundingClientRect(); return value ? { x: value.x, y: value.y, right: value.right, bottom: value.bottom, width: value.width, height: value.height } : null; };
         const cta = document.querySelector('[data-subscription-desktop-cta]');
-        const rect = cta?.getBoundingClientRect();
-        return { scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth, ctaBottom: rect?.bottom ?? Infinity, viewportHeight: innerHeight };
+        const left = document.querySelector('[data-subscription-desktop-left]');
+        const right = document.querySelector('[data-subscription-desktop-right]');
+        return {
+          viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+          row: rect('[data-subscription-desktop-row]'),
+          left: rect('[data-subscription-desktop-left]'),
+          right: rect('[data-subscription-desktop-right]'),
+          back: rect('[data-subscription-desktop-back]'),
+          cta: rect('[data-subscription-desktop-cta]'),
+          padding: { left: left ? Number.parseFloat(getComputedStyle(left).paddingLeft) : NaN, right: right ? Number.parseFloat(getComputedStyle(right).paddingLeft) : NaN },
+          scroll: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight },
+        };
       });
-      if (smoke.scrollWidth > smoke.viewportWidth) throw new Error(`${width}x${height}: horizontal overflow`);
-      if (smoke.ctaBottom > smoke.viewportHeight) throw new Error(`${width}x${height}: CTA unreachable`);
+      responsiveMeasurements.push(smoke);
+      if (smoke.viewport.dpr !== 1) throw new Error(`${expected.width}x${expected.height}: DPR must be 1`);
+      near(smoke.row?.x ?? NaN, expected.rowX, 0.5, `${expected.width}: row x`);
+      near(smoke.row?.width ?? NaN, expected.rowWidth, 0.5, `${expected.width}: row width`);
+      near(smoke.left?.width ?? NaN, expected.panelWidth, 0.5, `${expected.width}: left width`);
+      near(smoke.right?.width ?? NaN, expected.panelWidth, 0.5, `${expected.width}: right width`);
+      near(smoke.padding.left, expected.panelPadding, 0.5, `${expected.width}: left padding`);
+      near(smoke.padding.right, expected.panelPadding, 0.5, `${expected.width}: right padding`);
+      if (expected.columns === 1) {
+        near((smoke.right?.y ?? NaN) - (smoke.left?.bottom ?? NaN), 16, 0.5, `${expected.width}: vertical card gap`);
+        if ((smoke.scroll.height ?? 0) <= expected.height) throw new Error(`${expected.width}: one-column layout must use natural vertical scroll`);
+      } else {
+        near((smoke.right?.x ?? NaN) - (smoke.left?.right ?? NaN), 16, 0.5, `${expected.width}: horizontal card gap`);
+        near(smoke.right?.y ?? NaN, smoke.left?.y ?? NaN, 0.5, `${expected.width}: card row alignment`);
+      }
+      if (!smoke.back || !smoke.row || !(smoke.back.right <= smoke.row.x || smoke.back.bottom <= smoke.row.y)) throw new Error(`${expected.width}: back button overlaps content`);
+      if (smoke.scroll.width > expected.width) throw new Error(`${expected.width}x${expected.height}: horizontal overflow`);
+      if (!smoke.cta || smoke.cta.bottom > smoke.scroll.height) throw new Error(`${expected.width}x${expected.height}: CTA unreachable in document flow`);
     }
-    if (!process.exitCode) {
+    writeFileSync(path.join(artifactDir, 'responsive-measurements.json'), `${JSON.stringify(responsiveMeasurements, null, 2)}\n`);
+
+    const mobileMeasurements = [];
+    for (const width of [320, 360, 390, 430]) {
+      const height = width === 320 ? 568 : width === 360 ? 800 : width === 390 ? 844 : 932;
+      await page.setViewportSize({ width, height });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+      await page.locator('[data-subscription-cta]').waitFor({ state: 'visible', timeout: 15_000 });
+      const mobile = await page.evaluate(() => ({
+        viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+        desktopDisplay: getComputedStyle(document.querySelector('[data-subscription-desktop]')).display,
+        mobileDisplay: getComputedStyle(document.querySelector('[data-mobile-page-frame]') ?? document.querySelector('main')).display,
+        scrollWidth: document.documentElement.scrollWidth,
+        ctaDisabled: document.querySelector('[data-subscription-cta]') instanceof HTMLButtonElement && document.querySelector('[data-subscription-cta]').disabled,
+      }));
+      mobileMeasurements.push(mobile);
+      if (mobile.viewport.dpr !== 1 || mobile.desktopDisplay !== 'none' || mobile.mobileDisplay === 'none' || mobile.scrollWidth > width || !mobile.ctaDisabled) throw new Error(`${width}x${height}: mobile preservation gate failed: ${JSON.stringify(mobile)}`);
+    }
+    writeFileSync(path.join(artifactDir, 'mobile-measurements.json'), `${JSON.stringify(mobileMeasurements, null, 2)}\n`);
+
+    {
       await page.setViewportSize({ width: 1440, height: 1080 });
       const monthlyUrl = `${storybook}/iframe.html?id=pages-subscription--desktop-1440-x-1080-monthly-visual&viewMode=story`;
       await page.goto(monthlyUrl, { waitUntil: 'domcontentloaded', timeout: 15_000 });
@@ -279,7 +333,8 @@ try {
       writeFileSync(hoverPath, `${JSON.stringify(hoverMeasurements, null, 2)}\n`);
       await page.screenshot({ path: path.join(artifactDir, 'monthly-cta-hover.png'), fullPage: true });
     }
-    console.log(`Subscription desktop visual contract passed; source ${JSON.stringify(sourceProvenance)}; reference diff ${(diff.ratio * 100).toFixed(2)}% (${diff.differingPixels} pixels).`);
+    const diffSummary = diff ? `${(diff.ratio * 100).toFixed(2)}% (${diff.differingPixels} pixels)` : 'NOT RUN (reference unavailable)';
+    console.log(`Subscription desktop visual contract passed; source ${JSON.stringify(sourceProvenance)}; 1440 reference diff ${diffSummary}.`);
   }
 } finally {
   await browser.close();

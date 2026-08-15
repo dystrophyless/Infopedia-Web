@@ -47,6 +47,8 @@ assert.match(componentSource, /target="_blank"/, 'step-one Testcenter CTA should
 assert.match(componentSource, /Clock01Icon/, 'duration should use the exact HugeIcons clock glyph');
 assert.match(componentSource, /DocumentAttachmentIcon/, 'dropzone should use the exact HugeIcons attachment glyph');
 assert.match(componentSource, /ArrowLeft01Icon[\s\S]*ArrowRight01Icon/, 'tutorial navigation should use HugeIcons arrows');
+assert.match(componentSource, /icon=\{UserAiIcon\}[\s\S]*size=\{32\}[\s\S]*aria-hidden="true"/, 'featured mobile benefit should use the selected decorative HugeIcons glyph');
+assert.doesNotMatch(componentSource, /figma-user-ai\.svg/, 'featured mobile benefit must not retain the migrated public SVG');
 
 assert.match(pageSource, /showUploadForm && \(\s*<AnalyzeDesktopUploadGuide/, 'the adaptive guide should own every upload viewport');
 assert.doesNotMatch(pageSource, /showDesktopUploadGuide/, 'Analyze should not retain a breakpoint-only guide branch');

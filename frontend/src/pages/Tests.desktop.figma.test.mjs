@@ -1,5 +1,4 @@
 ﻿import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -15,9 +14,6 @@ const chapterStoryPath = path.resolve(import.meta.dirname, '../features/tests/co
 const chapterStory = existsSync(chapterStoryPath) ? readFileSync(chapterStoryPath, 'utf8') : '';
 const ru = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../locales/ru/translation.json'), 'utf8'));
 const kk = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../locales/kk/translation.json'), 'utf8'));
-const lockPath = path.resolve(import.meta.dirname, '../../public/figma/tests/lock-keyhole.svg');
-const targetPath = path.resolve(import.meta.dirname, '../../public/figma/tests/target-03.svg');
-const trendPath = path.resolve(import.meta.dirname, '../../public/figma/tests/trending-up.svg');
 
 assert.ok(existsSync(viewPath), 'Desktop tests dashboard view should be feature-local');
 assert.match(page, /getTestsDashboard/);
@@ -72,11 +68,10 @@ assert.match(chapterCard, /data-chapter-title[\s\S]*text-\[16px\][\s\S]*leading-
 assert.match(chapterCard, /data-chapter-question-count[\s\S]*text-\[14px\][\s\S]*leading-\[14px\]/, 'question count must use exact 14px typography');
 assert.match(chapterCard, /h-\[102px\]/, 'chapter card content must keep the exact 102px Figma height');
 assert.match(chapterCard, /data-chapter-question-count[\s\S]*className="mt-auto/, 'question count must be bottom-anchored for every title length');
-assert.match(chapterCard, /\/figma\/tests\/trending-up\.svg/, 'delta must render the exact exported Figma asset');
-assert.match(chapterCard, /size-\[20px\]/, 'trend asset must have an exact 20x20 layout bbox');
+assert.match(chapterCard, /HugeiconsIcon[\s\S]*icon=\{ChartUpIcon\}[\s\S]*size=\{20\}/, 'delta must render the selected 20px HugeIcons glyph');
 assert.match(chapterCard, /deltaPoints > 0[\s\S]*-scale-x-100/, 'positive deltas must mirror the source glyph');
-assert.match(chapterCard, /metric="delta"[\s\S]*trending-up\.svg[\s\S]*formatDelta/, 'the delta metric target must wrap both the icon and value');
-assert.doesNotMatch(chapterCard, /HugeiconsIcon[\s\S]*TrendIcon/, 'the exact exported glyph must not be substituted by an icon package');
+assert.match(chapterCard, /metric="delta"[\s\S]*ChartUpIcon[\s\S]*formatDelta/, 'the delta metric target must wrap both the icon and value');
+assert.doesNotMatch(chapterCard, /trending-up\.svg|mask-image|MaskImage/, 'the migrated delta glyph must not retain an SVG mask');
 assert.match(story, /questionCount: 0/);
 assert.match(view, /text-\[#29ae70\]/);
 assert.match(view, /text-\[#bc251a\]/);
@@ -95,14 +90,8 @@ assert.doesNotMatch(view, /w-\[655\.34px\]/, 'show-more width must not be hardco
 assert.doesNotMatch(view, /<h1[^>]*>.*РўРµСЃС‚/);
 
 assert.ok(existsSync(optionStoryPath), 'isolated weak/mock option-card stories should exist');
-assert.ok(existsSync(lockPath), 'the exact exported lock-keyhole asset should be durable');
-assert.ok(existsSync(targetPath), 'the exact exported target-03 asset should be durable');
-assert.ok(existsSync(trendPath), 'the exact exported trending-up asset should be durable');
-assert.equal(createHash('sha256').update(readFileSync(lockPath)).digest('hex'), '8e59e79ce2eba7ca02cd5977c222d7a10e7b506f72eec0f7f9c2e04f19bcbad6');
-assert.equal(createHash('sha256').update(readFileSync(targetPath)).digest('hex'), 'af01f75ddfb0ac4206471aa7f24273232ec8a7ff4b0d8527b2be7d1cd45c7946');
-assert.equal(createHash('sha256').update(readFileSync(trendPath)).digest('hex'), '74f6208485a37202c914f8e1326969688b2823af27f26406be7f915e6cfe808e');
-assert.match(optionCard, /\/figma\/tests\/target-03\.svg/);
-assert.match(optionCard, /\/figma\/tests\/lock-keyhole\.svg/);
+assert.match(optionCard, /HugeiconsIcon[\s\S]*Target03Icon[\s\S]*LockKeyIcon/);
+assert.doesNotMatch(optionCard, /target-03\.svg|lock-keyhole\.svg/);
 assert.match(optionCard, /data-option-card-contract=\{contract\}/);
 assert.match(optionStory, /contract: 'weak-pre-analysis'/);
 assert.match(optionStory, /contract: 'mock-inactive'/);

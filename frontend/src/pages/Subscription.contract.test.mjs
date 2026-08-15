@@ -26,10 +26,12 @@ for (const text of ['2490₸', '9900₸', '-67%', '#EFEBF6', '#252329', '#A585DB
 assert.doesNotMatch(source, /-60%/);
 assert.doesNotMatch(source, /1490|17880|−40|Infopedia Premium/);
 assert.equal((source.match(/h-px w-full bg-\[#EFEAF8\]/g) ?? []).length, 3);
-for (const asset of ['timeline-today.svg', 'timeline-day-6.svg', 'timeline-day-7.svg']) {
-  const assetPath = path.resolve(dir, `../assets/figma-subscription/${asset}`);
-  assert.ok(existsSync(assetPath)); assert.ok(statSync(assetPath).size > 500); assert.match(source, new RegExp(asset.replace('.', '\\.')));
-}
+const timelineTodayPath = path.resolve(dir, '../assets/figma-subscription/timeline-today.svg');
+assert.ok(existsSync(timelineTodayPath)); assert.ok(statSync(timelineTodayPath).size > 500); assert.match(source, /timeline-today\.svg/);
+assert.match(source, /CreditCardIcon[\s\S]*Notification01Icon/);
+assert.match(source, /size-6[\s\S]*rounded-full[\s\S]*bg-\[#EFEAF8\][\s\S]*icon=\{CreditCardIcon\}[\s\S]*size=\{14\}/);
+assert.match(source, /size-6[\s\S]*rounded-full[\s\S]*bg-\[#EFEAF8\][\s\S]*icon=\{Notification01Icon\}[\s\S]*size=\{14\}/);
+assert.doesNotMatch(source, /timeline-day-6\.svg|timeline-day-7\.svg|timelineDay6|timelineDay7/);
 assert.doesNotMatch(source, /https:\/\/www\.figma\.com\/api\/mcp\/asset/);
 for (const key of ['subscriptionPurchase', 'subscriptionPremiumTitle', 'subscriptionTimelineToday', 'subscriptionTimelineDay6', 'subscriptionTimelineDay7', 'subscriptionBenefitsEyebrow', 'subscriptionBenefitPlan', 'subscriptionBenefitTests', 'subscriptionBenefitTopics']) assert.match(source, new RegExp(key));
 assert.match(source, /aria-live="polite"/); assert.doesNotMatch(source, /fetch\(|axios\.|localStorage|sessionStorage/);

@@ -30,6 +30,8 @@ temp/
 node_modules/
 frontend/test-results/
 frontend/.storybook-*.log
+frontend/.review-storybook-*.err.log
+frontend/.review-storybook-*.out.log
 frontend/storybook-*.log
 frontend/debug-storybook.log
 frontend/task5-*.log

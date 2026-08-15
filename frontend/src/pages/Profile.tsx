@@ -7,12 +7,15 @@ import {
   AlertCircleIcon,
   AllBookmarkIcon,
   ArrowLeft01Icon,
+  ArrowDown01Icon,
   ArrowRight01Icon,
   ChartColumnIcon,
   Coins02Icon,
   Delete02Icon,
   InformationCircleIcon,
   Invoice03Icon,
+  GoogleDocIcon,
+  LogOut as LogOutIcon,
   MentorIcon,
   Logout01Icon,
   Mail01Icon,
@@ -23,6 +26,7 @@ import {
   UserIcon,
   UserEdit01Icon,
   ResetPasswordIcon,
+  Scroll01Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
@@ -42,6 +46,7 @@ import type { AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
+import languagesAsset from '../assets/figma-profile/languages.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
 import {
   parseProfileTab,
@@ -145,7 +150,9 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-bg px-6 pb-16 pt-14 max-md:min-h-screen max-md:px-0 max-md:pb-[var(--mobile-page-content-end-inset,0px)] max-md:pt-0">
+    <div className={`min-h-[calc(100vh-80px)] bg-bg max-md:min-h-screen max-md:px-0 max-md:pb-[var(--mobile-page-content-end-inset,0px)] max-md:pt-0 ${
+      activeTab === 'settings' ? 'md:p-0' : 'px-6 pb-16 pt-14'
+    }`}>
       <div className="mx-auto max-w-[640px] md:hidden">
         {loading && !profile && <SkeletonCard />}
 
@@ -169,6 +176,16 @@ export function Profile() {
         )}
       </div>
 
+      {profile && activeTab === 'settings' ? (
+        <DesktopSettingsPanel
+          profile={profile}
+          onLogout={handleLogout}
+          onProfileUpdated={(nextProfile) => {
+            setProfile(nextProfile);
+            setUser(nextProfile);
+          }}
+        />
+      ) : (
       <main className="mx-auto w-full max-w-[1040px] rounded-[8px] border border-border/45 bg-surface max-md:hidden">
           {loading && !profile && (
             <div className="p-8">
@@ -233,18 +250,10 @@ export function Profile() {
               {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
               {activeTab === 'weakTopics' && <WeakTopicsPanel />}
               {activeTab === 'favorites' && <FavoritesContent embedded detailBackTo="/profile" />}
-              {activeTab === 'settings' && (
-                <SettingsPanel
-                  profile={profile}
-                  onProfileUpdated={(nextProfile) => {
-                    setProfile(nextProfile);
-                    setUser(nextProfile);
-                  }}
-                />
-              )}
             </>
           )}
         </main>
+      )}
     </div>
   );
 }
@@ -1470,7 +1479,7 @@ function MobileProfileDetail({
         <div className="overflow-hidden rounded-[8px] bg-white">
           {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
           {activeTab === 'weakTopics' && <WeakTopicsPanel />}
-          {activeTab === 'settings' && <SettingsPanel profile={profile} />}
+          {activeTab === 'settings' && <DesktopSettingsPanel profile={profile} />}
         </div>
       </div>
     </section>
@@ -1918,15 +1927,75 @@ function WeakTopicQuestionMeta({ topic }: { topic: AnalyzeChapterResult }) {
 
 type SettingsView = 'home' | 'account' | 'email' | 'username' | 'password' | 'subscription' | 'about' | 'delete';
 
-function SettingsPanel({
+function DesktopSettingsPanel({
   profile,
+  onLogout,
   onProfileUpdated,
 }: {
   profile: User;
+  onLogout?: () => void;
   onProfileUpdated?: (profile: User) => void;
 }) {
   const { t } = useTranslation();
   const [view, setView] = useState<SettingsView>('home');
+  const lang = useLangStore((state) => state.lang);
+  const setLang = useLangStore((state) => state.setLang);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const languageMenuId = useId();
+  const languagePopoverRef = useRef<HTMLDivElement>(null);
+  const languageTriggerRef = useRef<HTMLButtonElement>(null);
+  const languageOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const languageOptions: Array<{ value: Language; labelKey: 'common.kazakh' | 'common.russian' }> = [
+    { value: 'kk', labelKey: 'common.kazakh' },
+    { value: 'ru', labelKey: 'common.russian' },
+  ];
+
+  function closeLanguageMenu(returnFocus = false) {
+    setLanguageOpen(false);
+    if (returnFocus) requestAnimationFrame(() => languageTriggerRef.current?.focus());
+  }
+
+  function openLanguageMenu() {
+    setLanguageOpen(true);
+  }
+
+  function selectLanguage(value: Language) {
+    setLang(value);
+    closeLanguageMenu(true);
+  }
+
+  function handleLanguageOptionKeyDown(event: React.KeyboardEvent, index: number) {
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowDown') nextIndex = (index + 1) % languageOptions.length;
+    if (event.key === 'ArrowUp') nextIndex = (index - 1 + languageOptions.length) % languageOptions.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = languageOptions.length - 1;
+    if (nextIndex !== null) {
+      event.preventDefault();
+      languageOptionRefs.current[nextIndex]?.focus();
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeLanguageMenu(true);
+    }
+    if (event.key === 'Tab') window.setTimeout(() => closeLanguageMenu(), 0);
+  }
+
+  useEffect(() => {
+    if (!languageOpen) return;
+    const selectedIndex = Math.max(0, languageOptions.findIndex((option) => option.value === lang));
+    languageOptionRefs.current[selectedIndex]?.focus();
+  }, [languageOpen, lang]);
+
+  useEffect(() => {
+    if (!languageOpen) return;
+    function handleOutsidePointerDown(event: PointerEvent) {
+      if (!languagePopoverRef.current?.contains(event.target as Node)) closeLanguageMenu();
+    }
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  }, [languageOpen]);
 
   if (view === 'account') {
     return <section className="px-8 py-12 max-md:px-5"><div className="space-y-3">
@@ -2009,11 +2078,141 @@ function SettingsPanel({
   }
 
   if (view === 'home') {
-    return <section className="px-8 py-12 max-md:px-5"><div className="min-h-[320px] space-y-3">
-      <SettingsActionButton icon={UserIcon} title={t('profile.mobileSettingsAccountTitle')} body={t('profile.mobileSettingsAccountHelper')} onClick={() => setView('account')} />
-      <SettingsActionButton icon={Invoice03Icon} title={t('profile.mobileSettingsSubscriptionTitle')} body={t('profile.mobileSettingsSubscriptionHelper')} onClick={() => setView('subscription')} />
-      <SettingsActionButton icon={InformationCircleIcon} title={t('profile.mobileSettingsAboutTitle')} body={t('profile.mobileSettingsAboutHelper')} onClick={() => setView('about')} />
-    </div></section>;
+    return (
+      <section data-figma-node="1135:3816" className="min-h-screen bg-[#efeaf8] px-6 py-16 max-md:hidden xl:px-[240px]">
+        <div className="mx-auto w-full max-w-[639px] xl:mx-0 xl:w-[639px]">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
+              <h1 className="pl-2 text-[20px] font-medium leading-[20px] text-[#161519]">{t('profile.navSettings')}</h1>
+            <div className="rounded-[16px] bg-white p-4">
+              <button
+                type="button"
+                onClick={() => setView('account')}
+                className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+              >
+                <HugeiconsIcon icon={UserIcon} size={20} strokeWidth={1.5} className="shrink-0 text-[#865bcf]" aria-hidden="true" />
+                <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('profile.mobileSettingsAccountTitle')}</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+              </button>
+            </div>
+            </div>
+
+            <section aria-labelledby="desktop-settings-general-heading" className="flex flex-col gap-4">
+              <h2 id="desktop-settings-general-heading" className="text-[16px] font-medium leading-[16px] text-[#6e6779]">
+                {t('profile.desktopSettingsGeneralSection')}
+              </h2>
+              <div ref={languagePopoverRef} className="relative rounded-[16px] bg-white p-4">
+                <button
+                  ref={languageTriggerRef}
+                  type="button"
+                  onClick={() => languageOpen ? closeLanguageMenu() : openLanguageMenu()}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      openLanguageMenu();
+                    }
+                    if (event.key === 'Escape' && languageOpen) {
+                      event.preventDefault();
+                      closeLanguageMenu(true);
+                    }
+                  }}
+                  aria-haspopup="menu"
+                  aria-expanded={languageOpen}
+                  aria-controls={languageMenuId}
+                  className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+                >
+                  <img src={languagesAsset} alt="" className="size-5 shrink-0" />
+                  <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
+                  <span className="text-[14px] font-normal leading-[14px] text-[#161519]">{t(lang === 'kk' ? 'common.kazakh' : 'common.russian')}</span>
+                  <HugeiconsIcon icon={ArrowDown01Icon} size={18} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                </button>
+
+                {languageOpen && (
+                  <ul
+                    id={languageMenuId}
+                    role="menu"
+                    aria-label={t('common.language')}
+                    className="absolute right-4 top-[60px] z-30 w-[220px] overflow-hidden rounded-[16px] border border-[#ded2f1] bg-white p-2"
+                  >
+                    {languageOptions.map((option, index) => (
+                      <li key={option.value} className={index > 0 ? 'border-t border-[#f8f5fc]' : undefined}>
+                        <button
+                          ref={(node) => { languageOptionRefs.current[index] = node; }}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={option.value === lang}
+                          tabIndex={option.value === lang ? 0 : -1}
+                          onClick={() => selectLanguage(option.value)}
+                          onKeyDown={(event) => handleLanguageOptionKeyDown(event, index)}
+                          className="flex h-10 w-full items-center rounded-[8px] px-3 text-left text-[14px] leading-[14px] text-[#252329] hover:bg-[#f8f5fc] focus-visible:bg-[#f8f5fc] focus-visible:outline-none"
+                        >
+                          <span className="flex-1">{t(option.labelKey)}</span>
+                          {option.value === lang && <HugeiconsIcon icon={Tick02Icon} size={18} strokeWidth={1.7} className="text-[#6a37c3]" aria-hidden="true" />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+
+            <section aria-labelledby="desktop-settings-management-heading" className="flex flex-col gap-4">
+              <h2 id="desktop-settings-management-heading" className="text-[16px] font-medium leading-[16px] text-[#6e6779]">
+                {t('profile.desktopSettingsManagementSection')}
+              </h2>
+              <div className="rounded-[16px] bg-white p-4">
+                <button type="button" onClick={() => setView('subscription')} className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]">
+                  <span
+                    aria-hidden="true"
+                    className="size-5 shrink-0 bg-[#865bcf]"
+                    style={{
+                      WebkitMaskImage: `url(${mobilePremiumAsset})`,
+                      maskImage: `url(${mobilePremiumAsset})`,
+                      WebkitMaskPosition: 'center',
+                      maskPosition: 'center',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskSize: 'contain',
+                      maskSize: 'contain',
+                    }}
+                  />
+                  <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('profile.mobileSettingsSubscriptionTitle')}</span>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                </button>
+              </div>
+            </section>
+
+            <section aria-labelledby="desktop-settings-about-heading" className="flex flex-col gap-4">
+              <h2 id="desktop-settings-about-heading" className="text-[16px] font-medium leading-[16px] text-[#6e6779]">
+                {t('profile.desktopSettingsAboutSection')}
+              </h2>
+              <div className="flex flex-col gap-4 rounded-[16px] bg-white p-4">
+                <button type="button" onClick={() => setView('about')} className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]">
+                  <HugeiconsIcon icon={Scroll01Icon} size={20} strokeWidth={1.5} className="shrink-0 text-[#865bcf]" aria-hidden="true" />
+                  <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('profile.desktopSettingsServiceRules')}</span>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                </button>
+                <div className="h-px w-full bg-[#f8f5fc]" aria-hidden="true" />
+                <button type="button" onClick={() => setView('about')} className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]">
+                  <HugeiconsIcon icon={GoogleDocIcon} size={20} strokeWidth={1.5} className="shrink-0 text-[#865bcf]" aria-hidden="true" />
+                  <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('profile.desktopSettingsPrivacyPolicy')}</span>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-8 flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#f8f5fc] p-4 transition-colors hover:bg-white focus-visible:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+          >
+            <HugeiconsIcon icon={LogOutIcon} size={20} strokeWidth={1.5} className="text-[#f69a93]" aria-hidden="true" />
+            <span className="text-[16px] font-medium leading-[16px] text-[#6e6779]">{t('profile.logout')}</span>
+          </button>
+        </div>
+      </section>
+    );
   }
 
   return null;

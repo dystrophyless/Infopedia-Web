@@ -19,7 +19,7 @@
     "test-storybook": "vitest run --project=storybook"
   },
   "dependencies": {
-    "@hugeicons/core-free-icons": "^4.2.2",
+    "@hugeicons/core-free-icons": "^4.2.3",
     "@hugeicons/react": "^1.1.9",
     "axios": "^1.7.7",
     "i18next": "^23.16.0",

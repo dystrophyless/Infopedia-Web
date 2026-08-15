@@ -84,6 +84,11 @@ assert.doesNotMatch(source, /h-\[(?:80|84)px\]|py-5/);
 assert.match(source, /function SubscriptionPlanCard[\s\S]*h-\[108px\]/);
 assert.match(source, /rounded-\[8px\] bg-\[#DED2F1\][^\"]*px-2 py-0\.5 text-\[14px\] leading-\[14px\] text-\[#6A37C3\]/);
 assert.match(source, /data-subscription-contrast-lock="annual-equivalent"/);
+for (const sourcePair of ['mobile-supporting-copy', 'mobile-plan-price', 'mobile-plan-meta', 'mobile-discount', 'mobile-disclosure']) {
+  assert.match(source, new RegExp(`data-subscription-contrast-lock="${sourcePair}"`));
+}
+assert.match(story, /export const Mobile430Geometry:[\s\S]*selector: '\*:not\(\[data-subscription-contrast-lock\]\)'[\s\S]*play:/);
+assert.doesNotMatch(story, /id: 'color-contrast'[\s\S]{0,120}(?:enabled:\s*false|disable:\s*true)/, 'Source color exception must remain selector-scoped');
 assert.match(source, /data-subscription-desktop-cta[\s\S]*text-\[18px\][\s\S]*leading-\[18px\]/);
 for (const localeName of ['ru', 'kk']) { const raw = readFileSync(path.resolve(dir, `../locales/${localeName}/translation.json`), 'utf8'); const keys = [...raw.matchAll(/^\s+"(subscription[A-Za-z0-9]+)"\s*:/gm)].map(m => m[1]); assert.equal(keys.length, new Set(keys).size, `${localeName} duplicate subscription keys`); assert.match(raw, /"subscriptionDiscount": "-67%"/); assert.doesNotMatch(raw, /"subscriptionDiscount": "-60%"/); assert.doesNotMatch(raw, /"subscriptionDesktopCta"\s*:/); for (const key of ['subscriptionDesktopHeading', 'subscriptionDesktopSubtitle', 'subscriptionDesktopFeatureSearchTitle', 'subscriptionDesktopFeatureTestsTitle', 'subscriptionDesktopFeatureAnalyzeTitle', 'subscriptionDesktopPlanHeading', 'subscriptionDesktopPlanSubtitle', 'subscriptionDesktopCtaMonthly', 'subscriptionDesktopCtaAnnual']) assert.match(raw, new RegExp(`"${key}"\\s*:\\s*"[^"].+"`)); }
 const ruLocale = readFileSync(path.resolve(dir, '../locales/ru/translation.json'), 'utf8');

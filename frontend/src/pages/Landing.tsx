@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowDown01Icon,
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
   Bookmark02Icon,
   BookOpen01Icon,
   BookOpen02Icon,
@@ -58,8 +55,8 @@ function DesktopGuestHero({ isAuthenticated = false }: { isAuthenticated?: boole
   const { t } = useTranslation();
 
   return (
-    <section className="box-border min-h-[656px] overflow-hidden bg-[#efebf6] px-8 pb-[168px] pt-[124px] text-center">
-      <div className="mx-auto flex max-w-[1120px] flex-col items-center">
+    <section className="box-border min-h-[656px] overflow-hidden bg-[#efebf6] pb-[168px] pt-[124px] text-center">
+      <div data-desktop-content-rail className="mx-auto flex w-full max-w-[1152px] flex-col items-center px-[24px]">
         <p className="text-[16px] font-medium uppercase leading-none tracking-[0.02em] text-[#6e6779]">
           {t('landing.desktopEyebrow', { defaultValue: 'ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ' })}
         </p>
@@ -110,8 +107,6 @@ function DesktopGuestSections({ isAuthenticated = false }: { isAuthenticated?: b
 
 function DesktopFeatureCards() {
   const { t } = useTranslation();
-  const featureRailRef = useRef<HTMLDivElement>(null);
-  const [featureRailState, setFeatureRailState] = useState({ atStart: true, atEnd: false });
   const features = [
     {
       image: '/mobile-feature-weak-topics.png',
@@ -128,51 +123,12 @@ function DesktopFeatureCards() {
       title: t('landing.mobileToolTermTitle'),
       description: t('landing.mobileToolTermDesc'),
     },
-    {
-      image: '/mobile-feature-semantic.png',
-      title: t('landing.mobileToolSemanticTitle'),
-      description: t('landing.mobileToolSemanticDesc'),
-    },
   ];
 
-  const syncFeatureRailState = useCallback(() => {
-    const node = featureRailRef.current;
-    if (!node) return;
-    const maxScrollLeft = Math.max(0, node.scrollWidth - node.clientWidth);
-    const nextState = {
-      atStart: node.scrollLeft <= 1,
-      atEnd: node.scrollLeft >= maxScrollLeft - 1,
-    };
-    setFeatureRailState((current) =>
-      current.atStart === nextState.atStart && current.atEnd === nextState.atEnd ? current : nextState,
-    );
-  }, []);
-
-  useEffect(() => {
-    syncFeatureRailState();
-    const node = featureRailRef.current;
-    if (!node) return;
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', syncFeatureRailState);
-      return () => window.removeEventListener('resize', syncFeatureRailState);
-    }
-    const observer = new ResizeObserver(syncFeatureRailState);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [syncFeatureRailState]);
-
-  const scrollFeatureRail = (direction: -1 | 1) => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    featureRailRef.current?.scrollBy({
-      left: direction * 398,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
-    });
-  };
-
   return (
-    <section id="tools" className="scroll-mt-[112px] overflow-hidden bg-[#efebf6] pb-[64px]">
-      <div className="mx-auto w-full max-w-[1120px]">
-        <div className="flex w-full items-end justify-between gap-8">
+    <section id="tools" data-nav-section className="overflow-hidden bg-[#efebf6] pb-[64px]">
+      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px]">
+        <div className="flex w-full items-end">
           <h2 className="text-[48px] font-medium leading-[48px] text-[#161519]">
             {t('landing.desktopToolsTitleLead', { defaultValue: 'Всё, что нужно для подготовки' })}
             <br />
@@ -180,51 +136,27 @@ function DesktopFeatureCards() {
               {t('landing.desktopToolsTitleAccent', { defaultValue: 'в одном месте' })}
             </span>
           </h2>
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              aria-label={t('landing.desktopFeaturesPrevious')}
-              aria-controls="desktop-feature-rail"
-              disabled={featureRailState.atStart}
-              className="flex size-12 items-center justify-center rounded-[16px] bg-white text-[#6a37c3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3] disabled:cursor-not-allowed disabled:opacity-40"
-              onClick={() => scrollFeatureRail(-1)}
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={22} strokeWidth={1.7} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-label={t('landing.desktopFeaturesNext')}
-              aria-controls="desktop-feature-rail"
-              disabled={featureRailState.atEnd}
-              className="flex size-12 items-center justify-center rounded-[16px] bg-[#6a37c3] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3] disabled:cursor-not-allowed disabled:opacity-40"
-              onClick={() => scrollFeatureRail(1)}
-            >
-              <HugeiconsIcon icon={ArrowRight01Icon} size={22} strokeWidth={1.7} aria-hidden="true" />
-            </button>
-          </div>
         </div>
-        <div
-          id="desktop-feature-rail"
-          ref={featureRailRef}
-          role="region"
-          aria-roledescription={t('landing.desktopFeaturesCarouselRole')}
-          className="mt-10 w-full overflow-x-auto scroll-smooth [scrollbar-width:none] motion-reduce:scroll-auto [&::-webkit-scrollbar]:hidden"
-          aria-label={t('landing.desktopToolsTitleLead')}
-          onScroll={syncFeatureRailState}
-        >
-          <div className="flex w-max snap-x snap-mandatory gap-[32px]">
-            {features.map((feature) => (
-              <article key={feature.image} className="relative h-[493px] w-[366px] shrink-0 snap-start">
-                <div className="absolute inset-x-0 bottom-[64px] top-[93px] rounded-[16px] bg-white" />
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-[300px] items-center justify-center overflow-hidden">
-                  <img src={feature.image} alt="" aria-hidden="true" className="h-full w-full object-contain" />
-                </div>
-                <div className="absolute inset-x-8 bottom-[92px] z-20">
-                  <h3 className="text-[20px] font-medium leading-5 text-[#6a37c3]">{feature.title}</h3>
-                  <p className="mt-3 text-[16px] leading-4 text-[#8c8698]">{feature.description}</p>
-                </div>
-              </article>
-            ))}
+        <div className="mt-10 w-full overflow-visible">
+          <div id="desktop-feature-rail" className="h-[517px] w-full overflow-visible">
+            <div className="grid h-full w-full min-w-0 grid-cols-3 gap-[32px]">
+              {features.map((feature) => (
+                <Link
+                  key={feature.image}
+                  to={ONBOARDING_TARGET}
+                  className="group relative flex h-[493px] min-w-0 flex-col overflow-hidden rounded-[16px] transition-transform duration-200 ease-out hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3] motion-reduce:transition-none motion-reduce:hover:scale-100"
+                >
+                  <div className="absolute inset-x-0 bottom-[64px] top-[93px] rounded-[16px] bg-white" />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-[300px] items-center justify-center overflow-hidden">
+                    <img src={feature.image} alt="" aria-hidden="true" className="h-full w-full object-contain" />
+                  </div>
+                  <div className="absolute inset-x-8 bottom-[92px] z-20">
+                    <h3 className="text-[20px] font-medium leading-5 text-[#6a37c3]">{feature.title}</h3>
+                    <p className="mt-3 text-[16px] leading-4 text-[#8c8698]">{feature.description}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -236,8 +168,8 @@ function DesktopSourceProof({ isAuthenticated = false }: { isAuthenticated?: boo
   const { t } = useTranslation();
 
   return (
-    <section id="featured-terms" className="scroll-mt-[112px] bg-[#efebf6] px-8 pb-[88px]">
-      <div className="mx-auto w-full max-w-[1120px]">
+    <section id="featured-terms" data-nav-section className="bg-[#efebf6] pb-[88px]">
+      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px]">
         <h2 className="text-[48px] font-medium leading-[48px] text-[#161519]">
           {t('landing.desktopTermsTitleLead', { defaultValue: 'База из 5000+ терминов' })}
           <br />
@@ -323,8 +255,8 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
   ];
 
   return (
-    <section id="desktop-analysis" className="scroll-mt-[112px] bg-[#efebf6] px-8 pb-[220px]">
-      <div className="mx-auto w-full max-w-[1120px]">
+    <section id="desktop-analysis" data-nav-section className="bg-[#efebf6] pb-[220px]">
+      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px]">
         <div data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-[327px]">
           <h2 className="text-[48px] font-medium leading-[48px] text-[#161519] md:col-span-2 xl:absolute xl:left-0 xl:top-0">
             {t('landing.desktopAnalyzeTitleLead', { defaultValue: 'Проанализируйте свой ЕНТ' })}

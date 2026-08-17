@@ -27,6 +27,44 @@ html {
   overscroll-behavior-y: none;
 }
 
+[data-nav-section] {
+  scroll-margin-top: var(--header-offset, 80px);
+}
+
+.nav-item {
+  position: relative;
+  color: #b1acb9;
+  font-family: 'Mabry Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  transition: color 150ms ease;
+}
+
+.nav-item[aria-current='true'],
+.nav-item:hover {
+  color: #161519;
+}
+
+.nav-item__underline {
+  pointer-events: none;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: #6a37c3;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 200ms ease;
+}
+
+.nav-item:hover .nav-item__underline,
+.nav-item[aria-current='true'] .nav-item__underline {
+  transform: scaleX(1);
+}
+
 body {
   font-family: 'Mabry Pro', sans-serif;
   background-color: var(--color-bg);

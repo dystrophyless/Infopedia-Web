@@ -12,7 +12,8 @@
     "language": "Русский",
     "features": "Возможности",
     "termBase": "База терминов",
-    "subscription": "Подписка"
+    "subscription": "Подписка",
+    "start": "Начать"
   },
   "common": {
     "loading": "Загрузка...",
@@ -111,9 +112,6 @@
     "desktopHeroSubtitle": "Мы собрали все 15 книг, по которым приходят вопросы ЕНТ, в одну базу. У каждого ответа — цитата, страница и название книги.",
     "desktopToolsTitleLead": "Всё, что нужно для подготовки",
     "desktopToolsTitleAccent": "в одном месте",
-    "desktopFeaturesPrevious": "Предыдущая возможность",
-    "desktopFeaturesNext": "Следующая возможность",
-    "desktopFeaturesCarouselRole": "карусель",
     "desktopTermsTitleLead": "База из 5000+ терминов",
     "desktopTermsTitleAccent": "в один клик",
     "desktopSourceTitleLead": "Не просто объясняем.",

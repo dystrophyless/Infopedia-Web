@@ -12,7 +12,8 @@
     "language": "Қазақша",
     "features": "Мүмкіндіктер",
     "termBase": "Терминдер базасы",
-    "subscription": "Жазылым"
+    "subscription": "Жазылым",
+    "start": "Бастау"
   },
   "common": {
     "loading": "Жүктелуде...",
@@ -111,9 +112,6 @@
     "desktopHeroSubtitle": "ҰБТ сұрақтары алынатын 15 кітаптың бәрін бір базаға жинадық. Әр жауапта дәйексөз, бет және кітап атауы бар.",
     "desktopToolsTitleLead": "Дайындыққа керектің бәрі",
     "desktopToolsTitleAccent": "бір жерде",
-    "desktopFeaturesPrevious": "Алдыңғы мүмкіндік",
-    "desktopFeaturesNext": "Келесі мүмкіндік",
-    "desktopFeaturesCarouselRole": "карусель",
     "desktopTermsTitleLead": "5000+ термин базасы",
     "desktopTermsTitleAccent": "бір басуда",
     "desktopSourceTitleLead": "Жай ғана түсіндірмейміз.",

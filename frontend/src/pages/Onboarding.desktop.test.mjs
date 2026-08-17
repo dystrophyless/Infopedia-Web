@@ -74,9 +74,18 @@ assert.match(onboardingSource, /desktopFlowStep=\{step === 'grade' \? 1 : 2\}/);
 assert.match(registerSource, /desktopFlowStep=\{3\}/);
 assert.match(
   loginSource,
-  /<GoogleAuthButton onClick=\{handleGoogleAuth\}>/,
+  /<GoogleAuthButton onClick=\{handleGoogleAuth\}(?: desktopVisual="onboarding")?>/,
   'Login should keep using the shared GoogleAuthButton and its exact Figma asset',
 );
+assert.match(loginSource, /desktopLayout="centered-card"/, 'Login should opt into the standalone centered desktop card');
+assert.doesNotMatch(loginSource, /desktopFlowStep=\{3\}/, 'Login should not activate the onboarding sidebar');
+assert.match(loginSource, /desktopContentWidth="narrow"/, 'Login should use the narrow registration content width');
+assert.match(loginSource, /desktopVisual="onboarding"/, 'Login controls should use the onboarding desktop visual');
+assert.match(loginSource, /<AuthSubmit[\s\S]*mobileVisual="figma-auth"[\s\S]*desktopVisual="onboarding"/, 'Login submit should use responsive onboarding visuals');
+assert.match(loginSource, /<AuthDivider label=\{t\('auth\.or'\)\} desktopVisual="onboarding" \/>/, 'Login divider should use onboarding desktop visual');
+assert.match(loginSource, /<GoogleAuthButton onClick=\{handleGoogleAuth\} desktopVisual="onboarding">/, 'Login Google action should use onboarding desktop visual');
+assert.match(loginSource, /to="\/onboarding"/, 'Login footer should navigate to onboarding');
+assert.doesNotMatch(loginSource, /to="\/register"/, 'Login should not retain the legacy registration footer route');
 assert.match(
   onboardingSource,
   /data-onboarding-indicator="desktop"[\s\S]*hidden size-5 shrink-0 rounded-full border[\s\S]*min-\[1440px\]:block/,

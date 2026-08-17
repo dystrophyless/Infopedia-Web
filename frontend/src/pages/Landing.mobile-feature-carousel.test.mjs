@@ -138,14 +138,20 @@ assert.match(
 
 assert.match(
   desktopToolsFeatureSource,
-  /mobile-feature-weak-topics\.png[\s\S]*mobile-feature-tests\.png[\s\S]*mobile-feature-term\.png[\s\S]*mobile-feature-semantic\.png/,
-  'Desktop tools section should reuse all four approved mobile feature assets',
+  /mobile-feature-weak-topics\.png[\s\S]*mobile-feature-tests\.png[\s\S]*mobile-feature-term\.png/,
+  'Desktop tools section should render exactly the three approved feature assets',
+);
+
+assert.doesNotMatch(
+  desktopToolsFeatureSource,
+  /mobile-feature-semantic\.png|ArrowLeft01Icon|ArrowRight01Icon|overflow-x-auto|w-max|snap-x|snap-mandatory|aria-roledescription/,
+  'Desktop tools section should not include the removed fourth card or carousel behavior',
 );
 
 assert.match(
   desktopToolsFeatureSource,
-  /overflow-hidden[\s\S]*gap-\[32px\][\s\S]*h-\[493px\][\s\S]*w-\[366px\]/,
-  'Desktop tools section should render the clipped Figma four-card rail',
+  /grid h-full w-full min-w-0 grid-cols-3 gap-\[32px\][\s\S]*h-\[493px\] min-w-0/,
+  'Desktop tools section should render three equal-width cards in a fitting grid',
 );
 
 assert.doesNotMatch(

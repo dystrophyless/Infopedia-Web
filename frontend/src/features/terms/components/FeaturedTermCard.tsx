@@ -124,7 +124,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
   }, [fullDefinitionText]);
 
   const definitionFadeClass = isGuestDesktopVariant ? 'from-surface-subtle' : variant === 'guest' || isGuestLandingVariant ? 'from-white' : isMobileVariant ? tone.fadeClassName : 'from-surface';
-  const definitionFade = visibleDefinition.overflowing ? (
+  const definitionFade = !isGuestLandingVariant && visibleDefinition.overflowing ? (
     <span aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-[1.75em] bg-gradient-to-t ${definitionFadeClass} to-transparent`} />
   ) : null;
 
@@ -141,7 +141,12 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
           : 'h-[325px] w-[min(612px,calc(100vw_-_96px))] rounded-[15px] border border-border bg-surface p-[50px] max-md:h-[280px] max-md:w-[88vw] max-md:p-8';
 
   const preview = (className: string) => (
-    <MeasuredTextPreview text={visibleDefinition.text} className={className} fadeClassName={definitionFadeClass} maxHeight={definitionPreviewRef.current?.parentElement?.clientHeight ?? 80} />
+    <MeasuredTextPreview
+      text={isGuestLandingVariant ? fullDefinitionText : visibleDefinition.text}
+      className={className}
+      fadeClassName={definitionFadeClass}
+      maxHeight={isGuestLandingVariant ? 56 : definitionPreviewRef.current?.parentElement?.clientHeight ?? 80}
+    />
   );
 
   const cardContent = (
@@ -149,11 +154,11 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
       {isGuestLikeVariant ? (
         <div className="flex h-full min-h-0 min-w-0 flex-col">
           <h3 className={`min-w-0 truncate ${isGuestDesktopVariant ? 'text-[20px] leading-[20px]' : isGuestLandingVariant ? 'text-[16px] leading-[16px]' : 'text-[15px] leading-[15px]'} font-medium text-action-selected`}>{oneLineTermName(term.name)}</h3>
-          <div className={`${isGuestDesktopVariant ? 'mt-5' : 'mt-3'} relative min-h-0 min-w-0 flex-1`}>
+          <div className={`${isGuestDesktopVariant ? 'mt-5' : isGuestLandingVariant ? 'mt-4 h-[56px] flex-none' : 'mt-3'} relative min-h-0 min-w-0 flex-1`}>
             {preview(`h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line ${isGuestDesktopVariant ? 'text-[16px] leading-[16px]' : isGuestLandingVariant ? 'text-[14px] leading-[14px]' : 'text-[12px] leading-[12px]'} text-text-body`)}
             {definitionFade}
           </div>
-          {sourceLine && <p className={`mt-2 min-w-0 truncate ${isGuestDesktopVariant ? 'text-[13px] leading-[13px]' : 'text-[12px] leading-[12px]'} text-muted`}>{sourceLine}</p>}
+          {sourceLine && <p className={`${isGuestLandingVariant ? 'mt-4' : 'mt-2'} min-w-0 truncate ${isGuestDesktopVariant ? 'text-[13px] leading-[13px]' : 'text-[12px] leading-[12px]'} text-muted`}>{sourceLine}</p>}
         </div>
       ) : isHomeVariant ? (
         <div className="flex h-full min-h-0 min-w-0 flex-col">

@@ -4,6 +4,7 @@ import path from 'node:path';
 
 const featureDir = path.resolve(import.meta.dirname, '../features/terms/components');
 const card = readFileSync(path.resolve(featureDir, 'FeaturedTermCard.tsx'), 'utf8');
+const measuredPreview = readFileSync(path.resolve(featureDir, 'MeasuredTextPreview.tsx'), 'utf8');
 const view = readFileSync(path.resolve(featureDir, 'TermCardCarouselView.tsx'), 'utf8');
 const controller = readFileSync(path.resolve(featureDir, 'TermCardCarousel.tsx'), 'utf8');
 const facade = readFileSync(path.resolve(import.meta.dirname, 'TermCardCarousel.tsx'), 'utf8');
@@ -25,12 +26,21 @@ assert.match(card, /ArrowUpRight01Icon/, 'Title row must keep the up-right actio
 assert.doesNotMatch(card, /line-clamp-\d+|WebkitLineClamp|definitionLineClamp/, 'Definition preview must use measured fitting, not line clamp');
 assert.match(card, /fitTextToAvailableSpace\(node, fullDefinitionText\)/, 'Visible definition must be measured against real available space');
 assert.match(card, /MeasuredTextPreview/, 'Featured cards must reuse the shared measured preview component');
+assert.match(card, /maxHeight=\{isGuestLandingVariant \? 56 :/, 'Landing guest definition viewport must be exactly four 14px lines');
+assert.match(card, /isGuestLandingVariant \? 'mt-4 h-\[56px\] flex-none' :/, 'Landing guest definition wrapper must reserve exactly 56px after the 16px title gap');
+assert.match(card, /isGuestLandingVariant \? 'text-\[14px\] leading-\[14px\]' :/, 'Landing guest definition typography must remain 14px with 14px line-height');
+assert.match(card, /!isGuestLandingVariant && visibleDefinition\.overflowing \?/, 'Landing guest fade must be owned by the measured preview without a duplicate external fade');
+assert.match(card, /isGuestLandingVariant \? 'mt-4' :/, 'Landing guest metadata must retain a 16px gap after the description');
+assert.match(card, /isGuestDesktopVariant \? 'text-\[13px\] leading-\[13px\]' : 'text-\[12px\] leading-\[12px\]'/, 'Landing guest metadata must retain 12px line-height');
 assert.match(card, /words\.slice\(0, wordCount\)\.join\(' '\) \+ ELLIPSIS/, 'Measured truncation must end on a whole word');
 assert.match(card, /return \{ text: bestFitText, overflowing: true \}/, 'Measured fitting must expose overflow state');
 assert.match(card, /visibleDefinition\.overflowing \?/, 'Fade must render only for actual overflow');
 assert.match(card, /pointer-events-none absolute inset-x-0 bottom-0 h-\[1\.75em\] bg-gradient-to-t/, 'Fade must overlay the final visible line without changing geometry');
 assert.match(card, /from-surface-subtle[\s\S]*from-white[\s\S]*tone\.fadeClassName[\s\S]*from-surface/, 'Fade must match desktop guest, mobile guest, colored mobile, and surface backgrounds');
 assert.match(card, /aria-hidden="true"/, 'Clones must be hidden from accessibility');
+assert.match(measuredPreview, /\{overflowing && <span[^>]*data-measured-text-fade/, 'Measured preview must render its fade only when overflow is true');
+assert.equal((measuredPreview.match(/data-measured-text-fade/g) ?? []).length, 1, 'Measured preview must render exactly one fade marker');
+assert.equal((measuredPreview.match(/bg-gradient-to-t/g) ?? []).length, 1, 'Measured preview must render exactly one fade gradient');
 
 assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding'/, 'Landing guest variant must auto-scroll');
 assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/, 'Auto-scroll variants must duplicate multiple items for the loop');

@@ -158,7 +158,7 @@
     "sheetHandle": "Потяните вниз, чтобы закрыть"
   },
   "auth": {
-    "loginTitle": "Войти в аккаунт",
+    "loginTitle": "Войдите в аккаунт",
     "loginHelper": "Введите почту и пароль для входа.",
     "forgotPasswordLink": "Забыли пароль?",
     "forgotPasswordTitle": "Восстановление пароля",

@@ -21,6 +21,7 @@ export function AuthShell({
   mobileHeaderMode = 'compact',
   mobileProgress,
   desktopFlowStep,
+  desktopLayout = 'default',
   desktopContentWidth = 'full',
 }: {
   title: string;
@@ -29,22 +30,24 @@ export function AuthShell({
   mobileHeaderMode?: 'compact' | 'status-aware';
   mobileProgress?: { step: 1 | 2 | 3; completedSegments: 0 | 1 | 2 | 3 };
   desktopFlowStep?: 1 | 2 | 3;
+  desktopLayout?: 'default' | 'centered-card';
   desktopContentWidth?: 'full' | 'narrow';
 }) {
   const desktopOnboarding = desktopFlowStep !== undefined;
+  const desktopCentered = desktopLayout === 'centered-card';
 
   return (
     <div
       data-testid={desktopOnboarding ? 'desktop-onboarding-shell' : undefined}
       className={`flex min-h-screen w-full flex-col bg-bg max-lg:mx-auto max-lg:min-h-[932px] max-lg:max-w-[430px] max-lg:bg-[#efebf6] ${
         desktopOnboarding ? 'min-[1440px]:flex-row min-[1440px]:bg-[#efebf6]' : ''
-      }`}
+      } ${desktopCentered ? 'min-[1440px]:relative min-[1440px]:bg-[#efebf6]' : ''}`}
     >
       {desktopOnboarding && <DesktopOnboardingSidebar currentStep={desktopFlowStep} />}
       <header
         className={`w-full items-center justify-between px-[60px] py-6 ${
           desktopOnboarding ? 'hidden lg:flex min-[1440px]:hidden' : 'flex max-lg:hidden'
-        }`}
+        } ${desktopCentered ? 'min-[1440px]:absolute min-[1440px]:left-0 min-[1440px]:top-0 min-[1440px]:z-10' : ''}`}
       >
         <Link to="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="Infopedia" className="h-[40px] w-auto" />
@@ -75,19 +78,23 @@ export function AuthShell({
       </header>
 
       <div
-        data-testid={desktopOnboarding ? 'desktop-onboarding-main' : undefined}
+        data-testid={desktopOnboarding ? 'desktop-onboarding-main' : desktopCentered ? 'desktop-auth-main' : undefined}
         className={`flex flex-1 items-center justify-center px-4 pb-12 max-lg:items-start max-lg:px-8 max-lg:pb-8 max-lg:px-8 ${
           mobileProgress ? 'max-lg:pt-[17px]' : 'max-lg:pt-[65px]'
         } ${
           desktopOnboarding
             ? 'min-[1440px]:min-h-screen min-[1440px]:w-[960px] min-[1440px]:flex-none min-[1440px]:bg-[#efebf6] min-[1440px]:p-12'
             : ''
+        } ${
+          desktopCentered
+            ? 'min-[1440px]:min-h-screen min-[1440px]:w-full min-[1440px]:bg-[#efebf6] min-[1440px]:p-12'
+            : ''
         }`}
       >
         <div
-          data-testid={desktopOnboarding ? 'desktop-onboarding-card' : undefined}
+          data-testid={desktopOnboarding ? 'desktop-onboarding-card' : desktopCentered ? 'desktop-auth-card' : undefined}
           className={`w-full max-w-[520px] p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:p-0 max-md:max-w-[366px] ${
-            desktopOnboarding
+            desktopOnboarding || desktopCentered
               ? 'min-[1440px]:w-[480px] min-[1440px]:max-w-none min-[1440px]:rounded-[16px] min-[1440px]:bg-white min-[1440px]:p-12'
               : ''
           } ${

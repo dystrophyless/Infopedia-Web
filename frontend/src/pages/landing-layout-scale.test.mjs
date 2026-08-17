@@ -21,6 +21,8 @@ const sourceProof = section('DesktopSourceProof', 'DesktopEntAnalysis');
 const analyze = section('DesktopEntAnalysis', 'MobileHome');
 
 assert.match(hero, /ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ|landing\.desktopEyebrow/);
+assert.match(hero, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.doesNotMatch(hero, /px-\[160px\]/);
 assert.match(hero, /Знания всех книг/);
 assert.match(hero, /одном приложении/);
 assert.match(hero, /text-\[72px\]/);
@@ -30,20 +32,29 @@ assert.match(hero, /landingCtaTarget\('\/search', isAuthenticated\)/);
 assert.match(hero, /href="#desktop-analysis"/);
 
 assert.match(features, /Всё, что нужно для подготовки/);
-assert.match(features, /h-\[493px\][\s\S]*w-\[366px\]/);
+assert.match(features, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.doesNotMatch(features, /px-\[160px\]/);
+assert.match(features, /className="grid h-full w-full min-w-0 grid-cols-3 gap-\[32px\]"/);
+assert.match(features, /h-\[493px\][\s\S]*min-w-0[\s\S]*flex-col/);
+assert.doesNotMatch(features, /ref=\{featureRailRef\}|overflow-x-auto|overflow-y-hidden|w-max|snap-x|snap-mandatory|snap-start|scroll-smooth/);
+assert.match(features, /rounded-\[16px\]/);
 for (const asset of [
   'mobile-feature-weak-topics.png',
   'mobile-feature-tests.png',
   'mobile-feature-term.png',
-  'mobile-feature-semantic.png',
 ]) {
-  assert.match(features, new RegExp(`/${asset}`), `Desktop features should reuse ${asset}`);
+  assert.match(features, new RegExp('/' + asset), 'Desktop features should reuse ' + asset);
 }
+assert.equal((features.match(/image: '/g) ?? []).length, 3);
+assert.doesNotMatch(features, /mobile-feature-semantic\.png|ArrowLeft01Icon|ArrowRight01Icon|scrollBy|onScroll|aria-roledescription|role="region"/);
+assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
 assert.doesNotMatch(features, /desktop-landing\/feature-|figma\/desktop-landing/);
 assert.match(features, /gap-\[32px\]/);
 assert.match(features, /pb-\[64px\]/);
 
 assert.match(sourceProof, /База из 5000\+ терминов/);
+assert.match(sourceProof, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.doesNotMatch(sourceProof, /px-\[160px\]/);
 assert.match(sourceProof, /Не просто объясняем\.[\s\S]*Показываем источник\./);
 assert.match(sourceProof, /w-\[720px\][\s\S]*w-\[400px\]/);
 assert.match(sourceProof, /overflow-hidden/);
@@ -54,6 +65,8 @@ assert.match(termCarousel, /guestLanding: 'gap-6 px-0'/);
 assert.match(termCarousel, /variant === 'guestLanding'[\s\S]*overflow-x-auto[\s\S]*snap-x/);
 
 assert.match(analyze, /Проанализируйте свой ЕНТ/);
+assert.match(analyze, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.doesNotMatch(analyze, /px-\[160px\]/);
 assert.match(analyze, /Регистрация/);
 assert.match(analyze, /Загрузите файл/);
 assert.match(analyze, /Данные готовы/);
@@ -90,9 +103,6 @@ for (const key of [
   'desktopAnalyzeStep2Body',
   'desktopAnalyzeStep3Title',
   'desktopAnalyzeStep3Body',
-  'desktopFeaturesPrevious',
-  'desktopFeaturesNext',
-  'desktopFeaturesCarouselRole',
   'desktopAnalyzeResultGrade',
   'desktopAnalyzeResultItem4',
   'desktopAnalyzeResultCta',

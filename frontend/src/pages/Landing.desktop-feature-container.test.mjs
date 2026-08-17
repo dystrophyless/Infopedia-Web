@@ -9,13 +9,52 @@ const end = landing.indexOf('function DesktopSourceProof', start);
 assert.notEqual(start, -1, 'DesktopFeatureCards should be defined');
 const features = landing.slice(start, end === -1 ? landing.length : end);
 
+const desktopSections = [
+  ['DesktopGuestHero', landing.slice(landing.indexOf('function DesktopGuestHero'), landing.indexOf('function DesktopGuestSections'))],
+  ['DesktopFeatureCards', features],
+  ['DesktopSourceProof', landing.slice(landing.indexOf('function DesktopSourceProof'), landing.indexOf('function DesktopEntAnalysis'))],
+  ['DesktopEntAnalysis', landing.slice(landing.indexOf('function DesktopEntAnalysis'), landing.indexOf('function MobileHome'))],
+];
+
+for (const [name, source] of desktopSections) {
+  assert.match(
+    source,
+    /<div[^>]*data-desktop-content-rail[^>]*className="[^"]*mx-auto[^\"]*max-w-\[1152px\][^\"]*px-\[24px\]/,
+    `${name} must place desktop content inside the centered 1152px/24px rail`,
+  );
+  assert.doesNotMatch(source, /px-\[160px\]/, `${name} must not retain the fixed 160px desktop gutter`);
+}
+
 assert.match(
   features,
-  /<div[^>]*className="mx-auto w-full max-w-\[1120px\]"[\s\S]*id="desktop-feature-rail"/,
-  'Desktop feature heading, controls, and rail should share one centered 1120px wrapper',
+  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"[\s\S]*<h2[\s\S]*Всё, что нужно для подготовки/,
+  'Desktop feature heading and cards should share the centered 1152px/24px wrapper',
 );
 assert.doesNotMatch(features, /pl-\[clamp\(|pr-\[clamp\(|calc\(50vw|w-\[1560px\]|max-w-\[1560px\]/);
-assert.match(features, /className="mt-10 w-full overflow-x-auto/);
-assert.match(features, /className="flex w-max snap-x snap-mandatory gap-\[32px\]/);
+assert.match(features, /className="mt-10 w-full overflow-visible"/);
+assert.doesNotMatch(features, /left-1\/2|w-\[min\(1184px,100vw\)\]|-translate-x-1\/2/, 'Feature cards must stay inside the centered page rail');
+assert.match(
+  features,
+  /id="desktop-feature-rail"[\s\S]*className="h-\[517px\] w-full overflow-visible/,
+  'Desktop feature rail must keep transformed hover cards visible beyond its layout box',
+);
+assert.doesNotMatch(
+  features,
+  /id="desktop-feature-rail"[\s\S]*className="h-\[517px\] w-full overflow-hidden/,
+  'Desktop feature rail must not clip transformed hover cards',
+);
+assert.doesNotMatch(features, /id="desktop-feature-rail"[\s\S]*px-2/, 'Feature rail must start cards at its content edge');
+assert.match(features, /className="grid h-full w-full min-w-0 grid-cols-3 gap-\[32px\]"/);
+assert.doesNotMatch(features, /ref=\{featureRailRef\}|overflow-x-auto|overflow-y-hidden|w-max|snap-x|snap-mandatory|snap-start|scroll-smooth/);
+assert.match(
+  features,
+  /<Link[\s\S]*to=\{ONBOARDING_TARGET\}[\s\S]*className="group relative flex h-\[493px\] min-w-0 flex-col/,
+  'Desktop feature cards must fit equal fractional grid columns with the approved 493px height',
+);
+assert.doesNotMatch(features, /<article/);
+assert.equal((features.match(/image: '/g) ?? []).length, 3, 'Desktop feature rail should render exactly three feature objects');
+assert.doesNotMatch(features, /mobile-feature-semantic\.png/);
+assert.doesNotMatch(features, /ArrowLeft01Icon|ArrowRight01Icon|scrollBy|onScroll|aria-roledescription|role="region"|featureRailState|syncFeatureRailState/);
+assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
 
 console.log('Landing desktop feature container contract passed');

@@ -42,6 +42,12 @@ assert.match(
 );
 
 assert.match(hero, /min-h-\[656px\]/, 'Hero should preserve the 656px canvas below the 80px header');
+assert.match(
+  hero,
+  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto flex w-full max-w-\[1152px\] flex-col items-center px-\[24px\]"/,
+  'Hero content should use the centered 1152px/24px desktop rail',
+);
+assert.doesNotMatch(hero, /px-\[160px\]/, 'Hero should not use the fixed 160px desktop gutter');
 assert.match(hero, /text-\[72px\][\s\S]*leading-\[72px\]/, 'Hero should use the Figma 72px two-line display type');
 assert.match(hero, /landing\.desktopEyebrow[\s\S]*landing\.desktopHeroLine1[\s\S]*landing\.desktopHeroLine2Accent/);
 assert.match(hero, /landingCtaTarget\('\/search', isAuthenticated\)[\s\S]*href="#desktop-analysis"/);
@@ -49,36 +55,31 @@ assert.match(hero, /h-\[48px\][\s\S]*w-\[200px\][\s\S]*rounded-\[16px\]/);
 
 assert.match(
   features,
-  /mx-auto w-full max-w-\[1120px\]/,
-  'Feature rail should use the shared centered 1120px canvas',
+  /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"/,
+  'Feature rail should use the shared centered 1152px/24px canvas',
 );
+assert.doesNotMatch(features, /px-\[160px\]/, 'Feature section should not use the fixed 160px desktop gutter');
 assert.doesNotMatch(features, /pl-\[clamp\(|pr-\[clamp\(|calc\(50vw|max-w-\[1560px\]/);
-assert.match(features, /gap-\[32px\]/);
-assert.match(features, /h-\[493px\][\s\S]*w-\[366px\]/);
+assert.match(features, /className="grid h-full w-full min-w-0 grid-cols-3 gap-\[32px\]"/);
+assert.match(features, /h-\[493px\][\s\S]*min-w-0[\s\S]*flex-col/);
+assert.doesNotMatch(features, /ref=\{featureRailRef\}|overflow-x-auto|overflow-y-hidden|w-max|snap-x|snap-mandatory|snap-start|scroll-smooth/);
+assert.match(features, /rounded-\[16px\]/);
 assert.match(features, /pb-\[64px\]/, 'The feature rail should leave the Figma 64px gap before the term heading');
-assert.match(features, /scrollBy\(\{[\s\S]*behavior: prefersReducedMotion \? 'auto' : 'smooth'/, 'Feature controls should move the rail and honor reduced motion');
-assert.match(features, /overflow-x-auto[\s\S]*motion-reduce:scroll-auto/, 'Feature rail should expose native scrolling and reduced-motion behavior');
-assert.match(features, /snap-x[\s\S]*snap-mandatory/, 'Every clipped feature card should stay reachable through the snap rail');
-assert.match(features, /landing\.desktopFeaturesPrevious[\s\S]*landing\.desktopFeaturesNext/, 'Feature rail should expose localized previous and next controls');
-assert.match(features, /role="region"[\s\S]*aria-roledescription=\{t\('landing\.desktopFeaturesCarouselRole'\)\}/, 'Feature rail should expose region and carousel semantics');
-assert.match(features, /disabled=\{featureRailState\.atStart\}[\s\S]*disabled=\{featureRailState\.atEnd\}/, 'Feature controls should expose endpoint state');
-assert.match(features, /onScroll=\{syncFeatureRailState\}/, 'Native rail scrolling should keep endpoint state synchronized');
-for (const asset of [
-  'mobile-feature-weak-topics.png',
-  'mobile-feature-tests.png',
-  'mobile-feature-term.png',
-  'mobile-feature-semantic.png',
-]) {
-  assert.match(features, new RegExp(`/${asset}`), `Desktop feature rail should use ${asset}`);
-}
+assert.doesNotMatch(features, /landing\.desktopFeaturesPrevious|landing\.desktopFeaturesNext|aria-roledescription|role="region"|featureRailState|syncFeatureRailState|scrollBy|onScroll/);
+assert.equal((features.match(/image: '/g) ?? []).length, 3, 'Desktop feature rail should render exactly three feature objects');
+assert.doesNotMatch(features, /ArrowLeft01Icon|ArrowRight01Icon|mobile-feature-semantic\.png/);
+assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
 
-assert.match(sourceProof, /max-w-\[1120px\]/);
+assert.match(sourceProof, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"/);
+assert.doesNotMatch(sourceProof, /px-\[160px\]/);
 assert.match(sourceProof, /grid-cols-\[minmax\(0,720px\)_minmax\(0,400px\)\]/);
 assert.match(sourceProof, /<TermCardCarousel variant="guestLanding" \/>/);
 assert.match(sourceProof, /landingCtaTarget\('\/search', isAuthenticated\)/);
 assert.match(sourceProof, /pb-\[88px\]/, 'The term rail should leave the Figma 88px gap before analysis');
 
 assert.match(analyze, /data-analysis-stage[\s\S]*xl:h-\[327px\]/, 'Analysis stage should preserve the 2117-to-2444 Figma composition');
+assert.match(analyze, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"/);
+assert.doesNotMatch(analyze, /px-\[160px\]/);
 assert.match(analyze, /data-analysis-snippet="result"[\s\S]*xl:left-\[803px\][\s\S]*xl:top-0[\s\S]*xl:w-\[292px\]/, 'Result panel should land at x≈963 in the 1120px canvas');
 assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*xl:left-\[29px\][\s\S]*xl:top-\[223px\][\s\S]*xl:w-\[284px\]/, 'Registration snippet should preserve the lower-left Figma placement');
 assert.match(analyze, /data-analysis-snippet="upload"[\s\S]*xl:left-\[410px\][\s\S]*xl:top-\[135px\][\s\S]*xl:w-\[300px\]/, 'Upload snippet should preserve the centered Figma placement');

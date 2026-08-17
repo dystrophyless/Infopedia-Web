@@ -14,9 +14,7 @@ import {
   Delete02Icon,
   InformationCircleIcon,
   Invoice03Icon,
-  Languages as LanguagesIcon,
   GoogleDocIcon,
-  LogOut as LogOutIcon,
   MentorIcon,
   Logout01Icon,
   Mail01Icon,
@@ -47,6 +45,8 @@ import type { AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
+import languagesAsset from '../assets/figma-profile/languages.svg';
+import desktopLogOutAsset from '../assets/figma-profile/log-out.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
 import {
   parseProfileTab,
@@ -2098,7 +2098,7 @@ function DesktopSettingsPanel({
             </div>
 
             <section aria-labelledby="desktop-settings-general-heading" className="flex flex-col gap-4">
-              <h2 id="desktop-settings-general-heading" className="text-[16px] font-medium leading-[16px] text-[#6e6779]">
+              <h2 id="desktop-settings-general-heading" className="pl-2 text-[16px] font-medium leading-[16px] text-[#6e6779]">
                 {t('profile.desktopSettingsGeneralSection')}
               </h2>
               <div ref={languagePopoverRef} className="relative rounded-[16px] bg-white p-4">
@@ -2121,7 +2121,14 @@ function DesktopSettingsPanel({
                   aria-controls={languageMenuId}
                   className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
                 >
-                  <HugeiconsIcon icon={LanguagesIcon} size={20} strokeWidth={1.5} className="shrink-0 text-[#865bcf]" aria-hidden="true" />
+                  <img
+                    src={languagesAsset}
+                    alt=""
+                    aria-hidden="true"
+                    width={20}
+                    height={20}
+                    className="size-5 shrink-0"
+                  />
                   <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
                   <span className="text-[14px] font-normal leading-[14px] text-[#161519]">{t(lang === 'kk' ? 'common.kazakh' : 'common.russian')}</span>
                   <HugeiconsIcon icon={ArrowDown01Icon} size={18} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
@@ -2157,7 +2164,7 @@ function DesktopSettingsPanel({
             </section>
 
             <section aria-labelledby="desktop-settings-management-heading" className="flex flex-col gap-4">
-              <h2 id="desktop-settings-management-heading" className="text-[16px] font-medium leading-[16px] text-[#6e6779]">
+              <h2 id="desktop-settings-management-heading" className="pl-2 text-[16px] font-medium leading-[16px] text-[#6e6779]">
                 {t('profile.desktopSettingsManagementSection')}
               </h2>
               <div className="rounded-[16px] bg-white p-4">
@@ -2183,7 +2190,7 @@ function DesktopSettingsPanel({
             </section>
 
             <section aria-labelledby="desktop-settings-about-heading" className="flex flex-col gap-4">
-              <h2 id="desktop-settings-about-heading" className="text-[16px] font-medium leading-[16px] text-[#6e6779]">
+              <h2 id="desktop-settings-about-heading" className="pl-2 text-[16px] font-medium leading-[16px] text-[#6e6779]">
                 {t('profile.desktopSettingsAboutSection')}
               </h2>
               <div className="flex flex-col gap-4 rounded-[16px] bg-white p-4">
@@ -2205,10 +2212,32 @@ function DesktopSettingsPanel({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-8 flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#f8f5fc] p-4 transition-colors hover:bg-white focus-visible:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+            className="group mt-8 flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#f8f5fc] p-4 transition-colors hover:bg-white focus-visible:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
           >
-            <HugeiconsIcon icon={LogOutIcon} size={20} strokeWidth={1.5} className="text-[#f69a93]" aria-hidden="true" />
-            <span className="text-[16px] font-medium leading-[16px] text-[#6e6779]">{t('profile.logout')}</span>
+            <span className="relative size-5 shrink-0" aria-hidden="true">
+              <img
+                src={desktopLogOutAsset}
+                alt=""
+                aria-hidden="true"
+                width={20}
+                height={20}
+                className="size-5 shrink-0 transition-opacity group-hover:opacity-0"
+              />
+              <span
+                className="absolute inset-0 size-5 bg-[#f25f54] opacity-0 transition-opacity group-hover:opacity-100"
+                style={{
+                  WebkitMaskImage: `url(${desktopLogOutAsset})`,
+                  maskImage: `url(${desktopLogOutAsset})`,
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                }}
+              />
+            </span>
+            <span className="text-[16px] font-medium leading-[16px] text-[#6e6779] transition-colors group-hover:text-[#161519]">{t('profile.logout')}</span>
           </button>
         </div>
       </section>

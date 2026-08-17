@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, InternetIcon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { useLangStore, type Language } from '../stores/langStore';
 
 const LANGS: Language[] = ['ru', 'kk'];
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation();
   const lang = useLangStore((s) => s.lang);
   const setLang = useLangStore((s) => s.setLang);
@@ -60,13 +60,25 @@ export function LanguageSwitcher() {
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-[5px] px-2 py-2 text-[16px] leading-none text-muted transition-colors hover:text-accent"
+        className={compact
+          ? 'flex h-[34px] w-[70px] items-center justify-center gap-[8px] border-0 px-[12px] py-[8px] text-[14px] font-normal leading-none text-[#b1acb9]'
+          : 'flex items-center gap-[5px] px-2 py-2 text-[16px] leading-none text-muted transition-colors hover:text-accent'}
         aria-haspopup="menu"
         aria-controls="lang-menu"
         aria-expanded={open}
+        aria-label={compact ? labelFor(lang) : undefined}
       >
-        <span>{labelFor(lang)}</span>
-        <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={2} />
+        {compact ? (
+          <>
+            <HugeiconsIcon icon={InternetIcon} size={18} strokeWidth={2} className="shrink-0" aria-hidden />
+            <span>{lang.toUpperCase()}</span>
+          </>
+        ) : (
+          <>
+            <span>{labelFor(lang)}</span>
+            <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={2} />
+          </>
+        )}
       </button>
       {open && (
         <ul

@@ -4,10 +4,24 @@ import path from 'node:path';
 
 const profileSource = readFileSync(path.resolve(import.meta.dirname, 'Profile.tsx'), 'utf8');
 const ruLocale = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../locales/ru/translation.json'), 'utf8'));
-const panelSource = profileSource.slice(
-  profileSource.indexOf('function DesktopSettingsPanel('),
-  profileSource.indexOf('function SettingsActionButton('),
-);
+const panelStart = profileSource.indexOf('function DesktopSettingsPanel(');
+const panelEnd = profileSource.indexOf('function SettingsActionButton(');
+const panelSource = profileSource.slice(panelStart, panelEnd);
+const outsidePanelSource = `${profileSource.slice(0, panelStart)}${profileSource.slice(panelEnd)}`;
+const logoutClick = panelSource.indexOf('onClick={onLogout}');
+const logoutButtonStart = panelSource.lastIndexOf('<button', logoutClick);
+const logoutButtonEnd = panelSource.indexOf('</button>', logoutClick) + '</button>'.length;
+const logoutButtonSource = panelSource.slice(logoutButtonStart, logoutButtonEnd);
+
+function countAssetSources(source, assetName) {
+  return (source.match(new RegExp(`src=\\{${assetName}\\}`, 'g')) ?? []).length;
+}
+
+function assertSinglePanelAssetUsage(assetName) {
+  assert.equal(countAssetSources(profileSource, assetName), 1, `${assetName} must have exactly one runtime src usage globally`);
+  assert.equal(countAssetSources(panelSource, assetName), 1, `${assetName} must be rendered inside DesktopSettingsPanel`);
+  assert.equal(countAssetSources(outsidePanelSource, assetName), 0, `${assetName} must not be rendered outside DesktopSettingsPanel`);
+}
 
 assert.match(
   profileSource,
@@ -27,12 +41,16 @@ assert.doesNotMatch(panelSource, /desktopSettingsAccountSection/, 'Figma has no 
 assert.equal(ruLocale.profile.desktopSettingsGeneralSection, 'Общий');
 assert.match(panelSource, /flex flex-col gap-6[\s\S]*profile\.navSettings[\s\S]*onClick=\{\(\) => setView\('account'\)\}/, 'The Account card must follow the title by 24px');
 
-for (const key of [
-  'desktopSettingsGeneralSection',
-  'desktopSettingsManagementSection',
-  'desktopSettingsAboutSection',
+for (const [headingId, key] of [
+  ['desktop-settings-general-heading', 'desktopSettingsGeneralSection'],
+  ['desktop-settings-management-heading', 'desktopSettingsManagementSection'],
+  ['desktop-settings-about-heading', 'desktopSettingsAboutSection'],
 ]) {
-  assert.match(panelSource, new RegExp(`profile\\.${key}`), `Desktop settings must render ${key}`);
+  assert.match(
+    panelSource,
+    new RegExp(`<h2 id="${headingId}" className="pl-2 text-\\[16px\\] font-medium leading-\\[16px\\] text-\\[#6e6779\\]">\\s*\\{t\\('profile\\.${key}'\\)\\}`),
+    `Desktop settings must render ${key} with the same 8px left inset as the main title`,
+  );
 }
 
 assert.match(panelSource, /const languageOptions:[\s\S]*\{ value: 'kk', labelKey: 'common\.kazakh' \}[\s\S]*\{ value: 'ru', labelKey: 'common\.russian' \}/);
@@ -45,18 +63,26 @@ assert.match(panelSource, /setLang\(value\)[\s\S]*closeLanguageMenu\(true\)/);
 assert.match(panelSource, /desktopSettingsServiceRules[\s\S]*desktopSettingsPrivacyPolicy/, 'About rows must match Figma order');
 assert.match(panelSource, /Scroll01Icon[\s\S]*GoogleDocIcon/);
 assert.doesNotMatch(panelSource, /LanguageCircleIcon|Invoice03Icon|LegalDocument01Icon/);
-assert.match(profileSource, /Languages as LanguagesIcon/);
-assert.match(panelSource, /<HugeiconsIcon icon=\{LanguagesIcon\} size=\{20\} strokeWidth=\{1\.5\}[^>]*aria-hidden="true"/);
-assert.doesNotMatch(profileSource, /languagesAsset|languages\.svg/);
+assert.match(profileSource, /import languagesAsset from '\.\.\/assets\/figma-profile\/languages\.svg';/);
+assert.doesNotMatch(profileSource, /\bLanguages(?:Icon| as LanguagesIcon)\b/);
+assertSinglePanelAssetUsage('languagesAsset');
+assert.match(panelSource, /<img\s+src=\{languagesAsset\}\s+alt=""\s+aria-hidden="true"\s+width=\{20\}\s+height=\{20\}\s+className="size-5 shrink-0"\s*\/>/);
 assert.match(panelSource, /WebkitMaskImage: `url\(\$\{mobilePremiumAsset\}\)`/);
 assert.match(panelSource, /h-px w-full bg-\[#f8f5fc\]/);
 assert.equal((panelSource.match(/onClick=\{\(\) => setView\('about'\)\}/g) ?? []).length, 2);
-assert.match(profileSource, /LogOut as LogOutIcon/);
-assert.match(panelSource, /<HugeiconsIcon icon=\{LogOutIcon\} size=\{20\}/);
-assert.doesNotMatch(panelSource, /Logout01Icon|LogoutIcon/);
+assert.match(profileSource, /import desktopLogOutAsset from '\.\.\/assets\/figma-profile\/log-out\.svg';/);
+assert.doesNotMatch(profileSource, /\bLogOut(?:Icon| as LogOutIcon)\b/);
+assertSinglePanelAssetUsage('desktopLogOutAsset');
+assert.match(panelSource, /<img\s+src=\{desktopLogOutAsset\}\s+alt=""\s+aria-hidden="true"\s+width=\{20\}\s+height=\{20\}\s+className="size-5 shrink-0 transition-opacity group-hover:opacity-0"\s*\/>/);
+assert.doesNotMatch(panelSource, /LogOutIcon|Logout01Icon|LogoutIcon/);
 assert.match(panelSource, /onClick=\{onLogout\}[\s\S]*justify-center gap-2[\s\S]*hover:bg-white[\s\S]*focus-visible:bg-white/);
 assert.doesNotMatch(panelSource, /hover:bg-\[#efeaf8\]|focus-visible:bg-\[#efeaf8\]/);
 assert.match(panelSource, /text-\[16px\] font-medium leading-\[16px\] text-\[#6e6779\]/);
-assert.match(panelSource, /LogOutIcon[^>]*size=\{20\}[^>]*text-\[#f69a93\]/);
+assert.match(logoutButtonSource, /className="[^"]*\bgroup\b[^"]*hover:bg-white[^"]*"/, 'Logout hover background must be white');
+assert.match(logoutButtonSource, /src=\{desktopLogOutAsset\}[\s\S]*className="[^"]*group-hover:opacity-0[^"]*"/, 'Normal Figma icon must hide only on hover');
+assert.match(logoutButtonSource, /className="[^"]*bg-\[#f25f54\][^"]*opacity-0[^"]*group-hover:opacity-100[^"]*"/, 'Hover icon overlay must paint exactly #F25F54');
+assert.match(logoutButtonSource, /WebkitMaskImage: `url\(\$\{desktopLogOutAsset\}\)`[\s\S]*maskImage: `url\(\$\{desktopLogOutAsset\}\)`/, 'Hover icon overlay must use the approved Figma silhouette');
+assert.match(logoutButtonSource, /className="[^"]*text-\[#6e6779\][^"]*group-hover:text-\[#161519\][^"]*"/, 'Logout label must preserve its normal paint and use exactly #161519 on hover');
+assert.doesNotMatch(panelSource, /languagesAsset[^>]*style=|desktopLogOutAsset[^>]*style=/);
 
 console.log('Profile desktop settings contract passed');

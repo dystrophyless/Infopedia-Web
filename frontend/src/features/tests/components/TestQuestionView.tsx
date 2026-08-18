@@ -49,7 +49,7 @@ export function TestQuestionView({
           titleAlign="start"
           compactLayout="leading-only"
           leading={(
-            <button type="button" className="flex size-11 items-center justify-center text-[#252329]" aria-label={t('tests.backToTests', { defaultValue: 'РќР°Р·Р°Рґ Рє С‚РµСЃС‚Р°Рј' })} onClick={onBack}>
+            <button type="button" className="flex size-11 items-center justify-center text-[#252329]" aria-label={t('tests.backToTests', { defaultValue: 'Назад к тестам' })} onClick={onBack}>
               <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} />
             </button>
           )}
@@ -57,7 +57,7 @@ export function TestQuestionView({
 
         <Progress
           value={progressPercent}
-          aria-label={t('tests.questionProgress', { defaultValue: 'РџСЂРѕРіСЂРµСЃСЃ С‚РµСЃС‚Р°' })}
+          aria-label={t('tests.questionProgress', { defaultValue: 'Прогресс теста' })}
           className="test-question-progress mt-4 !h-2 !bg-[rgba(106,55,195,0.25)] [&>span]:!bg-[#6a37c3]"
         />
 
@@ -66,14 +66,14 @@ export function TestQuestionView({
             {t('tests.questionCounter', {
               current: currentQuestionIndex + 1,
               total: totalQuestions,
-              defaultValue: 'Р’РѕРїСЂРѕСЃ {{current}} РёР· {{total}}',
+              defaultValue: 'Вопрос {{current}} из {{total}}',
             })}
           </p>
           <p className="mt-2 text-[#f8f5fc] text-[16px] font-medium leading-4">{question.prompt}</p>
         </section>
 
         <fieldset className="mt-6 grid gap-2 md:grid-cols-2">
-          <legend className="sr-only leading-none">{t('tests.answerOptions', { defaultValue: 'Р’Р°СЂРёР°РЅС‚С‹ РѕС‚РІРµС‚Р°' })}</legend>
+          <legend className="sr-only leading-none">{t('tests.answerOptions', { defaultValue: 'Варианты ответа' })}</legend>
           {question.options.map((option) => {
             const selected = option.id === selectedOptionId;
             const optionTone = getOptionTone({
@@ -100,7 +100,7 @@ export function TestQuestionView({
         {checked && answerFeedback && (
           <section className="mt-8 rounded-[8px] bg-[#a4e5c7] px-6 py-4">
             <h2 className="text-[12px] font-medium leading-3 text-[#22915d]">
-              {t('tests.explanationTitle', { defaultValue: 'РћР±СЉСЏСЃРЅРµРЅРёРµ' })}
+              {t('tests.explanationTitle', { defaultValue: 'Объяснение' })}
             </h2>
             <p className="mt-2 max-w-[280px] text-[14px] font-medium leading-[14px] text-[#1a6140]">
               {answerFeedback.explanation ?? question.explanation}
@@ -110,7 +110,7 @@ export function TestQuestionView({
 
         {actionError && (
           <p role="alert" className="mt-4 text-[13px] font-medium leading-[13px] text-[#bc251a]">
-            {t('tests.submitAnswerError', { defaultValue: 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РѕС‚РІРµС‚. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·.' })}
+            {t('tests.submitAnswerError', { defaultValue: 'Не удалось сохранить ответ. Попробуйте ещё раз.' })}
           </p>
         )}
 
@@ -127,8 +127,8 @@ export function TestQuestionView({
             onClick={onPrimaryAction}
           >
             {checked
-              ? t('tests.nextQuestionButton', { defaultValue: 'Р”Р°Р»РµРµ' })
-              : t('tests.checkAnswerButton', { defaultValue: 'РџСЂРѕРІРµСЂРёС‚СЊ' })}
+              ? t('tests.nextQuestionButton', { defaultValue: 'Далее' })
+              : t('tests.checkAnswerButton', { defaultValue: 'Проверить' })}
           </Button>
         </div>
       </main>

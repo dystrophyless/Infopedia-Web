@@ -1,7 +1,9 @@
 import '../../../i18n';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { expect, userEvent, within } from 'storybook/test';
+import i18n from '../../../i18n';
 import type { Term } from '../../../types';
 import { TermDetailView } from './TermDetailView';
 
@@ -14,10 +16,26 @@ const term: Term = {
   ],
 };
 
+function RussianLocale({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void i18n.changeLanguage('ru').then(() => {
+      if (active) setReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return ready ? children : null;
+}
+
 const meta = {
   title: 'Features/Terms/Detail',
   component: TermDetailView,
-  decorators: [(Story) => <MemoryRouter><Story /></MemoryRouter>],
+  decorators: [(Story) => <MemoryRouter><RussianLocale><Story /></RussianLocale></MemoryRouter>],
   args: { term, backTo: '/search', relatedTerms: [{ public_id: 'linear-search', name: 'Линейный поиск' }] },
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof TermDetailView>;

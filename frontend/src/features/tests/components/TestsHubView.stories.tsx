@@ -57,6 +57,22 @@ const desktopDashboard: TestsDashboard = {
   ],
 };
 
+const desktopWeakUnavailableDashboard: TestsDashboard = {
+  ...desktopDashboard,
+  modeAvailability: desktopDashboard.modeAvailability.map((item) =>
+    item.mode === 'weak'
+      ? {
+          ...item,
+          available: false,
+          disabledReason: {
+            reason: 'no_weak_chapters',
+            message: 'Загрузите анализ ЕНТ, чтобы открыть режим',
+          },
+        }
+      : item,
+  ),
+};
+
 function LocationProbe() {
   const location = useLocation();
   return <output className="sr-only" data-location-pathname>{location.pathname}</output>;
@@ -182,12 +198,12 @@ export const DesktopShowMoreHover: Story = {
 
 export const DesktopWeakPrerequisite: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopDashboard, dashboardStatus: 'ready', status: 'empty' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const weakCard = canvas.getByRole('link', { name: /Слабые темы/ });
     await expect(weakCard).toHaveTextContent('После анализа ЕНТ');
-    await expect(weakCard).toHaveTextContent('Проанализируйте результаты ЕНТ, чтобы определить слабые темы');
+    await expect(weakCard).toHaveTextContent('Подборка вопросов по разделам, где вы теряете баллы');
     await expect(weakCard).toHaveAttribute('href', '/analyze');
     await expect(weakCard).not.toHaveAttribute('aria-disabled');
     await expect(within(weakCard).queryByRole('link')).not.toBeInTheDocument();
@@ -201,7 +217,7 @@ export const DesktopWeakPrerequisite: Story = {
 
 export const DesktopWeakPrerequisiteMouse: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopDashboard, dashboardStatus: 'ready', status: 'empty' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const weakCard = canvas.getByRole('link', { name: /Слабые темы/ });
@@ -213,7 +229,7 @@ export const DesktopWeakPrerequisiteMouse: Story = {
 
 export const DesktopLoading: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: null, dashboardStatus: 'loading' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'loading' },
   play: async ({ canvasElement }) => {
     const modeSkeletons = [...canvasElement.querySelectorAll('[data-tests-mode-skeleton]')];
     const chapterSkeletons = [...canvasElement.querySelectorAll('[data-tests-chapter-skeleton]')];
@@ -229,7 +245,7 @@ export const DesktopLoading: Story = {
 
 export const DesktopError: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: null, dashboardStatus: 'error', onDashboardRetry: fn() },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'error', onDashboardRetry: fn() },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-tests-statistics-empty]')).toBeNull();
     await expect(canvasElement.querySelector('[data-tests-statistics-spacer]')).toBeNull();
@@ -238,7 +254,7 @@ export const DesktopError: Story = {
 
 export const DesktopCatalogUnavailable: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: null, dashboardStatus: 'catalog', onDashboardRetry: fn() },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'catalog', onDashboardRetry: fn() },
 };
 
 export const DesktopEmpty: Story = {
@@ -385,7 +401,7 @@ export const DesktopMixedChapterAttempts: Story = {
 
 export const DesktopAnalyzeLoading: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopDashboard, dashboardStatus: 'ready', status: 'loading' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'loading' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvasElement.querySelector('a[href="/tests/weak"]')).toBeNull();
@@ -395,7 +411,7 @@ export const DesktopAnalyzeLoading: Story = {
 
 export const DesktopAnalyzeError: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopDashboard, dashboardStatus: 'ready', status: 'error' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'error' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvasElement.querySelector('a[href="/tests/weak"]')).toBeNull();
@@ -405,7 +421,7 @@ export const DesktopAnalyzeError: Story = {
 
 export const DesktopErrorWithStaleDashboard: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopDashboard, dashboardStatus: 'error', status: 'ready', onDashboardRetry: fn() },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'error', status: 'ready', onDashboardRetry: fn() },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('a[href="/tests/weak"]')).toBeNull();
   },
@@ -413,7 +429,7 @@ export const DesktopErrorWithStaleDashboard: Story = {
 
 export const DesktopCatalogWithStaleDashboard: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopDashboard, dashboardStatus: 'catalog', status: 'ready', onDashboardRetry: fn() },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'catalog', status: 'ready', onDashboardRetry: fn() },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('a[href="/tests/weak"]')).toBeNull();
   },

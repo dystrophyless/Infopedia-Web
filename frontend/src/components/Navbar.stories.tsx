@@ -179,6 +179,9 @@ export const LanguageClicked: Story = {
     await expect(russian).toHaveAttribute('aria-current', 'true');
     await expect(russian.querySelectorAll('svg').length).toBe(1);
     await expect(kazakh.querySelectorAll('svg').length).toBe(0);
+    const selectedTick = russian.querySelector('svg');
+    await expect(selectedTick).not.toBeNull();
+    if (selectedTick) await expect(getComputedStyle(selectedTick).color).toBe('rgb(106, 55, 195)');
     await expect(russian).toHaveClass('hover:bg-[#f8f5fc]');
     await expect(kazakh).toHaveClass('hover:bg-[#f8f5fc]');
   },

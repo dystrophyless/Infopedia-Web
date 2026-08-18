@@ -73,7 +73,14 @@ try {
       triggerStyle: style(trigger),
       menu: box(menu),
       menuStyle: style(menu),
-      rows: rows.map((row) => ({ box: box(row), style: style(row), label: row.textContent.trim(), current: row.getAttribute('aria-current'), svgCount: row.querySelectorAll('svg').length })),
+      rows: rows.map((row) => ({
+        box: box(row),
+        style: style(row),
+        label: row.textContent.trim(),
+        current: row.getAttribute('aria-current'),
+        svgCount: row.querySelectorAll('svg').length,
+        svgColor: row.querySelector('svg') ? getComputedStyle(row.querySelector('svg')).color : null,
+      })),
       navbarRail: box(navbarRail),
       heroAnchor: heroAnchor ? box(heroAnchor) : null,
       overflow: { html: document.documentElement.scrollWidth, body: document.body.scrollWidth },
@@ -109,6 +116,7 @@ try {
   }
   assert.deepEqual(result.rows.map((row) => row.label), ['Русский', 'Қазақша'], 'localized RU/KK labels');
   assert.deepEqual(result.rows.map((row) => row.svgCount), [1, 0], 'only selected RU row paints Tick02');
+  assert.deepEqual(result.rows.map((row) => row.svgColor), ['rgb(106, 55, 195)', null], 'only selected RU row paints the accent Tick02 color');
   assert.equal(result.rows[0].current, 'true', 'RU row is selected');
   assert.equal(result.rows[1].current, null, 'KK row is unselected');
   assert.deepEqual(result.navbarRail, { x: 160, y: 15, width: 1120, height: 34, right: 1280, bottom: 49 }, 'navbar content rail remains fixed while popup is open');

@@ -71,7 +71,7 @@ async function expectCompactControl(control: HTMLElement, backgroundColor: strin
   await expect(style.fontFamily).toContain('Mabry Pro');
   await expect(style.fontSize).toBe('12px');
   await expect(style.fontWeight).toBe('400');
-  await expect(style.lineHeight).toBe('normal');
+  await expect(style.lineHeight).toBe('12px');
   await expect(style.color).toBe(color);
   await expect(control.scrollWidth).toBeLessThanOrEqual(control.clientWidth);
 }

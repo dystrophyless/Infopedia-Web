@@ -4,6 +4,7 @@ import logging
 from asgiref.sync import async_to_sync
 
 from src.analyze.exceptions import AnalyzeError
+from src.analyze.locale import normalize_analyze_locale
 from src.analyze.serialization import decode_file_content
 from src.analyze.service import get_analyze_result
 from src.celery_app.app import app
@@ -56,6 +57,7 @@ async def run_analyze_task(
     task_id: str,
     user_id: int,
     file_content_b64: str,
+    locale: str = "kk",
 ) -> dict:
     try:
         file_content = decode_file_content(file_content_b64)
@@ -71,6 +73,7 @@ async def run_analyze_task(
                 user_id=user_id,
                 file_content=file_content,
                 emit_progress=emit_progress,
+                locale=normalize_analyze_locale(locale),
             )
 
         logger.info(
@@ -85,10 +88,14 @@ async def run_analyze_task(
             result=result,
         )
     except AnalyzeError as exc:
-        logger.info(
-            "Задача анализа завершилась ожидаемой ошибкой task_id=%s code=%s",
+        logger.warning(
+            "Задача анализа завершилась ошибкой "
+            "task_id=%s code=%s stage=%s reason=%s context=%s",
             task_id,
             exc.code,
+            exc.stage,
+            exc.reason,
+            exc.safe_context,
         )
         payload = build_analyze_task_payload(
             task_id,
@@ -97,7 +104,12 @@ async def run_analyze_task(
             error=exc.to_payload(),
         )
     except Exception:
-        logger.exception("Ошибка при выполнении задачи анализа документа")
+        logger.error(
+            "Ошибка при выполнении задачи анализа "
+            "task_id=%s code=analyze_execution_failed stage=failed "
+            "reason=unexpected_exception",
+            task_id,
+        )
         payload = build_analyze_task_payload(
             task_id,
             status="failure",
@@ -116,10 +128,16 @@ async def run_analyze_task(
     bind=True,
     name="analyze_task.process_document",
 )
-def process_document(self, user_id: int, file_content_b64: str) -> dict:
+def process_document(
+    self,
+    user_id: int,
+    file_content_b64: str,
+    locale: str = "kk",
+) -> dict:
     logger.info("Celery принял задачу task_id=%s", self.request.id)
     return async_to_sync(run_analyze_task)(
         task_id=self.request.id,
         user_id=user_id,
         file_content_b64=file_content_b64,
+        locale=locale,
     )

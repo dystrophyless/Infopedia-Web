@@ -1,9 +1,26 @@
+# ruff: noqa: F401
 from src.analyze.models import AnalyzeResult, AnalyzeResultItem
 from src.auth.models import AuthIdentity, PasswordResetToken, PendingUser, RefreshToken
 from src.database import Base
-from src.terms.models import (
-    Definition,
-    Term,
+from src.terms.models import Definition, Term
+from src.tests.models import (
+    TestAttempt,
+    TestAttemptAnswer,
+    TestAttemptQuestion,
+    TestCatalogGeneration,
+    TestCatalogStat,
+    TestCatalogState,
+    TestQuestion,
+    TestQuestionOption,
 )
-from src.topics.models import Book, Chapter, Topic, TopicCode, TopicMapping
+from src.topics.models import (
+    Book,
+    BookChapterCoverage,
+    Chapter,
+    ChapterTranslation,
+    Topic,
+    TopicCode,
+    TopicCodeTranslation,
+    TopicMapping,
+)
 from src.users.models import FeatureUsage, User

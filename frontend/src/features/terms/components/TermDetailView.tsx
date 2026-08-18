@@ -1,0 +1,161 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  ArrowLeft01Icon, ArrowRight02Icon, Bookmark02Icon,
+  BookOpen02Icon, SearchList01Icon, UserCheck01Icon,
+  UserMultiple03Icon,
+} from '@hugeicons/core-free-icons';
+import type { Definition, Term } from '../../../types';
+import { useAuthStore } from '../../../stores/authStore';
+import { FavoriteToggle } from '../../favorites/components';
+import { useFavoritesStore } from '../../favorites/model';
+import { buildDefinitionMetadataItems, getDefinitionIndex } from '../model';
+import { MobilePinnedAppBar } from '../../../ui/patterns';
+
+export type RelatedTerm = Pick<Term, 'public_id' | 'name'>;
+export type TermDetailLoadState = 'idle' | 'loading' | 'error';
+
+export interface TermDetailViewProps {
+  term: Term | null;
+  loadState?: TermDetailLoadState;
+  backTo: string;
+  bottomNavVisible?: boolean;
+  relatedTerms?: RelatedTerm[];
+  selectedDefinitionPublicId?: string;
+}
+
+function getSourceRows(definition: Definition | undefined, t: TFunction) {
+  const sourceIcons = { book: BookOpen02Icon, topic: Bookmark02Icon, page: SearchList01Icon };
+  return buildDefinitionMetadataItems(definition, t, {
+    formatPage: (page) => t('search.pageChip', { page }),
+  }).map((item) => ({ ...item, icon: sourceIcons[item.key] }));
+}
+
+export function TermDetailHeader({ backTo, term }: { backTo: string; term?: Term | null }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <MobilePinnedAppBar
+        title={t('termDetail.title')}
+        leading={<Link to={backTo} aria-label={t('termDetail.back')} className="inline-flex size-11 items-center justify-center text-[#252329]"><HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.7} /></Link>}
+        trailing={term ? <FavoriteToggle termRef={term.public_id} termName={term.name} ensureStatus={false} appearance="mobile-header" /> : null}
+      />
+      <header className="mb-10 hidden items-center justify-between gap-6 md:flex">
+        <Link to={backTo} aria-label={t('termDetail.back')} className="inline-flex min-h-[44px] items-center gap-2 rounded-[8px] px-2 text-[16px] leading-4 text-text-body hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} strokeWidth={1.7} />
+          <span>{t('termDetail.back')}</span>
+        </Link>
+        <div className="flex min-w-0 items-center gap-4">
+          <h1 className="truncate text-[36px] font-medium leading-9 text-text">{term?.name ?? t('termDetail.title')}</h1>
+          {term && <FavoriteToggle termRef={term.public_id} termName={term.name} />}
+        </div>
+      </header>
+    </>
+  );
+}
+
+export function TermDetailStatPanel() {
+  const { t } = useTranslation();
+  const stats = [
+    { value: t('termDetail.knownStatValue'), label: t('termDetail.knownStatLabel'), icon: UserCheck01Icon },
+    { value: t('termDetail.testedStatValue'), label: t('termDetail.testedStatLabel'), icon: UserMultiple03Icon },
+  ];
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      {stats.map((stat) => (
+        <div key={stat.label} className="flex min-w-px flex-1 items-start justify-between overflow-hidden rounded-[8px] bg-[#ded2f1] px-4 py-2 text-[#865bcf]">
+          <div className="shrink-0 whitespace-nowrap -mr-[3px]"><p className="text-[16px] font-medium leading-4">{stat.value}</p><p className="mt-1 text-[12px] leading-3 text-[#a585db]">{stat.label}</p></div>
+          <HugeiconsIcon icon={stat.icon} size={16} strokeWidth={1.7} className="shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function TermDetailSourcePanel({ definition }: { definition: Definition }) {
+  const { t } = useTranslation();
+  const rows = getSourceRows(definition, t);
+  if (rows.length === 0) return null;
+  const book = rows.find((row) => row.key === 'book');
+  const topic = rows.find((row) => row.key === 'topic');
+  const page = rows.find((row) => row.key === 'page');
+  return (
+    <section className="mt-12">
+      <h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.source')}</h2>
+      <div className="mt-4 flex items-center gap-6 rounded-[8px] bg-surface px-6 py-4 text-text-body">
+        <HugeiconsIcon icon={BookOpen02Icon} size={24} strokeWidth={1.7} className="shrink-0 text-action-selected" />
+        <div className="min-w-0">
+          {page && <p className="truncate text-[12px] font-medium leading-3 text-[#865bcf]">{page.value}</p>}
+          {book && <p className="mt-1 truncate text-[16px] leading-4">{book.value}</p>}
+          {topic && <p className="mt-2 truncate text-[12px] leading-3 text-[#b1acb9]">{topic.value}</p>}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function TermDetailRelatedPanel({ relatedTerms, backTo }: { relatedTerms: RelatedTerm[]; backTo: string }) {
+  const { t } = useTranslation();
+  if (relatedTerms.length === 0) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.relatedTerms')}</h2>
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {relatedTerms.map((term) => <Link key={term.public_id} to={`/terms/${term.public_id}`} state={{ backTo }} data-term-related-chip className="flex h-[30px] shrink-0 items-center rounded-[8px] bg-surface px-4 text-[14px] leading-[14px] text-[#39363f]">{term.name}</Link>)}
+      </div>
+    </section>
+  );
+}
+
+function TermDetailTestCta({ bottomNavVisible }: { bottomNavVisible: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <button type="button" disabled aria-disabled="true" className={`max-md:fixed max-md:left-6 max-md:right-6 ${bottomNavVisible ? 'max-md:bottom-[128px]' : 'max-md:bottom-10'} max-md:z-30 flex min-h-[68px] items-center justify-between rounded-[8px] bg-[#6a37c3] px-6 py-4 text-left text-[#f6f5f7] md:hidden`}>
+      <span className="min-w-0"><span className="block truncate text-[16px] font-medium leading-4">{t('termDetail.testCta')}</span><span className="mt-1 block truncate text-[12px] leading-3 text-[#c5b1e7]">{t('termDetail.testMeta')}</span></span>
+      <HugeiconsIcon icon={ArrowRight02Icon} size={24} strokeWidth={1.8} className="shrink-0" />
+    </button>
+  );
+}
+
+export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
+  const { t } = useTranslation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
+  const definitions = term?.definitions ?? [];
+  const [index, setIndex] = useState(() => getDefinitionIndex(definitions, selectedDefinitionPublicId));
+  useEffect(() => { setIndex(getDefinitionIndex(term?.definitions ?? [], selectedDefinitionPublicId)); }, [term, selectedDefinitionPublicId]);
+  const total = definitions.length;
+  const current = definitions[index] ?? definitions[0];
+  const isLoading = loadState === 'loading' && !term;
+  const hasError = loadState === 'error' && !term;
+  const goPrevious = () => setIndex((value) => Math.max(0, value - 1));
+  const goNext = () => setIndex((value) => Math.min(total - 1, value + 1));
+  useEffect(() => {
+    if (!isAuthenticated || !term) return;
+    void ensureStatuses([term.public_id]).catch(() => undefined);
+  }, [ensureStatuses, isAuthenticated, term]);
+
+  return (
+    <div className="mx-auto max-w-[860px] bg-canvas px-6 pb-8 max-md:bg-canvas max-md:px-0 md:py-14">
+      <TermDetailHeader backTo={backTo} term={term} />
+      <div className="px-0 pb-[108px] pt-[42px] max-md:px-6 max-md:pb-[108px] max-md:pt-[42px] md:px-2">
+        {isLoading && <p className="py-20 text-center text-action-selected">{t('termDetail.loading')}</p>}
+        {hasError && <p className="py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
+        {term && <>
+          {total === 0 && <p className="py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
+          {current && <>
+            <section><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{term.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
+            <TermDetailStatPanel />
+            {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] leading-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
+            <TermDetailSourcePanel definition={current} />
+            <TermDetailRelatedPanel relatedTerms={relatedTerms} backTo={backTo} />
+            <TermDetailTestCta bottomNavVisible={bottomNavVisible} />
+          </>}
+        </>}
+      </div>
+    </div>
+  );
+}

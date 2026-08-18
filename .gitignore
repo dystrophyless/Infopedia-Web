@@ -4,7 +4,27 @@
 __pycache__/
 AGENTS.md
 scripts/
-data/
 .worktrees/
+.claude/
+.codex/
+openspec/
 docs/
+src/data/
 .pycache-verify/
+.codex-tmp/
+.tmp/
+
+# Local tooling and generated visual/test artifacts
+.agents/
+.serena/
+temp/
+node_modules/
+frontend/test-results/
+frontend/.storybook-*.log
+frontend/.review-storybook-*.err.log
+frontend/.review-storybook-*.out.log
+frontend/storybook-*.log
+frontend/debug-storybook.log
+frontend/task5-*.log
+frontend/.review-storybook-cache/
+frontend/image [1-3].png

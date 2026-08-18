@@ -1,0 +1,40 @@
+name: Frontend quality
+
+on:
+  pull_request:
+  push:
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  frontend-core:
+    name: Frontend core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run test:contracts
+      - run: npm run test:unit
+      - run: npm run build
+
+  frontend-ui:
+    name: Frontend UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui
+      - run: npm run build-storybook

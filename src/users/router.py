@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,11 +10,13 @@ from src.auth.dependencies import get_current_user as get_authenticated_user
 from src.auth.dependencies import get_onboarded_user
 from src.auth.repository import (
     add_auth_identity,
+    create_password_identity_if_missing_or_empty,
     delete_all_reset_tokens_for_user,
     get_auth_identity_by_provider_subject,
 )
 from src.auth.utils import hash_password, verify_password
 from src.database import get_async_session
+from src.security.password_attempts import enforce_password_attempt_limit
 from src.users.models import User
 from src.users.repository import (
     add_user,
@@ -26,12 +29,17 @@ from src.users.repository import (
 )
 from src.users.schemas import (
     ChangePasswordRequest,
+    CreatePasswordRequest,
     GradeSetupRequest,
+    PasswordVerificationResponse,
+    UsernameAvailabilityResponse,
     UserCreate,
     UsernameSetupRequest,
     UserResponsePrivate,
+    UserResponsePrivateMe,
     UserResponsePublic,
     UserUpdate,
+    VerifyCurrentPasswordRequest,
 )
 
 router = APIRouter()
@@ -111,6 +119,30 @@ async def create_user(
     await session.refresh(new_user)
 
     return new_user
+
+
+@router.get("/username-availability", response_model=UsernameAvailabilityResponse)
+async def check_username_availability(
+    username: Annotated[str, Query(min_length=3, max_length=20)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    try:
+        username_data = UsernameSetupRequest(username=username)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.errors(),
+        ) from exc
+
+    username_exists = await check_user_exists_by_username(
+        session,
+        username=username_data.username,
+    )
+
+    return UsernameAvailabilityResponse(
+        username=username_data.username,
+        available=not username_exists,
+    )
 
 
 @router.patch("/me/username", response_model=UserResponsePrivate)
@@ -206,11 +238,10 @@ async def set_my_grade(
     return current_user
 
 
-@router.patch("/me/password", status_code=status.HTTP_200_OK)
-async def change_password(
-    password_data: ChangePasswordRequest,
-    current_user: Annotated[User, Depends(get_authenticated_user)],
-    session: Annotated[AsyncSession, Depends(get_async_session)],
+async def _get_verified_password_identity(
+    session: AsyncSession,
+    current_user: User,
+    current_password: str,
 ):
     auth_identity = await get_auth_identity_by_provider_subject(
         session,
@@ -224,12 +255,42 @@ async def change_password(
             detail="Парольный вход не настроен.",
         )
 
-    if not verify_password(password_data.current_password, auth_identity.password_hash):
+    if not verify_password(current_password, auth_identity.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Неверный текущий пароль.",
         )
 
+    return auth_identity
+
+
+@router.post(
+    "/me/password/verify",
+    response_model=PasswordVerificationResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def verify_current_password(
+    password_data: VerifyCurrentPasswordRequest,
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    await enforce_password_attempt_limit(current_user.id)
+    await _get_verified_password_identity(session, current_user, password_data.current_password)
+    return {"verified": True}
+
+
+@router.patch("/me/password", status_code=status.HTTP_200_OK)
+async def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    await enforce_password_attempt_limit(current_user.id)
+    auth_identity = await _get_verified_password_identity(
+        session,
+        current_user,
+        password_data.current_password,
+    )
     auth_identity.password_hash = hash_password(password_data.new_password)
 
     await delete_all_reset_tokens_for_user(session, user_id=current_user.id)
@@ -240,11 +301,57 @@ async def change_password(
     return {"message": "Пароль успешно изменен."}
 
 
-@router.get("/me", response_model=UserResponsePrivate)
-async def get_current_user(
-    current_user: Annotated[User, Depends(get_onboarded_user)],
+@router.post("/me/password", status_code=status.HTTP_201_CREATED)
+async def create_my_password(
+    password_data: CreatePasswordRequest,
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    return current_user
+    await enforce_password_attempt_limit(current_user.id)
+
+    normalized_email = current_user.email.lower()
+    auth_identity = await create_password_identity_if_missing_or_empty(
+        session,
+        user_id=current_user.id,
+        provider_subject=normalized_email,
+        email=normalized_email,
+        password_hash=hash_password(password_data.new_password),
+    )
+
+    if auth_identity is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "password_already_configured",
+                "message": "Парольный вход уже настроен.",
+            },
+        )
+
+    await delete_all_reset_tokens_for_user(session, user_id=current_user.id)
+    await session.commit()
+
+    return {"created": True}
+
+
+@router.get("/me", response_model=UserResponsePrivateMe)
+async def get_current_user(
+    current_user: Annotated[User, Depends(get_authenticated_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    normalized_email = current_user.email.lower()
+    password_identity = await get_auth_identity_by_provider_subject(
+        session,
+        provider=PASSWORD_PROVIDER,
+        provider_subject=normalized_email,
+    )
+    response = UserResponsePrivate.model_validate(current_user)
+    return UserResponsePrivateMe(
+        **response.model_dump(),
+        has_password=(
+            password_identity is not None
+            and password_identity.password_hash is not None
+        ),
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponsePublic)

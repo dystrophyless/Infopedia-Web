@@ -21,3 +21,8 @@ htmlcov/
 !.env.example
 
 .python-version
+.worktrees/
+frontend/
+.claude/
+.codex/
+openspec/

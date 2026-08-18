@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, text
+from sqlalchemy import DateTime, ForeignKey, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.analyze.enums import Chapter as AnalyzeChapter
 from src.database import Base
 from src.topics.models import Chapter as ChapterModel
 
@@ -39,12 +38,6 @@ class AnalyzeResultItem(Base):
         ForeignKey("analyze_results.id"), nullable=False, index=True
     )
 
-    analyze_chapter: Mapped[AnalyzeChapter] = mapped_column(
-        "chapter",
-        Enum(AnalyzeChapter, native_enum=False),
-        nullable=False,
-        index=True,
-    )
     chapter_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("chapter.id"),

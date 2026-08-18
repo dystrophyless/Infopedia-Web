@@ -1,0 +1,108 @@
+{
+  "chapters": [
+    {
+      "code": "computer-devices",
+      "legacy_values": ["COMPUTER_DEVICES"],
+      "translations": {
+        "kk": "Компьютердің құрылғылары",
+        "ru": "Устройства компьютера"
+      }
+    },
+    {
+      "code": "computer-networks",
+      "legacy_values": ["COMPUTER_NETWORKS"],
+      "translations": {
+        "kk": "Компьютерлік желілер. Компьютерлік желілерді ұйымдастыру. Ақпараттық қауіпсіздік",
+        "ru": "Компьютерные сети. Организация компьютерных сетей"
+      }
+    },
+    {
+      "code": "information-representation-and-coding",
+      "legacy_values": ["INFORMATION_REPRESENTATION_AND_CODING"],
+      "translations": {
+        "kk": "Ақпаратты ұсыну және өлшеу. Ақпаратты кодтау",
+        "ru": "Представление и измерение информации. Кодирование информации"
+      }
+    },
+    {
+      "code": "number-systems",
+      "legacy_values": ["NUMBER_SYSTEMS"],
+      "translations": {
+        "kk": "Есептеу жүйелері",
+        "ru": "Системы счисления"
+      }
+    },
+    {
+      "code": "logic-basics",
+      "legacy_values": ["LOGIC_BASICS"],
+      "translations": {
+        "kk": "Компьютердің логикалық негіздері",
+        "ru": "Логические основы компьютера"
+      }
+    },
+    {
+      "code": "python-programming",
+      "legacy_values": ["PYTHON_PROGRAMMING"],
+      "translations": {
+        "kk": "Python программалау тілінде алгоритмдерді программалау",
+        "ru": "Программирование алгоритмов на языке программирования Python"
+      }
+    },
+    {
+      "code": "algorithms-and-programming",
+      "legacy_values": ["ALGORITHMS_AND_PROGRAMMING"],
+      "translations": {
+        "kk": "Алгоритмдер және программалау (Функция, Рекурсия, жолдармен жұмыс, файлдармен жұмыс, сұрыптау, граф)",
+        "ru": "Алгоритмы и программы (функция, рекурсия, работа со строками, работа с файлами, сортировка, граф)"
+      }
+    },
+    {
+      "code": "hardware-and-software",
+      "legacy_values": ["HARDWARE_AND_SOFTWARE"],
+      "translations": {
+        "kk": "Аппараттық қамтамасыз ету. Программалық қамтамасыз ету",
+        "ru": "Аппаратное обеспечение. Программное обеспечение"
+      }
+    },
+    {
+      "code": "relational-databases",
+      "legacy_values": ["RELATIONAL_DATABASES"],
+      "translations": {
+        "kk": "Реляциондық деректер қоры",
+        "ru": "Реляционные базы данных"
+      }
+    },
+    {
+      "code": "databases-and-queries",
+      "legacy_values": ["DATABASES_AND_QUERIES"],
+      "translations": {
+        "kk": "Мәліметтер қорын жасау. Құрылымдалған сұраныстар.",
+        "ru": "Разработка базы данных. Структурированные запросы"
+      }
+    },
+    {
+      "code": "it-technologies",
+      "legacy_values": ["IT_TECHNOLOGIES"],
+      "translations": {
+        "kk": "Ақпараттық технологияларды дамытудағы қазіргі заманғы үрдістер. IT Startup (ай-ти-стартап). 3D жобалау",
+        "ru": "Современные тенденции развития информационных технологий. IT Startup (ай-ти-стартап). 3D моделирования"
+      }
+    },
+    {
+      "code": "information-objects",
+      "legacy_values": ["INFORMATION_OBJECTS"],
+      "translations": {
+        "kk": "Ақпараттық объектілерді құру және түрлендіру",
+        "ru": "Создание и преобразование информационных объектов"
+      }
+    },
+    {
+      "code": "web-design",
+      "legacy_values": ["WEB_DESIGN"],
+      "translations": {
+        "kk": "Web-жобалау",
+        "ru": "Веб-проектирование"
+      }
+    }
+  ]
+}

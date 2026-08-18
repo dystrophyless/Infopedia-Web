@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    BACKEND_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:5173"
 
     LLMWHISPERER_API_KEY: SecretStr
@@ -21,13 +22,15 @@ class Settings(BaseSettings):
 
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: SecretStr
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
+    GOOGLE_REDIRECT_URI: str | None = None
     GOOGLE_OAUTH_STATE_TTL_SECONDS: int = 600
 
     VERIFICATION_CODE_EXPIRE_MINUTES: int
     REGISTRATION_RESEND_COOLDOWN_SECONDS: int
     REGISTRATION_MAX_ATTEMPTS: int
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int
+    PASSWORD_ATTEMPT_LIMIT: int = 10
+    PASSWORD_ATTEMPT_WINDOW_SECONDS: int = 60
 
     APP_NAME: str
 
@@ -50,6 +53,27 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str
     CELERY_RESULT_EXPIRES_SECONDS: int
     SEARCH_TASK_OWNER_TTL_SECONDS: int
+    FEATURED_DEFINITION_IDS: list[int] = [10, 4, 27, 31, 47]
+    ANTI_SCRAPE_ENABLED: bool = True
+    ANTI_SCRAPE_BLOCK_AUTOMATION_USER_AGENTS: bool = True
+    ANTI_SCRAPE_WINDOW_SECONDS: int = 60
+    ANTI_SCRAPE_AUTHENTICATED_LIMIT: int = 90
+    ANTI_SCRAPE_PUBLIC_LIMIT: int = 30
+    ANTI_SCRAPE_SEARCH_LIMIT: int = 45
+    ANTI_SCRAPE_DETAIL_LIMIT: int = 60
+    ANTI_SCRAPE_MAX_SEARCH_RESULTS: int = 20
+    ANTI_SCRAPE_MAX_TERMS_PAGE_SIZE: int = 20
+    TEST_CATALOG_STATS_READ_ENABLED: bool = False
+
+    @property
+    def google_redirect_uri(self) -> str:
+        if self.GOOGLE_REDIRECT_URI:
+            return self.GOOGLE_REDIRECT_URI
+        return f"{self.BACKEND_URL.rstrip('/')}/api/auth/google/callback"
+
+    @property
+    def google_frontend_callback_uri(self) -> str:
+        return f"{self.FRONTEND_URL.rstrip('/')}/auth/google/callback"
 
 
 settings = Settings()

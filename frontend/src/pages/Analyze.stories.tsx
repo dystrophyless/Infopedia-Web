@@ -425,8 +425,9 @@ export const UploadFileSelected: Story = {
   render: renderUploadStory,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const input = canvas.getByLabelText(/загрузить|выберите|pdf/i);
-    await userEvent.upload(input, new File(['sample'], 'analysis.pdf', { type: 'application/pdf' }));
+    const input = canvasElement.querySelector<HTMLInputElement>('#analyze-file');
+    await expect(input).not.toBeNull();
+    await userEvent.upload(input!, new File(['sample'], 'analysis.pdf', { type: 'application/pdf' }));
     await expect(canvas.getAllByText('analysis.pdf')[0]).toBeVisible();
     await expect(canvas.getByText('Нажмите, что бы выбрать другой файл')).toBeVisible();
     await expect(canvas.getByRole('button', { name: /Начать анализ/ })).toBeEnabled();

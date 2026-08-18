@@ -127,7 +127,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                 aria-current={lang === l ? 'true' : undefined}
               >
                 <span>{labelFor(l)}</span>
-                {compact && lang === l ? <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={1.5} /> : compact ? null : (
+                {compact && lang === l ? <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={1.5} className="text-[#6a37c3]" /> : compact ? null : (
                   <span
                     aria-hidden="true"
                     className={`ml-auto flex size-4 items-center justify-center text-accent transition-opacity ${

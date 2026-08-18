@@ -85,7 +85,7 @@ assert.match(languageSource, /onKeyDown=\{handleTriggerKeyDown\}/, 'Keyboard ope
 assert.match(languageSource, /'focus-visible:outline-none'/, 'Pointer-open compact rows should remain outline-free');
 assert.match(languageSource, /if \(e\.key === 'ArrowDown'\) \{[\s\S]*keyboardOpenRef\.current = true;[\s\S]*setKeyboardModality\(true\);[\s\S]*optionRefs\.current\[Math\.min\(index \+ 1, LANGS\.length - 1\)\]\?\.focus\(\)/, 'ArrowDown should switch to keyboard modality before moving focus to the next compact row');
 assert.match(languageSource, /else if \(e\.key === 'ArrowUp'\) \{[\s\S]*keyboardOpenRef\.current = true;[\s\S]*setKeyboardModality\(true\);[\s\S]*optionRefs\.current\[Math\.max\(index - 1, 0\)\]\?\.focus\(\)/, 'ArrowUp should switch to keyboard modality before moving focus to the previous compact row');
-assert.match(languageSource, /compact && lang === l \? <HugeiconsIcon icon=\{Tick02Icon\} size=\{16\} strokeWidth=\{1\.5\} \/> :/, 'Compact language popup should paint a 16px/1.5px check only for the selected row');
+assert.match(languageSource, /compact && lang === l \? <HugeiconsIcon icon=\{Tick02Icon\} size=\{16\} strokeWidth=\{1\.5\} className="text-\[#6a37c3\]" \/> :/, 'Compact language popup should paint the selected 16px/1.5px check in the exact accent color');
 assert.match(languageSource, /hover:bg-\[#f8f5fc\]/, 'Compact language rows should use the exact Figma hover surface');
 assert.doesNotMatch(navbarSource, /SearchChoiceModal|searchModalOpen|SEARCH_NAV_PATHS/, 'Landing marketing navigation should not retain the superseded search modal action');
 assert.match(navbarSource, /<a href="#tools"[^>]*>[\s\S]*nav-item__underline[\s\S]*<\/a>/, 'Each marketing anchor should own a dedicated underline element');

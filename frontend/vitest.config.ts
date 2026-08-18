@@ -22,13 +22,16 @@ export default mergeConfig(
           ],
           test: {
             name: 'storybook',
+            // Stories mutate shared i18n/auth stores and browser globals; run
+            // files serially so one story cannot race another's cleanup.
+            fileParallelism: false,
             browser: {
               enabled: true,
               provider: playwright({}),
               headless: true,
               instances: [{ browser: 'chromium' }],
             },
-            setupFiles: ['./.storybook/vitest.setup.ts'],
+            setupFiles: ['./.storybook/vitest.setup.mjs'],
           },
         },
       ],

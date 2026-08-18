@@ -366,6 +366,7 @@ export function MobileSearchResultHeader({
               data-search-result-filter={filter.id}
               className={chipClassName}
               aria-pressed={filter.active}
+              aria-label={filterIsIconOnly ? filter.label : undefined}
               onClick={() => {
                 if (filterIsIconOnly) onOpenFilters?.();
                 else if (filter.selectId) onOpenFilter?.(filter.selectId);

@@ -27,7 +27,6 @@ function FavoritesStory({ language, deferUntilSeeded = false }: { language: 'ru'
 
   useEffect(() => {
     let active = true;
-    const previousLanguage = i18n.language;
     const previousLoadFavorites = useFavoritesStore.getState().loadFavorites;
     useAuthStore.setState({ isAuthenticated: true, token: 'storybook-token', refreshToken: null, user: storyUser });
     useFavoritesStore.setState({
@@ -54,7 +53,6 @@ function FavoritesStory({ language, deferUntilSeeded = false }: { language: 'ru'
       useAuthStore.setState({ isAuthenticated: false, token: null, refreshToken: null, user: null });
       useFavoritesStore.setState({ loadFavorites: previousLoadFavorites });
       useFavoritesStore.getState().reset();
-      void i18n.changeLanguage(previousLanguage);
     };
   }, [language]);
 

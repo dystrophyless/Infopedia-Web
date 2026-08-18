@@ -4,6 +4,7 @@ import path from 'node:path';
 
 const navbarSource = readFileSync(path.resolve(import.meta.dirname, 'Navbar.tsx'), 'utf8');
 const languageSource = readFileSync(path.resolve(import.meta.dirname, 'LanguageSwitcher.tsx'), 'utf8');
+const compactTriggerClass = languageSource.match(/className=\{compact\s*\n\s*\? '([^']+)'/)?.[1] ?? '';
 const figmaLogoPath = path.resolve(import.meta.dirname, '../assets/figma-landing/guest-header-logo.svg');
 const layoutSource = readFileSync(path.resolve(import.meta.dirname, 'Layout.tsx'), 'utf8');
 const landingSource = readFileSync(path.resolve(import.meta.dirname, '../pages/Landing.tsx'), 'utf8');
@@ -23,8 +24,8 @@ assert.match(
 );
 assert.match(
   navbarSource,
-  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto flex h-\[34px\] w-full max-w-\[1152px\] items-center justify-between px-\[24px\]">/,
-  'Landing guest navbar should use the centered 1152px/24px content rail',
+  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto flex h-\[34px\] w-full max-w-\[1152px\] items-center justify-between px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0">/,
+  'Landing guest navbar should use the centered responsive content rail',
 );
 assert.match(navbarSource, /nav-item[^']*inline-flex[^']*items-center[^']*justify-center/, 'Marketing anchors should use flex item geometry from the Figma header');
 assert.match(navbarSource, /nav-item[^']*px-\[12px\][^']*py-\[8px\][^']*text-\[14px\][^']*font-normal[^']*leading-none/, 'Marketing anchors should use the compact Figma 12px horizontal and 8px vertical item padding with regular 14px text');
@@ -41,14 +42,51 @@ assert.match(navbarSource, /href="#tools" className=\{`\$\{marketingLinkClass\} 
 assert.match(navbarSource, /href="#featured-terms" className=\{`\$\{marketingLinkClass\} min-w-\[120px\]\`\}/, 'Term-base tab should preserve the Figma 120px item width at RU');
 assert.match(navbarSource, /href="#desktop-analysis" className=\{`\$\{marketingLinkClass\} min-w-\[103px\]\`\}/, 'Analyze tab should preserve the Figma 103px item width at RU');
 assert.match(navbarSource, /<header[^>]+max-md:hidden/, 'Guest desktop navbar should remain hidden on mobile');
-assert.match(navbarSource, /<div className="flex h-\[34px\] shrink-0 items-center gap-\[8px\]">[\s\S]*<LanguageSwitcher compact \/>/, 'Right actions should use the Figma 34px row and 8px group gap');
+assert.match(navbarSource, /<div className="flex h-\[32px\] shrink-0 items-center gap-\[8px\]">[\s\S]*<LanguageSwitcher compact \/>/, 'Right actions should use the Figma 32px row and 8px group gap');
 assert.doesNotMatch(navbarSource, /h-10 w-px|border-b|border-border/, 'Compact Figma header should not add a divider or border');
-assert.match(navbarSource, /to="\/login"[\s\S]*h-\[34px\][\s\S]*w-\[72px\][\s\S]*px-\[16px\][\s\S]*py-\[8px\][\s\S]*text-\[14px\][\s\S]*text-\[#161519\]/, 'Guest login should match the compact Figma 72x34 dark-text control');
-assert.match(navbarSource, /to="\/onboarding"[\s\S]*className="(?=[^"]*h-\[34px\])(?=[^"]*w-\[100px\])(?=[^"]*bg-\[#6a37c3\])(?=[^"]*rounded-\[8px\])(?=[^"]*px-\[16px\])(?=[^"]*py-\[8px\])(?=[^"]*gap-\[4px\])(?=[^"]*text-\[14px\])(?=[^"]*text-white)[^"]*"[\s\S]*ArrowRight02Icon/, 'Guest start should use the compact Figma 100x34 purple onboarding control and arrow-right-02 icon');
-assert.match(navbarSource, /icon=\{ArrowRight02Icon\} size=\{18\}/, 'Start control should render the HugeIcons arrow at 18px');
+assert.match(navbarSource, /to="\/login"[\s\S]*className="(?=[^"]*h-\[32px\])(?=[^"]*rounded-\[8px\])(?=[^"]*bg-white)(?=[^"]*hover:bg-\[#f6f5f7\])(?=[^"]*active:bg-\[#d5d3d9\])(?=[^"]*px-\[16px\])(?=[^"]*py-\[8px\])(?=[^"]*text-\[12px\])(?=[^"]*font-normal)(?=[^"]*leading-\[normal\])(?=[^"]*text-\[#161519\])[^"\n]*"/, 'Guest login should use the Hug-width 32px Figma control with exact typography, default, hover, and native active paint');
+assert.match(navbarSource, /to="\/onboarding"[\s\S]*className="(?=[^"]*h-\[32px\])(?=[^"]*rounded-\[8px\])(?=[^"]*bg-\[#6a37c3\])(?=[^"]*hover:bg-\[#865bcf\])(?=[^"]*active:bg-\[#a585db\])(?=[^"]*px-\[16px\])(?=[^"]*py-\[8px\])(?=[^"]*gap-\[4px\])(?=[^"]*text-\[12px\])(?=[^"]*font-normal)(?=[^"]*leading-\[normal\])(?=[^"]*text-white)[^"\n]*"[\s\S]*ArrowRight02Icon/, 'Guest start should use the Hug-width 32px Figma onboarding control with exact typography, default, hover, and native active paint');
+assert.doesNotMatch(navbarSource, /to="\/(?:login|onboarding)"[\s\S]{0,250}\bw-\[/, 'Compact guest links should remain content-sized instead of using fixed widths');
+assert.match(navbarSource, /icon=\{ArrowRight02Icon\} size=\{16\} strokeWidth=\{1\.5\}/, 'Start control should render the confirmed HugeIcons arrow-right-02 glyph at 16px with source stroke');
 assert.match(languageSource, /compact\?: boolean/, 'LanguageSwitcher should expose a compact desktop trigger variant');
-assert.match(languageSource, /icon=\{InternetIcon\} size=\{18\}/, 'Compact language trigger should use the HugeIcons internet glyph at 18px');
-assert.match(languageSource, /compact[\s\S]*h-\[34px\][\s\S]*w-\[70px\][\s\S]*gap-\[8px\][\s\S]*px-\[12px\][\s\S]*py-\[8px\][\s\S]*text-\[14px\]/, 'Compact language trigger should use the Figma 70x34 12px/8px/14px geometry');
+assert.match(languageSource, /icon=\{InternetIcon\} size=\{16\} strokeWidth=\{1\.5\}/, 'Compact language trigger should use the confirmed HugeIcons internet glyph at 16px with source stroke');
+assert.match(languageSource, /compact[\s\S]*\? '(?=[^'\n]*h-\[32px\])(?=[^'\n]*rounded-\[8px\])(?=[^'\n]*gap-\[8px\])(?=[^'\n]*px-\[12px\])(?=[^'\n]*py-\[8px\])(?=[^'\n]*text-\[12px\])(?=[^'\n]*leading-\[normal\])(?=[^'\n]*text-\[#b1acb9\])(?=[^'\n]*hover:text-\[#161519\])(?=[^'\n]*aria-expanded:text-\[#161519\])(?=[^'\n]*hover:bg-\[#f6f5f7\])(?=[^'\n]*aria-expanded:bg-\[#d5d3d9\])[^'\n]*'/, 'Compact language trigger should inherit exact default, hover, and open foreground paint alongside the existing geometry and backgrounds');
+assert.doesNotMatch(compactTriggerClass, /\bw-\[/, 'Compact language trigger should not clip localized content with a fixed width');
+assert.doesNotMatch(languageSource, /icon=\{InternetIcon\}[^>]*(?:color=|text-\[)/, 'Compact language icon should inherit currentColor instead of declaring its own foreground paint');
+assert.match(
+  languageSource,
+  /className=\{compact \? 'relative flex flex-col items-end gap-\[16px\]' : 'relative'\}/,
+  'Compact language wrapper should expose the Figma right-aligned 16px stack without changing noncompact semantics',
+);
+assert.match(
+  languageSource,
+  /className=\{compact\s*\n\s*\? 'absolute right-0 top-full z-50 mt-\[8px\] flex w-\[160px\] flex-col overflow-hidden rounded-\[8px\] border border-\[#eae9ec\] bg-white p-\[4px\] shadow-none'\s*\n\s*:\s*'absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-\[10px\] border border-border bg-surface'\}/,
+  'Compact language popup should overlay below the trigger with the exact 160px white bordered Figma surface while preserving the noncompact popup branch',
+);
+assert.match(
+  languageSource,
+  /compact\s*\n\s*\? [`']flex h-\[28px\] w-full items-center justify-between rounded-\[4px\] px-\[8px\] py-\[6px\] text-left text-\[14px\] font-normal leading-\[normal\] text-\[#161519\] hover:bg-\[#f8f5fc\] focus:outline-none/,
+  'Compact language rows should be 28px, 14px regular, and transparent dark-text controls with 8px/6px padding',
+);
+assert.match(
+  languageSource,
+  /compact\s*\n\s*\? [`']flex h-\[28px\][^`']*rounded-\[4px\]/,
+  'Compact language option rows should use the exact 4px Figma corner radius',
+);
+assert.match(
+  languageSource,
+  /focus-visible:outline-2 focus-visible:outline-\[#6a37c3\] focus-visible:outline-offset-\[-2px\]/,
+  'Compact language rows should expose a keyboard-only 2px purple focus indicator inside the popup without changing pointer paint',
+);
+assert.match(languageSource, /const keyboardOpenRef = useRef\(false\)/, 'Compact language focus paint should track keyboard versus pointer opening modality');
+assert.match(languageSource, /const \[keyboardModality, setKeyboardModality\] = useState\(false\)/, 'Compact language focus paint should rerender on modality transitions');
+assert.match(languageSource, /onPointerDown=\{\(\) => \{ keyboardOpenRef\.current = false; setKeyboardModality\(false\); \}\}/, 'Pointer opening should suppress the keyboard-only focus outline');
+assert.match(languageSource, /onKeyDown=\{handleTriggerKeyDown\}/, 'Keyboard opening should retain the compact row focus indicator');
+assert.match(languageSource, /'focus-visible:outline-none'/, 'Pointer-open compact rows should remain outline-free');
+assert.match(languageSource, /if \(e\.key === 'ArrowDown'\) \{[\s\S]*keyboardOpenRef\.current = true;[\s\S]*setKeyboardModality\(true\);[\s\S]*optionRefs\.current\[Math\.min\(index \+ 1, LANGS\.length - 1\)\]\?\.focus\(\)/, 'ArrowDown should switch to keyboard modality before moving focus to the next compact row');
+assert.match(languageSource, /else if \(e\.key === 'ArrowUp'\) \{[\s\S]*keyboardOpenRef\.current = true;[\s\S]*setKeyboardModality\(true\);[\s\S]*optionRefs\.current\[Math\.max\(index - 1, 0\)\]\?\.focus\(\)/, 'ArrowUp should switch to keyboard modality before moving focus to the previous compact row');
+assert.match(languageSource, /compact && lang === l \? <HugeiconsIcon icon=\{Tick02Icon\} size=\{16\} strokeWidth=\{1\.5\} \/> :/, 'Compact language popup should paint a 16px/1.5px check only for the selected row');
+assert.match(languageSource, /hover:bg-\[#f8f5fc\]/, 'Compact language rows should use the exact Figma hover surface');
 assert.doesNotMatch(navbarSource, /SearchChoiceModal|searchModalOpen|SEARCH_NAV_PATHS/, 'Landing marketing navigation should not retain the superseded search modal action');
 assert.match(navbarSource, /<a href="#tools"[^>]*>[\s\S]*nav-item__underline[\s\S]*<\/a>/, 'Each marketing anchor should own a dedicated underline element');
 assert.match(navbarSource, /<a href="#featured-terms"[^>]*>[\s\S]*nav-item__underline[\s\S]*<\/a>/, 'Term-base anchor should own a dedicated underline element');
@@ -69,6 +107,16 @@ assert.match(indexCssSource, /\.nav-item\[aria-current=['"]true['"]\],[\s\S]*\.n
 assert.match(indexCssSource, /\.nav-item__underline\s*\{[\s\S]*left:\s*12px;[\s\S]*right:\s*12px;[\s\S]*bottom:\s*-1px;[\s\S]*height:\s*2px;[\s\S]*border-radius:\s*2px;[\s\S]*background:\s*#6a37c3;[\s\S]*transform:\s*scaleX\(0\)[\s\S]*transform-origin:\s*center[\s\S]*transition:\s*transform\s+200ms\s+ease;/, 'Compact underlines should fit each tab and animate from the center over 200ms');
 assert.match(indexCssSource, /\.nav-item:hover \.nav-item__underline,[\s\S]*\.nav-item\[aria-current=['"]true['"]\] \.nav-item__underline[\s\S]*transform:\s*scaleX\(1\)/, 'Hover and active states should reveal independent centered underlines');
 assert.doesNotMatch(indexCssSource, /\.nav-item[^\n]*:active[\s\S]*transform|\.nav-item[^\n]*:active[\s\S]*background|\.nav-item[^\n]*:active[\s\S]*opacity/, 'Navigation must not add click/mousedown animation');
+assert.match(
+  indexCssSource,
+  /body\s*\{[\s\S]*?overflow-x:\s*clip;[\s\S]*?overscroll-behavior-y:\s*none;/,
+  'Body should clip horizontal overflow without becoming an implicit vertical scroll container',
+);
+assert.doesNotMatch(
+  indexCssSource,
+  /body\s*\{[\s\S]*?overflow-x:\s*hidden;/,
+  'Body must not use overflow-x:hidden because it can create an implicit scroll container',
+);
 for (const id of ['tools', 'featured-terms', 'desktop-analysis']) {
   assert.match(landingSource, new RegExp(`id="${id}"[^>]*data-nav-section`), `Desktop section ${id} should expose data-nav-section`);
 }

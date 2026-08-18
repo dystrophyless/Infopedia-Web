@@ -56,7 +56,7 @@ function DesktopGuestHero({ isAuthenticated = false }: { isAuthenticated?: boole
 
   return (
     <section className="box-border min-h-[656px] overflow-hidden bg-[#efebf6] pb-[168px] pt-[124px] text-center">
-      <div data-desktop-content-rail className="mx-auto flex w-full max-w-[1152px] flex-col items-center px-[24px]">
+      <div data-desktop-content-rail className="mx-auto flex w-full max-w-[1152px] flex-col items-center px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <p className="text-[16px] font-medium uppercase leading-none tracking-[0.02em] text-[#6e6779]">
           {t('landing.desktopEyebrow', { defaultValue: 'ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ' })}
         </p>
@@ -127,7 +127,7 @@ function DesktopFeatureCards() {
 
   return (
     <section id="tools" data-nav-section className="overflow-hidden bg-[#efebf6] pb-[64px]">
-      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px]">
+      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <div className="flex w-full items-end">
           <h2 className="text-[48px] font-medium leading-[48px] text-[#161519]">
             {t('landing.desktopToolsTitleLead', { defaultValue: 'Всё, что нужно для подготовки' })}
@@ -169,7 +169,7 @@ function DesktopSourceProof({ isAuthenticated = false }: { isAuthenticated?: boo
 
   return (
     <section id="featured-terms" data-nav-section className="bg-[#efebf6] pb-[88px]">
-      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px]">
+      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <h2 className="text-[48px] font-medium leading-[48px] text-[#161519]">
           {t('landing.desktopTermsTitleLead', { defaultValue: 'База из 5000+ терминов' })}
           <br />
@@ -178,8 +178,14 @@ function DesktopSourceProof({ isAuthenticated = false }: { isAuthenticated?: boo
           </span>
         </h2>
 
-        <div className="mt-10 grid w-full grid-cols-[minmax(0,720px)_minmax(0,400px)] overflow-hidden rounded-[16px] max-lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]">
-          <div className="flex min-h-[264px] w-[720px] max-w-full flex-col items-start justify-center bg-white p-8">
+        <div
+          data-source-proof-card
+          className="mt-10 grid w-full grid-cols-[minmax(0,720px)_minmax(0,400px)] overflow-hidden rounded-[16px] max-lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]"
+        >
+          <div
+            data-source-proof-left
+            className="flex w-[720px] max-w-full flex-col items-start justify-center bg-white p-8"
+          >
             <h3 className="text-[24px] font-medium leading-6 text-[#161519]">
               {t('landing.desktopSourceTitleLead', { defaultValue: 'Не просто объясняем.' })}
               <br />
@@ -200,7 +206,10 @@ function DesktopSourceProof({ isAuthenticated = false }: { isAuthenticated?: boo
               {t('landing.desktopTermsCta', { defaultValue: 'Посмотреть термины →' })}
             </Link>
           </div>
-          <div className="flex min-h-[264px] w-[400px] max-w-full flex-col bg-[#6a37c3] p-8 text-white">
+          <div
+            data-source-proof-right
+            className="flex w-[400px] max-w-full flex-col bg-[#6a37c3] p-8 text-white"
+          >
             <h3 className="text-[20px] font-medium leading-5 text-[#efeaf8]">
               {t('landing.desktopSourcePanelTitle', { defaultValue: 'Источник определения' })}
             </h3>
@@ -256,7 +265,7 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
 
   return (
     <section id="desktop-analysis" data-nav-section className="bg-[#efebf6] pb-[220px]">
-      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px]">
+      <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <div data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-[327px]">
           <h2 className="text-[48px] font-medium leading-[48px] text-[#161519] md:col-span-2 xl:absolute xl:left-0 xl:top-0">
             {t('landing.desktopAnalyzeTitleLead', { defaultValue: 'Проанализируйте свой ЕНТ' })}

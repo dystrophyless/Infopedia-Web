@@ -27,7 +27,8 @@ export function Navbar() {
 
     const updateActiveSection = () => {
       const headerOffset = getActualHeaderHeight(headerRef.current);
-      const activationY = headerOffset + 24;
+      const navSectionOffset = 40;
+      const activationY = headerOffset + 24 + navSectionOffset;
       const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-nav-section]'));
       let activeNavSection: HTMLElement | null = null;
 
@@ -39,7 +40,7 @@ export function Navbar() {
         }
       }
 
-      root.style.setProperty('--header-offset', `${headerOffset}px`);
+      root.style.setProperty('--header-offset', `${headerOffset + navSectionOffset}px`);
       setActiveSection(activeNavSection?.id ?? null);
     };
 

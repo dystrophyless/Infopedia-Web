@@ -120,7 +120,7 @@ export function AuthShell({
                     />
                   ))}
                 </div>
-                <p className="mt-2 text-[14px] leading-[17px] text-[#8c8698]">Шаг {mobileProgress.step} из 3</p>
+                <p className="mt-2 text-[14px] leading-[14px] text-[#8c8698]">Шаг {mobileProgress.step} из 3</p>
               </div>
             )}
             <h1

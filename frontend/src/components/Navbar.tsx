@@ -90,13 +90,13 @@ export function Navbar() {
           <LanguageSwitcher compact />
           <Link
             to="/login"
-            className="inline-flex h-[32px] shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] bg-white px-[16px] py-[8px] text-[12px] font-normal leading-[normal] text-[#161519] hover:bg-[#f6f5f7] active:bg-[#d5d3d9]"
+            className="inline-flex h-[32px] shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] bg-white px-[16px] py-[8px] text-[12px] font-normal leading-[12px] text-[#161519] hover:bg-[#f6f5f7] active:bg-[#d5d3d9]"
           >
             {t('nav.login')}
           </Link>
           <Link
             to="/onboarding"
-            className="inline-flex h-[32px] shrink-0 items-center justify-center gap-[4px] whitespace-nowrap rounded-[8px] bg-[#6a37c3] px-[16px] py-[8px] text-[12px] font-normal leading-[normal] text-white hover:bg-[#865bcf] active:bg-[#a585db]"
+            className="inline-flex h-[32px] shrink-0 items-center justify-center gap-[4px] whitespace-nowrap rounded-[8px] bg-[#6a37c3] px-[16px] py-[8px] text-[12px] font-normal leading-[12px] text-white hover:bg-[#865bcf] active:bg-[#a585db]"
           >
             <span>{t('nav.start')}</span>
             <HugeiconsIcon icon={ArrowRight02Icon} size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />

@@ -80,7 +80,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         onKeyDown={handleTriggerKeyDown}
         onClick={() => setOpen((v) => !v)}
         className={compact
-          ? 'flex h-[32px] shrink-0 items-center justify-center gap-[8px] whitespace-nowrap rounded-[8px] border-0 bg-white px-[12px] py-[8px] text-[12px] font-normal leading-[normal] text-[#b1acb9] hover:bg-[#f6f5f7] hover:text-[#161519] aria-expanded:bg-[#d5d3d9] aria-expanded:text-[#161519] aria-expanded:hover:bg-[#d5d3d9]'
+          ? 'flex h-[32px] shrink-0 items-center justify-center gap-[8px] whitespace-nowrap rounded-[8px] border-0 bg-white px-[12px] py-[8px] text-[12px] font-normal leading-[12px] text-[#b1acb9] hover:bg-[#f6f5f7] hover:text-[#161519] aria-expanded:bg-[#d5d3d9] aria-expanded:text-[#161519] aria-expanded:hover:bg-[#d5d3d9]'
           : 'flex items-center gap-[5px] px-2 py-2 text-[16px] leading-none text-muted transition-colors hover:text-accent'}
         aria-haspopup="menu"
         aria-controls="lang-menu"
@@ -115,7 +115,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                 onClick={() => selectLang(l)}
                 onKeyDown={(e) => handleOptionKeyDown(e, i)}
                 className={compact
-                  ? `flex h-[28px] w-full items-center justify-between rounded-[4px] px-[8px] py-[6px] text-left text-[14px] font-normal leading-[normal] text-[#161519] hover:bg-[#f8f5fc] focus:outline-none ${
+                  ? `flex h-[28px] w-full items-center justify-between rounded-[4px] px-[8px] py-[6px] text-left text-[14px] font-normal leading-[14px] text-[#161519] hover:bg-[#f8f5fc] focus:outline-none ${
                     keyboardModality
                       ? 'focus-visible:outline-2 focus-visible:outline-[#6a37c3] focus-visible:outline-offset-[-2px]'
                       : 'focus-visible:outline-none'

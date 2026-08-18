@@ -14,7 +14,7 @@ def clean_from_table(text: str) -> str:
     cleaned_lines = [line for line in lines if line.lstrip().startswith("|")]
 
     if not cleaned_lines:
-        raise UnsupportedAnalyzeDocumentError()
+        raise UnsupportedAnalyzeDocumentError(reason="no_table_rows")
 
     for index, line in enumerate(cleaned_lines):
         if any(
@@ -23,7 +23,9 @@ def clean_from_table(text: str) -> str:
         ):
             return "\n".join(cleaned_lines[index:])
 
-    raise UnsupportedAnalyzeDocumentError()
+    raise UnsupportedAnalyzeDocumentError(
+        reason="expected_table_header_not_found",
+    )
 
 
 def split_table_cells(line: str) -> list[str]:
@@ -101,18 +103,37 @@ def is_empty_table_row(cells: list[str]) -> bool:
     return not any(cell.strip() for cell in cells)
 
 
-def validate_parsed_row(row: dict) -> None:
+def validate_parsed_row(row: dict, *, row_index: int) -> None:
     if not row["topic"]:
-        raise UnsupportedAnalyzeDocumentError()
+        raise UnsupportedAnalyzeDocumentError(
+            reason="missing_topic",
+            context={"row_index": row_index},
+        )
 
     if not row_is_complete(row):
-        raise UnsupportedAnalyzeDocumentError()
+        raise UnsupportedAnalyzeDocumentError(
+            reason="incomplete_row",
+            context={"row_index": row_index},
+        )
 
     if row["score"] > row["max_score"]:
-        raise UnsupportedAnalyzeDocumentError()
+        raise UnsupportedAnalyzeDocumentError(
+            reason="score_exceeds_max_score",
+            context={
+                "row_index": row_index,
+                "score": row["score"],
+                "max_score": row["max_score"],
+            },
+        )
 
     if not 0 <= row["percentage"] <= 100:
-        raise UnsupportedAnalyzeDocumentError()
+        raise UnsupportedAnalyzeDocumentError(
+            reason="percentage_out_of_range",
+            context={
+                "row_index": row_index,
+                "percentage": row["percentage"],
+            },
+        )
 
 
 def parse_table(text: str) -> list[dict]:
@@ -152,9 +173,9 @@ def parse_table(text: str) -> list[dict]:
         parsed_data.append(pending_row)
 
     if not parsed_data:
-        raise UnsupportedAnalyzeDocumentError()
+        raise UnsupportedAnalyzeDocumentError(reason="no_parsed_rows")
 
-    for row in parsed_data:
-        validate_parsed_row(row)
+    for row_index, row in enumerate(parsed_data):
+        validate_parsed_row(row, row_index=row_index)
 
     return parsed_data

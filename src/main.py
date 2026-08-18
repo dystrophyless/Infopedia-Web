@@ -1,12 +1,21 @@
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+import src.favorites.models
+import src.tests.models  # noqa: F401 - register model before startup migrations
 from src.analyze.router import router as analyze_router
 from src.auth.router import router as auth_router
-from src.database import async_engine
+from src.config import settings
+from src.database import async_engine, ensure_user_schema_compatibility
+from src.favorites.router import router as favorites_router
+from src.migrations.favorites_migration import migrate_favorites_schema
+from src.migrations.tests_migration import migrate_tests_schema
 from src.search.router import router as search_router
 from src.terms.router import router as terms_router
+from src.tests.router import router as tests_router
 from src.topics.router import router as topics_router
 from src.users.router import router as users_router
 
@@ -14,12 +23,37 @@ from src.users.router import router as users_router
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     try:
+        await ensure_user_schema_compatibility(async_engine)
+        await migrate_favorites_schema(async_engine)
+        await migrate_tests_schema(async_engine)
         yield
     finally:
         await async_engine.dispose()
 
 
+def get_cors_origins(frontend_url: str) -> list[str]:
+    frontend_origin = frontend_url.rstrip("/")
+    origins = {frontend_origin}
+    parsed = urlsplit(frontend_origin)
+
+    if parsed.hostname in {"localhost", "127.0.0.1"}:
+        alternate_host = "127.0.0.1" if parsed.hostname == "localhost" else "localhost"
+        netloc = alternate_host
+        if parsed.port:
+            netloc = f"{alternate_host}:{parsed.port}"
+        origins.add(urlunsplit((parsed.scheme, netloc, "", "", "")))
+
+    return sorted(origins)
+
+
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_cors_origins(settings.FRONTEND_URL),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(
     users_router,
@@ -56,6 +90,28 @@ app.include_router(
     prefix="/api/analyze",
     tags=["analyze"],
 )
+
+app.include_router(
+    favorites_router,
+    prefix="/api/favorites",
+    tags=["favorites"],
+)
+
+app.include_router(
+    tests_router,
+    prefix="/api/tests",
+    tags=["tests"],
+)
+
+
+@app.middleware("http")
+async def add_private_api_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet, noai, noimageai"
+    return response
 
 
 @app.get("/")

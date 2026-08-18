@@ -138,7 +138,7 @@ def generate_google_oauth_redirect_uri(state: str | None = None) -> str:
         "client_id": settings.GOOGLE_CLIENT_ID,
         "response_type": "code",
         "scope": "openid email profile",
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "redirect_uri": settings.google_redirect_uri,
         "access_type": "offline",
         "prompt": "consent",
         "state": state,

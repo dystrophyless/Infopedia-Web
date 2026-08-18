@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "fileKey": "aa8qReawBBhHIXDAbS18OP",
+  "export": {
+    "tool": "figma.get_screenshot",
+    "maxDimension": 1440,
+    "contentsOnly": false,
+    "width": 1440,
+    "height": 1372,
+    "format": "png"
+  },
+  "comparisonRegion": {
+    "x": 936,
+    "y": 24,
+    "width": 480,
+    "height": 600
+  },
+  "references": {
+    "default": {
+      "nodeId": "689:2793",
+      "filename": "default.reference.png",
+      "sha256": "fc280d8bfd238f28ec3dc305a29ac5d4a2742351c13c821294517097eea33cb6"
+    },
+    "edition-menu": {
+      "nodeId": "841:1358",
+      "filename": "edition-menu.reference.png",
+      "sha256": "add5b9e2c3a28accc8e30d301cad40696e779073371bacc733a39299d765e602"
+    },
+    "grade-menu": {
+      "nodeId": "841:3608",
+      "filename": "grade-menu.reference.png",
+      "sha256": "307991d1507b5981ecbcd4fb6e960d4e7e15a48d87dbbe8a7dcef841319026fd"
+    },
+    "chapter-menu": {
+      "nodeId": "845:3814",
+      "filename": "chapter-menu.reference.png",
+      "sha256": "9a4807e26f6253b57350c3c45f24bbf668b798534a0dd7951b9724fc175c7009"
+    }
+  },
+  "rendererCalibration": {
+    "method": "Figma server PNG versus Windows Playwright Chromium at DPR 1; exact DOM geometry and computed styles are asserted separately. Paint uses full unmasked panel pixels, flat-region agreement, two-pixel edge registration, and exact paint anchors.",
+    "ceilingRule": "Each ceiling is the reviewed baseline rounded upward to a small explicit boundary. Recalibration requires a reviewed Figma export and manifest hash update; passing one aggregate percentage is insufficient.",
+    "states": {
+      "default": {
+        "baselineMeanAbsoluteChannelDifference": 1.754744212962963,
+        "baselineEdgeMismatchRatio": 0.00016540773005458456,
+        "baselineFlatPaintMismatchRatio": 0.0008871369006522385,
+        "maxMeanAbsoluteChannelDifference": 2,
+        "maxEdgeMismatchRatio": 0.001,
+        "maxFlatPaintMismatchRatio": 0.002
+      },
+      "edition-menu": {
+        "baselineMeanAbsoluteChannelDifference": 1.929150462962963,
+        "baselineEdgeMismatchRatio": 0.00018407731247123792,
+        "baselineFlatPaintMismatchRatio": 0.001166058603338485,
+        "maxMeanAbsoluteChannelDifference": 2.2,
+        "maxEdgeMismatchRatio": 0.001,
+        "maxFlatPaintMismatchRatio": 0.002
+      },
+      "grade-menu": {
+        "baselineMeanAbsoluteChannelDifference": 1.5388078703703705,
+        "baselineEdgeMismatchRatio": 0.00017979144192736425,
+        "baselineFlatPaintMismatchRatio": 0.0009821151659257727,
+        "maxMeanAbsoluteChannelDifference": 1.8,
+        "maxEdgeMismatchRatio": 0.001,
+        "maxFlatPaintMismatchRatio": 0.002
+      },
+      "chapter-menu": {
+        "baselineMeanAbsoluteChannelDifference": 4.990383101851852,
+        "baselineEdgeMismatchRatio": 0.0009905150678352743,
+        "baselineFlatPaintMismatchRatio": 0.0034527096814991253,
+        "maxMeanAbsoluteChannelDifference": 5.1,
+        "maxEdgeMismatchRatio": 0.002,
+        "maxFlatPaintMismatchRatio": 0.005
+      }
+    }
+  },
+  "paintAnchors": {
+    "default": [
+      { "x": 240, "y": 590, "rgb": [255, 255, 255] },
+      { "x": 50, "y": 530, "rgb": [222, 210, 241] },
+      { "x": 260, "y": 530, "rgb": [106, 55, 195] }
+    ],
+    "edition-menu": [
+      { "x": 240, "y": 590, "rgb": [255, 255, 255] },
+      { "x": 200, "y": 300, "rgb": [248, 245, 252] },
+      { "x": 260, "y": 530, "rgb": [106, 55, 195] }
+    ],
+    "grade-menu": [
+      { "x": 240, "y": 590, "rgb": [255, 255, 255] },
+      { "x": 200, "y": 100, "rgb": [248, 245, 252] },
+      { "x": 260, "y": 530, "rgb": [106, 55, 195] }
+    ],
+    "chapter-menu": [
+      { "x": 240, "y": 590, "rgb": [255, 255, 255] },
+      { "x": 200, "y": 100, "rgb": [248, 245, 252] },
+      { "x": 260, "y": 530, "rgb": [106, 55, 195] }
+    ]
+  }
+}

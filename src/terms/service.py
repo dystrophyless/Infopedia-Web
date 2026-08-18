@@ -9,6 +9,7 @@ import torch
 from sentence_transformers import CrossEncoder, SentenceTransformer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.security.public_refs import encode_public_ref
 from src.terms.models import Definition
 from src.terms.repository import get_definition_candidates
 
@@ -189,9 +190,9 @@ class DefinitionService:
             current_top = unique_terms[0]
 
             if best_by_rerank["rerank_raw"] > 0.85 and best_by_rerank != current_top:
-                logger.debug("--- Rerank Rescue Triggered ---")
+                logger.debug("--- Сработало спасение реранжированием ---")
                 logger.debug(
-                    "Moving `%s` (raw: %.4f) above `%s` (raw: %.4f)",
+                    "Поднимаем `%s` (raw: %.4f) выше `%s` (raw: %.4f)",
                     best_by_rerank["definition"].term.name,
                     best_by_rerank["rerank_raw"],
                     current_top["definition"].term.name,
@@ -206,8 +207,8 @@ class DefinitionService:
         second = unique_terms[1] if len(unique_terms) > 1 else None
         margin = best["combined"] - second["combined"] if second else 1.0
 
-        logger.debug("Query: %r | Alpha: %.2f", query, adaptive_alpha)
-        logger.debug("Top Candidates:")
+        logger.debug("Запрос: %r | Альфа: %.2f", query, adaptive_alpha)
+        logger.debug("Лучшие кандидаты:")
         for idx, info in enumerate(unique_terms[:10], start=1):
             logger.debug(
                 " #%02d: %s | exact:%.4f | rerank_raw:%.4f | combined:%.4f",
@@ -220,25 +221,25 @@ class DefinitionService:
 
         if best["rerank_raw"] > 0.83:
             logger.debug(
-                "Decision: Принято по высокому реранку (%.4f)",
+                "Решение: принято по высокому реранку (%.4f)",
                 best["rerank_raw"],
             )
             return best["definition"]
 
         if second and second["rerank_raw"] > (best["rerank_raw"] + 0.15):
-            logger.debug("Decision: Override в пользу #2")
+            logger.debug("Решение: принудительный выбор кандидата №2")
             return second["definition"]
 
         if best["combined"] > combined_threshold:
             if margin >= margin_threshold or best["combined"] > 0.63:
                 logger.debug(
-                    "Decision: Принято по Combined/Margin (%.4f)",
+                    "Решение: принято по Combined/отрыву (%.4f)",
                     best["combined"],
                 )
                 return best["definition"]
 
         logger.debug(
-            "Decision: Отклонено (Margin: %.4f, Combined: %.4f)",
+            "Решение: отклонено (отрыв: %.4f, Combined: %.4f)",
             margin,
             best["combined"],
         )
@@ -260,11 +261,12 @@ class DefinitionService:
 
         info: dict = {
             "term": escape(definition.term.name),
-            "book": escape(definition.topic.book.name),
+            "book_publisher": escape(definition.topic.book.publisher),
+            "book_grade": definition.topic.book.grade,
             "text": escape(definition.text),
             "topic": escape(definition.topic.name),
             "page": definition.page,
-            "definition_id": definition.id,
+            "definition_public_id": encode_public_ref("definition", definition.id),
         }
 
         return info

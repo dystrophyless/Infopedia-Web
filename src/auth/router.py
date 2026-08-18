@@ -1,8 +1,10 @@
+import logging
+import urllib.parse
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
@@ -19,6 +21,7 @@ from src.auth.repository import (
     add_auth_identity,
     add_refresh_token,
     delete_all_reset_tokens_for_user,
+    delete_password_reset_token,
     get_auth_identity_by_provider_subject,
     get_password_reset_token_by_hash,
     get_pending_user_by_email,
@@ -62,11 +65,58 @@ from src.users.repository import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 GOOGLE_AUTH_FAILED_DETAIL = "Не удалось авторизоваться через Google."
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+
+
+def request_accepts_json(request: Request) -> bool:
+    return "application/json" in request.headers.get("accept", "").lower()
+
+
+def build_google_frontend_callback_url(token_pair: TokenPair) -> str:
+    fragment = urllib.parse.urlencode(
+        {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "token_type": token_pair.token_type,
+        },
+        quote_via=urllib.parse.quote,
+    )
+    return f"{settings.google_frontend_callback_uri}#{fragment}"
+
+
+def build_google_frontend_error_callback_url(error: str | None = None) -> str:
+    fragment = urllib.parse.urlencode(
+        {"error": error or "google_auth_failed"},
+        quote_via=urllib.parse.quote,
+    )
+    return f"{settings.google_frontend_callback_uri}#{fragment}"
+
+
+def redirect_to_google_frontend_error(error: str | None = None) -> RedirectResponse:
+    response = RedirectResponse(
+        url=build_google_frontend_error_callback_url(error),
+        status_code=status.HTTP_302_FOUND,
+    )
+    response.delete_cookie(key=GOOGLE_OAUTH_STATE_COOKIE)
+    return response
+
+
+def google_oauth_error_response(
+    request: Request,
+    *,
+    status_code: int = status.HTTP_400_BAD_REQUEST,
+    detail: str = GOOGLE_AUTH_FAILED_DETAIL,
+    error: str | None = None,
+) -> RedirectResponse:
+    if not request_accepts_json(request):
+        return redirect_to_google_frontend_error(error)
+
+    raise HTTPException(status_code=status_code, detail=detail)
 
 
 async def issue_token_pair(
@@ -103,7 +153,7 @@ async def exchange_google_authorization_code(code: str) -> dict:
                     "code": code,
                     "client_id": settings.GOOGLE_CLIENT_ID,
                     "client_secret": settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
-                    "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                    "redirect_uri": settings.google_redirect_uri,
                     "grant_type": "authorization_code",
                 },
             )
@@ -190,6 +240,11 @@ async def register_user(
     expires_at = now + timedelta(minutes=settings.VERIFICATION_CODE_EXPIRE_MINUTES)
 
     pending = await get_pending_user_by_email(session, email=email)
+    if pending is not None and pending.expires_at < now:
+        await session.delete(pending)
+        await session.flush()
+        pending = None
+
     previous_last_sent_at = pending.last_sent_at if pending is not None else None
 
     if pending is not None and pending.last_sent_at is not None:
@@ -313,9 +368,10 @@ async def verify_email(
         await session.commit()
     except IntegrityError:
         await session.rollback()
+        logger.exception("Не удалось завершить подтверждение электронной почты для %s", email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким email уже существует.",
+            detail="Не удалось завершить регистрацию. Попробуйте запросить новый код.",
         )
 
     return token_pair
@@ -343,7 +399,7 @@ async def login_for_access_token(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неверное имя пользователя или пароль.",
+            detail="Неверный e-mail или пароль.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -418,33 +474,55 @@ async def get_google_oauth_url():
 
 @router.get("/google/callback", response_model=TokenPair)
 async def handle_google_oauth_callback(
-    code: str,
-    state: str,
+    request: Request,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    state: str,
+    code: str | None = None,
+    error: str | None = None,
     google_oauth_state: Annotated[
         str | None,
         Cookie(alias=GOOGLE_OAUTH_STATE_COOKIE),
     ] = None,
 ):
-    if (
-        google_oauth_state is None
-        or google_oauth_state != state
-        or not verify_google_oauth_state(state)
-    ):
+    if error is not None:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error(error)
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=GOOGLE_AUTH_FAILED_DETAIL,
         )
 
-    google_tokens = await exchange_google_authorization_code(code)
+    if (
+        google_oauth_state is None
+        or google_oauth_state != state
+        or not verify_google_oauth_state(state)
+    ):
+        return google_oauth_error_response(request)
+
+    if code is None:
+        return google_oauth_error_response(request)
+
+    try:
+        google_tokens = await exchange_google_authorization_code(code)
+    except HTTPException:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error()
+        raise
+
     id_token = google_tokens.get("id_token")
     if id_token is None:
-        raise HTTPException(
+        return google_oauth_error_response(
+            request,
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=GOOGLE_AUTH_FAILED_DETAIL,
         )
 
-    token_info = await fetch_google_token_info(id_token)
+    try:
+        token_info = await fetch_google_token_info(id_token)
+    except HTTPException:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error()
+        raise
     provider_subject = token_info["sub"]
     email = token_info["email"].lower()
 
@@ -477,6 +555,9 @@ async def handle_google_oauth_callback(
         )
 
     if user.banned:
+        if not request_accepts_json(request):
+            return redirect_to_google_frontend_error()
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Пользователь заблокирован.",
@@ -486,6 +567,14 @@ async def handle_google_oauth_callback(
     token_pair: TokenPair = await issue_token_pair(session, user=user)
 
     await session.commit()
+
+    if not request_accepts_json(request):
+        response = RedirectResponse(
+            url=build_google_frontend_callback_url(token_pair),
+            status_code=status.HTTP_302_FOUND,
+        )
+        response.delete_cookie(key=GOOGLE_OAUTH_STATE_COOKIE)
+        return response
 
     return token_pair
 
@@ -514,10 +603,13 @@ async def forgot_password(
     )
 
     if user:
+        user_id = user.id
+        user_email = user.email
+        username = user.username or user.email
         auth_identity = await get_auth_identity_by_provider_subject(
             session,
             provider=PASSWORD_PROVIDER,
-            provider_subject=request_data.email.lower(),
+            provider_subject=user_email.lower(),
         )
 
         if auth_identity is not None:
@@ -528,7 +620,7 @@ async def forgot_password(
             )
 
             reset_token = PasswordResetToken(
-                user_id=user.id,
+                user_id=user_id,
                 token_hash=token_hash,
                 expires_at=expires_at,
             )
@@ -538,12 +630,12 @@ async def forgot_password(
 
             try:
                 send_password_reset_email(
-                    to_email=user.email,
-                    username=user.username or user.email,
+                    to_email=user_email,
+                    username=username,
                     reset_token=token,
                 )
             except EmailDeliveryError:
-                await session.delete(reset_token)
+                await delete_password_reset_token(session, token_hash=token_hash)
                 await session.commit()
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -1,5 +1,8 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from src.auth.validators import validate_password_value
 from src.users.enums import UserGrade, UserLanguage, UserRole
 from src.users.validators import validate_email_value, validate_username_value
 
@@ -21,6 +24,11 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=256)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return validate_password_value(value)
 
 
 class UserUpdate(BaseModel):
@@ -60,6 +68,10 @@ class UserResponsePrivate(UserResponsePublic):
     onboarding_completed: bool
 
 
+class UserResponsePrivateMe(UserResponsePrivate):
+    has_password: bool
+
+
 class UsernameSetupRequest(BaseModel):
     username: str = Field(min_length=3, max_length=20)
 
@@ -69,10 +81,40 @@ class UsernameSetupRequest(BaseModel):
         return validate_username_value(value)
 
 
+class UsernameAvailabilityResponse(BaseModel):
+    username: str
+    available: bool
+
+
 class GradeSetupRequest(BaseModel):
     grade: UserGrade
 
 
+class CreatePasswordRequest(BaseModel):
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password_value(value)
+
+
+class VerifyCurrentPasswordRequest(BaseModel):
+    # Existing registrations accepted passwords up to 256 characters. Keep
+    # that historical range valid when verifying or changing a password;
+    # create/reset requests retain the current 128-character limit.
+    current_password: str = Field(min_length=8, max_length=256)
+
+
+class PasswordVerificationResponse(BaseModel):
+    verified: Literal[True]
+
+
 class ChangePasswordRequest(BaseModel):
-    current_password: str = Field(min_length=8)
-    new_password: str = Field(min_length=8)
+    current_password: str = Field(min_length=8, max_length=256)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password_value(value)

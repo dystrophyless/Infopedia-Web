@@ -1,9 +1,10 @@
 import '../../../i18n';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Layout } from '../../../components/Layout';
+import { DesktopSidebar } from '../../../components/DesktopSidebar';
 import i18n from '../../../i18n';
 import { useAuthStore } from '../../../stores/authStore';
 import { useSearchStore } from '../model';
@@ -18,6 +19,15 @@ const storyUser = {
   grade: 'undefined' as const,
   role: 'user' as const,
 };
+
+function DesktopStoryShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-dvh flex flex-col bg-bg md:min-h-screen md:flex-row">
+      <DesktopSidebar activeItem="search" onLogout={() => undefined} user={storyUser} />
+      <div className="min-w-0 flex-1 w-full max-md:min-h-0">{children}</div>
+    </div>
+  );
+}
 
 function LocationProbe() {
   const location = useLocation();
@@ -257,7 +267,7 @@ function DesktopSearchStory({
   return (
     <MemoryRouter initialEntries={['/search']}>
       <SearchRequestClientProvider client={requestClientRef.current} refreshKey={catalogRefreshKey} locale="ru">
-        {fullShell ? <Layout><TermSearchPage /></Layout> : <TermSearchPage />}
+        {fullShell ? <DesktopStoryShell><TermSearchPage /></DesktopStoryShell> : <TermSearchPage />}
       <output data-story-search-request-count className="sr-only">{searchRequestCount}</output>
       <output data-story-search-abort-count className="sr-only">{searchAbortCount}</output>
       <output data-story-book-catalog-request-count className="sr-only">{bookCatalogRequestCount}</output>
@@ -309,6 +319,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// The story-only desktop shell keeps the page's canonical main landmark as the
+// sole main landmark in the axe context. Exact source-palette contrast remains
+// the only approved disabled rule.
+const desktopShellA11yParameters = {
+  layout: 'fullscreen',
+  a11y: {
+    context: '#term-search-content',
+    config: {
+      rules: [
+        { id: 'color-contrast', enabled: false },
+      ],
+    },
+  },
+};
+
 export const Russian: Story = {
   tags: ['!test'],
   globals: { viewport: { value: 'mobile430', isRotated: false } },
@@ -346,7 +371,7 @@ export const BehaviorRussian: Story = {
 
 export const DesktopModes: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  parameters: { layout: 'fullscreen' },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;
@@ -492,7 +517,7 @@ function assertDesktopShellGeometry(canvasElement: HTMLElement, expectedPadding:
 
 export const DesktopSelectedFill1440: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory />,
   play: async ({ canvasElement }) => {
     const title = canvasElement.querySelector<HTMLElement>('[data-term-card-title]');
@@ -506,7 +531,7 @@ export const DesktopSelectedFill1440: Story = {
 
 export const DesktopSelectedFill1280: Story = {
   globals: { viewport: { value: 'desktop1280', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory />,
   play: async ({ canvasElement }) => {
     const title = canvasElement.querySelector<HTMLElement>('[data-term-card-title]');
@@ -520,7 +545,7 @@ export const DesktopSelectedFill1280: Story = {
 
 export const DesktopSelectedFill1024: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory fullShell />,
   play: async ({ canvasElement }) => {
     const title = canvasElement.querySelector<HTMLElement>('[data-term-card-title]');
@@ -588,7 +613,7 @@ export const DesktopQueryFilters: Story = {
 
 export const DesktopQueryAtamura: Story = {
   globals: { viewport: { value: 'desktop1440x1080', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory initialBookSelection />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;
@@ -615,7 +640,7 @@ export const DesktopQueryAtamura: Story = {
 
 export const DesktopResponsive875: Story = {
   globals: { viewport: { value: 'desktop875x831', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory fullShell initialBookSelection />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;
@@ -671,7 +696,7 @@ export const DesktopResponsive875: Story = {
 
 export const DesktopLoadMore: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
-  parameters: { layout: 'fullscreen', a11y: { disable: true } },
+  parameters: desktopShellA11yParameters,
   render: () => <DesktopSearchStory terms={desktopLoadMoreTerms} />,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument?.fonts?.ready;

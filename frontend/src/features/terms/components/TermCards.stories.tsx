@@ -144,7 +144,7 @@ export const DesktopCollapsedAndLoading: Story = {
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
   render: () => (
     <AuthenticatedDesktopStory>
-      <div className="flex gap-6 bg-[#efebf6]" data-desktop-card-comparison>
+      <div className="grid w-max grid-cols-[684px_684px] gap-6 bg-[#efebf6]" data-desktop-card-comparison>
         <section aria-label="Collapsed desktop term card" data-comparison-real><TermCard term={descenderTerm} /></section>
         <section aria-label="Loading desktop term card" data-comparison-skeleton><SkeletonCard /></section>
       </div>

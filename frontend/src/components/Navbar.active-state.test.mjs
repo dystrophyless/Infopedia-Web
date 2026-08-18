@@ -95,7 +95,9 @@ assert.match(navbarSource, /aria-current=\{activeSection === 'desktop-analysis' 
 assert.doesNotMatch(navbarSource, /aria-current=.*location/, 'Marketing active state must not use location aria-current');
 assert.match(navbarSource, /querySelectorAll<HTMLElement>\('\[data-nav-section\]'\)/, 'Scroll-spy should read semantic navigation sections');
 assert.match(navbarSource, /getBoundingClientRect\(\)\.height/, 'Scroll-spy should measure the actual sticky header height');
-assert.match(navbarSource, /const activationY = headerOffset \+ 24/, 'Scroll-spy activation line should be header height plus 24px');
+assert.match(navbarSource, /const navSectionOffset = 40/, 'Navigation sections should share one exact 40px breathing-room offset');
+assert.match(navbarSource, /const activationY = headerOffset \+ 24 \+ navSectionOffset/, 'Scroll-spy activation line should include the shared 40px section offset');
+assert.match(navbarSource, /setProperty\('--header-offset', `\$\{headerOffset \+ navSectionOffset\}px`\)/, 'Anchor scroll margin should receive the same shared 40px section offset');
 assert.match(navbarSource, /let activeNavSection: HTMLElement \| null = null/, 'Scroll-spy should keep the default header neutral until a section crosses the activation line');
 assert.match(navbarSource, /removeEventListener\('scroll', updateActiveSection\)/, 'Scroll-spy should clean up the scroll listener');
 assert.match(navbarSource, /removeEventListener\('resize', updateActiveSection\)/, 'Scroll-spy should clean up the resize listener');

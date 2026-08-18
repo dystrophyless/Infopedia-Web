@@ -22,7 +22,7 @@ async function seedGuest(page) {
 async function ready(page) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => document.fonts.ready);
-  await page.addStyleTag({ content: '*,:before,:after{animation:none!important}' });
+  await page.addStyleTag({ content: '*,:before,:after{animation:none!important}html{scroll-behavior:auto!important}' });
   await page.locator('[data-desktop-guest-navbar]').waitFor({ state: 'visible' });
   await page.waitForFunction(() => document.fonts.status === 'loaded');
 }
@@ -102,13 +102,30 @@ async function runDesktopScenario(browser, width, scenario) {
       await page.waitForFunction((before) => window.scrollY > before, initial.scrollY);
       await checkpoint('mouse-wheel');
     } else if (scenario === 'native-click') {
-      await page.locator('[data-desktop-guest-navbar] a[href="#desktop-analysis"]').click();
-      await page.waitForFunction(() => window.location.hash === '#desktop-analysis');
-      await page.waitForFunction(() => document.querySelector('[data-desktop-guest-navbar] a[href="#desktop-analysis"]')?.getAttribute('aria-current') === 'true');
-      const clicked = await checkpoint('native-click');
-      assert.ok(clicked.scrollY > initial.scrollY, `${scenario}/${width}: native anchor click must advance scroll`);
-      assert.equal(clicked.hash, '#desktop-analysis', `${scenario}/${width}: native anchor hash`);
-      assert.equal(clicked.active, '#desktop-analysis', `${scenario}/${width}: native anchor aria-current`);
+      const nativeAnchorIds = ['tools', 'featured-terms', 'desktop-analysis'];
+      for (const id of nativeAnchorIds) {
+        await page.locator(`[data-desktop-guest-navbar] a[href="#${id}"]`).click();
+        await page.waitForFunction((expectedId) => window.location.hash === `#${expectedId}`, id);
+        await page.waitForFunction((expectedId) => document.querySelector(`[data-desktop-guest-navbar] a[href="#${expectedId}"]`)?.getAttribute('aria-current') === 'true', id);
+        const clicked = await checkpoint(`native-click-${id}`);
+        const anchor = await page.evaluate((targetId) => {
+          const section = document.getElementById(targetId);
+          const navbar = document.querySelector('[data-desktop-guest-navbar]');
+          const sectionRect = section?.getBoundingClientRect();
+          const navbarRect = navbar?.getBoundingClientRect();
+          return {
+            id: targetId,
+            top: sectionRect?.top ?? null,
+            navbarBottom: navbarRect?.bottom ?? null,
+          };
+        }, id);
+        assert.ok(clicked.scrollY > initial.scrollY, `${scenario}/${width}/${id}: native anchor click must advance scroll`);
+        assert.equal(clicked.hash, `#${id}`, `${scenario}/${width}/${id}: native anchor hash`);
+        assert.equal(clicked.active, `#${id}`, `${scenario}/${width}/${id}: native anchor aria-current`);
+        assert.equal(anchor.top, 104, `${scenario}/${width}/${id}: shared 40px anchor breathing room below the 64px navbar`);
+        assert.equal(anchor.navbarBottom, 64, `${scenario}/${width}/${id}: sticky navbar bottom`);
+        checkpoints[checkpoints.length - 1] = { ...checkpoints[checkpoints.length - 1], anchor };
+      }
     }
 
     await fs.writeFile(path.join(outputDir, `${width}-${scenario}.json`), `${JSON.stringify(checkpoints, null, 2)}\n`);

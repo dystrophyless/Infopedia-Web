@@ -59,7 +59,7 @@ export function Navbar() {
 
   return (
     <header ref={headerRef} data-desktop-guest-navbar className="sticky top-0 z-40 flex h-[64px] w-full items-start bg-white py-[15px] max-md:hidden">
-      <div data-desktop-content-rail className="mx-auto flex h-[34px] w-full max-w-[1152px] items-center justify-between px-[24px]">
+      <div data-desktop-content-rail className="mx-auto flex h-[34px] w-full max-w-[1152px] items-center justify-between px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <div className="flex h-[32px] w-[732px] shrink-0 items-center justify-between">
           <Link to="/" className="flex h-[32px] w-[124px] shrink-0 items-center" aria-label="Infopedia">
             <img src={guestHeaderLogoAsset} alt="Infopedia" className="h-[32px] w-[124px]" />
@@ -85,20 +85,20 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex h-[34px] shrink-0 items-center gap-[8px]">
+        <div className="flex h-[32px] shrink-0 items-center gap-[8px]">
           <LanguageSwitcher compact />
           <Link
             to="/login"
-            className="flex h-[34px] w-[72px] items-center justify-center px-[16px] py-[8px] text-[14px] font-normal leading-none text-[#161519]"
+            className="inline-flex h-[32px] shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] bg-white px-[16px] py-[8px] text-[12px] font-normal leading-[normal] text-[#161519] hover:bg-[#f6f5f7] active:bg-[#d5d3d9]"
           >
             {t('nav.login')}
           </Link>
           <Link
             to="/onboarding"
-            className="flex h-[34px] w-[100px] items-center justify-center gap-[4px] rounded-[8px] bg-[#6a37c3] px-[16px] py-[8px] text-[14px] font-normal leading-none text-white"
+            className="inline-flex h-[32px] shrink-0 items-center justify-center gap-[4px] whitespace-nowrap rounded-[8px] bg-[#6a37c3] px-[16px] py-[8px] text-[12px] font-normal leading-[normal] text-white hover:bg-[#865bcf] active:bg-[#a585db]"
           >
             <span>{t('nav.start')}</span>
-            <HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={2} className="shrink-0" aria-hidden />
+            <HugeiconsIcon icon={ArrowRight02Icon} size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />
           </Link>
         </div>
       </div>

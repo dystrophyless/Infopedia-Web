@@ -21,7 +21,7 @@ const sourceProof = section('DesktopSourceProof', 'DesktopEntAnalysis');
 const analyze = section('DesktopEntAnalysis', 'MobileHome');
 
 assert.match(hero, /ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ|landing\.desktopEyebrow/);
-assert.match(hero, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.match(hero, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/);
 assert.doesNotMatch(hero, /px-\[160px\]/);
 assert.match(hero, /Знания всех книг/);
 assert.match(hero, /одном приложении/);
@@ -32,7 +32,7 @@ assert.match(hero, /landingCtaTarget\('\/search', isAuthenticated\)/);
 assert.match(hero, /href="#desktop-analysis"/);
 
 assert.match(features, /Всё, что нужно для подготовки/);
-assert.match(features, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.match(features, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/);
 assert.doesNotMatch(features, /px-\[160px\]/);
 assert.match(features, /className="grid h-full w-full min-w-0 grid-cols-3 gap-\[32px\]"/);
 assert.match(features, /h-\[493px\][\s\S]*min-w-0[\s\S]*flex-col/);
@@ -53,10 +53,13 @@ assert.match(features, /gap-\[32px\]/);
 assert.match(features, /pb-\[64px\]/);
 
 assert.match(sourceProof, /База из 5000\+ терминов/);
-assert.match(sourceProof, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.match(sourceProof, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/);
 assert.doesNotMatch(sourceProof, /px-\[160px\]/);
 assert.match(sourceProof, /Не просто объясняем\.[\s\S]*Показываем источник\./);
 assert.match(sourceProof, /w-\[720px\][\s\S]*w-\[400px\]/);
+const sourceProofCardClass = sourceProof.match(/data-source-proof-card\s+className="([^"]+)"/)?.[1] ?? '';
+assert.match(sourceProofCardClass, /\bw-full\b/);
+assert.doesNotMatch(sourceProofCardClass, /min-\[1440px\]:w-\[1120px\]|min-\[1440px\]:-ml-2/);
 assert.match(sourceProof, /overflow-hidden/);
 assert.match(sourceProof, /<TermCardCarousel variant="guestLanding" \/>/);
 assert.match(sourceProof, /pb-\[88px\]/);
@@ -65,7 +68,7 @@ assert.match(termCarousel, /guestLanding: 'gap-6 px-0'/);
 assert.match(termCarousel, /variant === 'guestLanding'[\s\S]*overflow-x-auto[\s\S]*snap-x/);
 
 assert.match(analyze, /Проанализируйте свой ЕНТ/);
-assert.match(analyze, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\]/);
+assert.match(analyze, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/);
 assert.doesNotMatch(analyze, /px-\[160px\]/);
 assert.match(analyze, /Регистрация/);
 assert.match(analyze, /Загрузите файл/);

@@ -19,16 +19,16 @@ const desktopSections = [
 for (const [name, source] of desktopSections) {
   assert.match(
     source,
-    /<div[^>]*data-desktop-content-rail[^>]*className="[^"]*mx-auto[^\"]*max-w-\[1152px\][^\"]*px-\[24px\]/,
-    `${name} must place desktop content inside the centered 1152px/24px rail`,
+    /<div[^>]*data-desktop-content-rail[^>]*className="[^\"]*mx-auto[^\"]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/,
+    `${name} must place desktop content inside the centered fallback rail with the 1440px 1120px override`,
   );
   assert.doesNotMatch(source, /px-\[160px\]/, `${name} must not retain the fixed 160px desktop gutter`);
 }
 
 assert.match(
   features,
-  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"[\s\S]*<h2[\s\S]*Всё, что нужно для подготовки/,
-  'Desktop feature heading and cards should share the centered 1152px/24px wrapper',
+  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0"[\s\S]*<h2[\s\S]*Всё, что нужно для подготовки/,
+  'Desktop feature heading and cards should share the centered responsive rail',
 );
 assert.doesNotMatch(features, /pl-\[clamp\(|pr-\[clamp\(|calc\(50vw|w-\[1560px\]|max-w-\[1560px\]/);
 assert.match(features, /className="mt-10 w-full overflow-visible"/);

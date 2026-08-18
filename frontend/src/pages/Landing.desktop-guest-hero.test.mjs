@@ -44,8 +44,8 @@ assert.match(
 assert.match(hero, /min-h-\[656px\]/, 'Hero should preserve the 656px canvas below the 80px header');
 assert.match(
   hero,
-  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto flex w-full max-w-\[1152px\] flex-col items-center px-\[24px\]"/,
-  'Hero content should use the centered 1152px/24px desktop rail',
+  /<div[^>]*data-desktop-content-rail[^>]*className="mx-auto flex w-full max-w-\[1152px\] flex-col items-center px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0"/,
+  'Hero content should use the centered responsive desktop rail',
 );
 assert.doesNotMatch(hero, /px-\[160px\]/, 'Hero should not use the fixed 160px desktop gutter');
 assert.match(hero, /text-\[72px\][\s\S]*leading-\[72px\]/, 'Hero should use the Figma 72px two-line display type');
@@ -55,7 +55,7 @@ assert.match(hero, /h-\[48px\][\s\S]*w-\[200px\][\s\S]*rounded-\[16px\]/);
 
 assert.match(
   features,
-  /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"/,
+  /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0"/,
   'Feature rail should use the shared centered 1152px/24px canvas',
 );
 assert.doesNotMatch(features, /px-\[160px\]/, 'Feature section should not use the fixed 160px desktop gutter');
@@ -70,15 +70,26 @@ assert.equal((features.match(/image: '/g) ?? []).length, 3, 'Desktop feature rai
 assert.doesNotMatch(features, /ArrowLeft01Icon|ArrowRight01Icon|mobile-feature-semantic\.png/);
 assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
 
-assert.match(sourceProof, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"/);
+assert.match(sourceProof, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0"/);
 assert.doesNotMatch(sourceProof, /px-\[160px\]/);
 assert.match(sourceProof, /grid-cols-\[minmax\(0,720px\)_minmax\(0,400px\)\]/);
+const sourceProofCardClass = sourceProof.match(/data-source-proof-card\s+className="([^"]+)"/)?.[1] ?? '';
+assert.match(sourceProofCardClass, /\bw-full\b/);
+assert.doesNotMatch(sourceProofCardClass, /min-\[1440px\]:w-\[1120px\]|min-\[1440px\]:-ml-2/, 'Source proof card must not compensate for an incorrectly sized root rail');
+assert.doesNotMatch(
+  sourceProof,
+  /min-h-\[264px\]/,
+  'Desktop source-proof panels must remain content-driven without restoring the legacy 264px minimum height',
+);
+assert.match(sourceProof, /data-source-proof-card/);
+assert.match(sourceProof, /data-source-proof-left/);
+assert.match(sourceProof, /data-source-proof-right/);
 assert.match(sourceProof, /<TermCardCarousel variant="guestLanding" \/>/);
 assert.match(sourceProof, /landingCtaTarget\('\/search', isAuthenticated\)/);
 assert.match(sourceProof, /pb-\[88px\]/, 'The term rail should leave the Figma 88px gap before analysis');
 
 assert.match(analyze, /data-analysis-stage[\s\S]*xl:h-\[327px\]/, 'Analysis stage should preserve the 2117-to-2444 Figma composition');
-assert.match(analyze, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\]"/);
+assert.match(analyze, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0"/);
 assert.doesNotMatch(analyze, /px-\[160px\]/);
 assert.match(analyze, /data-analysis-snippet="result"[\s\S]*xl:left-\[803px\][\s\S]*xl:top-0[\s\S]*xl:w-\[292px\]/, 'Result panel should land at x≈963 in the 1120px canvas');
 assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*xl:left-\[29px\][\s\S]*xl:top-\[223px\][\s\S]*xl:w-\[284px\]/, 'Registration snippet should preserve the lower-left Figma placement');

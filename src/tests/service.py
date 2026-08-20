@@ -743,9 +743,15 @@ class TestsService:
         count = required if mode in {"random", "mock"} else min(20, len(questions))
         questions = self.sampler(questions, count) if mode == "random" else questions[:count]
         title = {"random": "Random test", "weak": "Weak topics test", "mock": "Mock test", "chapter": "Chapter test"}[mode]
-        attempt = TestAttempt(user_id=user_id, mode=mode, chapter_id=chapter_id, title=title, questions_total=len(questions))
+        attempt = TestAttempt(
+            user_id=user_id,
+            mode=mode,
+            chapter_id=chapter_id,
+            title=title,
+            questions_total=len(questions),
+            questions=[],
+        )
         self.session.add(attempt)
-        await self.session.flush()
         for ordinal, question in enumerate(questions):
             attribution_chapter = _select_attribution_chapter(
                 question,
@@ -764,7 +770,6 @@ class TestsService:
             correct_option = next(option for option in question.options if option.is_correct)
             chapter_title = _chapter_title(attribution_chapter, locale)
             snapshot = TestAttemptQuestion(
-                attempt_id=attempt.id,
                 question_id=question.id,
                 ordinal=ordinal,
                 question_ref=encode_public_ref("test_question", question.id),
@@ -778,6 +783,7 @@ class TestsService:
                 estimated_minutes=max(1, counts.get(attribution_chapter.id, 0) // 2),
             )
             attempt.questions.append(snapshot)
+        await self.session.flush()
         await self.session.commit()
         loaded_attempt = await get_attempt(self.session, attempt_id=attempt.id, user_id=user_id)
         if loaded_attempt is None:

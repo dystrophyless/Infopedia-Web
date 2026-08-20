@@ -1,5 +1,8 @@
 import type { Preview } from '@storybook/react-vite';
+import { sb } from 'storybook/test';
 import '../src/index.css';
+
+sb.mock('../src/api/auth.ts', { spy: true });
 
 const preview = {
   tags: ['autodocs', 'test'],

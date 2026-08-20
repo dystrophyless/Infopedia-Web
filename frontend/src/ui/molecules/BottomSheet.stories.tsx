@@ -194,10 +194,14 @@ export const ExitLifecycle: Story = {
     await userEvent.click(trigger);
 
     const dialog = await screen.findByRole('dialog', { name: 'Filters' });
-    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Reset' })).toHaveFocus());
+    fireEvent.keyDown(document, { key: 'Escape' });
 
-    await expect(dialog).toBeInTheDocument();
-    await expect(trigger).not.toHaveFocus();
+    expect(dialog).toBeInTheDocument();
+    expect(trigger).not.toHaveFocus();
+    expect(exitLifecycleEvents).toEqual(['dismiss']);
+
+    fireEvent.transitionEnd(dialog, { propertyName: 'transform' });
     await waitFor(() => expect(exitLifecycleEvents).toEqual(['dismiss', 'after-close']));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Filters' })).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();

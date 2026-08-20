@@ -79,10 +79,16 @@ def _question_record(
     prompt = _trimmed(raw["question"], "Question prompt")
     difficulty = _trimmed(raw["difficulty"], "Question difficulty")
     explanation_raw = raw["explanation"]
-    explanation = _trimmed(explanation_raw, "Question explanation") if explanation_raw is not None else None
+    explanation = (
+        _trimmed(explanation_raw, "Question explanation")
+        if explanation_raw is not None
+        else None
+    )
     correct_option = raw["correct_option"]
     if type(correct_option) is not int or correct_option not in {1, 2, 3, 4}:
-        message = f"Question {book_key}/{topic_title}/{index} correct_option must be 1..4"
+        message = (
+            f"Question {book_key}/{topic_title}/{index} correct_option must be 1..4"
+        )
         raise ValueError(message)
 
     options: list[dict[str, object]] = []
@@ -150,7 +156,6 @@ def build_question_bank(  # noqa: C901, PLR0912, PLR0915
     source_payloads: list[dict[str, object]] = []
     questions: list[dict[str, object]] = []
     unmatched_counts: Counter[tuple[str, str]] = Counter()
-    digests: dict[str, bytes] = {}
     occurrences: Counter[str] = Counter()
     books_manifest: list[dict[str, object]] = []
     for spec in contract.source_specs:
@@ -167,7 +172,9 @@ def build_question_bank(  # noqa: C901, PLR0912, PLR0915
             message = f"Question source {spec.relative_path} topics must be a list"
             raise ValueError(message)  # noqa: TRY004
         structure_book = structure[spec.book_key]
-        if not isinstance(structure_book, dict) or not isinstance(structure_book.get("topics"), list):
+        if not isinstance(structure_book, dict) or not isinstance(
+            structure_book.get("topics"), list
+        ):
             message = f"newStructure.json book {spec.book_key} is malformed"
             raise ValueError(message)  # noqa: TRY004
         structure_topics = {
@@ -178,7 +185,10 @@ def build_question_bank(  # noqa: C901, PLR0912, PLR0915
 
         source_question_count = 0
         for topic_index, raw_topic in enumerate(topics):
-            if not isinstance(raw_topic, dict) or set(raw_topic) != {"topic", "questions"}:
+            if not isinstance(raw_topic, dict) or set(raw_topic) != {
+                "topic",
+                "questions",
+            }:
                 message = f"Topic {spec.relative_path}/{topic_index} fields do not match the source contract"
                 raise ValueError(message)
             topic_title = _trimmed(raw_topic["topic"], "Source topic title")
@@ -196,10 +206,6 @@ def build_question_bank(  # noqa: C901, PLR0912, PLR0915
                     index=question_index,
                 )
                 digest = hashlib.sha256(canonical).hexdigest()
-                previous = digests.setdefault(digest, canonical)
-                if previous != canonical:
-                    message = f"SHA-256 collision detected for canonical question digest {digest}"
-                    raise ValueError(message)
                 occurrences[digest] += 1
                 record = {
                     "source_key": f"{QUESTION_BANK_SCHEMA}:{digest}:{occurrences[digest]:04d}",
@@ -213,7 +219,9 @@ def build_question_bank(  # noqa: C901, PLR0912, PLR0915
                 f"expected={spec.question_count}, actual={source_question_count}"
             )
             raise ValueError(message)
-        source_payloads.append({"relative_path": spec.relative_path, "payload": payload})
+        source_payloads.append(
+            {"relative_path": spec.relative_path, "payload": payload}
+        )
         books_manifest.append(
             {
                 "relative_path": spec.relative_path,
@@ -282,7 +290,9 @@ def write_question_bank_atomic(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build the canonical Infopedia qbank:v1 artifact")
+    parser = argparse.ArgumentParser(
+        description="Build the canonical Infopedia qbank:v1 artifact"
+    )
     parser.add_argument("--source-dir", required=True, type=Path)
     parser.add_argument("--structure", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)

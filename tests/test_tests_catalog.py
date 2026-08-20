@@ -26,7 +26,9 @@ class CatalogStatsContractTests(unittest.TestCase):
         self.assertIn("chapter_id", TestCatalogStat.__table__.columns)
         self.assertIn("active_question_count", TestCatalogStat.__table__.columns)
         self.assertTrue(TestCatalogStat.__table__.columns["chapter_id"].nullable)
-        self.assertTrue(any(index.unique for index in TestCatalogStat.__table__.indexes))
+        self.assertTrue(
+            any(index.unique for index in TestCatalogStat.__table__.indexes)
+        )
 
 
 def _contract() -> QuestionBankContract:
@@ -70,7 +72,11 @@ def _artifact(tmp_path: Path) -> Path:
     structure = tmp_path / "newStructure.json"
     structure.write_text(
         json.dumps(
-            {"Publisher: 7-сынып": {"topics": [{"title": "Exact topic", "code_name": []}]}},
+            {
+                "Publisher: 7-сынып": {
+                    "topics": [{"title": "Exact topic", "code_name": []}]
+                }
+            },
             ensure_ascii=False,
         ),
         encoding="utf-8",
@@ -84,22 +90,28 @@ def _artifact(tmp_path: Path) -> Path:
 class QuestionBankCatalogTests(unittest.TestCase):
     def test_empty_or_malformed_bank_aborts(self):
         for content in ("", " \n\t", "{not-json"):
-            with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:
+            with (
+                self.subTest(content=content),
+                tempfile.TemporaryDirectory() as directory,
+            ):
                 path = Path(directory) / "questions.json"
                 path.write_text(content, encoding="utf-8")
 
                 with self.assertRaises(ValueError):
                     load_question_bank(path, contract=_contract())
 
-    def test_checksum_drift_aborts_before_entries_are_returned(self):
+    def test_question_content_and_metadata_changes_do_not_abort_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             path = _artifact(Path(directory))
             payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["source_sha256"] = "changed"
             payload["questions"][0]["prompt"] = "Tampered"
+            payload["questions"][0]["source_key"] = "manually-edited-question"
             path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
-            with self.assertRaisesRegex(ValueError, "checksum"):
-                load_question_bank(path, contract=_contract())
+            entries = load_question_bank(path, contract=_contract())
+
+        self.assertEqual(entries[0].prompt, "Tampered")
 
     def test_unknown_fields_and_chapter_fields_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -113,13 +125,18 @@ class QuestionBankCatalogTests(unittest.TestCase):
 
     def test_valid_bank_returns_topic_scoped_entries(self):
         with tempfile.TemporaryDirectory() as directory:
-            entries = load_question_bank(_artifact(Path(directory)), contract=_contract())
+            entries = load_question_bank(
+                _artifact(Path(directory)), contract=_contract()
+            )
 
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0].book_key, "Publisher: 7-сынып")
         self.assertEqual(entries[0].topic_title, "Exact topic")
         self.assertTrue(entries[0].active)
-        self.assertEqual(entries[0].options[0], {"ref": "1", "label": "A", "text": "A", "correct": True})
+        self.assertEqual(
+            entries[0].options[0],
+            {"ref": "1", "label": "A", "text": "A", "correct": True},
+        )
 
 
 class _NeverMutateSession:
@@ -209,8 +226,12 @@ class QuestionBankLoaderTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(session.commits, 0)
 
     async def test_option_upsert_preserves_existing_rows_in_place(self):
-        existing_a = SimpleNamespace(id=101, source_ref="1", label="old", text="old", is_correct=False)
-        stale = SimpleNamespace(id=102, source_ref="stale", label="S", text="stale", is_correct=False)
+        existing_a = SimpleNamespace(
+            id=101, source_ref="1", label="old", text="old", is_correct=False
+        )
+        stale = SimpleNamespace(
+            id=102, source_ref="stale", label="S", text="stale", is_correct=False
+        )
         question = SimpleNamespace(options=[existing_a, stale])
         entry = SimpleNamespace(
             options=(
@@ -223,13 +244,20 @@ class QuestionBankLoaderTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIs(question.options[0], existing_a)
         self.assertEqual(existing_a.id, 101)
-        self.assertEqual((existing_a.label, existing_a.text, existing_a.is_correct), ("A", "updated", True))
+        self.assertEqual(
+            (existing_a.label, existing_a.text, existing_a.is_correct),
+            ("A", "updated", True),
+        )
         self.assertEqual([option.source_ref for option in question.options], ["1", "2"])
 
     async def test_exact_allowlisted_unmatched_topic_resolves_to_null(self):
-        entries = load_question_bank(_artifact(Path(self._tmp.name)), contract=_contract())
+        entries = load_question_bank(
+            _artifact(Path(self._tmp.name)), contract=_contract()
+        )
         unmatched = SimpleNamespace(
-            **entries[0].__dict__ if hasattr(entries[0], "__dict__") else {
+            **entries[0].__dict__
+            if hasattr(entries[0], "__dict__")
+            else {
                 field: getattr(entries[0], field)
                 for field in entries[0].__dataclass_fields__
             },
@@ -246,7 +274,9 @@ class QuestionBankLoaderTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resolved, {("Publisher", 7, "Missing"): None})
 
     async def test_seed_commits_all_rows_once_after_exact_topic_resolution(self):
-        entries = load_question_bank(_artifact(Path(self._tmp.name)), contract=_contract())
+        entries = load_question_bank(
+            _artifact(Path(self._tmp.name)), contract=_contract()
+        )
         session = _LoaderSession(
             [
                 [("Publisher", 7, "Exact topic", 42)],

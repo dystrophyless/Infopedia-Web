@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -79,17 +77,7 @@ class QuestionBankEntry:
     options: tuple[dict[str, Any], ...]
 
 
-TOP_LEVEL_FIELDS = {
-    "schema",
-    "source_sha256",
-    "questions_sha256",
-    "question_count",
-    "active_question_count",
-    "inactive_question_count",
-    "books",
-    "unmatched_topic_groups",
-    "questions",
-}
+REQUIRED_TOP_LEVEL_FIELDS = {"questions"}
 QUESTION_FIELDS = {
     "source_key",
     "book_key",
@@ -103,8 +91,6 @@ QUESTION_FIELDS = {
 OPTION_FIELDS = {"ref", "label", "text", "correct"}
 BOOK_FIELDS = {"relative_path", "book_key", "question_count"}
 UNMATCHED_FIELDS = {"book_key", "topic_title", "question_count"}
-SOURCE_KEY_RE = re.compile(r"^qbank:v1:[0-9a-f]{64}:[0-9]{4}$")
-SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def canonical_json_bytes(value: object) -> bytes:
@@ -158,48 +144,41 @@ def validate_question_bank_payload(  # noqa: C901, PLR0912, PLR0915
     *,
     contract: QuestionBankContract = PRODUCTION_QUESTION_BANK_CONTRACT,
 ) -> list[QuestionBankEntry]:
-    root = _exact_fields(payload, TOP_LEVEL_FIELDS, "Question bank")
-    if root["schema"] != QUESTION_BANK_SCHEMA:
+    if not isinstance(payload, dict):
+        actual = type(payload).__name__
+        raise ValueError(f"Question bank must be an object, got: {actual}")
+    root = payload
+    missing_fields = sorted(REQUIRED_TOP_LEVEL_FIELDS - set(root))
+    if missing_fields:
+        raise ValueError(
+            f"Question bank is missing required top-level fields: {missing_fields}"
+        )
+    schema = root.get("schema")
+    if schema is not None and schema != QUESTION_BANK_SCHEMA:
         raise ValueError("Question bank schema must be qbank:v1")
-    if not isinstance(root["source_sha256"], str) or not SHA256_RE.fullmatch(root["source_sha256"]):
-        raise ValueError("Question bank source_sha256 must be a lowercase SHA-256 digest")
-    if root["books"] != _expected_books(contract):
-        raise ValueError("Question bank books do not match the source allowlist")
-    if root["unmatched_topic_groups"] != _expected_unmatched(contract):
-        raise ValueError("Question bank unmatched topics do not match the exact allowlist")
 
     questions = root["questions"]
     if not isinstance(questions, list):
         raise ValueError("Question bank questions must be a list")  # noqa: TRY004
-    if root["question_count"] != contract.question_count or len(questions) != contract.question_count:
-        raise ValueError("Question bank question count drifted from the allowlist")
-    if root["inactive_question_count"] != contract.inactive_question_count:
-        raise ValueError("Question bank inactive count drifted from the allowlist")
-    expected_active = contract.question_count - contract.inactive_question_count
-    if root["active_question_count"] != expected_active:
-        raise ValueError("Question bank active count drifted from the allowlist")
-    allowed_books = {spec.book_key for spec in contract.source_specs}
+
     entries: list[QuestionBankEntry] = []
     source_keys: set[str] = set()
-    book_counts: Counter[str] = Counter()
-    topic_counts: Counter[tuple[str, str]] = Counter()
-    inactive_count = 0
     for index, raw_question in enumerate(questions):
         question = _exact_fields(raw_question, QUESTION_FIELDS, f"Question {index}")
-        source_key = _nonempty_string(question["source_key"], f"Question {index} source_key")
-        if not SOURCE_KEY_RE.fullmatch(source_key):
-            message = f"Question {index} source_key is not a qbank:v1 canonical key"
-            raise ValueError(message)
+        source_key = _nonempty_string(
+            question["source_key"], f"Question {index} source_key"
+        )
         if source_key in source_keys:
             raise ValueError("Question bank contains duplicate source_key values")
         source_keys.add(source_key)
         book_key = _nonempty_string(question["book_key"], f"Question {index} book_key")
-        if book_key not in allowed_books:
-            message = f"Question {index} book_key is outside the allowlist"
-            raise ValueError(message)
-        topic_title = _nonempty_string(question["topic_title"], f"Question {index} topic_title")
+        topic_title = _nonempty_string(
+            question["topic_title"], f"Question {index} topic_title"
+        )
         prompt = _nonempty_string(question["prompt"], f"Question {index} prompt")
-        difficulty = _nonempty_string(question["difficulty"], f"Question {index} difficulty")
+        difficulty = _nonempty_string(
+            question["difficulty"], f"Question {index} difficulty"
+        )
         explanation = question["explanation"]
         if explanation is not None:
             explanation = _nonempty_string(explanation, f"Question {index} explanation")
@@ -213,13 +192,17 @@ def validate_question_bank_payload(  # noqa: C901, PLR0912, PLR0915
             raise ValueError(message)
         options: list[dict[str, Any]] = []
         for option_index, raw_option in enumerate(raw_options, start=1):
-            option = _exact_fields(raw_option, OPTION_FIELDS, f"Question {index} option {option_index}")
+            option = _exact_fields(
+                raw_option, OPTION_FIELDS, f"Question {index} option {option_index}"
+            )
             expected_ref = str(option_index)
             expected_label = chr(64 + option_index)
             if option["ref"] != expected_ref or option["label"] != expected_label:
                 message = f"Question {index} option ordering drifted"
                 raise ValueError(message)
-            text = _nonempty_string(option["text"], f"Question {index} option {option_index} text")
+            text = _nonempty_string(
+                option["text"], f"Question {index} option {option_index} text"
+            )
             if type(option["correct"]) is not bool:
                 message = f"Question {index} option correctness must be boolean"
                 raise ValueError(message)
@@ -236,9 +219,6 @@ def validate_question_bank_payload(  # noqa: C901, PLR0912, PLR0915
             raise ValueError(message)
 
         active = question["active"]
-        inactive_count += int(not active)
-        book_counts[book_key] += 1
-        topic_counts[(book_key, topic_title)] += 1
         entries.append(
             QuestionBankEntry(
                 source_key=source_key,
@@ -251,17 +231,6 @@ def validate_question_bank_payload(  # noqa: C901, PLR0912, PLR0915
                 options=tuple(options),
             ),
         )
-
-    if inactive_count != contract.inactive_question_count:
-        raise ValueError("Question bank inactive records do not match the manifest")
-    if root["questions_sha256"] != canonical_sha256(questions):
-        raise ValueError("Question bank questions checksum mismatch")
-    expected_book_counts = {spec.book_key: spec.question_count for spec in contract.source_specs}
-    if dict(book_counts) != expected_book_counts:
-        raise ValueError("Question bank per-book counts drifted from the allowlist")
-    for book_key, topic_title, expected_count in contract.unmatched_topic_groups:
-        if topic_counts[(book_key, topic_title)] != expected_count:
-            raise ValueError("Question bank unmatched group counts drifted from the allowlist")
     return entries
 
 

@@ -2,8 +2,9 @@ import '../i18n';
 import { useEffect, useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, mocked, userEvent, within } from 'storybook/test';
 import i18n from '../i18n';
+import { startGoogleAuth } from '../api/auth';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../stores/authStore';
 import { Login } from './Login';
@@ -139,10 +140,16 @@ export const LoginFooterOnboarding430: Story = {
 
 export const LoginGoogleNext430: Story = {
   render: () => <LoginHarness mode="google" />,
+  beforeEach: () => {
+    mocked(startGoogleAuth).mockImplementation(() => undefined);
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const initialHref = window.location.href;
     await userEvent.click(canvas.getByRole('button', { name: /Google/ }));
-    await expect(window.sessionStorage.getItem('infopedia_google_auth_next')).toBe('/search');
+    await expect(mocked(startGoogleAuth)).toHaveBeenCalledTimes(1);
+    await expect(mocked(startGoogleAuth)).toHaveBeenCalledWith('/search');
+    await expect(window.location.href).toBe(initialHref);
   },
 };
 

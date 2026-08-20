@@ -1,0 +1,33 @@
+name: Deploy backend
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    steps:
+      - name: Deploy latest main
+        working-directory: /opt/infopedia
+        run: |
+          set -e
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          docker compose up -d --build
+
+          docker compose ps
+
+          curl --fail --retry 10 --retry-delay 3 \
+            http://127.0.0.1:8000/

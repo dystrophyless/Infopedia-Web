@@ -1,11 +1,19 @@
 # ruff: noqa: PT009, PT027
+import os
 import unittest
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+from uuid import uuid4
+
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import selectinload
 
 import src.models  # noqa: F401 - register SQLAlchemy relationships for snapshot construction
+from src.migrations.tests_migration import migrate_tests_schema
 from src.security.public_refs import encode_public_ref
+from src.tests.models import TestAttempt, TestQuestion, TestQuestionOption
 from src.tests.service import (
     TestsService,
     _chapter_ranks,
@@ -16,24 +24,34 @@ from src.tests.service import (
     compute_attempt_summary,
     compute_dashboard_metrics,
 )
+from src.topics.models import Chapter, Topic, TopicCode, TopicMapping
+from src.users.models import User
 
 TEST_NOW = datetime(2026, 8, 8, 12, 0, tzinfo=UTC)
 
 
 class AttemptSessionStub:
-    def __init__(self, chapters: list[SimpleNamespace]) -> None:
+    def __init__(self, chapters: list[SimpleNamespace], expected_questions: int) -> None:
         self.chapters = {chapter.id: chapter for chapter in chapters}
         self.attempt = None
+        self.expected_questions = expected_questions
+        self.flush_count = 0
+        self.commit_count = 0
 
     def add(self, attempt) -> None:
         self.attempt = attempt
-        attempt.id = 700
 
     async def flush(self) -> None:
-        return None
+        self.flush_count += 1
+        if self.flush_count == 1:
+            if self.attempt is None or len(self.attempt.questions) != self.expected_questions:
+                raise AssertionError(
+                    "first flush must see the complete question graph",
+                )
+            self.attempt.id = 700
 
     async def commit(self) -> None:
-        return None
+        self.commit_count += 1
 
     async def get(self, _model, identity: int):
         return self.chapters.get(identity)
@@ -76,8 +94,10 @@ async def create_attempt_with_repository_stubs(  # noqa: PLR0913
     sampler,
     completed: list[SimpleNamespace] | None = None,
     chapter_ref: str | None = None,
+    return_session: bool = False,
 ):
-    session = AttemptSessionStub(chapters)
+    expected_questions = 40 if mode == "mock" else min(20, len(questions))
+    session = AttemptSessionStub(chapters, expected_questions)
     counts = {chapter.id: len(questions) for chapter in chapters}
     catalog_ranks = {chapter.code: index for index, chapter in enumerate(chapters, start=1)}
     with (
@@ -89,11 +109,12 @@ async def create_attempt_with_repository_stubs(  # noqa: PLR0913
         patch("src.tests.service.get_latest_analyze_result_for_tests", new=AsyncMock(return_value=None)),
         patch("src.tests.service._chapter_rank_by_code", return_value=catalog_ranks),
     ):
-        return await TestsService(session, now=TEST_NOW, sampler=sampler).create_attempt(
+        attempt = await TestsService(session, now=TEST_NOW, sampler=sampler).create_attempt(
             user_id=7,
             mode=mode,
             chapter_ref=chapter_ref,
         )
+    return (attempt, session) if return_session else attempt
 
 
 class TestServiceMathTests(unittest.TestCase):
@@ -403,6 +424,108 @@ class AttemptCompletionDeltaTests(unittest.IsolatedAsyncioTestCase):
 
 
 class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_create_attempt_builds_complete_relationship_graph_before_flush(self):
+        chapter = make_chapter(10, "a")
+        questions = [make_question(question_id, [chapter]) for question_id in range(1, 41)]
+
+        attempt, session = await create_attempt_with_repository_stubs(
+            mode="random",
+            questions=questions,
+            chapters=[chapter],
+            sampler=lambda candidates, count: list(candidates[:count]),
+            return_session=True,
+        )
+
+        self.assertEqual(session.flush_count, 1)
+        self.assertEqual(session.commit_count, 1)
+        self.assertEqual(len(attempt.questions), 20)
+        self.assertEqual(attempt.id, 700)
+        self.assertTrue(all(snapshot.attempt is attempt for snapshot in attempt.questions))
+
+    async def test_create_attempt_persists_relationship_graph_with_real_async_session(self):
+        database_url = os.environ.get("TEST_DATABASE_URL", "")
+        if not database_url:
+            self.skipTest("NOT RUN: set TEST_DATABASE_URL for the PostgreSQL persistence regression")
+        if not database_url.startswith("postgresql+psycopg"):
+            self.fail("PostgreSQL persistence regression requires a postgresql+psycopg TEST_DATABASE_URL")
+
+        engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        attempt_id: int | None = None
+        question_ids: list[int] = []
+        try:
+            await migrate_tests_schema(engine)
+            async with sessions() as session:
+                user_id = (await session.execute(select(User.id).order_by(User.id).limit(1))).scalar_one_or_none()
+                eligibility = (
+                    await session.execute(
+                        select(Topic.id, Chapter.id)
+                        .join(TopicMapping, TopicMapping.topic_id == Topic.id)
+                        .join(TopicCode, TopicCode.id == TopicMapping.topic_code_id)
+                        .join(Chapter, Chapter.id == TopicCode.chapter_id)
+                        .order_by(Topic.id, Chapter.id)
+                        .limit(1),
+                    )
+                ).one_or_none()
+                if user_id is None or eligibility is None:
+                    self.skipTest("NOT RUN: PostgreSQL app schema has no user and eligible topic/chapter fixture")
+                topic_id, _chapter_id = eligibility
+                prefix = f"attempt-relationship-{uuid4().hex}"
+                for index in range(20):
+                    question = TestQuestion(
+                        source_key=f"{prefix}-{index:02d}",
+                        topic_id=topic_id,
+                        prompt=f"Persistence question {index}",
+                        explanation="Persistence regression",
+                    )
+                    question.options.extend(
+                        [
+                            TestQuestionOption(source_ref="a", label="A", text="Correct", is_correct=True),
+                            TestQuestionOption(source_ref="b", label="B", text="Wrong", is_correct=False),
+                        ],
+                    )
+                    session.add(question)
+                    question_ids.append(question.id)
+                await session.flush()
+                question_ids = [
+                    row[0]
+                    for row in (
+                        await session.execute(
+                            select(TestQuestion.id).where(TestQuestion.source_key.like(f"{prefix}-%")),
+                        )
+                    ).all()
+                ]
+
+                def choose_regression_questions(candidates, count):
+                    selected = [question for question in candidates if question.id in question_ids]
+                    return selected[:count]
+
+                attempt = await TestsService(session, now=TEST_NOW, sampler=choose_regression_questions).create_attempt(
+                    user_id=user_id,
+                    mode="random",
+                )
+                attempt_id = attempt.id
+                self.assertEqual(len(attempt.questions), 20)
+                self.assertTrue(all(snapshot.attempt_id == attempt.id for snapshot in attempt.questions))
+
+            async with sessions() as verify:
+                persisted = (
+                    await verify.execute(
+                        select(TestAttempt)
+                        .options(selectinload(TestAttempt.questions))
+                        .where(TestAttempt.id == attempt_id),
+                    )
+                ).scalar_one()
+                self.assertEqual(len(persisted.questions), 20)
+                self.assertTrue(all(snapshot.attempt_id == persisted.id for snapshot in persisted.questions))
+        finally:
+            async with engine.begin() as cleanup:
+                if attempt_id is not None:
+                    await cleanup.execute(delete(TestAttempt).where(TestAttempt.id == attempt_id))
+                if question_ids:
+                    await cleanup.execute(delete(TestQuestion).where(TestQuestion.id.in_(question_ids)))
+            await engine.dispose()
+
     async def test_legacy_dashboard_counts_unique_completed_attempts_globally_and_per_chapter(self):
         chapters = [make_chapter(10, "a"), make_chapter(20, "b")]
         attempts = [

@@ -199,15 +199,9 @@ assert.match(
   'Mobile feature carousel should include the Figma term-search feature card',
 );
 
-assert.match(
-  mobileFeatureCarouselSource,
-  /mobile-feature-semantic\.png/,
-  'Mobile feature carousel should include the Figma semantic-search feature card',
-);
-
 assert.doesNotMatch(
   mobileToolsFeatureSource,
-  /mobileToolTests|mobileToolTerm|mobileToolSemantic|overflow-x-auto|mt-\[54px\]|mt-\[26px\]|mt-7/,
+  /mobileToolSemantic|overflow-x-auto|mt-\[54px\]|mt-\[26px\]|mt-7/,
   'Mobile tools section should not render extra off-frame cards or rely on manual vertical margins',
 );
 

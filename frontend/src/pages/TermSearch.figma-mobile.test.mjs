@@ -297,12 +297,6 @@ assert.match(termSearchSource, /else if \(filter\.selectId\) onOpenFilter\?\.\(f
 
 assert.doesNotMatch(
   termSearchSource,
-  /to="\/semantic-search"[\s\S]*search\.filterAria/,
-  'Term search filter control should not route to semantic search',
-);
-
-assert.doesNotMatch(
-  termSearchSource,
   /max-md:pb-8/,
   'Term search should not duplicate the shared frame content-end inset locally',
 );

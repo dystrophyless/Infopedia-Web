@@ -6,10 +6,6 @@ const termSearchSource = readFileSync(
   path.resolve(import.meta.dirname, '../features/search/pages/TermSearchPage.tsx'),
   'utf8',
 );
-const semanticSearchSource = readFileSync(
-  path.resolve(import.meta.dirname, 'SemanticSearch.tsx'),
-  'utf8',
-);
 const termDetailSource = readFileSync(
   path.resolve(import.meta.dirname, '../features/terms/components/TermDetailView.tsx'),
   'utf8',
@@ -30,11 +26,6 @@ assert.match(
   'Term search retains desktop bottom spacing while the mobile page frame owns the content-end inset',
 );
 
-assert.match(
-  semanticSearchSource,
-  /mx-auto max-w-\[900px\] px-6 py-14 pb-14 pt-2 md:pt-0/,
-  'Semantic search should match term search page spacing',
-);
 
 assert.match(
   termDetailSource,

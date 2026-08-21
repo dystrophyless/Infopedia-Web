@@ -24,7 +24,6 @@ app.conf.update(
     enable_utc=False,
     task_track_started=True,
     task_routes={
-        "search_task.process_query": {"queue": "search"},
         "email_task.send_email": {"queue": "emails"},
         "analyze_task.process_document": {"queue": "analyze"},
     },

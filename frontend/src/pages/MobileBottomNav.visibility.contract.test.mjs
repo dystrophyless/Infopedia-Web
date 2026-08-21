@@ -15,8 +15,6 @@ const layoutSource = read('components/Layout.tsx');
 const desktopSidebarSource = read('components/DesktopSidebar.tsx');
 const navSource = read('components/MobileBottomNav.tsx');
 const contextSource = read('features/navigation/MobileShellContext.tsx');
-const semanticSource = read('pages/SemanticSearch.tsx');
-const semanticSearchPolicySource = read('features/navigation/model/semanticSearchNavPolicy.ts');
 const analyzeSource = read('pages/Analyze.tsx');
 const practiceSource = read('pages/PracticeByTopicPage.tsx');
 const profileSource = read('pages/Profile.tsx');
@@ -42,12 +40,6 @@ assert.match(navSource, /activeItem\s*:/, 'MobileBottomNav should receive the ac
 assert.doesNotMatch(navSource, /useLocation|location\.pathname\.startsWith\('\/tests'\)/, 'MobileBottomNav should not derive route activity locally');
 assert.match(navSource, /activeItem\s*===\s*'search'/, 'Search styling should use the shared active item');
 
-assert.match(semanticSource, /useMobileBottomNavOverride/, 'SemanticSearch should register its in-flight state with the shell');
-assert.match(semanticSource, /isSemanticSearchMobileNavHidden/, 'SemanticSearch should use a terminal-aware mobile navigation predicate');
-assert.match(semanticSource, /terminalResult:\s*result/, 'SemanticSearch should pass the SSE result to its terminal-aware predicate');
-assert.doesNotMatch(semanticSource, /submitting\s*\|\|\s*Boolean\(taskId\s*&&\s*isLoading\)/, 'SemanticSearch should not show navigation merely because transport loading ended');
-assert.match(semanticSearchPolicySource, /terminalResult\?\.task_id\s*===\s*taskId/, 'SemanticSearch terminal state should belong to the active task');
-assert.match(semanticSearchPolicySource, /new Set\(\['success',\s*'failure'\]\)/, 'SemanticSearch should require explicit success or failure terminal status');
 
 assert.match(analyzeSource, /useMobileBottomNavOverride/, 'Analyze should register its task state with the shell');
 assert.match(analyzeSource, /!isLatestView\s*&&\s*\(submitting\s*\|\|\s*Boolean\(taskId\s*&&\s*!isTerminal\)\)/, 'Analyze hide predicate should keep nonterminal tasks hidden even after transport errors');

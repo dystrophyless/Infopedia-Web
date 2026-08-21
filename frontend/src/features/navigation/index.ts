@@ -10,7 +10,6 @@ export {
   type MobileBottomNavLocation,
   type MobileBottomNavOverride,
 } from './model/mobileBottomNavPolicy';
-export { isSemanticSearchMobileNavHidden, type SemanticSearchNavState } from './model/semanticSearchNavPolicy';
 export {
   resolveDesktopShell,
   type DesktopShellDecision,

@@ -7,11 +7,6 @@ const indexSource = readFileSync(path.resolve(componentDir, '../../index.html'),
 const indexCssSource = readFileSync(path.resolve(componentDir, '../index.css'), 'utf8');
 const layoutSource = readFileSync(path.resolve(componentDir, 'Layout.tsx'), 'utf8');
 const navbarSource = readFileSync(path.resolve(componentDir, 'Navbar.tsx'), 'utf8');
-const searchChoiceSource = readFileSync(
-  path.resolve(componentDir, '../features/search/components/SearchChoiceModal.tsx'),
-  'utf8',
-);
-
 const bottomNavPath = path.resolve(componentDir, 'MobileBottomNav.tsx');
 const splashPath = path.resolve(componentDir, 'MobileRouteSplash.tsx');
 
@@ -84,7 +79,7 @@ assert.match(
 
 assert.match(
   layoutSource,
-  /className=\{`flex-1 w-full max-md:min-h-0 max-md:min-w-0/,
+  /className=\{`min-w-0 flex-1 w-full max-md:min-h-0/,
   'Layout main should allow mobile flex children to shrink without horizontal overflow',
 );
 
@@ -189,11 +184,7 @@ for (const route of ['"/tests"', '"/analyze"', '"/profile"']) {
   );
 }
 
-assert.match(
-  bottomNavSource,
-  /setSearchModalOpen\(true\)/,
-  'Mobile search nav item should open the search-choice sheet',
-);
+assert.match(bottomNavSource, /<Link\s+to="\/search"/, 'Mobile search nav item should link directly to ordinary search');
 
 assert.match(
   bottomNavSource,
@@ -250,24 +241,6 @@ assert.doesNotMatch(
   bottomNavSource,
   /Home01Icon|ChartColumnIcon|Profile02Icon|border-t|shadow|backdrop-blur|bg-surface/,
   'Mobile bottom navigation should not keep the old home-based or chrome-heavy styling',
-);
-
-assert.match(
-  searchChoiceSource,
-  /overlayClassName="bg-\[#12091f\]\/65 backdrop-blur-\[2px\] max-md:items-end max-md:p-0 max-md:backdrop-blur-none"/,
-  'Search choice overlay should align the dialog to the bottom on mobile',
-);
-
-assert.match(
-  searchChoiceSource,
-  /max-md:rounded-t-\[22px\]/,
-  'Search choice dialog should become a rounded mobile bottom sheet',
-);
-
-assert.match(
-  searchChoiceSource,
-  /<span\s+aria-hidden="true"\s+className="mx-auto mt-3 hidden h-1\.5 w-\[72px\] rounded-full bg-border\/25 max-md:block"\s+\/>/,
-  'Search choice bottom sheet should expose its non-interactive drag handle as decoration',
 );
 
 assert.match(

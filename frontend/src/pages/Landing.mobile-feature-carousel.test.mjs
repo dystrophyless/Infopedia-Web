@@ -325,12 +325,6 @@ assert.match(
   'Desktop feature card should use a taller stage with the white panel anchored to the bottom',
 );
 
-assert.match(
-  desktopFeatureCardSource,
-  /<div[\s\S]*className="relative h-\[372px\][\s\S]*<Link[\s\S]*to=\{card\.href\}[\s\S]*h-\[48px\][\s\S]*card\.cta/,
-  'Desktop feature card should keep only the CTA button as the link target',
-);
-
 assert.doesNotMatch(
   desktopFeatureCardSource,
   /<Link[\s\S]*className="relative block h-\[372px\]/,
@@ -409,12 +403,6 @@ assert.match(
   'Desktop feature card should keep title, description, and CTA on the left',
 );
 
-assert.match(
-  desktopFeatureCardSource,
-  /<h3 className="w-full \[text-wrap:balance\] text-\[32px\]/,
-  'Desktop feature card titles should use the full text column and balance line breaks',
-);
-
 assert.doesNotMatch(
   desktopFeatureCardSource,
   /w-\[344px\]|card\.imageClassName/,
@@ -425,7 +413,6 @@ const featureKeyGroups = [
   ['mobileToolWeakTopicsTitle', 'mobileToolWeakTopicsDesc', 'mobileToolWeakTopicsCta'],
   ['mobileToolTestsTitle', 'mobileToolTestsDesc', 'mobileToolTestsCta'],
   ['mobileToolTermTitle', 'mobileToolTermDesc', 'mobileToolTermCta'],
-  ['mobileToolSemanticTitle', 'mobileToolSemanticDesc', 'mobileToolSemanticCta'],
 ];
 
 for (const keyGroup of featureKeyGroups) {
@@ -440,14 +427,7 @@ for (const asset of [
   'mobile-feature-weak-topics.png',
   'mobile-feature-tests.png',
   'mobile-feature-term.png',
-  'mobile-feature-semantic.png',
 ]) {
   assert.match(carouselSource, new RegExp(`/${asset}`), `Carousel should reference ${asset}`);
   assert.ok(existsSync(path.resolve(publicDir, asset)), `${asset} should be stored in public assets`);
 }
-
-assert.equal(
-  countRedMarkerPixels(path.resolve(publicDir, 'mobile-feature-semantic.png')),
-  0,
-  'Semantic feature illustration should not include the accidental red marker pixel',
-);

@@ -17,14 +17,6 @@ def get_async_redis_client() -> AsyncRedis:
     return AsyncRedis.from_url(build_redis_url(), decode_responses=True)
 
 
-def build_search_task_channel(task_id: str) -> str:
-    return f"search-task:{task_id}"
-
-
-def build_search_task_owner_key(task_id: str) -> str:
-    return f"search-task-owner:{task_id}"
-
-
 def build_analyze_task_channel(task_id: str) -> str:
     return f"analyze-task:{task_id}"
 

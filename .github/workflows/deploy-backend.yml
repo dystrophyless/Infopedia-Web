@@ -22,12 +22,18 @@ jobs:
         run: |
           set -e
 
+          echo "Fetching latest main..."
           git fetch origin main
           git reset --hard origin/main
 
-          docker compose up -d --build
+          echo "Building and starting containers..."
+          docker compose up -d --build --wait --wait-timeout 120
 
+          echo "Container status:"
           docker compose ps
 
-          curl --fail --retry 10 --retry-delay 3 \
+          echo "Checking backend..."
+          curl --fail \
             http://127.0.0.1:8000/
+
+          echo "Deploy completed successfully."

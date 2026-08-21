@@ -113,11 +113,24 @@ def compute_attempt_summary(
             )
             topic["mistake_count"] += 1
 
-    duration_seconds = max(0, int((_utc(completed_at) - _utc(started_at)).total_seconds()))
-    average_pace_seconds = math.ceil(duration_seconds / total_questions) if total_questions else 0
-    score_percent = round((correct_answer_count / total_questions) * 100, 2) if total_questions else 0
+    duration_seconds = max(
+        0, int((_utc(completed_at) - _utc(started_at)).total_seconds())
+    )
+    average_pace_seconds = (
+        math.ceil(duration_seconds / total_questions) if total_questions else 0
+    )
+    score_percent = (
+        round((correct_answer_count / total_questions) * 100, 2)
+        if total_questions
+        else 0
+    )
     weak_topic = next(
-        iter(sorted(mistakes.values(), key=lambda value: (-value["mistake_count"], value["topic_id"]))),
+        iter(
+            sorted(
+                mistakes.values(),
+                key=lambda value: (-value["mistake_count"], value["topic_id"]),
+            )
+        ),
         None,
     )
     return {
@@ -143,20 +156,32 @@ def _attempt_chapter_scores(attempt: object) -> dict[object, tuple[float, float]
     return {key: (value[0], value[1]) for key, value in scores.items()}
 
 
-def _aggregate_attempts(attempts: Iterable[object]) -> tuple[float, float, dict[object, tuple[float, float]]]:
+def _aggregate_attempts(
+    attempts: Iterable[object],
+) -> tuple[float, float, dict[object, tuple[float, float]]]:
     numerator = 0.0
     denominator = 0.0
     chapter_values: dict[object, list[float]] = defaultdict(lambda: [0.0, 0.0])
     for attempt in attempts:
-        total = float(getattr(attempt, "questions_total", getattr(attempt, "total_questions", 0)) or 0)
+        total = float(
+            getattr(attempt, "questions_total", getattr(attempt, "total_questions", 0))
+            or 0
+        )
         score_percent = getattr(attempt, "score_percent", None)
         if total and score_percent is not None:
             numerator += float(score_percent) * total / 100
             denominator += total
-        for chapter_id, (chapter_numerator, chapter_denominator) in _attempt_chapter_scores(attempt).items():
+        for chapter_id, (
+            chapter_numerator,
+            chapter_denominator,
+        ) in _attempt_chapter_scores(attempt).items():
             chapter_values[chapter_id][0] += chapter_numerator
             chapter_values[chapter_id][1] += chapter_denominator
-    return numerator, denominator, {key: (value[0], value[1]) for key, value in chapter_values.items()}
+    return (
+        numerator,
+        denominator,
+        {key: (value[0], value[1]) for key, value in chapter_values.items()},
+    )
 
 
 def compute_dashboard_metrics(
@@ -168,21 +193,45 @@ def compute_dashboard_metrics(
     now = _utc(now)
     current_start = now - timedelta(days=window_days)
     previous_start = now - timedelta(days=window_days * 2)
-    completed = [attempt for attempt in attempts if getattr(attempt, "completed_at", None) is not None]
+    completed = [
+        attempt
+        for attempt in attempts
+        if getattr(attempt, "completed_at", None) is not None
+    ]
 
     def in_window(attempt: object, start: datetime, end: datetime) -> bool:
         value = _utc(getattr(attempt, "completed_at", None))
         return start <= value < end
 
-    current = [attempt for attempt in completed if in_window(attempt, current_start, now)]
-    previous = [attempt for attempt in completed if in_window(attempt, previous_start, current_start)]
+    current = [
+        attempt for attempt in completed if in_window(attempt, current_start, now)
+    ]
+    previous = [
+        attempt
+        for attempt in completed
+        if in_window(attempt, previous_start, current_start)
+    ]
     all_numerator, all_denominator, all_chapters = _aggregate_attempts(completed)
-    current_numerator, current_denominator, current_chapters = _aggregate_attempts(current)
-    previous_numerator, previous_denominator, previous_chapters = _aggregate_attempts(previous)
+    current_numerator, current_denominator, current_chapters = _aggregate_attempts(
+        current
+    )
+    previous_numerator, previous_denominator, previous_chapters = _aggregate_attempts(
+        previous
+    )
 
-    overall_accuracy = _round_metric((all_numerator / all_denominator) * 100) if all_denominator else None
-    current_accuracy = (current_numerator / current_denominator) * 100 if current_denominator else None
-    previous_accuracy = (previous_numerator / previous_denominator) * 100 if previous_denominator else None
+    overall_accuracy = (
+        _round_metric((all_numerator / all_denominator) * 100)
+        if all_denominator
+        else None
+    )
+    current_accuracy = (
+        (current_numerator / current_denominator) * 100 if current_denominator else None
+    )
+    previous_accuracy = (
+        (previous_numerator / previous_denominator) * 100
+        if previous_denominator
+        else None
+    )
     overall_delta = (
         _round_metric(current_accuracy - previous_accuracy)
         if current_accuracy is not None and previous_accuracy is not None
@@ -211,24 +260,31 @@ def compute_dashboard_metrics(
     }
 
 
-def _completed_attempt_counts(attempts: Sequence[object]) -> tuple[int, dict[object, int]]:
+def _completed_attempt_counts(
+    attempts: Sequence[object],
+) -> tuple[int, dict[object, int]]:
     attempt_ids: set[object] = set()
     chapter_attempt_ids: dict[object, set[object]] = defaultdict(set)
     for attempt in attempts:
         if getattr(attempt, "completed_at", None) is None:
             continue
         raw_attempt_id = getattr(attempt, "id", None)
-        attempt_id: object = ("id", raw_attempt_id) if raw_attempt_id is not None else ("object", id(attempt))
+        attempt_id: object = (
+            ("id", raw_attempt_id)
+            if raw_attempt_id is not None
+            else ("object", id(attempt))
+        )
         attempt_ids.add(attempt_id)
         for chapter_id in _attempt_chapter_scores(attempt):
             chapter_attempt_ids[chapter_id].add(attempt_id)
     return len(attempt_ids), {
-        chapter_id: len(ids)
-        for chapter_id, ids in chapter_attempt_ids.items()
+        chapter_id: len(ids) for chapter_id, ids in chapter_attempt_ids.items()
     }
 
 
-def _history_attempt_counts(history: Sequence[dict[str, object]]) -> tuple[int, dict[int, int]]:
+def _history_attempt_counts(
+    history: Sequence[dict[str, object]],
+) -> tuple[int, dict[int, int]]:
     attempt_ids: set[object] = set()
     chapter_attempt_ids: dict[int, set[object]] = defaultdict(set)
     for row in history:
@@ -244,8 +300,7 @@ def _history_attempt_counts(history: Sequence[dict[str, object]]) -> tuple[int, 
         except (TypeError, ValueError):
             continue
     return len(attempt_ids), {
-        chapter_id: len(ids)
-        for chapter_id, ids in chapter_attempt_ids.items()
+        chapter_id: len(ids) for chapter_id, ids in chapter_attempt_ids.items()
     }
 
 
@@ -267,7 +322,9 @@ def _chapter_ranks(
 ) -> dict[int, int]:
     catalog_ranks = catalog_ranks or _chapter_rank_by_code()
     chapters = list(chapters)
-    missing_codes = sorted({chapter.code for chapter in chapters if chapter.code not in catalog_ranks})
+    missing_codes = sorted(
+        {chapter.code for chapter in chapters if chapter.code not in catalog_ranks}
+    )
     if missing_codes:
         message = f"Chapter codes are missing from the chapter catalog: {missing_codes}"
         raise ValueError(message)
@@ -283,9 +340,13 @@ def _select_attribution_chapter(
 ) -> Chapter:
     candidates = eligible_chapters(question)
     if requested_chapter_id is not None:
-        candidates = [chapter for chapter in candidates if chapter.id == requested_chapter_id]
+        candidates = [
+            chapter for chapter in candidates if chapter.id == requested_chapter_id
+        ]
     if allowed_chapter_ids is not None:
-        candidates = [chapter for chapter in candidates if chapter.id in allowed_chapter_ids]
+        candidates = [
+            chapter for chapter in candidates if chapter.id in allowed_chapter_ids
+        ]
     if not candidates:
         raise ValueError("Question has no eligible chapter for attempt attribution")
     ranks = _chapter_ranks(candidates, catalog_ranks)
@@ -345,7 +406,8 @@ def _weak_chapter_ids(
         (
             (float(value["accuracy"]), int(chapter_id))
             for chapter_id, value in metrics.items()
-            if value["accuracy"] is not None and value["accuracy"] < WEAK_ACCURACY_THRESHOLD
+            if value["accuracy"] is not None
+            and value["accuracy"] < WEAK_ACCURACY_THRESHOLD
         ),
         key=lambda item: (item[0], chapter_ranks[item[1]]),
     )
@@ -403,15 +465,21 @@ class TestsService:
 
     async def dashboard(self, *, user_id: int, locale: str = "ru") -> dict[str, Any]:
         if settings.TEST_CATALOG_STATS_READ_ENABLED:
-            return await self._dashboard_from_catalog_stats(user_id=user_id, locale=locale)
+            return await self._dashboard_from_catalog_stats(
+                user_id=user_id, locale=locale
+            )
         return await self._dashboard_legacy(user_id=user_id, locale=locale)
 
-    async def _dashboard_legacy(self, *, user_id: int, locale: str = "ru") -> dict[str, Any]:
+    async def _dashboard_legacy(
+        self, *, user_id: int, locale: str = "ru"
+    ) -> dict[str, Any]:
         chapters = await list_chapters(self.session, locale=locale)
         counts = await question_counts_by_chapter(self.session)
         attempts = await list_completed_attempts(self.session, user_id=user_id)
         metrics = compute_dashboard_metrics(attempts, now=self.now)
-        completed_attempt_count, chapter_attempt_counts = _completed_attempt_counts(attempts)
+        completed_attempt_count, chapter_attempt_counts = _completed_attempt_counts(
+            attempts
+        )
         chapter_accuracy = metrics["chapter_metrics"]
         rank_by_code = _chapter_rank_by_code()
         chapter_ranks = _chapter_ranks(chapters, rank_by_code)
@@ -420,7 +488,9 @@ class TestsService:
             # Pure dashboard math keeps the original chapter-id type, while
             # JSON/database adapters may expose it as a string. Accept both
             # representations so chapter cards never silently lose metrics.
-            row = chapter_accuracy.get(chapter_id) or chapter_accuracy.get(str(chapter_id), {})
+            row = chapter_accuracy.get(chapter_id) or chapter_accuracy.get(
+                str(chapter_id), {}
+            )
             return row.get(key)
 
         ordered_chapters = sorted(
@@ -466,7 +536,9 @@ class TestsService:
             "mode_availability": mode_availability,
         }
 
-    async def _dashboard_from_catalog_stats(self, *, user_id: int, locale: str) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def _dashboard_from_catalog_stats(
+        self, *, user_id: int, locale: str
+    ) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Build the bounded dashboard from immutable attempt snapshots and published catalog stats."""
         chapters = await list_chapters(self.session, locale=locale)
         rank_by_code = _chapter_rank_by_code()
@@ -474,7 +546,9 @@ class TestsService:
         history_payload = await read_dashboard_history(self.session, user_id=user_id)
         history = history_payload["history"]
         recent_rows = history_payload["recent"]
-        completed_attempt_count, chapter_attempt_counts = _history_attempt_counts(history)
+        completed_attempt_count, chapter_attempt_counts = _history_attempt_counts(
+            history
+        )
 
         def row_time(row: dict[str, object]) -> datetime:
             return _utc(row.get("completed_at") if isinstance(row, dict) else None)
@@ -487,10 +561,16 @@ class TestsService:
 
         current_start = self.now - timedelta(days=7)
         previous_start = self.now - timedelta(days=14)
-        current_rows = [row for row in history if current_start <= row_time(row) < self.now]
-        previous_rows = [row for row in history if previous_start <= row_time(row) < current_start]
+        current_rows = [
+            row for row in history if current_start <= row_time(row) < self.now
+        ]
+        previous_rows = [
+            row for row in history if previous_start <= row_time(row) < current_start
+        ]
 
-        def aggregate(rows: Sequence[dict[str, object]]) -> tuple[float, float, dict[int, tuple[float, float]]]:
+        def aggregate(
+            rows: Sequence[dict[str, object]],
+        ) -> tuple[float, float, dict[int, tuple[float, float]]]:
             numerator = 0.0
             denominator = 0.0
             chapters_total: dict[int, list[float]] = defaultdict(lambda: [0.0, 0.0])
@@ -507,14 +587,22 @@ class TestsService:
                 denominator += 1
                 chapters_total[chapter_key][0] += earned
                 chapters_total[chapter_key][1] += 1
-            return numerator, denominator, {
-                chapter_id: (values[0], values[1])
-                for chapter_id, values in chapters_total.items()
-            }
+            return (
+                numerator,
+                denominator,
+                {
+                    chapter_id: (values[0], values[1])
+                    for chapter_id, values in chapters_total.items()
+                },
+            )
 
         all_numerator, all_denominator, all_chapters = aggregate(history)
-        current_numerator, current_denominator, current_chapters = aggregate(current_rows)
-        previous_numerator, previous_denominator, previous_chapters = aggregate(previous_rows)
+        current_numerator, current_denominator, current_chapters = aggregate(
+            current_rows
+        )
+        previous_numerator, previous_denominator, previous_chapters = aggregate(
+            previous_rows
+        )
         chapter_ids = set(all_chapters) | set(current_chapters) | set(previous_chapters)
         chapter_metrics: dict[int, dict[str, Any]] = {}
         for chapter_id in chapter_ids:
@@ -543,11 +631,15 @@ class TestsService:
             weak_chapter_ids=sorted(weak_ids),
         )
         chapter_counts = catalog["chapter_counts"]
-        unknown_catalog_chapters = set(chapter_counts) - {int(chapter.id) for chapter in chapters}
+        unknown_catalog_chapters = set(chapter_counts) - {
+            int(chapter.id) for chapter in chapters
+        }
         if unknown_catalog_chapters:
             unknown_message = f"Catalog stats reference unknown chapters: {sorted(unknown_catalog_chapters)}"
             raise TestCatalogStaleError(unknown_message)
-        ordered_chapters = sorted(chapters, key=lambda chapter: chapter_ranks[chapter.id])
+        ordered_chapters = sorted(
+            chapters, key=lambda chapter: chapter_ranks[chapter.id]
+        )
         chapter_rows = [
             {
                 "chapter_ref": encode_public_ref("chapter", chapter.id),
@@ -574,7 +666,13 @@ class TestsService:
                 "mode": row["mode"],
                 "title": row["title"],
                 "completed_at": _utc(row["completed_at"]),
-                "accuracy": _round_metric((recent_accuracy[int(row["id"])][0] / recent_accuracy[int(row["id"])][1]) * 100)
+                "accuracy": _round_metric(
+                    (
+                        recent_accuracy[int(row["id"])][0]
+                        / recent_accuracy[int(row["id"])][1]
+                    )
+                    * 100
+                )
                 if recent_accuracy[int(row["id"])][1]
                 else 0,
             }
@@ -586,14 +684,21 @@ class TestsService:
         availability = [
             self._availability_response("random", total_count),
             self._availability_response("mock", total_count),
-            self._availability_response("weak", weak_count, has_weak_history=bool(weak_ids)),
+            self._availability_response(
+                "weak", weak_count, has_weak_history=bool(weak_ids)
+            ),
             self._availability_response("chapter", chapter_count),
         ]
         return {
             "completed_attempt_count": completed_attempt_count,
-            "overall_accuracy": _round_metric((all_numerator / all_denominator) * 100) if all_denominator else None,
+            "overall_accuracy": _round_metric((all_numerator / all_denominator) * 100)
+            if all_denominator
+            else None,
             "overall_delta_points": (
-                _round_metric((current_numerator / current_denominator) * 100 - (previous_numerator / previous_denominator) * 100)
+                _round_metric(
+                    (current_numerator / current_denominator) * 100
+                    - (previous_numerator / previous_denominator) * 100
+                )
                 if current_denominator and previous_denominator
                 else None
             ),
@@ -604,8 +709,12 @@ class TestsService:
         }
 
     @staticmethod
-    def _availability_response(mode: str, available_questions: int, *, has_weak_history: bool = False) -> dict[str, Any]:
-        row = _mode_availability_row(mode, available_questions, has_weak_history=has_weak_history)
+    def _availability_response(
+        mode: str, available_questions: int, *, has_weak_history: bool = False
+    ) -> dict[str, Any]:
+        row = _mode_availability_row(
+            mode, available_questions, has_weak_history=has_weak_history
+        )
         available = bool(row["available"])
         return {
             "mode": mode,
@@ -648,13 +757,18 @@ class TestsService:
             (
                 "weak",
                 sum(
-                    any(chapter.id in weak_chapters for chapter in eligible_chapters(question))
+                    any(
+                        chapter.id in weak_chapters
+                        for chapter in eligible_chapters(question)
+                    )
                     for question in questions
                 ),
             ),
             ("chapter", sum(counts.values())),
         ):
-            row = _mode_availability_row(mode, available_count, has_weak_history=bool(weak_chapters))
+            row = _mode_availability_row(
+                mode, available_count, has_weak_history=bool(weak_chapters)
+            )
             is_available = row["available"]
             availability.append(
                 {
@@ -688,20 +802,21 @@ class TestsService:
             try:
                 chapter_id = decode_public_ref("chapter", chapter_ref)
             except (InvalidPublicRef, ValueError):
-                raise TestModeUnavailableError(mode, "invalid_chapter_ref", 1, 0) from None
+                raise TestModeUnavailableError(
+                    mode, "invalid_chapter_ref", 1, 0
+                ) from None
             chapter_result = await self.session.get(Chapter, chapter_id)
             if chapter_result is None:
                 raise TestModeUnavailableError(mode, "invalid_chapter_ref", 1, 0)
-        questions = await list_questions(self.session, chapter_ids=[chapter_id] if chapter_id else None)
+        questions = await list_questions(
+            self.session, chapter_ids=[chapter_id] if chapter_id else None
+        )
         completed = await list_completed_attempts(self.session, user_id=user_id)
         counts = await question_counts_by_chapter(self.session)
         chapters = await list_chapters(self.session, locale=locale)
         catalog_ranks = _chapter_rank_by_code()
         chapter_ranks = _chapter_ranks(chapters, catalog_ranks)
-        eligible = {
-            question.id: eligible_chapters(question)
-            for question in questions
-        }
+        eligible = {question.id: eligible_chapters(question) for question in questions}
         _chapter_ranks(
             (chapter for chapters in eligible.values() for chapter in chapters),
             catalog_ranks,
@@ -731,7 +846,9 @@ class TestsService:
                     question.source_key,
                 ),
             )
-        availability = _mode_availability_row(mode, len(questions), has_weak_history=bool(weak_ids))
+        availability = _mode_availability_row(
+            mode, len(questions), has_weak_history=bool(weak_ids)
+        )
         if not availability["available"]:
             raise TestModeUnavailableError(
                 mode,
@@ -741,8 +858,15 @@ class TestsService:
             )
         required = availability["required_questions"]
         count = required if mode in {"random", "mock"} else min(20, len(questions))
-        questions = self.sampler(questions, count) if mode == "random" else questions[:count]
-        title = {"random": "Random test", "weak": "Weak topics test", "mock": "Mock test", "chapter": "Chapter test"}[mode]
+        questions = (
+            self.sampler(questions, count) if mode == "random" else questions[:count]
+        )
+        title = {
+            "random": "Random test",
+            "weak": "Weak topics test",
+            "mock": "Mock test",
+            "chapter": "Chapter test",
+        }[mode]
         attempt = TestAttempt(
             user_id=user_id,
             mode=mode,
@@ -767,7 +891,9 @@ class TestsService:
                 }
                 for option in question.options
             ]
-            correct_option = next(option for option in question.options if option.is_correct)
+            correct_option = next(
+                option for option in question.options if option.is_correct
+            )
             chapter_title = _chapter_title(attribution_chapter, locale)
             snapshot = TestAttemptQuestion(
                 question_id=question.id,
@@ -784,18 +910,31 @@ class TestsService:
             )
             attempt.questions.append(snapshot)
         await self.session.flush()
+
+        attempt_id = attempt.id
+
         await self.session.commit()
-        loaded_attempt = await get_attempt(self.session, attempt_id=attempt.id, user_id=user_id)
+
+        loaded_attempt = await get_attempt(
+            self.session,
+            attempt_id=attempt_id,
+            user_id=user_id,
+        )
+
         if loaded_attempt is None:
             raise AttemptNotFoundError
         return loaded_attempt
 
-    async def get_attempt_response(self, *, user_id: int, attempt_ref: str) -> TestAttempt:
+    async def get_attempt_response(
+        self, *, user_id: int, attempt_ref: str
+    ) -> TestAttempt:
         try:
             attempt_id = decode_public_ref("attempt", attempt_ref)
         except (InvalidPublicRef, ValueError):
             raise AttemptNotFoundError from None
-        attempt = await get_attempt(self.session, attempt_id=attempt_id, user_id=user_id)
+        attempt = await get_attempt(
+            self.session, attempt_id=attempt_id, user_id=user_id
+        )
         if attempt is None:
             raise AttemptNotFoundError
         return attempt
@@ -813,7 +952,9 @@ class TestsService:
             question_id = decode_public_ref("test_question", question_ref)
         except (InvalidPublicRef, ValueError):
             raise AttemptNotFoundError from None
-        attempt = await get_attempt_for_update(self.session, attempt_id=attempt_id, user_id=user_id)
+        attempt = await get_attempt_for_update(
+            self.session, attempt_id=attempt_id, user_id=user_id
+        )
         if attempt is None:
             raise AttemptNotFoundError
         if attempt.status == "completed" or attempt.completed_at is not None:
@@ -824,26 +965,49 @@ class TestsService:
             question_id=question_id,
         )
         if attempt_question is None:
-            attempt_question = next((item for item in attempt.questions if item.question_ref == question_ref), None)
+            attempt_question = next(
+                (
+                    item
+                    for item in attempt.questions
+                    if item.question_ref == question_ref
+                ),
+                None,
+            )
         if attempt_question is None:
             raise AttemptNotFoundError
         if attempt_question.question_ref != question_ref:
             raise AttemptNotFoundError
-        selected_option = next((item for item in attempt_question.options_json if item.get("option_ref") == option_ref), None)
+        selected_option = next(
+            (
+                item
+                for item in attempt_question.options_json
+                if item.get("option_ref") == option_ref
+            ),
+            None,
+        )
         if selected_option is None:
             try:
                 option_id = decode_public_ref("test_option", option_ref)
             except (InvalidPublicRef, ValueError):
                 option_id = None
             selected_option = next(
-                (item for item in attempt_question.options_json if option_id is not None and item.get("option_ref", "").endswith(str(option_id))),
+                (
+                    item
+                    for item in attempt_question.options_json
+                    if option_id is not None
+                    and item.get("option_ref", "").endswith(str(option_id))
+                ),
                 None,
             )
         if selected_option is None:
             raise ValueError("Unknown option reference")
         if attempt_question.answer is not None:
             if attempt_question.answer.selected_option_ref == option_ref:
-                return self._feedback(attempt_question, attempt_question.answer.selected_option_ref, attempt_question.answer.awarded_weight)
+                return self._feedback(
+                    attempt_question,
+                    attempt_question.answer.selected_option_ref,
+                    attempt_question.answer.awarded_weight,
+                )
             raise AnswerAlreadySubmittedError
         awarded_weight = int(option_ref == attempt_question.correct_option_ref)
         attempt_question.answer = TestAttemptAnswer(
@@ -855,7 +1019,9 @@ class TestsService:
         return feedback
 
     @staticmethod
-    def _feedback(question: TestAttemptQuestion, option_ref: str, awarded_weight: int) -> dict[str, Any]:
+    def _feedback(
+        question: TestAttemptQuestion, option_ref: str, awarded_weight: int
+    ) -> dict[str, Any]:
         return {
             "question_ref": question.question_ref,
             "option_ref": option_ref,
@@ -865,12 +1031,16 @@ class TestsService:
             "awarded_weight": awarded_weight,
         }
 
-    async def complete_attempt(self, *, user_id: int, attempt_ref: str) -> dict[str, Any]:
+    async def complete_attempt(
+        self, *, user_id: int, attempt_ref: str
+    ) -> dict[str, Any]:
         try:
             attempt_id = decode_public_ref("attempt", attempt_ref)
         except (InvalidPublicRef, ValueError):
             raise AttemptNotFoundError from None
-        attempt = await get_attempt_for_update(self.session, attempt_id=attempt_id, user_id=user_id)
+        attempt = await get_attempt_for_update(
+            self.session, attempt_id=attempt_id, user_id=user_id
+        )
         if attempt is None:
             raise AttemptNotFoundError
         if attempt.status == "completed" and attempt.summary_json:
@@ -879,7 +1049,11 @@ class TestsService:
         if any(question.answer is None for question in attempt.questions):
             raise AttemptIncompleteError
         completed_at = self.now
-        answers = {question.id: question.answer for question in attempt.questions if question.answer is not None}
+        answers = {
+            question.id: question.answer
+            for question in attempt.questions
+            if question.answer is not None
+        }
         summary = compute_attempt_summary(
             attempt.questions,
             answers,

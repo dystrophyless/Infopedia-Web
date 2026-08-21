@@ -2,7 +2,13 @@ name: Frontend quality
 
 on:
   pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-quality.yml'
   push:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-quality.yml'
 
 defaults:
   run:

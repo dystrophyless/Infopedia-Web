@@ -129,6 +129,7 @@ function DesktopSearchStory({
   bookCatalogFailureRequests = [],
   initialBookSelection = false,
   deferSearch = false,
+  deferSearchOnlyWithQuery = false,
   refreshCatalogOnReady = false,
   deferCatalogFailure = false,
 }: {
@@ -138,6 +139,7 @@ function DesktopSearchStory({
   bookCatalogFailureRequests?: number[];
   initialBookSelection?: boolean;
   deferSearch?: boolean;
+  deferSearchOnlyWithQuery?: boolean;
   refreshCatalogOnReady?: boolean;
   deferCatalogFailure?: boolean;
 }) {
@@ -215,7 +217,10 @@ function DesktopSearchStory({
             has_more: skip + limit < pageTerms.length,
           },
         };
-        if (!deferSearch) return response;
+        const shouldDeferSearch =
+          deferSearch &&
+          (!deferSearchOnlyWithQuery || Boolean(config?.params?.get('query')?.trim()));
+        if (!shouldDeferSearch) return response;
         config?.signal?.addEventListener('abort', () => setSearchAbortCount((count) => count + 1), { once: true });
         return new Promise<typeof response>((resolve) => {
           searchReleaseRef.current.add(() => resolve(response));
@@ -251,7 +256,14 @@ function DesktopSearchStory({
         user: null,
       });
     };
-  }, [bookCatalogFailuresBeforeSuccess, bookCatalogFailureRequestsKey, deferSearch, initialBookSelection, terms]);
+  }, [
+    bookCatalogFailuresBeforeSuccess,
+    bookCatalogFailureRequestsKey,
+    deferSearch,
+    deferSearchOnlyWithQuery,
+    initialBookSelection,
+    terms,
+  ]);
 
   useEffect(() => {
     if (!refreshCatalogOnReady || catalogRefreshTriggeredRef.current || bookCatalogRequestCount !== 1 || searchRequestCount === 0) return;
@@ -1115,6 +1127,7 @@ export const DesktopFiltersCatalogRefreshSelectedRaceContract: Story = {
       initialBookSelection
       bookCatalogFailureRequests={[2]}
       deferSearch
+      deferSearchOnlyWithQuery
       refreshCatalogOnReady
       deferCatalogFailure
     />

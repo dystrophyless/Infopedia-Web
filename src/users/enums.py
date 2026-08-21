@@ -20,7 +20,6 @@ class UserLanguage(str, Enum):
 
 class Feature(Enum):
     TERM_SEARCH = ("term_search_forbidden", 999)
-    DEFINITION_SEARCH = ("definition_search_forbidden", 999)
     RANDOM_TERM = ("random_term_forbidden", 999)
 
     def __init__(self, forbidden: str, limit: int):

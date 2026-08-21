@@ -59,11 +59,13 @@ class SearchTermsRouterTests(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.client.aclose()
 
-    async def test_terms_static_route_is_registered_before_task_id(self):
+    async def test_search_exposes_only_ordinary_and_filtered_term_routes(self):
         paths = [route.path for route in self.app.routes]
 
+        self.assertIn("/api/search/", paths)
         self.assertIn("/api/search/terms", paths)
-        self.assertLess(paths.index("/api/search/terms"), paths.index("/api/search/{task_id}"))
+        self.assertNotIn("/api/search", paths)
+        self.assertFalse(any(path.startswith("/api/search/{task_id}") for path in paths))
 
     async def test_terms_route_accepts_empty_query_and_returns_dedicated_page_shape(self):
         with (
@@ -169,15 +171,11 @@ class SearchTermsRouterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 429)
         repository.assert_not_awaited()
 
-    async def test_terms_static_route_is_not_shadowed_by_task_id(self):
+    async def test_terms_static_route_is_not_shadowed_by_removed_dynamic_route(self):
         empty_page = SearchTermsRepositoryPage(terms=[], total=0, mode="all_filtered")
         with (
             patch("src.search.router.enforce_anti_scrape", new=AsyncMock()),
             patch("src.search.router.search_filtered_terms", new=AsyncMock(return_value=empty_page)),
-            patch(
-                "src.search.router.assert_task_owner",
-                new=AsyncMock(side_effect=AssertionError("dynamic task route captured /terms")),
-            ),
         ):
             response = await self.client.get("/api/search/terms")
 

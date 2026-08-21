@@ -12,7 +12,6 @@ import { ResetPassword } from './pages/ResetPassword';
 import { TermSearch } from './pages/TermSearch';
 import { SearchFilters } from './pages/SearchFilters';
 import { TermDetail } from './pages/TermDetail';
-import { SemanticSearch } from './pages/SemanticSearch';
 import { Analyze } from './pages/Analyze';
 import { Tests } from './pages/Tests';
 import { TestQuestionPage } from './pages/TestQuestionPage';
@@ -91,14 +90,6 @@ export default function App() {
             <Public>
               <TermDetail />
             </Public>
-          }
-        />
-        <Route
-          path="/semantic-search"
-          element={
-            <Protected>
-              <SemanticSearch />
-            </Protected>
           }
         />
         <Route

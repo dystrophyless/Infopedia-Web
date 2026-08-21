@@ -6,7 +6,6 @@ const location = (pathname: string, search = '') => ({ pathname, search });
 describe('resolveMobileBottomNav', () => {
   it.each([
     ['/search', 'search'],
-    ['/semantic-search', 'search'],
     ['/tests', 'tests'],
     ['/analyze', 'analyze'],
     ['/analyze?view=latest', 'profile'],

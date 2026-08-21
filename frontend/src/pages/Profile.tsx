@@ -2173,8 +2173,8 @@ function DesktopSettingsPanel({
                     aria-hidden="true"
                     className="size-5 shrink-0 bg-[#865bcf]"
                     style={{
-                      WebkitMaskImage: `url(${mobilePremiumAsset})`,
-                      maskImage: `url(${mobilePremiumAsset})`,
+                      WebkitMaskImage: `url("${mobilePremiumAsset}")`,
+                      maskImage: `url("${mobilePremiumAsset}")`,
                       WebkitMaskPosition: 'center',
                       maskPosition: 'center',
                       WebkitMaskRepeat: 'no-repeat',
@@ -2226,8 +2226,8 @@ function DesktopSettingsPanel({
               <span
                 className="absolute inset-0 size-5 bg-[#f25f54] opacity-0 transition-opacity group-hover:opacity-100"
                 style={{
-                  WebkitMaskImage: `url(${desktopLogOutAsset})`,
-                  maskImage: `url(${desktopLogOutAsset})`,
+                  WebkitMaskImage: `url("${desktopLogOutAsset}")`,
+                  maskImage: `url("${desktopLogOutAsset}")`,
                   WebkitMaskPosition: 'center',
                   maskPosition: 'center',
                   WebkitMaskRepeat: 'no-repeat',

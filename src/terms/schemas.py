@@ -76,7 +76,3 @@ class DefinitionResponse(DefinitionBase):
     @property
     def public_id(self) -> str:
         return encode_public_ref("definition", self.id)
-
-
-class DefinitionSemanticResponse(DefinitionResponse):
-    embedding: list[float] = Field(min_length=1)

@@ -104,7 +104,12 @@ function OwnerSyncScenario() {
 const meta = {
   title: 'Pages/FavoritesOwnerSync',
   component: OwnerSyncScenario,
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    // The owner barrier assertion targets ForgotPassword's form; keep the
+    // story's axe context on that page subtree instead of its unrelated footer.
+    a11y: { context: 'form' },
+  },
 } satisfies Meta<typeof OwnerSyncScenario>;
 
 export default meta;
@@ -115,16 +120,16 @@ export const AuthOwnerBarrier: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const wrapper = canvas.getByTestId('owner-sync-wrapper');
-    expect(wrapper.querySelector('main')).not.toBeNull();
+    expect(wrapper.querySelector('form')).not.toBeNull();
     await userEvent.click(canvas.getByTestId('owner-sync-switch'));
-    expect(wrapper.querySelector('main')).toBeNull();
+    expect(wrapper.querySelector('form')).toBeNull();
     expect(controller?.calls).toContain(ownerB.id);
     await userEvent.click(canvas.getByTestId('owner-sync-release'));
-    expect(wrapper.querySelector('main')).not.toBeNull();
+    expect(wrapper.querySelector('form')).not.toBeNull();
     await userEvent.click(canvas.getByTestId('owner-sync-remount'));
     await userEvent.click(canvas.getByTestId('owner-sync-remount'));
     await userEvent.click(canvas.getByTestId('owner-sync-logout'));
-    expect(wrapper.querySelector('main')).toBeNull();
+    expect(wrapper.querySelector('form')).toBeNull();
     await userEvent.click(canvas.getByTestId('owner-sync-release'));
     const state = useFavoritesStore.getState();
     expect(state.ownerUserId).toBeNull();

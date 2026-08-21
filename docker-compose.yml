@@ -27,7 +27,7 @@ services:
       - app_network
 
   pgadmin:
-    profile: ["tools"]
+    profiles: ["tools"]
     image: dpage/pgadmin4
     env_file:
       - .env

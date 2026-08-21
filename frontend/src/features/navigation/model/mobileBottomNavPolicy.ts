@@ -24,7 +24,7 @@ function visible(activeItem: MobileBottomNavItem): MobileBottomNavDecision {
 function resolveBasePolicy(location: MobileBottomNavLocation): MobileBottomNavDecision {
   const { pathname, search = '' } = location;
 
-  if (pathname === '/search' || pathname === '/semantic-search') return visible('search');
+  if (pathname === '/search') return visible('search');
   if (pathname === '/search/filters' || pathname.startsWith('/terms/') || pathname === '/practice-by-topic') {
     return HIDDEN_DECISION;
   }

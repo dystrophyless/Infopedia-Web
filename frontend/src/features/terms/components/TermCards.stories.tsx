@@ -11,7 +11,6 @@ import { useAuthStore } from '../../../stores/authStore';
 import { DefinitionMetadata } from './DefinitionMetadata';
 import { FeaturedTermCard, type FeaturedTermCardVariant } from './FeaturedTermCard';
 import { MobileSearchTermCard } from './MobileSearchTermCard';
-import { SemanticResultCard } from './SemanticResultCard';
 import { TermCard } from './TermCard';
 
 const longDefinition: Definition = {
@@ -351,10 +350,6 @@ export const MobilePopulatedAndLoading: Story = {
       expect(skeletonCard.getBoundingClientRect().height).toBe(populatedCard.getBoundingClientRect().height);
     });
   },
-};
-
-export const SemanticResult: Story = {
-  render: () => <SemanticResultCard definition={longDefinition} />,
 };
 
 export const FiveFeaturedVariants: Story = {

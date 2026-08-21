@@ -23,7 +23,6 @@ describe('resolveDesktopShell', () => {
     ['/practice-by-topic', 'tests'],
     ['/search', 'search'],
     ['/search/filters', 'search'],
-    ['/semantic-search', 'search'],
     ['/terms/python', 'search'],
     ['/analyze', 'analyze'],
   ] as const)('maps %s to the %s item for authenticated users', (pathname, activeItem) => {

@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/deploy-backend.yml'
 
 concurrency:
   group: production-deploy

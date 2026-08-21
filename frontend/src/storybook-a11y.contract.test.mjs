@@ -6,7 +6,7 @@ const frontendDir = path.resolve(import.meta.dirname, '..');
 const previewPath = path.join(frontendDir, '.storybook', 'preview.ts');
 const previewSource = readFileSync(previewPath, 'utf8');
 
-const a11yBlock = previewSource.match(/a11y\s*:\s*\{([\s\S]*?)\n\s*\},\n\s*backgrounds\s*:/)?.[1];
+const a11yBlock = previewSource.match(/a11y\s*:\s*\{([\s\S]*?)\r?\n\s*\},\r?\n\s*backgrounds\s*:/)?.[1];
 assert.ok(a11yBlock, 'preview must define the project-level a11y parameters');
 assert.match(a11yBlock, /test\s*:\s*['"]error['"]/, 'project-level a11y tests must remain blocking');
 

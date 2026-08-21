@@ -90,7 +90,13 @@ const approvedFigmaExceptions = [
   },
 ];
 for (const { relativePath, bytes, sha256 } of approvedFigmaExceptions) {
-  const source = readFileSync(path.join(frontendDir, relativePath));
+  // Git's core.autocrlf may materialize text exports with CRLF on Windows;
+  // compare the canonical LF bytes so the approved Figma export remains
+  // byte-exact across checkout platforms.
+  const source = Buffer.from(
+    readFileSync(path.join(frontendDir, relativePath), 'utf8').replace(/\r\n/g, '\n'),
+    'utf8',
+  );
   assert.equal(source.byteLength, bytes, `${relativePath} must retain its byte-exact Figma export`);
   assert.equal(createHash('sha256').update(source).digest('hex'), sha256, `${relativePath} must retain its approved Figma hash`);
 }

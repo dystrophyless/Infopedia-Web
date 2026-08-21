@@ -15,7 +15,7 @@ const DRAG_THRESHOLD_PX = 48;
 const TRACK_TRANSITION_MS = 420;
 const ONBOARDING_TARGET = '/onboarding';
 
-type MobileFeatureId = 'weak-topics' | 'tests' | 'term' | 'semantic';
+type MobileFeatureId = 'weak-topics' | 'tests' | 'term';
 
 interface MobileFeatureDefinition {
   id: MobileFeatureId;
@@ -80,17 +80,6 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     imageClassName: 'object-center',
     desktopImageClassName: 'object-center',
     to: '/search',
-  },
-  {
-    id: 'semantic',
-    titleKey: 'landing.mobileToolSemanticTitle',
-    descriptionKey: 'landing.mobileToolSemanticDesc',
-    ctaKey: 'landing.mobileToolSemanticCta',
-    imageSrc: '/mobile-feature-semantic.png',
-    imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
-    imageClassName: 'object-center',
-    desktopImageClassName: 'object-center',
-    to: '/semantic-search',
   },
 ];
 

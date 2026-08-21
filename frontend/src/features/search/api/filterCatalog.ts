@@ -19,6 +19,6 @@ export async function getSearchFilterChapters(
 }
 
 // Compatibility names mirror the historical shared topics API without coupling
-// this feature to semantic-search task endpoints.
+// this feature to ordinary term-search endpoints.
 export const getTopicBooks = getSearchFilterBooks;
 export const getTopicChapters = getSearchFilterChapters;

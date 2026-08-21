@@ -110,12 +110,6 @@ assert.doesNotMatch(
   'Term search filter button should open its contextual overlay instead of navigating away',
 );
 
-assert.doesNotMatch(
-  termSearchSource,
-  /to="\/semantic-search"[\s\S]*search\.filterAria/,
-  'Term search filter button should not open semantic search',
-);
-
 assert.match(
   searchFiltersSource,
   /export function SearchFilters\(\{ overlay = false, initialFilter, onDismiss \}: SearchFiltersProps\)/,

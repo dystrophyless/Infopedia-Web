@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { userEvent as browserUserEvent } from 'vitest/browser';
 import { DesktopSidebar } from './DesktopSidebar';
 
 const meta = {
@@ -137,8 +138,11 @@ export const ProfileMenuClicked: Story = {
     const profileButton = canvas.getByRole('button', { name: /Профиль:/ });
     await userEvent.click(profileButton);
     const settings = canvas.getByRole('link', { name: 'Настройки' });
-    await userEvent.hover(settings);
-    await expect(getComputedStyle(settings).backgroundColor).toBe('rgb(222, 210, 241)');
+    await browserUserEvent.hover(settings);
+    await waitFor(
+      () => expect(getComputedStyle(settings).backgroundColor).toBe('rgb(222, 210, 241)'),
+      { timeout: 1000 },
+    );
     await expect(settings).toHaveClass('rounded-[4px]', 'px-[8px]', 'py-[6px]');
   },
 };

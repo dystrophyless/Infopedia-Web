@@ -154,9 +154,9 @@ function collectRuntimeMaskTargets({ relativePath, source }) {
       .map(([, localName, importTarget]) => [localName, importTarget]),
   );
   const declarations = [...source.matchAll(/\b(?:WebkitMaskImage|maskImage)\s*:/g)];
-  const references = [...source.matchAll(/\b(?:WebkitMaskImage|maskImage)\s*:\s*`url\(\$\{([A-Za-z_$][\w$]*)\}\)`/g)];
+  const references = [...source.matchAll(/\b(?:WebkitMaskImage|maskImage)\s*:\s*`url\("\$\{([A-Za-z_$][\w$]*)\}"\)`/g)];
   assert.ok(declarations.length > 0, `${relativePath} must contain at least one runtime mask declaration`);
-  assert.equal(references.length, declarations.length, `${relativePath} must express every runtime mask as url(\${svgImport})`);
+  assert.equal(references.length, declarations.length, `${relativePath} must quote every imported SVG mask as url("\${svgImport}")`);
 
   return references.map(([, localName]) => {
     const importTarget = svgImports.get(localName);
@@ -184,6 +184,16 @@ function assertApprovedRuntimeMaskTargets(sources) {
 }
 
 assertApprovedRuntimeMaskTargets(runtimeMaskSources);
+for (const source of runtimeMaskSources) {
+  assert.throws(
+    () => assertApprovedRuntimeMaskTargets([{
+      ...source,
+      source: source.source.replace(/`url\("(\$\{[A-Za-z_$][\w$]*\})"\)`/g, '`url($1)`'),
+    }]),
+    /must quote every imported SVG mask/,
+    `${source.relativePath} must fail closed when imported SVG mask URLs lose their quotes`,
+  );
+}
 const profileMaskSource = runtimeMaskSources.find(({ relativePath }) => relativePath === 'pages/Profile.tsx');
 assert.ok(profileMaskSource, 'Profile.tsx must remain an approved runtime mask consumer');
 assert.throws(

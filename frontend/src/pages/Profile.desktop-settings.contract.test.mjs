@@ -67,7 +67,7 @@ assert.match(profileSource, /import languagesAsset from '\.\.\/assets\/figma-pro
 assert.doesNotMatch(profileSource, /\bLanguages(?:Icon| as LanguagesIcon)\b/);
 assertSinglePanelAssetUsage('languagesAsset');
 assert.match(panelSource, /<img\s+src=\{languagesAsset\}\s+alt=""\s+aria-hidden="true"\s+width=\{20\}\s+height=\{20\}\s+className="size-5 shrink-0"\s*\/>/);
-assert.match(panelSource, /WebkitMaskImage: `url\(\$\{mobilePremiumAsset\}\)`/);
+assert.match(panelSource, /WebkitMaskImage: `url\("\$\{mobilePremiumAsset\}"\)`/);
 assert.match(panelSource, /h-px w-full bg-\[#f8f5fc\]/);
 assert.equal((panelSource.match(/onClick=\{\(\) => setView\('about'\)\}/g) ?? []).length, 2);
 assert.match(profileSource, /import desktopLogOutAsset from '\.\.\/assets\/figma-profile\/log-out\.svg';/);
@@ -81,7 +81,7 @@ assert.match(panelSource, /text-\[16px\] font-medium leading-\[16px\] text-\[#6e
 assert.match(logoutButtonSource, /className="[^"]*\bgroup\b[^"]*hover:bg-white[^"]*"/, 'Logout hover background must be white');
 assert.match(logoutButtonSource, /src=\{desktopLogOutAsset\}[\s\S]*className="[^"]*group-hover:opacity-0[^"]*"/, 'Normal Figma icon must hide only on hover');
 assert.match(logoutButtonSource, /className="[^"]*bg-\[#f25f54\][^"]*opacity-0[^"]*group-hover:opacity-100[^"]*"/, 'Hover icon overlay must paint exactly #F25F54');
-assert.match(logoutButtonSource, /WebkitMaskImage: `url\(\$\{desktopLogOutAsset\}\)`[\s\S]*maskImage: `url\(\$\{desktopLogOutAsset\}\)`/, 'Hover icon overlay must use the approved Figma silhouette');
+assert.match(logoutButtonSource, /WebkitMaskImage: `url\("\$\{desktopLogOutAsset\}"\)`[\s\S]*maskImage: `url\("\$\{desktopLogOutAsset\}"\)`/, 'Hover icon overlay must use the approved Figma silhouette');
 assert.match(logoutButtonSource, /className="[^"]*text-\[#6e6779\][^"]*group-hover:text-\[#161519\][^"]*"/, 'Logout label must preserve its normal paint and use exactly #161519 on hover');
 assert.doesNotMatch(panelSource, /languagesAsset[^>]*style=|desktopLogOutAsset[^>]*style=/);
 

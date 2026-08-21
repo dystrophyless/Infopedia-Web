@@ -1,8 +1,9 @@
+# syntax=docker/dockerfile:1.7
+
 FROM python:3.13-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_DEV=1 \
     UV_PYTHON_DOWNLOADS=0 \
@@ -11,17 +12,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# ---------- builder ----------
+
+# ---------- dependencies ----------
 FROM base AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.2 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.2 /uv /bin/uv
 
-COPY pyproject.toml uv.lock /app/
+COPY pyproject.toml uv.lock ./
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project --no-editable
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    uv sync \
+        --locked \
+        --no-install-project \
+        --no-editable
 
-COPY . /app
 
 # ---------- runtime ----------
 FROM base AS runtime
@@ -29,7 +33,7 @@ FROM base AS runtime
 RUN groupadd --system --gid 1000 app \
     && useradd --system --uid 1000 --gid app --create-home app \
     && install -d -o app -g app /home/app/.cache/huggingface \
-    && install -d -o app -g app /app
+    && chown app:app /app
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 

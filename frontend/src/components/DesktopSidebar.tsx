@@ -192,11 +192,11 @@ export function DesktopSidebar({
                   aria-hidden="true"
                   className="size-[20px] shrink-0 bg-[#4c268c]"
                   style={{
-                    maskImage: `url(${aiCoEditingAsset})`,
+                    maskImage: `url("${aiCoEditingAsset}")`,
                     maskPosition: 'center',
                     maskRepeat: 'no-repeat',
                     maskSize: '100% 100%',
-                    WebkitMaskImage: `url(${aiCoEditingAsset})`,
+                    WebkitMaskImage: `url("${aiCoEditingAsset}")`,
                     WebkitMaskPosition: 'center',
                     WebkitMaskRepeat: 'no-repeat',
                     WebkitMaskSize: '100% 100%',

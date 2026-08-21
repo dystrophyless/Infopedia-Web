@@ -87,31 +87,6 @@ export interface User {
   created_at?: string;
 }
 
-export type SearchTaskStatus = 'pending' | 'success' | 'failure' | string;
-
-export interface SearchTaskResult {
-  term: string;
-  book_publisher: string;
-  book_grade: number;
-  text: string;
-  topic: string;
-  page: number;
-  definition_public_id?: string;
-}
-
-export interface SearchTaskError {
-  code?: string;
-  message?: string;
-}
-
-export interface SearchTask {
-  task_id: string;
-  status: SearchTaskStatus;
-  result?: SearchTaskResult | null;
-  error?: SearchTaskError | string | null;
-  step?: string | null;
-}
-
 export type AnalyzeTaskStatus = 'pending' | 'started' | 'success' | 'failure';
 
 export interface AnalyzeTaskError {

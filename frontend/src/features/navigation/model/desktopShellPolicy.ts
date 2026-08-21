@@ -23,7 +23,6 @@ function activeItemForPath(pathname: string): DesktopShellItem | null {
   if (
     pathname === '/search' ||
     pathname === '/search/filters' ||
-    pathname === '/semantic-search' ||
     pathname.startsWith('/terms/')
   ) {
     return 'search';

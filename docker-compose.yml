@@ -27,6 +27,7 @@ services:
       - app_network
 
   pgadmin:
+    profile: ["tools"]
     image: dpage/pgadmin4
     env_file:
       - .env
@@ -51,7 +52,7 @@ services:
       - app_network
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8.10.0-alpine
     env_file:
       - .env
     command:
@@ -201,7 +202,7 @@ services:
       - .env
     environment:
       POSTGRES_HOST: postgres
-    command: [ "celery", "-A", "src.celery_app.email_worker", "worker", "-Q", "emails", "--pool=prefork", "--concurrency=2", "--loglevel=INFO" ]
+    command: [ "celery", "-A", "src.celery_app.email_worker", "worker", "-Q", "emails", "--pool=prefork", "--concurrency=1", "--loglevel=INFO" ]
     develop:
       watch:
         - action: sync+restart

@@ -333,7 +333,7 @@ assert.doesNotMatch(
 
 assert.match(
   carouselSource,
-  /return \(\s*<div[\s\S]*className="relative h-\[493px\][\s\S]*<Link[\s\S]*to=\{card\.href\}[\s\S]*bottom-8 left-8 right-8[\s\S]*card\.cta/,
+  /return \(\s*<div[\s\S]*className="(?:group )?relative h-\[493px\][\s\S]*<Link[\s\S]*to=\{card\.href\}[\s\S]*bottom-8 left-8 right-8[\s\S]*card\.cta/,
   'Mobile feature card should keep only the CTA button as the link target',
 );
 
@@ -378,6 +378,11 @@ assert.match(
   /h-full w-full object-contain[\s\S]*card\.imageClassName/,
   'Mobile feature images should fit inside their frame without manual percentage cropping',
 );
+assert.match(
+  carouselSource,
+  /h-full w-full object-contain[\s\S]*transition-transform[\s\S]*group-hover:scale-\[1\.01\][\s\S]*motion-reduce:group-hover:scale-100/,
+  'Mobile carousel hover must scale image paint inside its clipped wrapper',
+);
 
 assert.doesNotMatch(
   carouselSource,
@@ -395,6 +400,11 @@ assert.match(
   carouselSource,
   /pointer-events-none absolute right-0 top-0[\s\S]*<img[\s\S]*desktopImageClassName/,
   'Desktop feature card should place the illustration on the right side',
+);
+assert.match(
+  carouselSource,
+  /pointer-events-none absolute right-0 top-0[\s\S]*overflow-hidden[\s\S]*<img[\s\S]*transition-transform[\s\S]*group-hover:scale-\[1\.01\][\s\S]*motion-reduce:group-hover:scale-100/,
+  'Desktop carousel hover must scale image paint inside its clipped wrapper',
 );
 
 assert.match(

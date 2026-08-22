@@ -344,8 +344,23 @@ assert.match(
 );
 assert.match(
   mobileCardSource,
-  /relative h-24 overflow-hidden[\s\S]*line-clamp-6[\s\S]*bg-gradient-to-t from-white[\s\S]*flex h-6 flex-wrap/,
+  /data-mobile-definition-preview className="relative h-24 overflow-hidden"[\s\S]*text-\[16px\] leading-\[16px\] text-\[#8c8698\][\s\S]*definitionOverflowing[\s\S]*data-mobile-definition-fade[\s\S]*h-4 bg-gradient-to-t from-white[\s\S]*data-mobile-definition-metadata className="flex h-6 flex-wrap/,
   'Mobile term card should restore its 96px faded preview and 24px metadata rail',
+);
+assert.match(
+  mobileCardSource,
+  /let cancelled = false[\s\S]*const measure = \(\) => \{\s*if \(cancelled\) return;/,
+  'Mobile term measurement must stop before touching state or DOM after unmount',
+);
+assert.match(
+  mobileCardSource,
+  /document\.fonts\?\.ready\.then\(\(\) => \{\s*if \(!cancelled\) measure\(\);/,
+  'Font readiness measurement must no-op after the card unmounts',
+);
+assert.match(
+  mobileCardSource,
+  /if \(!observer\) window\.addEventListener\('resize', measure\);[\s\S]*cancelled = true;[\s\S]*if \(!observer\) window\.removeEventListener\('resize', measure\);/,
+  'Mobile term measurement must fall back to and clean up window resize when ResizeObserver is unavailable',
 );
 assert.match(
   mobileCardSource,

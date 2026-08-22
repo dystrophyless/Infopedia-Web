@@ -607,7 +607,7 @@ export function AuthPasswordInput({
             : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-12 min-[1440px]:placeholder:text-[#c5b1e7]'
           : ''
       }`}
-      toggleClassName={`right-3 flex size-8 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:text-[#8c8698] ${
+      toggleClassName={`right-3 flex size-11 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:size-11 max-lg:text-[#8c8698] ${
         desktopVisual === 'onboarding'
           ? 'min-[1440px]:right-4 min-[1440px]:text-[#c5b1e7] min-[1440px]:hover:bg-transparent'
           : ''

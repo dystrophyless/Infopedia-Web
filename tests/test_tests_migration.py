@@ -206,7 +206,9 @@ class TestsMigrationTests(unittest.TestCase):
                 self.assertFalse(_check_expression_matches(expression, "active_question_count >= 0"))
 
     def test_tests_catalog_reads_are_off_by_default(self):
-        self.assertFalse(Settings().TEST_CATALOG_STATS_READ_ENABLED)
+        # Assert the model default directly so an outer test invocation that
+        # enables the rollout flag cannot turn this default contract green.
+        self.assertIs(Settings.model_fields["TEST_CATALOG_STATS_READ_ENABLED"].default, False)
 
     def test_sqlite_existing_catalog_stat_schema_is_backfilled_without_losing_counts(self):
         engine = create_engine("sqlite:///:memory:")

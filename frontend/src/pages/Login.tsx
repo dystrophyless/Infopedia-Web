@@ -57,7 +57,6 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const loginValidationErrors = getLoginValidationErrors(email, password, t);
   const loginCanSubmit = Object.keys(loginValidationErrors).length === 0;
-  const credentialsComplete = loginCanSubmit;
 
   if (isAuthenticated) return <Navigate to={next} replace />;
 
@@ -114,8 +113,6 @@ export function Login() {
   return (
     <AuthShell
       title={t('auth.loginTitle')}
-      mobileHeaderMode="status-aware"
-      mobileProgress={{ step: 3, completedSegments: credentialsComplete ? 3 : 2 }}
       desktopLayout="centered-card"
       desktopContentWidth="narrow"
       footer={
@@ -142,7 +139,6 @@ export function Login() {
             }}
             error={error ? undefined : fieldErrors.email}
             invalid={Boolean(error && fieldErrors.email)}
-            hideMobileLeadingIconWhenFilled
             mobileFieldLayout="figma-auth"
             desktopVisual="onboarding"
           />
@@ -160,7 +156,6 @@ export function Login() {
             autoComplete="current-password"
             error={error ? undefined : fieldErrors.password}
             invalid={Boolean(error && fieldErrors.password)}
-            hideMobileLeadingIconWhenFilled
             mobileFieldLayout="figma-auth"
             desktopVisual="onboarding"
           />

@@ -235,10 +235,10 @@ assert.equal(
   'Register and verify helpers should leave 28px before their y257 controls',
 );
 
-assert.match(
+assert.doesNotMatch(
   registerSource,
-  /<AuthEmailInput[\s\S]*hideMobileLeadingIconWhenFilled[\s\S]*<AuthPasswordInput[\s\S]*hideMobileLeadingIconWhenFilled/,
-  'Register should hide only filled mobile leading icons while preserving the password view control',
+  /<AuthEmailInput[\s\S]*hideMobileLeadingIconWhenFilled|<AuthPasswordInput[\s\S]*hideMobileLeadingIconWhenFilled/,
+  'Register email and password leading icons should stay visible at every value state',
 );
 
 assert.match(

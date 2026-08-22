@@ -151,6 +151,9 @@ export const RegisterTyped430: Story = {
     const email = canvas.getByRole('textbox', { name: 'Электронная почта' });
     const password = canvas.getByLabelText('Пароль');
     const submit = canvas.getByRole('button', { name: 'Получить код' });
+    const emptyEmailPadding = getComputedStyle(email).paddingLeft;
+    await expect(email.parentElement?.querySelector('span[aria-hidden="true"]')).not.toBeNull();
+    await expect(password.parentElement?.querySelector('span[aria-hidden="true"]')).not.toBeNull();
     await userEvent.type(email, 'not-an-email');
     await userEvent.type(password, 'password');
     await expect(submit).toBeDisabled();
@@ -160,8 +163,14 @@ export const RegisterTyped430: Story = {
 
     await userEvent.clear(email);
     await userEvent.type(email, 'dystrophyless@gmail.com');
+    await expect(getComputedStyle(email).paddingLeft).toBe(emptyEmailPadding);
+    await expect(email.parentElement?.querySelector('span[aria-hidden="true"]')).not.toBeNull();
+    await expect(password.parentElement?.querySelector('span[aria-hidden="true"]')).not.toBeNull();
     await expect(submit).toBeEnabled();
     const toggle = canvas.getByRole('button', { name: 'Показать пароль' });
+    const toggleRect = toggle.getBoundingClientRect();
+    await expect(toggleRect.width).toBeGreaterThanOrEqual(44);
+    await expect(toggleRect.height).toBeGreaterThanOrEqual(44);
     await userEvent.click(toggle);
     await expect(password).toHaveAttribute('type', 'text');
     await userEvent.click(canvas.getByRole('button', { name: 'Скрыть пароль' }));

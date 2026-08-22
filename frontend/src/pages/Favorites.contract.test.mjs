@@ -96,7 +96,7 @@ assert.match(page, /isLoading && list\.length === 0[\s\S]*embedded \? 'hidden mi
   assert.match(termCard, /data-term-card-main[\s\S]*data-term-card-source-panel/, 'Favorites must use the canonical inspect TermCard anatomy');
 assert.match(mobileCard, /flex flex-col gap-8 rounded-\[16px\] bg-white px-6 py-8/, 'Favorites mobile cards must restore the historical Figma outer geometry');
 assert.match(mobileCard, /flex flex-col gap-6 px-2[\s\S]*relative h-24 overflow-hidden/, 'Favorites mobile cards must restore the historical content rail and 96px preview');
-assert.match(mobileCard, /text-\[16px\] leading-none text-\[#8c8698\]/, 'Favorites mobile previews must restore the exact muted lavender color');
+assert.match(mobileCard, /text-\[16px\] leading-\[16px\] text-\[#8c8698\]/, 'Favorites mobile previews must restore the exact muted lavender color');
 assert.match(page, /favorites\.count[\s\S]*count: total/, 'Favorites must render a localized total count matching the search result count');
 assert.doesNotMatch(page, /total > 0 && <p className="mt-4 text-center text-\[13px\] text-muted">\{total\}/, 'Favorites must not render a raw total footer');
 assert.equal((page.match(/<TermCard\b/g) ?? []).length, 1, 'Favorites must render one canonical responsive list');

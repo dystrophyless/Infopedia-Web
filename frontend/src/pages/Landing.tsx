@@ -144,11 +144,16 @@ function DesktopFeatureCards() {
                 <Link
                   key={feature.image}
                   to={ONBOARDING_TARGET}
-                  className="group relative flex h-[493px] min-w-0 flex-col overflow-hidden rounded-[16px] transition-transform duration-200 ease-out hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3] motion-reduce:transition-none motion-reduce:hover:scale-100"
+                  className="group relative flex h-[493px] min-w-0 flex-col overflow-hidden rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"
                 >
                   <div className="absolute inset-x-0 bottom-[64px] top-[93px] rounded-[16px] bg-white" />
                   <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-[300px] items-center justify-center overflow-hidden">
-                    <img src={feature.image} alt="" aria-hidden="true" className="h-full w-full object-contain" />
+                    <img
+                      src={feature.image}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-contain transition-transform duration-200 ease-out group-hover:scale-[1.01] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                    />
                   </div>
                   <div className="absolute inset-x-8 bottom-[92px] z-20">
                     <h3 className="text-[20px] font-medium leading-5 text-[#6a37c3]">{feature.title}</h3>

@@ -37,12 +37,12 @@ export function AnalyzeDesktopUploadGuide({
   return (
     <section
       aria-label={t('analyze.desktopGuide.title')}
-      className="mx-auto w-full max-md:px-6 max-[359px]:px-4 md:w-full min-[1440px]:w-[990px]"
+      className="mx-auto min-w-0 w-full max-md:px-6 max-[359px]:px-4 md:w-full min-[1440px]:w-[990px]"
       data-analyze-adaptive-upload
       data-analyze-desktop-composition
     >
       <div
-        className="hidden min-h-[82px] w-full items-center justify-between gap-3 rounded-[16px] bg-[#ffffff] px-6 py-4 md:flex min-[1440px]:h-[82px] min-[1440px]:w-[990px]"
+        className="hidden min-h-[82px] min-w-0 w-full items-center justify-between gap-3 rounded-[16px] bg-[#ffffff] px-6 py-4 md:flex min-[1440px]:h-[82px] min-[1440px]:w-[990px]"
         data-analyze-desktop-track
       >
         {ANALYZE_DESKTOP_TRACK_STEPS.map((trackStep, index) => (
@@ -69,10 +69,10 @@ export function AnalyzeDesktopUploadGuide({
         ))}
       </div>
 
-      <div className="md:mt-4 md:flex md:w-full md:flex-col md:gap-4 min-[1440px]:h-[697px] min-[1440px]:w-[990px] min-[1440px]:flex-row" data-analyze-desktop-body>
+      <div className="min-w-0 md:mt-4 md:flex md:w-full md:flex-col md:gap-4 min-[1440px]:h-[697px] min-[1440px]:w-[990px] min-[1440px]:flex-row" data-analyze-desktop-body>
         <article
           id="analyze-upload-tutorial"
-          className="hidden w-full flex-col rounded-[16px] bg-[#ffffff] px-6 pb-8 pt-6 md:flex min-[1440px]:h-[697px] min-[1440px]:w-[600px] min-[1440px]:shrink-0"
+          className="hidden min-w-0 w-full flex-col rounded-[16px] bg-[#ffffff] px-6 pb-8 pt-6 md:flex min-[1440px]:h-[697px] min-[1440px]:w-[600px] min-[1440px]:shrink-0"
           data-analyze-desktop-guide
         >
           <div>
@@ -109,7 +109,7 @@ export function AnalyzeDesktopUploadGuide({
             </div>
 
             <div
-              className="mt-8 flex h-[400px] w-full shrink-0 flex-col overflow-hidden rounded-[8px] min-[1440px]:w-[552px]"
+              className="mt-8 flex h-[400px] min-w-0 w-full shrink-0 flex-col overflow-hidden rounded-[8px] min-[1440px]:w-[552px]"
               data-analyze-desktop-browser
               data-source-node-id={instruction.sourceNodeId}
             >
@@ -125,14 +125,14 @@ export function AnalyzeDesktopUploadGuide({
                   app.testcenter.kz
                 </span>
               </div>
-              <div className="flex min-h-0 flex-1 items-center justify-center rounded-b-[8px] border border-t-0 border-[#eae9ec] bg-[#ffffff] px-8 py-6">
+              <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center rounded-b-[8px] border border-t-0 border-[#eae9ec] bg-[#ffffff] px-8 py-6">
                 <img
                   key={instruction.imageSrc}
                   src={instruction.imageSrc}
                   alt={t(`analyze.desktopGuide.steps.${instructionIndex}.imageAlt`)}
                   width={instruction.imageWidth}
                   height={instruction.imageHeight}
-                  className="max-h-full max-w-full object-cover"
+                  className="max-h-full max-w-full object-contain"
                 />
               </div>
             </div>
@@ -172,7 +172,7 @@ export function AnalyzeDesktopUploadGuide({
           </div>
         </article>
 
-        <div className="w-full md:grid md:grid-cols-2 md:gap-4 min-[1440px]:flex min-[1440px]:h-[697px] min-[1440px]:w-[374px] min-[1440px]:shrink-0 min-[1440px]:grid-cols-none min-[1440px]:flex-col">
+        <div className="min-w-0 w-full md:grid md:grid-cols-2 md:gap-4 min-[1440px]:flex min-[1440px]:h-[697px] min-[1440px]:w-[374px] min-[1440px]:shrink-0 min-[1440px]:grid-cols-none min-[1440px]:flex-col">
           <form
             className="flex w-full flex-col bg-transparent pt-8 md:rounded-[16px] md:bg-[#ffffff] md:px-6 md:pb-8 md:pt-6 min-[1440px]:h-[421px] min-[1440px]:shrink-0"
             onSubmit={onSubmit}

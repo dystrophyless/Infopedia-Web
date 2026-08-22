@@ -53,7 +53,7 @@ const ANALYZE_RESULTS_PAGE_CLASS = 'mx-auto w-full max-w-[1180px] overflow-x-hid
 const ANALYZE_PROCESSING_PAGE_CLASS = `${ANALYZE_PAGE_CLASS} max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:py-0 md:!ml-[2px] md:!mr-0 md:h-dvh md:min-h-[573px] md:w-[calc(100%-2px)] md:max-w-none md:bg-[#efeaf8] md:px-0 md:py-0`;
 const ANALYZE_UPLOAD_PAGE_CLASS = 'mx-auto flex min-h-[calc(100dvh-80px)] w-full max-w-[1180px] flex-col overflow-x-hidden px-6 py-14 max-md:max-w-none max-md:bg-[#efebf6] max-md:px-0 max-md:pt-[var(--mobile-page-app-bar-offset)] min-[1440px]:!ml-[2px] min-[1440px]:!mr-0 min-[1440px]:h-[1080px] min-[1440px]:w-[calc(100%-2px)] min-[1440px]:max-w-none min-[1440px]:bg-[#efeaf8] min-[1440px]:px-16 min-[1440px]:py-8';
 const ANALYZE_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5';
-const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
+const ANALYZE_UPLOAD_HEADER_CLASS = 'mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4 max-md:mb-0 max-md:px-6 max-[359px]:px-4 max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
 const ANALYZE_PROCESSING_HEADER_CLASS = 'mb-8 flex flex-wrap items-end justify-between gap-5 max-md:mb-6 max-md:[&>div>div>div]:hidden max-md:[&>div>div>p]:hidden max-md:[&>div>div>h1]:text-[24px] max-md:[&>div>div>h1]:leading-none max-md:[&>div>div>h1]:text-[#000000]';
 
 export function Analyze() {

@@ -170,7 +170,8 @@ assert.match(view, /desktopRecentEmptyTitle/);
 assert.match(view, /desktopRecentEmptyBody/);
 assert.match(view, /desktopSortImportance[\s\S]*defaultValue: 'По значимости раздела'/, 'Russian sort labels should remain readable in the trigger fallback');
 assert.match(view, /desktopSortCount[\s\S]*defaultValue: 'По количеству вопросов'/, 'Russian count sort label should remain readable');
-assert.match(view, /desktopSortAccuracy[\s\S]*defaultValue: 'По точности'/, 'Russian accuracy sort label should remain readable');
+assert.match(view, /desktopSortAccuracy[\s\S]*defaultValue: 'По точности ответов пользователя'/, 'Russian accuracy sort label should remain readable');
+assert.match(view, /\['importance', 'count', 'accuracy'\]/, 'Desktop sort options should follow importance, count, accuracy order');
 for (const marker of ['Рџ', 'РІ', 'Рѕ', 'Рµ', 'С‚', 'СЃ']) {
   assert.doesNotMatch(view, new RegExp(marker), `Desktop Tests view must not contain mojibake marker ${marker}`);
 }

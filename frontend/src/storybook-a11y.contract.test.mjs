@@ -16,8 +16,8 @@ const disabledRules = [...a11yBlock.matchAll(disabledRulePattern)].map(
 );
 assert.deepEqual(
   disabledRules,
-  ['color-contrast'],
-  'exactly one global axe rule may be disabled, and it must be color-contrast',
+  [],
+  'project-level axe rules must remain enabled; source-palette exceptions belong to the owning story',
 );
 
 function collectStoryFiles(directory) {

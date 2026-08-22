@@ -8,6 +8,7 @@ from sqlalchemy.dialects import postgresql
 
 import src.models  # noqa: F401
 from src.tests.repository import (
+    dashboard_history_statement,
     eligible_chapters,
     previous_completed_attempt_statement,
     question_counts_by_chapter_statement,
@@ -65,6 +66,13 @@ class TestsRepositoryTests(unittest.TestCase):
         self.assertIn("test_attempt.id !=", sql)
         self.assertIn("ORDER BY test_attempt.completed_at DESC, test_attempt.id DESC", sql)
         self.assertIn("LIMIT", sql)
+
+    def test_dashboard_history_keeps_missing_answers_and_attempt_context(self):
+        sql = str(dashboard_history_statement(user_id=7).compile(dialect=postgresql.dialect()))
+
+        self.assertIn("LEFT OUTER JOIN test_attempt_answer", sql)
+        self.assertIn("test_attempt.mode", sql)
+        self.assertIn("test_attempt.chapter_id", sql)
 
 
 if __name__ == "__main__":

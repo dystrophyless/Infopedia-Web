@@ -67,6 +67,20 @@ class TestTestsRouterContract(unittest.TestCase):
         self.assertIsNone(response["questions"][0]["explanation"])
         self.assertNotIn("secret", str(response))
 
+    def test_attempt_response_derives_title_from_mode_and_locale(self):
+        attempt = SimpleNamespace(
+            id=3,
+            mode="chapter",
+            title="historical English title",
+            status="completed",
+            questions=[],
+            summary_json=None,
+            started_at=None,
+            completed_at=None,
+        )
+
+        self.assertEqual(_attempt_response(attempt, "kk").title, "Бөлім бойынша тест")
+
     def test_exact_authenticated_routes_and_no_mode_route(self):
         self.assertIn("Depends(get_current_user)", ROUTER_SOURCE)
         for pattern in (

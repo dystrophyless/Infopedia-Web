@@ -23,6 +23,11 @@ describe('tests dashboard chapter model', () => {
     expect(sortDashboardChapters(chapters, 'count').map((item) => item.code)).toEqual(['b', 'd', 'c', 'a']);
   });
 
+  it('exposes the desktop sort menu in importance, count, accuracy order', async () => {
+    const source = await import('fs/promises').then((fs) => fs.readFile(new URL('../components/DesktopTestsHubView.tsx', import.meta.url), 'utf8'));
+    expect(source).toMatch(/\['importance', 'count', 'accuracy'\]/);
+  });
+
   it('treats only measured sub-50 accuracy as weak and keeps null chapters out', () => {
     expect(filterDashboardChapters(chapters, 'all').map((item) => item.code)).toEqual(['c', 'a', 'b', 'd']);
     expect(filterDashboardChapters(chapters, 'weak').map((item) => item.code)).toEqual(['b']);

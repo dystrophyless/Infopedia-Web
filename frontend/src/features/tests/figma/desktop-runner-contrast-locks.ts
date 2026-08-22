@@ -14,6 +14,7 @@ export const FIGMA_CONTRAST_LOCKS = {
   'question-status-answered': { foreground: '#865bcf', background: '#efeaf8', sourceNodes: ['886:4620', '891:4728', '918:4311', '891:5134'] },
   'question-status-skipped': { foreground: '#c5b1e7', background: '#f8f5fc', sourceNodes: ['886:4620', '891:4728', '918:4311', '891:5134'] },
   'question-status-upcoming': { foreground: '#c5b1e7', background: '#f8f5fc', sourceNodes: ['880:4071', '886:4620', '891:4728', '918:4311', '891:5134'] },
+  'question-finish-early': { foreground: '#865bcf', background: '#f8f5fc', sourceNodes: ['880:4071', '886:4620', '891:4728', '918:4311', '891:5134'] },
   'question-feedback-correct-title': { foreground: '#29ae70', background: '#e7f8f0', sourceNodes: ['918:4311'] },
   'question-feedback-correct-body': { foreground: '#21835a', background: '#e7f8f0', sourceNodes: ['918:4311'] },
   'question-feedback-wrong-title': { foreground: '#f25f54', background: '#fce5e3', sourceNodes: ['891:5134'] },
@@ -40,8 +41,8 @@ const exactLockSelector = (id: FigmaContrastLockId) => `[data-figma-contrast-loc
 export const FIGMA_CONTRAST_RULE_SELECTOR = `*${(Object.keys(FIGMA_CONTRAST_LOCKS) as FigmaContrastLockId[]).map((id) => `:not(${exactLockSelector(id)})`).join('')}`;
 const FIGMA_CONTRAST_NODE_SELECTOR = (Object.keys(FIGMA_CONTRAST_LOCKS) as FigmaContrastLockId[]).map(exactLockSelector).join(',');
 
-const questionOne = { 'question-exit': 1, 'question-meta': 1, 'question-status-upcoming': 14 };
-const questionSeven = { 'question-exit': 1, 'question-meta': 1, 'question-status-answered': 5, 'question-status-skipped': 1, 'question-status-upcoming': 8 };
+const questionOne = { 'question-exit': 1, 'question-meta': 1, 'question-status-upcoming': 14, 'question-finish-early': 1 };
+const questionSeven = { 'question-exit': 1, 'question-meta': 1, 'question-status-answered': 5, 'question-status-skipped': 1, 'question-status-upcoming': 8, 'question-finish-early': 1 };
 const results = {
   'results-exit': 1,
   'results-score-eyebrow': 1,

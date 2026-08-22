@@ -210,12 +210,14 @@ def dashboard_history_statement(*, user_id: int) -> Select:
         select(
             TestAttempt.id.label("attempt_id"),
             TestAttempt.completed_at.label("completed_at"),
+            TestAttempt.mode.label("mode"),
+            TestAttempt.chapter_id.label("attempt_chapter_id"),
             TestAttemptQuestion.chapter_id.label("chapter_id"),
             TestAttemptAnswer.awarded_weight.label("awarded_weight"),
         )
         .select_from(TestAttempt)
         .join(TestAttemptQuestion, TestAttemptQuestion.attempt_id == TestAttempt.id)
-        .join(TestAttemptAnswer, TestAttemptAnswer.attempt_question_id == TestAttemptQuestion.id)
+        .outerjoin(TestAttemptAnswer, TestAttemptAnswer.attempt_question_id == TestAttemptQuestion.id)
         .where(
             TestAttempt.user_id == user_id,
             TestAttempt.status == "completed",
@@ -373,8 +375,10 @@ async def read_dashboard_history(session: AsyncSession, *, user_id: int) -> dict
         {
             "attempt_id": _row_value(row, "attempt_id", 0),
             "completed_at": _row_value(row, "completed_at", 1),
-            "chapter_id": _row_value(row, "chapter_id", 2),
-            "awarded_weight": _row_value(row, "awarded_weight", 3),
+            "mode": _row_value(row, "mode", 2),
+            "attempt_chapter_id": _row_value(row, "attempt_chapter_id", 3),
+            "chapter_id": _row_value(row, "chapter_id", 4),
+            "awarded_weight": _row_value(row, "awarded_weight", 5),
         }
         for row in history_result.all()
     ]

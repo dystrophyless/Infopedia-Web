@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import {
   completeTestAttempt,
   createTestAttempt,
+  getTestModeTitle,
   getTestAttempt,
+  normalizeTestLocale,
   submitTestAnswer,
   type TestCompletionSummary,
   type TestMode,
@@ -24,7 +26,10 @@ export function TestQuestionPage() {
   const navigate = useNavigate();
   const { testMode } = useParams();
   const [searchParams] = useSearchParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = normalizeTestLocale(i18n.language);
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const [testSession, setTestSession] = useState<TestSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -62,8 +67,8 @@ export function TestQuestionPage() {
     setLoading(true);
     setLoadError(false);
     const sessionRequest = attemptRef && restartNonce === 0
-      ? getTestAttempt(attemptRef)
-      : createTestAttempt(requestedMode, chapterRef);
+      ? getTestAttempt(attemptRef, localeRef.current)
+      : createTestAttempt(requestedMode, chapterRef, localeRef.current);
     sessionRequest
       .then((session) => {
         if (!active || generationRef.current !== generation) return;
@@ -91,10 +96,44 @@ export function TestQuestionPage() {
 
   const questions = testSession?.questions ?? [];
   const metrics = getTestRunnerMetrics(runnerState, questions, Date.now());
-  const title = testSession?.title ?? t('tests.testTitleFallback', { defaultValue: 'Тест' });
+  const titleMode = testSession?.mode ?? (requestedMode === 'default' ? 'random' : requestedMode);
+  const titleKey = {
+    random: 'tests.modeTitleRandom',
+    weak: 'tests.modeTitleWeak',
+    mock: 'tests.modeTitleMock',
+    chapter: 'tests.modeTitleChapter',
+  }[titleMode];
+  const title = t(titleKey, { defaultValue: getTestModeTitle(titleMode, i18n.language) });
   const onBack = () => navigate('/tests');
   const onRestart = () => {
     setRestartNonce((value) => value + 1);
+  };
+
+  const completeAttemptFromServer = async () => {
+    if (submitting || runnerState.resultVisible || !testSession?.attemptRef || completionPromiseRef.current) return;
+
+    const generation = generationRef.current;
+    const completionPromise = completeTestAttempt(testSession.attemptRef);
+    completionPromiseRef.current = completionPromise;
+    setSubmitting(true);
+    setActionError(false);
+    try {
+      const summary = await completionPromise;
+      if (!summary) throw new Error('Completion response did not include a summary');
+      if (generationRef.current !== generation) return;
+      completeAttempt(summary);
+    } catch {
+      if (generationRef.current === generation) setActionError(true);
+    } finally {
+      if (generationRef.current === generation) {
+        setSubmitting(false);
+        completionPromiseRef.current = null;
+      }
+    }
+  };
+
+  const handleFinishEarly = async () => {
+    await completeAttemptFromServer();
   };
 
   const handlePrimaryAction = async () => {
@@ -136,24 +175,7 @@ export function TestQuestionPage() {
       return;
     }
 
-    if (completionPromiseRef.current) return;
-    const generation = generationRef.current;
-    const completionPromise = completeTestAttempt(testSession.attemptRef);
-    completionPromiseRef.current = completionPromise;
-    setSubmitting(true);
-    setActionError(false);
-    try {
-      const summary = await completionPromise;
-      if (generationRef.current !== generation) return;
-      completeAttempt(summary);
-    } catch {
-      if (generationRef.current === generation) setActionError(true);
-    } finally {
-      if (generationRef.current === generation) {
-        setSubmitting(false);
-        completionPromiseRef.current = null;
-      }
-    }
+    await completeAttemptFromServer();
   };
 
   if (loading) {
@@ -228,6 +250,7 @@ export function TestQuestionPage() {
       onExit={onBack}
       onSelectOption={selectOption}
       onPrimaryAction={handlePrimaryAction}
+      onFinishEarly={handleFinishEarly}
       onGoToQuestion={(index) => goToQuestion(questions, index)}
       onPrevious={() => previousQuestion(questions)}
     />

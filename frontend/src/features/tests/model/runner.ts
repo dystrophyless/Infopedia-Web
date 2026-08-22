@@ -168,6 +168,9 @@ export function reduceTestRunner(
   }
 
   if (action.type === 'complete') {
+    // A completion result is server-owned.  Never reveal a local/empty result
+    // when the API did not return a persisted summary.
+    if (!action.summary) return state;
     return {
       ...state,
       selectedOptionId: null,

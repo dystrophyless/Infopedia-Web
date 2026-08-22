@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 import src.models  # noqa: F401 - register SQLAlchemy relationships for snapshot construction
 from src.migrations.tests_migration import migrate_tests_schema
 from src.security.public_refs import encode_public_ref
+from src.tests.errors import AttemptCompletedError
 from src.tests.models import TestAttempt, TestQuestion, TestQuestionOption
 from src.tests.service import (
     TestsService,
@@ -215,6 +216,50 @@ class TestServiceMathTests(unittest.TestCase):
         self.assertIsNone(metrics["overall_delta_points"])
         self.assertEqual(metrics["chapter_metrics"], {})
 
+    def test_dashboard_metrics_use_all_snapshot_questions_but_chapter_mode_only(self):
+        now = datetime(2026, 8, 3, 12, 0, tzinfo=UTC)
+        attempts = [
+            SimpleNamespace(
+                id=1,
+                mode="random",
+                chapter_id=None,
+                completed_at=now - timedelta(days=1),
+                questions=[
+                    SimpleNamespace(chapter_id=10, answer=SimpleNamespace(awarded_weight=1)),
+                    SimpleNamespace(chapter_id=20, answer=None),
+                ],
+            ),
+            SimpleNamespace(
+                id=2,
+                mode="chapter",
+                chapter_id=10,
+                completed_at=now - timedelta(days=2),
+                questions=[
+                    SimpleNamespace(chapter_id=10, answer=SimpleNamespace(awarded_weight=0)),
+                    SimpleNamespace(chapter_id=99, answer=SimpleNamespace(awarded_weight=1)),
+                ],
+            ),
+            SimpleNamespace(
+                id=3,
+                mode="malformed",
+                chapter_id=10,
+                completed_at=now - timedelta(days=3),
+                questions=[SimpleNamespace(chapter_id=10, answer=SimpleNamespace(awarded_weight=1))],
+            ),
+        ]
+
+        metrics = compute_dashboard_metrics(attempts, now=now)
+
+        self.assertEqual(metrics["overall_accuracy"], 60)
+        self.assertEqual(metrics["chapter_metrics"], {10: {"accuracy": 0, "delta_points": None}})
+
+    def test_localized_test_title_uses_mode_and_falls_back_to_ru(self):
+        from src.tests.service import localized_test_title
+
+        self.assertEqual(localized_test_title("random", "ru"), "Случайный тест")
+        self.assertEqual(localized_test_title("weak", "kk"), "Әлсіз тақырыптар бойынша тест")
+        self.assertEqual(localized_test_title("mock", "unsupported"), "Пробный тест")
+
     def test_weak_mode_requires_three_qualifying_chapters_and_uses_lowest_accuracy(self):
         now = datetime(2026, 8, 3, 12, 0, tzinfo=UTC)
         attempts = [
@@ -347,6 +392,75 @@ class AttemptCompletionDeltaTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIs(summary, persisted)
         lookup.assert_not_awaited()
+        session.commit.assert_not_awaited()
+
+    @staticmethod
+    def _attempt_with_answer_count(answered_count: int, *, status: str = "active", summary_json=None):
+        questions = [
+            SimpleNamespace(
+                id=index,
+                answer=(SimpleNamespace(awarded_weight=1) if index <= answered_count else None),
+                chapter_id=10,
+                topic_title="Chapter",
+            )
+            for index in range(1, 4)
+        ]
+        return SimpleNamespace(
+            id=42,
+            user_id=7,
+            mode="random",
+            status=status,
+            completed_at=TEST_NOW if status == "completed" else None,
+            started_at=TEST_NOW - timedelta(seconds=20),
+            questions=questions,
+            summary_json=summary_json,
+            questions_total=len(questions),
+            answered_questions=0,
+            correct_answer_count=0,
+            score_percent=0,
+            duration_seconds=0,
+            average_pace_seconds=0,
+        )
+
+    async def test_completion_accepts_zero_partial_and_full_answers_with_snapshot_denominator(self):
+        for answered_count, expected_score in ((0, 0), (1, 33.33), (3, 100)):
+            attempt = self._attempt_with_answer_count(answered_count)
+            session = SimpleNamespace(commit=AsyncMock())
+            with (
+                patch("src.tests.service.get_attempt_for_update", new=AsyncMock(return_value=attempt)),
+                patch("src.tests.service.lock_attempt_questions", new=AsyncMock(return_value=attempt.questions)),
+                patch("src.tests.service.get_previous_completed_attempt", new=AsyncMock(return_value=None)),
+            ):
+                summary = await TestsService(session, now=TEST_NOW).complete_attempt(
+                    user_id=7,
+                    attempt_ref=encode_public_ref("attempt", 42),
+                )
+
+            self.assertEqual(summary["total_questions"], 3)
+            self.assertEqual(summary["answered_questions"], answered_count)
+            self.assertEqual(summary["correct_answer_count"], answered_count)
+            self.assertEqual(summary["score_percent"], expected_score)
+
+    async def test_completed_attempt_is_immutable_and_rejects_late_answers(self):
+        persisted = {
+            "correct_answer_count": 1,
+            "total_questions": 3,
+            "answered_questions": 1,
+            "score_percent": 33.33,
+        }
+        attempt = self._attempt_with_answer_count(1, status="completed", summary_json=persisted)
+        session = SimpleNamespace(commit=AsyncMock())
+        with (
+            patch("src.tests.service.get_attempt_for_update", new=AsyncMock(return_value=attempt)),
+            self.assertRaises(AttemptCompletedError),
+        ):
+            await TestsService(session, now=TEST_NOW).submit_answer(
+                user_id=7,
+                attempt_ref=encode_public_ref("attempt", 42),
+                question_ref=encode_public_ref("test_question", 2),
+                option_ref=encode_public_ref("test_option", 1),
+            )
+        self.assertEqual(attempt.summary_json, persisted)
         session.commit.assert_not_awaited()
 
     async def test_latest_analyze_tie_breaks_by_lost_points_percentage_questions_rank_and_id(self):
@@ -544,6 +658,7 @@ class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
                 questions_total=2,
                 score_percent=50,
                 chapter_scores={10: (1, 2)},
+                chapter_id=10,
                 title="Second",
                 mode="chapter",
             ),
@@ -553,6 +668,7 @@ class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
                 questions_total=2,
                 score_percent=50,
                 chapter_scores={10: (1, 2)},
+                chapter_id=10,
                 title="Second duplicate",
                 mode="chapter",
             ),
@@ -569,17 +685,17 @@ class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(dashboard["completed_attempt_count"], 2)
         self.assertEqual(
             {row["code"]: row["completed_attempt_count"] for row in dashboard["chapters"]},
-            {"a": 2, "b": 1},
+            {"a": 1, "b": 0},
         )
 
     async def test_catalog_dashboard_deduplicates_question_history_rows_for_attempt_counts(self):
         chapters = [make_chapter(10, "a"), make_chapter(20, "b")]
         history = [
-            {"attempt_id": 1, "completed_at": TEST_NOW - timedelta(days=1), "chapter_id": 10, "awarded_weight": 1},
-            {"attempt_id": 1, "completed_at": TEST_NOW - timedelta(days=1), "chapter_id": 10, "awarded_weight": 0},
-            {"attempt_id": 1, "completed_at": TEST_NOW - timedelta(days=1), "chapter_id": 20, "awarded_weight": 1},
-            {"attempt_id": 2, "completed_at": TEST_NOW - timedelta(days=2), "chapter_id": 10, "awarded_weight": 1},
-            {"attempt_id": 2, "completed_at": TEST_NOW - timedelta(days=2), "chapter_id": 10, "awarded_weight": 1},
+            {"attempt_id": 1, "completed_at": TEST_NOW - timedelta(days=1), "mode": "random", "attempt_chapter_id": None, "chapter_id": 10, "awarded_weight": 1},
+            {"attempt_id": 1, "completed_at": TEST_NOW - timedelta(days=1), "mode": "random", "attempt_chapter_id": None, "chapter_id": 10, "awarded_weight": 0},
+            {"attempt_id": 1, "completed_at": TEST_NOW - timedelta(days=1), "mode": "random", "attempt_chapter_id": None, "chapter_id": 20, "awarded_weight": 1},
+            {"attempt_id": 2, "completed_at": TEST_NOW - timedelta(days=2), "mode": "chapter", "attempt_chapter_id": 10, "chapter_id": 10, "awarded_weight": 1},
+            {"attempt_id": 2, "completed_at": TEST_NOW - timedelta(days=2), "mode": "chapter", "attempt_chapter_id": 10, "chapter_id": 10, "awarded_weight": 1},
         ]
         history_payload = {
             "history": history,
@@ -604,7 +720,7 @@ class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(dashboard["completed_attempt_count"], 2)
         self.assertEqual(
             {row["code"]: row["completed_attempt_count"] for row in dashboard["chapters"]},
-            {"a": 2, "b": 1},
+            {"a": 1, "b": 0},
         )
 
     async def test_random_mode_uses_injected_sampler_before_snapshot_attribution(self):

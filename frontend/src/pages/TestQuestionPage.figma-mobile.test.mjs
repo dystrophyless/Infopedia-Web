@@ -41,6 +41,10 @@ const questionViewSource = readFileSync(
   path.resolve(srcDir, 'features/tests/components/TestQuestionView.tsx'),
   'utf8',
 );
+const desktopQuestionViewSource = readFileSync(
+  path.resolve(srcDir, 'features/tests/components/DesktopTestQuestionView.tsx'),
+  'utf8',
+);
 const statusViewSource = readFileSync(
   path.resolve(srcDir, 'features/tests/components/TestStatusView.tsx'),
   'utf8',
@@ -161,6 +165,37 @@ assert.match(
   questionSource,
   /completeTestAttempt\(testSession\.attemptRef\)/,
   'Question page should complete the attempt through the server route',
+);
+
+assert.match(
+  questionPageSource,
+  /const handleFinishEarly\s*=\s*async/,
+  'Question page should expose a dedicated early-finish handler',
+);
+assert.match(
+  questionPageSource,
+  /onFinishEarly=\{handleFinishEarly\}/,
+  'Desktop question view should use the dedicated early-finish handler',
+);
+assert.match(
+  questionPageSource,
+  /completionPromiseRef\.current\) return[\s\S]*completionPromiseRef\.current = completionPromise/,
+  'Completion actions should share one in-flight request for double-click safety',
+);
+assert.match(
+  questionPageSource,
+  /catch \{[\s\S]*setActionError\(true\)[\s\S]*completionPromiseRef\.current = null/,
+  'Completion failures should stay on the current page and release the retry guard',
+);
+assert.match(
+  desktopQuestionViewSource,
+  /onFinishEarly[\s\S]*disabled=\{submitting \|\| state\.resultVisible\}/,
+  'Early finish should remain enabled for active attempts regardless of unanswered questions',
+);
+assert.doesNotMatch(
+  desktopQuestionViewSource,
+  /desktopFinishEarly[\s\S]*onClick=\{onPrimaryAction\}/,
+  'Early finish must not reuse the next-question action',
 );
 
 assert.match(
@@ -320,7 +355,7 @@ for (const codePattern of [
   /const \[testSession, setTestSession\]/,
   /useSearchParams/,
   /const chapterRef = searchParams\.get\('chapterRef'\)[\s\S]*topicCode/,
-  /createTestAttempt\(requestedMode, chapterRef\)/,
+  /createTestAttempt\(requestedMode, chapterRef(?:, localeRef\.current)?\)/,
   /const questions = testSession\?\.questions \?\? \[\];/,
   /submitTestAnswer\(/,
   /completeTestAttempt\(/,
@@ -342,6 +377,11 @@ for (const codePattern of [
     `Question page should expose reusable quiz behavior: ${codePattern}`,
   );
 }
+
+assert.match(questionBehaviorSource, /const localeRef = useRef\(locale\)/, 'Attempt requests should read the current locale through a stable ref');
+assert.match(questionBehaviorSource, /getTestAttempt\(attemptRef, localeRef\.current\)/, 'Existing attempts should request the current locale');
+assert.match(questionBehaviorSource, /createTestAttempt\(requestedMode, chapterRef, localeRef\.current\)/, 'New attempts should request the current locale');
+assert.doesNotMatch(questionBehaviorSource, /\}, \[[^\]]*locale[^\]]*\]\);/, 'Language changes must not recreate or refetch an attempt');
 
 assert.match(
   testsApiSource,
@@ -446,8 +486,9 @@ assert.match(
   'Checked answer state should show the explanation title from Figma',
 );
 
-assert.ok(
-  questionSource.includes('Р”Р°Р»РµРµ'),
+assert.match(
+  questionSource,
+  /tests\.nextQuestionButton[\s\S]*defaultValue: 'Далее'/,
   'Primary button should switch to the Figma next label after checking an answer',
 );
 

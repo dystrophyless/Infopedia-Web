@@ -6,6 +6,7 @@ import {
   getTestAttempt,
   getTestsDashboard,
   normalizeTestCompletion,
+  normalizeTestSession,
   submitTestAnswer,
   isTestsCatalogError,
   normalizeTestsDashboard,
@@ -80,6 +81,25 @@ describe('tests API adapter', () => {
 
   it('fails closed when a mode availability row omits its boolean decision', () => {
     expect(normalizeTestsDashboard({ mode_availability: [{ mode: 'random' }] }).modeAvailability[0].available).toBe(false);
+  });
+
+  it('derives session and recent titles from mode and requested locale', () => {
+    expect(normalizeTestSession({ mode: 'random', title: 'Random test' }, 'ru').title).toBe('Случайный тест');
+    expect(normalizeTestSession({ mode: 'weak', title: 'historical English' }, 'kk').title).toBe('Әлсіз тақырыптар бойынша тест');
+    expect(normalizeTestsDashboard({ recent_tests: [{ id: 'a', mode: 'chapter', title: 'historical English' }] }, 'ru').recentTests[0].title).toBe('Тест по разделу');
+  });
+
+  it('passes the requested KK locale to create and get attempt calls', async () => {
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: { mode: 'random' } } as never);
+    const get = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { mode: 'chapter' } } as never);
+
+    await createTestAttempt('random', undefined, 'kk');
+    await getTestAttempt('attempt-kk', 'kk');
+
+    expect(post).toHaveBeenCalledWith('/api/tests/attempts', { mode: 'random' }, { params: { locale: 'kk' } });
+    expect(get).toHaveBeenCalledWith('/api/tests/attempts/attempt-kk', { params: { locale: 'kk' } });
+    post.mockRestore();
+    get.mockRestore();
   });
 
   it('classifies catalog readiness 503 responses distinctly for retry UI', async () => {

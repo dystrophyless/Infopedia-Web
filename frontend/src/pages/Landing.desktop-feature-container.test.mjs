@@ -69,14 +69,37 @@ assert.doesNotMatch(features, /ArrowLeft01Icon|ArrowRight01Icon|scrollBy|onScrol
 assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
 
 const analyze = desktopSections.find(([name]) => name === 'DesktopEntAnalysis')?.[1] ?? '';
-assert.match(analyze, /<ol[^>]*data-analysis-steps[^>]*className="[^"]*grid-cols-1[^"]*lg:grid-cols-3[^"]*lg:items-end[^"]*lg:gap-\[clamp\(32px,4vw,64px\)\]/);
-assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*data-analysis-snippet="upload"[\s\S]*data-analysis-snippet="result"/);
-assert.match(analyze, /<li key=\{step\.number\} data-analysis-step=\{step\.number\}[\s\S]*data-analysis-visual[\s\S]*\{step\.number\}/);
 assert.match(
   analyze,
-  /data-analysis-snippet="(?:registration|upload|result)"[^>]*className="[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/,
-  'Analyze visual shells should share the whole-shell hover treatment',
+  /<div data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-\[327px\]">/,
+  'Analyze should retain the original positioned 1120x327 stage',
 );
-assert.doesNotMatch(analyze, /xl:absolute|xl:left-\[|xl:top-\[/, 'Analyze columns must not rely on global fixed offsets');
+assert.match(
+  analyze,
+  /<h2[^>]*className="[^"]*md:col-span-2[^"]*xl:absolute xl:left-0 xl:top-0"/,
+  'Analyze title should remain the first positioned stage sibling',
+);
+assert.match(
+  analyze,
+  /<div data-analysis-snippet="result" className="rounded-\[8px\] bg-white p-6 md:col-start-2 md:row-start-2 md:w-\[292px\] md:justify-self-end xl:absolute xl:left-\[803px\] xl:top-0 xl:w-\[292px\][^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
+  'Analyze result shell should keep the oracle offset and whole-shell hover treatment',
+);
+assert.match(
+  analyze,
+  /<div data-analysis-snippet="registration" className="grid w-full max-w-\[284px\] gap-2 md:col-start-1 md:row-start-2 md:self-end xl:absolute xl:left-\[29px\] xl:top-\[223px\] xl:h-\[88px\] xl:w-\[284px\] xl:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
+  'Analyze registration shell should keep the oracle offset and whole-shell hover treatment',
+);
+assert.match(
+  analyze,
+  /<div data-analysis-snippet="upload" className="flex h-44 w-full max-w-\[300px\][^"]*md:col-span-2 md:mx-auto xl:absolute xl:left-\[410px\] xl:top-\[135px\] xl:m-0 xl:h-\[176px\] xl:w-\[300px\] xl:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
+  'Analyze upload shell should keep the oracle offset and whole-shell hover treatment',
+);
+assert.match(analyze, /data-analysis-snippet="result"[\s\S]*data-analysis-snippet="registration"[\s\S]*data-analysis-snippet="upload"/);
+assert.match(
+  analyze,
+  /<ol className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3 xl:mt-0 xl:gap-12">[\s\S]*<li key=\{step\.number\} className="flex flex-col items-center gap-4 px-6 py-8 text-center">/,
+  'Analyze step copy should remain in a separate oracle ol below the visual stage',
+);
+assert.doesNotMatch(analyze, /data-analysis-steps|data-analysis-step=|data-analysis-visual|lg:grid-cols-3|lg:items-end|lg:gap-\[clamp/);
 
 console.log('Landing desktop feature container contract passed');

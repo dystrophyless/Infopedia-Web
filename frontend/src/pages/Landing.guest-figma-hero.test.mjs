@@ -235,7 +235,7 @@ for (const key of [
 
 assert.match(
   featuredTermCardSource,
-  /export type FeaturedTermCardVariant = 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop'/,
+  /export type FeaturedTermCardVariant = 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop' \| 'guestLanding'/,
   'TermCardCarousel should expose a guest variant',
 );
 
@@ -246,8 +246,23 @@ assert.match(
 );
 assert.match(
   featuredTermCardSource,
-  /variant === 'guest' \|\| isGuestLandingVariant \? 'from-white' : isMobileVariant/,
+  /isGuestMobileVariant \? 'from-white' : isGuestDesktopVariant/,
   'Guest mobile term card fades should match the white card surface',
+);
+assert.match(
+  featuredTermCardSource,
+  /isGuestMobileVariant \? fullDefinitionText : visibleDefinition\.text/,
+  'Guest mobile term cards should pass the full definition to the measured preview',
+);
+assert.match(
+  featuredTermCardSource,
+  /isGuestMobileVariant \? 56 :/,
+  'Guest mobile term cards should reserve exactly four 14px lines',
+);
+assert.match(
+  featuredTermCardSource,
+  /!isGuestLikeVariant && visibleDefinition\.overflowing \?/,
+  'Guest mobile cards should rely on a single measured overflow fade',
 );
 assert.match(
   featuredTermCardSource,

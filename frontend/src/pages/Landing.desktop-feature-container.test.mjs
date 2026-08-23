@@ -51,20 +51,32 @@ assert.match(
   /<Link[\s\S]*to=\{ONBOARDING_TARGET\}[\s\S]*className="group relative flex h-\[493px\] min-w-0 flex-col/,
   'Desktop feature cards must fit equal fractional grid columns with the approved 493px height',
 );
-assert.doesNotMatch(
+assert.match(
   features,
-  /className="group relative flex h-\[493px\][^"]*hover:scale-\[1\.01\]/,
-  'Desktop feature hover must not transform the card layout box',
+  /className="group relative flex h-\[493px\][^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/,
+  'Desktop feature hover must scale the whole interactive card with reduced-motion fallback',
 );
 assert.match(
   features,
-  /pointer-events-none absolute inset-x-0 top-0 z-10 flex h-\[300px\] items-center justify-center overflow-hidden[\s\S]*<img[\s\S]*transition-transform[\s\S]*group-hover:scale-\[1\.01\][\s\S]*motion-reduce:group-hover:scale-100/,
-  'Desktop feature hover must scale image paint inside its clipped wrapper',
+  /pointer-events-none absolute inset-x-0 top-0 z-10 flex h-\[300px\] items-center justify-center overflow-hidden[\s\S]*<img[\s\S]*className="h-full w-full object-contain"/,
+  'Desktop feature artwork should remain static while the whole card scales',
 );
+assert.doesNotMatch(features, /<img[\s\S]*transition-transform|group-hover:scale-\[1\.01\][\s\S]*<\/img>/);
 assert.doesNotMatch(features, /<article/);
 assert.equal((features.match(/image: '/g) ?? []).length, 3, 'Desktop feature rail should render exactly three feature objects');
 assert.doesNotMatch(features, /mobile-feature-semantic\.png/);
 assert.doesNotMatch(features, /ArrowLeft01Icon|ArrowRight01Icon|scrollBy|onScroll|aria-roledescription|role="region"|featureRailState|syncFeatureRailState/);
 assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
+
+const analyze = desktopSections.find(([name]) => name === 'DesktopEntAnalysis')?.[1] ?? '';
+assert.match(analyze, /<ol[^>]*data-analysis-steps[^>]*className="[^"]*grid-cols-1[^"]*lg:grid-cols-3[^"]*lg:items-end[^"]*lg:gap-\[clamp\(32px,4vw,64px\)\]/);
+assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*data-analysis-snippet="upload"[\s\S]*data-analysis-snippet="result"/);
+assert.match(analyze, /<li key=\{step\.number\} data-analysis-step=\{step\.number\}[\s\S]*data-analysis-visual[\s\S]*\{step\.number\}/);
+assert.match(
+  analyze,
+  /data-analysis-snippet="(?:registration|upload|result)"[^>]*className="[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/,
+  'Analyze visual shells should share the whole-shell hover treatment',
+);
+assert.doesNotMatch(analyze, /xl:absolute|xl:left-\[|xl:top-\[/, 'Analyze columns must not rely on global fixed offsets');
 
 console.log('Landing desktop feature container contract passed');

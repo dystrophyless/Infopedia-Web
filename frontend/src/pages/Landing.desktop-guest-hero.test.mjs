@@ -88,12 +88,14 @@ assert.match(sourceProof, /<TermCardCarousel variant="guestLanding" \/>/);
 assert.match(sourceProof, /landingCtaTarget\('\/search', isAuthenticated\)/);
 assert.match(sourceProof, /pb-\[88px\]/, 'The term rail should leave the Figma 88px gap before analysis');
 
-assert.match(analyze, /data-analysis-stage[\s\S]*xl:h-\[327px\]/, 'Analysis stage should preserve the 2117-to-2444 Figma composition');
+assert.match(analyze, /data-analysis-stage[\s\S]*lg:relative lg:block lg:h-\[327px\]/, 'Analysis stage should preserve the responsive 327px composition');
 assert.match(analyze, /data-desktop-content-rail[^>]*className="mx-auto w-full max-w-\[1152px\] px-\[24px\] min-\[1440px\]:max-w-\[1120px\] min-\[1440px\]:px-0"/);
 assert.doesNotMatch(analyze, /px-\[160px\]/);
-assert.match(analyze, /data-analysis-snippet="result"[\s\S]*xl:left-\[803px\][\s\S]*xl:top-0[\s\S]*xl:w-\[292px\]/, 'Result panel should land at x≈963 in the 1120px canvas');
-assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*xl:left-\[29px\][\s\S]*xl:top-\[223px\][\s\S]*xl:w-\[284px\]/, 'Registration snippet should preserve the lower-left Figma placement');
-assert.match(analyze, /data-analysis-snippet="upload"[\s\S]*xl:left-\[410px\][\s\S]*xl:top-\[135px\][\s\S]*xl:w-\[300px\]/, 'Upload snippet should preserve the centered Figma placement');
+assert.match(analyze, /data-analysis-snippet="result"[\s\S]*lg:right-\[25px\][\s\S]*lg:top-0[\s\S]*lg:w-\[292px\]/, 'Result panel should remain anchored to the responsive right rail');
+assert.doesNotMatch(analyze, /(?:lg|xl):left-\[803px\]/, 'Result panel must not retain the stale fixed left offset');
+assert.match(analyze, /data-analysis-snippet="registration"[\s\S]*lg:left-\[29px\][\s\S]*lg:top-\[223px\][\s\S]*lg:w-\[284px\]/, 'Registration snippet should preserve the lower-left responsive placement');
+assert.match(analyze, /data-analysis-snippet="upload"[\s\S]*lg:left-1\/2[\s\S]*lg:top-\[135px\][\s\S]*lg:-translate-x-1\/2[\s\S]*lg:w-\[300px\]/, 'Upload snippet should remain centered in the responsive stage');
+assert.doesNotMatch(analyze, /(?:lg|xl):left-\[410px\]/, 'Upload snippet must not retain the stale fixed left offset');
 assert.match(analyze, /desktopAnalyzeResultPrep[\s\S]*desktopAnalyzeResultGrade/);
 assert.match(analyze, /desktopAnalyzeResultItem1[\s\S]*desktopAnalyzeResultItem2[\s\S]*desktopAnalyzeResultItem3[\s\S]*desktopAnalyzeResultItem4/);
 assert.match(analyze, /landingCtaTarget\('\/practice-by-topic', isAuthenticated\)[\s\S]*desktopAnalyzeResultCta/, 'Result panel should expose the Figma practice action');

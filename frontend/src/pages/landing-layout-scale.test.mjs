@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import loadConfig from 'tailwindcss/loadConfig.js';
 
 const pagesDir = import.meta.dirname;
 const landing = readFileSync(path.resolve(pagesDir, 'Landing.tsx'), 'utf8');
@@ -19,6 +22,41 @@ const hero = section('DesktopGuestHero', 'DesktopGuestSections');
 const features = section('DesktopFeatureCards', 'DesktopSourceProof');
 const sourceProof = section('DesktopSourceProof', 'DesktopEntAnalysis');
 const analyze = section('DesktopEntAnalysis', 'MobileHome');
+
+const tailwindConfig = loadConfig(path.resolve(pagesDir, '../../tailwind.config.ts'));
+const transformUtilities = await postcss([
+  tailwindcss({
+    ...tailwindConfig,
+    content: [{
+      raw: '<div class="lg:-translate-x-1/2 hover:scale-[1.01] motion-reduce:hover:scale-100"></div>',
+      extension: 'html',
+    }],
+  }),
+]).process('@tailwind utilities;', { from: undefined });
+
+function findTailwindRule(selector) {
+  let matchingRule;
+  transformUtilities.root.walkRules((rule) => {
+    if (rule.selector === selector) matchingRule = rule;
+  });
+  assert.ok(matchingRule, `Tailwind did not generate ${selector}`);
+  return matchingRule;
+}
+
+const translateRule = findTailwindRule('.lg\\:-translate-x-1\\/2');
+assert.match(translateRule.toString(), /--tw-translate-x:\s*-50%/);
+assert.ok(
+  translateRule.toString().includes(
+    'transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))',
+  ),
+  'lg:-translate-x-1/2 must preserve the composite transform chain',
+);
+const hoverScaleRule = findTailwindRule('.hover\\:scale-\\[1\\.01\\]:hover');
+assert.match(hoverScaleRule.toString(), /--tw-scale-x:\s*1\.01[;\s]/);
+assert.match(hoverScaleRule.toString(), /--tw-scale-y:\s*1\.01[;\s]/);
+const reducedScaleRule = findTailwindRule('.motion-reduce\\:hover\\:scale-100:hover');
+assert.match(reducedScaleRule.toString(), /--tw-scale-x:\s*1/);
+assert.match(reducedScaleRule.toString(), /--tw-scale-y:\s*1/);
 
 assert.match(hero, /ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ|landing\.desktopEyebrow/);
 assert.match(hero, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/);
@@ -76,11 +114,13 @@ assert.match(analyze, /Данные готовы/);
 assert.match(analyze, /data-analysis-snippet="registration"/);
 assert.match(analyze, /data-analysis-snippet="upload"/);
 assert.match(analyze, /data-analysis-snippet="result"/);
-assert.match(analyze, /data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-\[327px\]"/);
-assert.match(analyze, /<h2[^>]*md:col-span-2[^>]*xl:absolute xl:left-0 xl:top-0/);
-assert.match(analyze, /data-analysis-snippet="result" className="rounded-\[8px\] bg-white p-6 md:col-start-2 md:row-start-2 md:w-\[292px\] md:justify-self-end xl:absolute xl:left-\[803px\] xl:top-0 xl:w-\[292px\][^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/);
-assert.match(analyze, /data-analysis-snippet="registration" className="grid w-full max-w-\[284px\] gap-2 md:col-start-1 md:row-start-2 md:self-end xl:absolute xl:left-\[29px\] xl:top-\[223px\] xl:h-\[88px\] xl:w-\[284px\] xl:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/);
-assert.match(analyze, /data-analysis-snippet="upload" className="flex h-44 w-full max-w-\[300px\][^"]*md:col-span-2 md:mx-auto xl:absolute xl:left-\[410px\] xl:top-\[135px\] xl:m-0 xl:h-\[176px\] xl:w-\[300px\] xl:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/);
+assert.match(analyze, /data-analysis-stage className="grid gap-6 md:grid-cols-2 lg:relative lg:block lg:h-\[327px\]"/);
+assert.match(analyze, /<h2[^>]*md:col-span-2[^>]*lg:absolute lg:left-0 lg:top-0/);
+assert.match(analyze, /data-analysis-snippet="result" className="rounded-\[8px\] bg-white p-6 md:col-start-2 md:row-start-2 md:w-\[292px\] md:justify-self-end lg:absolute lg:right-\[25px\] lg:top-0 lg:w-\[292px\][^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/);
+assert.doesNotMatch(analyze, /(?:lg|xl):left-\[803px\]|xl:(?:absolute|right-\[25px\]|top-0|w-\[292px\])/);
+assert.match(analyze, /data-analysis-snippet="registration" className="grid w-full max-w-\[284px\] gap-2 md:col-start-1 md:row-start-2 md:self-end lg:absolute lg:left-\[29px\] lg:top-\[223px\] lg:h-\[88px\] lg:w-\[284px\] lg:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/);
+assert.match(analyze, /data-analysis-snippet="upload" className="flex h-44 w-full max-w-\[300px\][^"]*md:col-span-2 md:mx-auto lg:absolute lg:left-1\/2 lg:top-\[135px\] lg:-translate-x-1\/2 lg:m-0 lg:h-\[176px\] lg:w-\[300px\] lg:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100/);
+assert.doesNotMatch(analyze, /(?:lg|xl):left-\[410px\]|xl:(?:absolute|left-\[410px\]|top-\[135px\]|h-\[176px\]|w-\[300px\])/);
 assert.match(analyze, /data-analysis-snippet="result"[\s\S]*data-analysis-snippet="registration"[\s\S]*data-analysis-snippet="upload"/);
 assert.match(analyze, /<ol className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3 xl:mt-0 xl:gap-12">[\s\S]*<li key=\{step\.number\} className="flex flex-col items-center gap-4 px-6 py-8 text-center">/);
 assert.doesNotMatch(analyze, /data-analysis-steps|data-analysis-step=|data-analysis-visual|lg:grid-cols-3|lg:items-end|lg:gap-\[clamp/);

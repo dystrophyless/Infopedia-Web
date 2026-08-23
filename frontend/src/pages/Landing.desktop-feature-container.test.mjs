@@ -71,27 +71,27 @@ assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
 const analyze = desktopSections.find(([name]) => name === 'DesktopEntAnalysis')?.[1] ?? '';
 assert.match(
   analyze,
-  /<div data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-\[327px\]">/,
-  'Analyze should retain the original positioned 1120x327 stage',
+  /<div data-analysis-stage className="grid gap-6 md:grid-cols-2 lg:relative lg:block lg:h-\[327px\]">/,
+  'Analyze should retain the responsive positioned 1120x327 stage',
 );
 assert.match(
   analyze,
-  /<h2[^>]*className="[^"]*md:col-span-2[^"]*xl:absolute xl:left-0 xl:top-0"/,
+  /<h2[^>]*className="[^"]*md:col-span-2[^"]*lg:absolute lg:left-0 lg:top-0"/,
   'Analyze title should remain the first positioned stage sibling',
 );
 assert.match(
   analyze,
-  /<div data-analysis-snippet="result" className="rounded-\[8px\] bg-white p-6 md:col-start-2 md:row-start-2 md:w-\[292px\] md:justify-self-end xl:absolute xl:left-\[803px\] xl:top-0 xl:w-\[292px\][^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
+  /<div data-analysis-snippet="result" className="rounded-\[8px\] bg-white p-6 md:col-start-2 md:row-start-2 md:w-\[292px\] md:justify-self-end lg:absolute lg:right-\[25px\] lg:top-0 lg:w-\[292px\][^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
   'Analyze result shell should keep the oracle offset and whole-shell hover treatment',
 );
 assert.match(
   analyze,
-  /<div data-analysis-snippet="registration" className="grid w-full max-w-\[284px\] gap-2 md:col-start-1 md:row-start-2 md:self-end xl:absolute xl:left-\[29px\] xl:top-\[223px\] xl:h-\[88px\] xl:w-\[284px\] xl:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
+  /<div data-analysis-snippet="registration" className="grid w-full max-w-\[284px\] gap-2 md:col-start-1 md:row-start-2 md:self-end lg:absolute lg:left-\[29px\] lg:top-\[223px\] lg:h-\[88px\] lg:w-\[284px\] lg:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
   'Analyze registration shell should keep the oracle offset and whole-shell hover treatment',
 );
 assert.match(
   analyze,
-  /<div data-analysis-snippet="upload" className="flex h-44 w-full max-w-\[300px\][^"]*md:col-span-2 md:mx-auto xl:absolute xl:left-\[410px\] xl:top-\[135px\] xl:m-0 xl:h-\[176px\] xl:w-\[300px\] xl:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
+  /<div data-analysis-snippet="upload" className="flex h-44 w-full max-w-\[300px\][^"]*md:col-span-2 md:mx-auto lg:absolute lg:left-1\/2 lg:top-\[135px\] lg:-translate-x-1\/2 lg:m-0 lg:h-\[176px\] lg:w-\[300px\] lg:max-w-none[^"]*transition-transform[^"]*hover:scale-\[1\.01\][^"]*motion-reduce:transition-none[^"]*motion-reduce:hover:scale-100"/,
   'Analyze upload shell should keep the oracle offset and whole-shell hover treatment',
 );
 assert.match(analyze, /data-analysis-snippet="result"[\s\S]*data-analysis-snippet="registration"[\s\S]*data-analysis-snippet="upload"/);

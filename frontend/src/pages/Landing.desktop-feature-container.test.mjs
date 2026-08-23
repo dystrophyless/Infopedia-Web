@@ -51,6 +51,16 @@ assert.match(
   /<Link[\s\S]*to=\{ONBOARDING_TARGET\}[\s\S]*className="group relative flex h-\[493px\] min-w-0 flex-col/,
   'Desktop feature cards must fit equal fractional grid columns with the approved 493px height',
 );
+assert.doesNotMatch(
+  features,
+  /className="group relative flex h-\[493px\][^"]*hover:scale-\[1\.01\]/,
+  'Desktop feature hover must not transform the card layout box',
+);
+assert.match(
+  features,
+  /pointer-events-none absolute inset-x-0 top-0 z-10 flex h-\[300px\] items-center justify-center overflow-hidden[\s\S]*<img[\s\S]*transition-transform[\s\S]*group-hover:scale-\[1\.01\][\s\S]*motion-reduce:group-hover:scale-100/,
+  'Desktop feature hover must scale image paint inside its clipped wrapper',
+);
 assert.doesNotMatch(features, /<article/);
 assert.equal((features.match(/image: '/g) ?? []).length, 3, 'Desktop feature rail should render exactly three feature objects');
 assert.doesNotMatch(features, /mobile-feature-semantic\.png/);

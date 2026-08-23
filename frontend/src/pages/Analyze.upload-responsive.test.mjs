@@ -12,6 +12,11 @@ assert.match(
   /max-md:px-6[^\"]*max-\[359px\]:px-4/,
   'Analyze upload rail should use 16px side padding at 320px and 24px at wider mobile widths',
 );
+assert.match(
+  pageSource,
+  /const ANALYZE_UPLOAD_HEADER_CLASS = '[^']*max-md:px-6[^']*max-\[359px\]:px-4/,
+  'Analyze mobile upload heading should share the 16px/24px leading rail',
+);
 
 assert.match(
   source,
@@ -36,7 +41,15 @@ assert.match(source, /md:w-full[\s\S]*min-\[1440px\]:w-\[990px\]/, 'intermediate
 assert.doesNotMatch(pageSource, /hidden min-\[1440px\]:block[\s\S]*AnalyzeDesktopUploadGuide|showDesktopUploadGuide/, 'Analyze should not hide the adaptive guide at intermediate widths');
 assert.match(storiesSource, /export const UploadEmptyDesktop1231:/, 'Storybook should expose the intermediate desktop composition');
 assert.match(visualRunner, /\['desktop-1231x800', 'ru', 1231, 800\]/, 'responsive evidence should cover the reported 1231px viewport');
+assert.match(visualRunner, /\['desktop-768x900', 'ru', 768, 900\]/, 'responsive evidence should cover the 768px desktop breakpoint');
+assert.match(visualRunner, /\['desktop-1024x900', 'ru', 1024, 900\]/, 'responsive evidence should cover the 1024px desktop breakpoint');
+assert.match(visualRunner, /\['desktop-1280x900', 'ru', 1280, 900\]/, 'responsive evidence should cover the 1280px desktop breakpoint');
 assert.match(visualRunner, /\['desktop-1439x900', 'ru', 1439, 900\]/, 'responsive evidence should cover the last intermediate pixel');
+assert.match(visualRunner, /trackCenter[\s\S]*bodyCenter[\s\S]*<= 1/, 'responsive evidence should fail closed on track/body center drift');
+assert.match(visualRunner, /bodyCenter[\s\S]*rootCenter[\s\S]*<= 1/, 'responsive evidence should fail closed on wrapper center drift');
+assert.match(visualRunner, /activeStep[\s\S]*active tutorial step drifted/, 'responsive evidence should fail closed on tutorial step drift');
+assert.match(visualRunner, /data-analyze-desktop-browser\] > div:last-child img[\s\S]*imageCenter[\s\S]*step image center drift exceeds 1px/, 'responsive evidence should fail closed on instructional image drift');
+assert.match(visualRunner, /header\[aria-labelledby\][\s\S]*querySelector\('h1'\)[\s\S]*heading: rect\(heading\)/, 'responsive evidence should measure the visible Analyze PageHeader heading, not Storybook chrome');
 
 assert.match(
   visualRunner,

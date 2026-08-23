@@ -43,6 +43,26 @@ assert.match(componentSource, /data-analyze-desktop-track/, 'guide should expose
 assert.match(componentSource, /data-analyze-desktop-guide/, 'guide should expose the 600x697 tutorial geometry');
 assert.match(componentSource, /data-analyze-desktop-upload/, 'guide should expose the 374x421 empty-upload geometry');
 assert.match(componentSource, /data-analyze-desktop-benefits/, 'guide should expose the 374x260 two-benefit geometry');
+assert.match(
+  componentSource,
+  /className="[^"]*min-w-0[^"]*"[\s\S]*data-analyze-adaptive-upload/,
+  'adaptive guide root should remain shrinkable and centered at intermediate desktop widths',
+);
+assert.match(
+  componentSource,
+  /className="[^"]*min-w-0[^"]*"[\s\S]*data-analyze-desktop-track/,
+  'desktop step track should keep stable shrinkable columns',
+);
+assert.match(
+  componentSource,
+  /className="[^"]*min-w-0[^"]*"[\s\S]*data-analyze-desktop-body/,
+  'desktop guide body should keep stable shrinkable columns',
+);
+assert.match(
+  componentSource,
+  /className="max-h-full max-w-full object-contain"/,
+  'instruction screenshots should stay centered without crop at intermediate widths',
+);
 assert.match(componentSource, /target="_blank"/, 'step-one Testcenter CTA should open in a new tab');
 assert.match(componentSource, /Clock01Icon/, 'duration should use the exact HugeIcons clock glyph');
 assert.match(componentSource, /DocumentAttachmentIcon/, 'dropzone should use the exact HugeIcons attachment glyph');

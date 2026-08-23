@@ -17,6 +17,9 @@ const viewports = [
   ['kk-320x568', 'kk', 320, 568],
   ['kk-390x844', 'kk', 390, 844],
   ['desktop-1231x800', 'ru', 1231, 800],
+  ['desktop-768x900', 'ru', 768, 900],
+  ['desktop-1024x900', 'ru', 1024, 900],
+  ['desktop-1280x900', 'ru', 1280, 900],
   ['desktop-1439x900', 'ru', 1439, 900],
   ['desktop-1440x900', 'ru', 1440, 900],
 ];
@@ -52,12 +55,16 @@ try {
       const label = document.querySelector('label[for="analyze-file"]');
       const form = document.querySelector('form');
       const button = form?.querySelector('button[type="submit"]');
+      const analyzeHeader = [...document.querySelectorAll('header[aria-labelledby]')]
+        .find((header) => header.checkVisibility() && header.querySelector('h1'));
+      const heading = analyzeHeader?.querySelector('h1');
       const cards = [...document.querySelectorAll('[data-analyze-mobile-benefits] article')];
       const nav = [...document.querySelectorAll('nav')].find((node) => getComputedStyle(node).position === 'fixed' && node.getBoundingClientRect().bottom >= innerHeight - 2);
       return {
         innerWidth,
         scrollWidth: document.documentElement.scrollWidth,
         rail: rect(form),
+        heading: rect(heading),
         dropzone: rect(label),
         cta: rect(button),
         cards: cards.map(rect),
@@ -70,9 +77,12 @@ try {
     assert.ok(result.scrollWidth <= width, `${name}: horizontal overflow ${result.scrollWidth} > ${width}`);
     const expectedRail = width === 320 ? 16 : width < 768 ? 24 : null;
     let postScroll = null;
+    let desktopMeasurement = null;
     if (expectedRail !== null) {
       assert.equal(Math.round(result.rail.x), expectedRail, `${name}: rail left inset`);
       assert.equal(Math.round(width - result.rail.right), expectedRail, `${name}: rail right inset`);
+      assert.ok(result.heading, `${name}: upload heading should be measurable`);
+      assert.equal(Math.round(result.heading.x), expectedRail, `${name}: heading left inset`);
       assert.equal(Math.round(result.dropzone.width), Math.round(result.rail.width), `${name}: dropzone rail width`);
       assert.equal(Math.round(result.dropzone.height), 214, `${name}: dropzone height`);
       assert.equal(Math.round(result.cta.width), Math.round(result.rail.width), `${name}: CTA rail width`);
@@ -111,17 +121,44 @@ try {
         guideVisible: document.querySelector('[data-analyze-desktop-guide]')?.checkVisibility() ?? false,
         formCount: document.querySelectorAll('form').length,
         fileInputCount: document.querySelectorAll('input[type="file"]').length,
+        track: document.querySelector('[data-analyze-desktop-track]')?.getBoundingClientRect(),
+        body: document.querySelector('[data-analyze-desktop-body]')?.getBoundingClientRect(),
+        root: document.querySelector('[data-analyze-adaptive-upload]')?.getBoundingClientRect(),
+        browser: document.querySelector('[data-analyze-desktop-browser]')?.getBoundingClientRect(),
+        image: document.querySelector('[data-analyze-desktop-browser] > div:last-child img')?.getBoundingClientRect(),
+        activeStep: document.querySelector('[data-analyze-desktop-active-step]')?.getAttribute('data-analyze-desktop-active-step'),
+        scrollWidth: document.documentElement.scrollWidth,
       }));
+      desktopMeasurement = desktop;
       assert.equal(desktop.adaptiveVisible, true, `${name}: adaptive upload visible`);
       assert.equal(desktop.guideVisible, true, `${name}: tutorial visible`);
       assert.equal(desktop.formCount, 1, `${name}: one form`);
       assert.equal(desktop.fileInputCount, 1, `${name}: one native file input`);
+      assert.ok(desktop.track && desktop.body && desktop.root, `${name}: guide geometry should be measurable`);
+      if (desktop.track && desktop.body && desktop.root) {
+        const trackCenter = desktop.track.x + desktop.track.width / 2;
+        const bodyCenter = desktop.body.x + desktop.body.width / 2;
+        const rootCenter = desktop.root.x + desktop.root.width / 2;
+        assert.ok(Math.abs(trackCenter - bodyCenter) <= 1, `${name}: track/body center drift exceeds 1px`);
+        assert.ok(Math.abs(bodyCenter - rootCenter) <= 1, `${name}: body/root center drift exceeds 1px`);
+        assert.ok(Math.abs(desktop.track.x - desktop.body.x) <= 1, `${name}: track/body wrapper drift exceeds 1px`);
+        assert.equal(desktop.activeStep, '1', `${name}: active tutorial step drifted`);
+        assert.ok(desktop.browser && desktop.image, `${name}: browser/image geometry should be measurable`);
+        if (desktop.browser && desktop.image) {
+          const browserCenter = desktop.browser.x + desktop.browser.width / 2;
+          const imageCenter = desktop.image.x + desktop.image.width / 2;
+          assert.ok(Math.abs(browserCenter - imageCenter) <= 1, `${name}: step image center drift exceeds 1px`);
+          assert.ok(desktop.image.x >= desktop.browser.x - 1, `${name}: step image left edge escaped browser`);
+          assert.ok(desktop.image.right <= desktop.browser.right + 1, `${name}: step image right edge escaped browser`);
+        }
+      }
+      assert.ok(desktop.scrollWidth <= width, `${name}: horizontal overflow ${desktop.scrollWidth} > ${width}`);
     }
 
     await page.mouse.wheel(0, 10000);
     await page.waitForTimeout(100);
     await page.screenshot({ path: path.join(outputDir, `${name}-bottom.png`), fullPage: false });
-    measurements.push({ name, language, width, height, ...result, postScroll });
+    measurements.push({ name, language, width, height, ...result, desktop: desktopMeasurement, postScroll });
     await page.close();
   }
 } finally {

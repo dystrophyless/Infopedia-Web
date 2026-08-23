@@ -5,14 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import src.favorites.models
-import src.tests.models  # noqa: F401 - register model before startup migrations
+import src.tests.models  # noqa: F401 - register model relationships
 from src.analyze.router import router as analyze_router
 from src.auth.router import router as auth_router
 from src.config import settings
-from src.database import async_engine, ensure_user_schema_compatibility
+from src.database import async_engine
 from src.favorites.router import router as favorites_router
-from src.migrations.favorites_migration import migrate_favorites_schema
-from src.migrations.tests_migration import migrate_tests_schema
 from src.search.router import router as search_router
 from src.terms.router import router as terms_router
 from src.tests.router import router as tests_router
@@ -23,9 +21,6 @@ from src.users.router import router as users_router
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     try:
-        await ensure_user_schema_compatibility(async_engine)
-        await migrate_favorites_schema(async_engine)
-        await migrate_tests_schema(async_engine)
         yield
     finally:
         await async_engine.dispose()

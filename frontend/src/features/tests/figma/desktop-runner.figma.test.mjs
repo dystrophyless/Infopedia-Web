@@ -38,6 +38,7 @@ for (const nodeId of ['880:4071', '886:4620', '891:4728', '918:4311', '891:5134'
 }
 for (const id of [
   'question-exit', 'question-meta', 'question-status-answered', 'question-status-skipped', 'question-status-upcoming',
+  'question-finish-early',
   'question-feedback-correct-title', 'question-feedback-correct-body', 'question-feedback-wrong-title',
   'results-exit', 'results-score-eyebrow', 'results-score-fraction', 'results-delta', 'results-secondary-action',
   'results-pace-label', 'results-overview-correct', 'results-overview-wrong', 'results-overview-unavailable',
@@ -45,11 +46,13 @@ for (const id of [
 ]) assert.match(contrastLocks, new RegExp(`['\"]${id}['\"]`), `${id} must remain in the exact exception inventory`);
 for (const pair of [
   ['#f69a93', '#fdf2f1'], ['#c5b1e7', '#ffffff'], ['#865bcf', '#efeaf8'], ['#c5b1e7', '#f8f5fc'],
+  ['#865bcf', '#f8f5fc'],
   ['#29ae70', '#e7f8f0'], ['#21835a', '#e7f8f0'], ['#f25f54', '#fce5e3'], ['#b1acb9', '#ffffff'],
   ['#8c8698', '#ffffff'], ['#29ae70', '#cbf0df'], ['#6ed8a7', '#e7f8f0'],
 ]) assert.match(contrastLocks, new RegExp(`${pair[0]}[\\s\\S]{0,120}${pair[1]}`), `${pair.join('/')} must remain source locked`);
 assert.match(stories, /id:\s*'color-contrast'[\s\S]{0,160}selector:\s*FIGMA_CONTRAST_RULE_SELECTOR/, 'only the source-locked selector may narrow color-contrast');
 assert.match(stories, /assertFigmaContrastLocks/, 'each story must verify exact lock counts and computed colors before axe runs');
+assert.match(question, /data-figma-contrast-lock="question-finish-early"/, 'Finish Early must use the exact source-locked contrast inventory');
 assert.doesNotMatch(contrastLocks, /\[data-figma-contrast-lock\](?![=])/, 'a broad bare attribute selector is forbidden');
 assert.doesNotMatch(results, /conic-gradient/);
 for (const [name, source] of Object.entries({ question, results, review, delta })) {

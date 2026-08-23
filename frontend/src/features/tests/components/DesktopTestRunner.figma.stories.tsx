@@ -27,7 +27,7 @@ const state = (overrides: Partial<TestRunnerState> = {}): TestRunnerState => ({ 
 const noOp = () => undefined;
 
 function QuestionFixture({ runnerState, forceCheckLabel = false }: { runnerState: TestRunnerState; forceCheckLabel?: boolean }) {
-  return <DesktopTestQuestionView title={i18n.t('tests.desktopRandomTitle')} questions={questions} state={runnerState} submitting={false} actionError={false} primaryActionLabel={forceCheckLabel ? i18n.t('tests.desktopCheckAnswer') : undefined} onExit={noOp} onSelectOption={noOp} onPrimaryAction={noOp} onGoToQuestion={noOp} onPrevious={noOp} />;
+  return <DesktopTestQuestionView title={i18n.t('tests.desktopRandomTitle')} questions={questions} state={runnerState} submitting={false} actionError={false} primaryActionLabel={forceCheckLabel ? i18n.t('tests.desktopCheckAnswer') : undefined} onExit={noOp} onSelectOption={noOp} onPrimaryAction={noOp} onFinishEarly={noOp} onGoToQuestion={noOp} onPrevious={noOp} />;
 }
 
 const summary: TestCompletionSummary = { correctAnswerCount: 12, totalQuestions: 15, answeredQuestions: 15, scorePercent: 80, durationSeconds: 1122, averagePaceSeconds: 75, previousScorePercent: 65, accuracyDeltaPoints: 5, weakTopicResult: null };

@@ -1,3 +1,7 @@
+# Existing connection helpers retain their public compatibility signatures;
+# these lint suppressions avoid unrelated churn in this ownership slice.
+# ruff: noqa: FBT001, FBT002, PLR0913, RUF001, TRY401
+
 import logging
 from urllib.parse import quote
 
@@ -80,51 +84,3 @@ AsyncSessionMaker = async_sessionmaker(async_engine)
 async def get_async_session():
     async with AsyncSessionMaker() as session:
         yield session
-
-
-async def init_similarity_extension(engine: AsyncEngine) -> None:
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
-            await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_term_name_trgm ON term USING gin (name gin_trgm_ops);"
-                ),
-            )
-    except Exception as e:
-        logger.exception("Не удалось инициализировать расширение схожести: %s", e)
-
-
-async def ensure_user_schema_compatibility(engine: AsyncEngine) -> None:
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(
-                text(
-                    """
-                    DO $$
-                    BEGIN
-                        IF EXISTS (
-                            SELECT 1
-                            FROM information_schema.columns
-                            WHERE table_schema = 'public'
-                              AND table_name = 'user'
-                              AND column_name = 'onboarding_completed'
-                        ) THEN
-                            ALTER TABLE "user"
-                            ALTER COLUMN onboarding_completed SET DEFAULT FALSE;
-                        END IF;
-                    END $$;
-                    """
-                )
-            )
-    except Exception as e:
-        logger.exception("Не удалось обновить совместимость схемы пользователя: %s", e)
-        raise
-
-
-async def init_vector_extension(engine: AsyncEngine) -> None:
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-    except Exception as e:
-        logger.exception("Не удалось инициализировать векторное расширение: %s", e)

@@ -39,8 +39,15 @@ PROPAGATOR_NAMES = {
     "seed_question_bank_core",
     "load_test_questions",
     "load_test_questions_core",
-    "migrate_chapter_schema",
-    "migrate_tests_schema",
+}
+
+# These helpers contain the ORM mutations, but their public wrappers own the
+# transaction boundary that the audit is intended to protect. Report the
+# wrapper symbol when it calls one of these known implementation helpers while
+# continuing to discover any other private writer that appears in the future.
+PRIVATE_WRITER_HELPERS = {
+    "_load_chapters_and_topic_codes_impl",
+    "_load_books_topics_and_mappings_impl",
 }
 
 # Exact symbols that are currently permitted to mutate eligibility inputs.
@@ -52,15 +59,10 @@ ALLOWLIST = {
     "src.loader:load_books_topics_and_mappings",
     "src.loader:load_books_topics_and_mappings_core",
     "src.prepare_app:main.load_all",
-    "src.prepare_app:create_tables",
-    "src.main:lifespan",
     "src.tests.question_loader:seed_question_bank",
     "src.tests.question_loader:load_test_questions",
     "src.tests.question_loader:seed_question_bank_core",
     "src.tests.question_loader:load_test_questions_core",
-    "src.migrations.chapter_migration:migrate_chapter_schema",
-    "src.migrations.tests_migration:_migrate_test_tables",
-    "src.migrations.tests_migration:postgresql_legacy_question_statements",
 }
 
 
@@ -83,10 +85,13 @@ class _WriterVisitor(ast.NodeVisitor):
     def symbol(self) -> str:
         return f"{self.module}:{'.'.join(self.scope) or '<module>'}"
 
+    def _mark_candidate(self) -> None:
+        if self.scope and self.scope[-1] in PRIVATE_WRITER_HELPERS:
+            return
+        self.candidates.add(self.symbol)
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.scope.append(node.name)
-        if node.name in {"migrate_chapter_schema"}:
-            self.candidates.add(self.symbol)
         self.generic_visit(node)
         self.scope.pop()
 
@@ -114,32 +119,32 @@ class _WriterVisitor(ast.NodeVisitor):
         if isinstance(target, ast.Attribute) and target.attr in MUTABLE_FIELDS:
             base = ast.unparse(target.value)
             if re.search(r"(?:question|topic|mapping|code)", base, re.IGNORECASE):
-                self.candidates.add(self.symbol)
+                self._mark_candidate()
         if isinstance(value, ast.Call):
             function = value.func.id if isinstance(value.func, ast.Name) else ""
             if function in MODEL_NAMES:
-                self.candidates.add(self.symbol)
+                self._mark_candidate()
 
     def visit_Call(self, node: ast.Call) -> None:
         function = ast.unparse(node.func)
-        if function.rsplit(".", 1)[-1] in PROPAGATOR_NAMES:
-            self.candidates.add(self.symbol)
+        if function.rsplit(".", 1)[-1] in (*PROPAGATOR_NAMES, *PRIVATE_WRITER_HELPERS):
+            self._mark_candidate()
         method = function.rsplit(".", 1)[-1]
         if method in {"add", "add_all", "delete", "execute", "bulk_insert_mappings", "bulk_update_mappings"}:
             if any(_contains_model_or_table(argument) for argument in node.args):
-                self.candidates.add(self.symbol)
+                self._mark_candidate()
             if method == "delete" and any(
                 isinstance(argument, ast.Name) and re.search(r"(?:question|topic|mapping|code)", argument.id, re.IGNORECASE)
                 for argument in node.args
             ):
-                self.candidates.add(self.symbol)
+                self._mark_candidate()
         if isinstance(node.func, ast.Name) and node.func.id in MODEL_NAMES:
-            self.candidates.add(self.symbol)
+            self._mark_candidate()
         if isinstance(node.func, ast.Name) and node.func.id == "text":
             sql = " ".join(const.value for const in ast.walk(node) if isinstance(const, ast.Constant) and isinstance(const.value, str))
             lowered = sql.lower()
             if any(table in lowered for table in TABLE_NAMES) and any(keyword in lowered for keyword in ("insert", "update", "delete", "alter", "create")):
-                self.candidates.add(self.symbol)
+                self._mark_candidate()
         self.generic_visit(node)
 
     def visit_Constant(self, node: ast.Constant) -> None:
@@ -148,7 +153,7 @@ class _WriterVisitor(ast.NodeVisitor):
             if any(table in lowered for table in TABLE_NAMES) and any(
                 keyword in lowered for keyword in ("insert", "update", "delete", "alter", "create")
             ):
-                self.candidates.add(self.symbol)
+                self._mark_candidate()
         self.generic_visit(node)
 
 

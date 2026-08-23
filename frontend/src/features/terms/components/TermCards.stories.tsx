@@ -25,6 +25,10 @@ const descenderTerm: Term = { ...shortTerm, public_id: 'pygame-surface', name: '
 const longTitleTerm: Term = { ...shortTerm, public_id: 'long-title', name: 'A very long desktop term title that uses compact 20px typography' };
 const fiveLineTerm: Term = { ...shortTerm, public_id: 'five-lines', name: 'Five line definition', definitions: [{ text: 'Line one of the exact five line definition.\nLine two of the exact five line definition.\nLine three of the exact five line definition.\nLine four of the exact five line definition.\nLine five of the exact five line definition.', page: 1 }] };
 const overflowTerm: Term = { ...shortTerm, public_id: 'overflow-definition', name: 'Overflow definition', definitions: [{ text: 'Line one of the overflow definition.\nLine two of the overflow definition.\nLine three of the overflow definition.\nLine four of the overflow definition.\nLine five of the overflow definition.\nLine six must trigger the fade overlay.', page: 1 }] };
+const mobileSevenLineTerm: Term = { ...shortTerm, public_id: 'mobile-seven-lines', name: 'Жеті жолды анықтама', definitions: [{ text: 'Бірінші жол анықтама мәтіні.\nЕкінші жол анықтама мәтіні.\nҮшінші жол анықтама мәтіні.\nТөртінші жол анықтама мәтіні.\nБесінші жол анықтама мәтіні.\nАлтыншы жол анықтама мәтіні.\nЖетінші жол градиентті іске қосады.', page: 2 }] };
+const mobileUnbrokenTerm: Term = { ...shortTerm, public_id: 'mobile-unbroken', name: 'Unbroken token definition', definitions: [{ text: 'X'.repeat(4000), page: 3 }] };
+const mobileRussianTerm: Term = { ...shortTerm, public_id: 'mobile-russian-long', name: 'Длинное русское определение', definitions: [{ text: 'Русское определение должно занимать больше шести строк на узком мобильном экране.\nВторая строка проверяет перенос текста.\nТретья строка сохраняет читаемый ритм.\nЧетвёртая строка продолжает длинное описание.\nПятая строка остаётся внутри карточки.\nШестая строка касается нижней границы.\nСедьмая строка включает градиент.', page: 4 }] };
+const mobileKazakhTerm: Term = { ...shortTerm, public_id: 'mobile-kazakh-long', name: 'Қазақша ұзын анықтама', definitions: [{ text: 'Қазақша анықтама мобильді карточкада алты жолдық шектен асады.\nЕкінші жол мәтіннің дұрыс оралуын тексереді.\nҮшінші жол мазмұнның ретін сақтайды.\nТөртінші жол карточка енін ескереді.\nБесінші жол төменгі аймаққа жақындайды.\nАлтыншы жол шектеудің алдында қалады.\nЖетінші жол градиентті іске қосады.', page: 5 }] };
 
 const meta = {
   title: 'Features/Terms/Cards',
@@ -83,6 +87,39 @@ function AuthenticatedMobileCardsStory() {
       <section aria-label="Loading mobile term card">
         <SkeletonCard variant="mobile-term-card" />
       </section>
+    </div>
+  );
+}
+
+function AuthenticatedMobileOverflowStory() {
+  useEffect(() => {
+    const previous = useAuthStore.getState();
+    useAuthStore.setState({ isAuthenticated: true, token: 'storybook-token' });
+    return () => {
+      useAuthStore.setState({
+        isAuthenticated: previous.isAuthenticated,
+        token: previous.token,
+        refreshToken: previous.refreshToken,
+        user: previous.user,
+      });
+    };
+  }, []);
+
+  const fixtures: Array<[string, Term]> = [
+    ['Short definition', shortTerm],
+    ['Seven-line definition', mobileSevenLineTerm],
+    ['Unbroken definition', mobileUnbrokenTerm],
+    ['Russian definition', mobileRussianTerm],
+    ['Kazakh definition', mobileKazakhTerm],
+  ];
+
+  return (
+    <div className="grid gap-4 bg-[#efebf6]">
+      {fixtures.map(([label, fixture]) => (
+        <section key={label} aria-label={label}>
+          <MobileSearchTermCard term={fixture} />
+        </section>
+      ))}
     </div>
   );
 }
@@ -350,6 +387,61 @@ export const MobilePopulatedAndLoading: Story = {
       expect(skeletonCard.getBoundingClientRect().height).toBe(populatedCard.getBoundingClientRect().height);
     });
   },
+};
+
+async function assertMobileOverflowContract(canvasElement: HTMLElement) {
+  const canvas = within(canvasElement);
+  const expectations = [
+    ['Short definition', false],
+    ['Seven-line definition', true],
+    ['Unbroken definition', true],
+    ['Russian definition', true],
+    ['Kazakh definition', true],
+  ] as const;
+
+  await waitFor(() => {
+    for (const [label, shouldFade] of expectations) {
+      const section = canvas.getByRole('region', { name: label });
+      const card = section.querySelector<HTMLElement>('article');
+      const preview = section.querySelector<HTMLElement>('[data-mobile-definition-preview]');
+      const paragraph = preview?.querySelector<HTMLElement>('p');
+      const metadata = section.querySelector<HTMLElement>('[data-mobile-definition-metadata]');
+      const cta = section.querySelector<HTMLAnchorElement>('a');
+      if (!card || !preview || !paragraph || !metadata || !cta) {
+        throw new Error(`${label} fixture is missing mobile geometry probes`);
+      }
+
+      expect(preview.getBoundingClientRect().height).toBe(96);
+      expect(getComputedStyle(paragraph).fontSize).toBe('16px');
+      expect(getComputedStyle(paragraph).lineHeight).toBe('16px');
+      expect(section.querySelector('[data-mobile-definition-fade]') !== null, `${label} fade visibility`).toBe(shouldFade);
+      expect(metadata.getBoundingClientRect().height).toBe(24);
+      expect(cta.getBoundingClientRect().height).toBe(40);
+      expect(card.scrollWidth).toBeLessThanOrEqual(card.clientWidth);
+    }
+  });
+}
+
+export const MobileOverflowContract320: Story = {
+  globals: { viewport: { value: 'mobile320', isRotated: false } },
+  parameters: { a11y: { config: { rules: [{ id: 'color-contrast', enabled: false }] } } },
+  render: () => <AuthenticatedMobileOverflowStory />,
+  play: ({ canvasElement }) => assertMobileOverflowContract(canvasElement),
+};
+
+export const MobileOverflowContract360: Story = {
+  ...MobileOverflowContract320,
+  globals: { viewport: { value: 'mobile360', isRotated: false } },
+};
+
+export const MobileOverflowContract390: Story = {
+  ...MobileOverflowContract320,
+  globals: { viewport: { value: 'mobile390', isRotated: false } },
+};
+
+export const MobileOverflowContract430: Story = {
+  ...MobileOverflowContract320,
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
 };
 
 export const FiveFeaturedVariants: Story = {

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +28,7 @@ from src.tests.schemas import (
     TestQuestionResponse,
     TestsDashboardResponse,
 )
-from src.tests.service import TestsService
+from src.tests.service import TestsService, localized_test_title
 from src.users.models import User  # noqa: TC001
 
 router = APIRouter()
@@ -60,7 +60,7 @@ def _question_response(question) -> TestQuestionResponse:
     )
 
 
-def _attempt_response(attempt) -> TestAttemptResponse:
+def _attempt_response(attempt, locale: str = "ru") -> TestAttemptResponse:
     attempt_ref = encode_public_ref("attempt", attempt.id)
     answers = {
         question.question_ref: TestAnswerResponse(
@@ -82,7 +82,7 @@ def _attempt_response(attempt) -> TestAttemptResponse:
         id=attempt_ref,
         attempt_ref=attempt_ref,
         mode=attempt.mode,
-        title=attempt.title,
+        title=localized_test_title(attempt.mode, locale),
         status="completed" if attempt.status == "completed" or attempt.completed_at else "active",
         questions=[_question_response(question) for question in attempt.questions],
         answers=answers,
@@ -130,7 +130,7 @@ def _raise_http(exc: Exception) -> None:
 async def get_tests_dashboard(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    locale: Annotated[Literal["kk", "ru"], Query()] = "ru",
+    locale: Annotated[str, Query()] = "ru",
 ):
     try:
         dashboard = await TestsService(session).dashboard(user_id=current_user.id, locale=locale)
@@ -144,7 +144,7 @@ async def create_test_attempt(
     payload: TestAttemptCreateRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    locale: Annotated[Literal["kk", "ru"], Query()] = "ru",
+    locale: Annotated[str, Query()] = "ru",
 ):
     try:
         attempt = await TestsService(session).create_attempt(
@@ -162,7 +162,7 @@ async def create_test_attempt(
         ValueError,
     ) as exc:
         _raise_http(exc)
-    return _attempt_response(attempt)
+    return _attempt_response(attempt, locale)
 
 
 @router.get("/attempts/{attempt_ref}", response_model=TestAttemptResponse)
@@ -170,11 +170,13 @@ async def get_test_attempt(
     attempt_ref: str,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    locale: Annotated[str, Query()] = "ru",
 ):
     try:
         attempt = await TestsService(session).get_attempt_response(
             user_id=current_user.id,
             attempt_ref=attempt_ref,
+            locale=locale,
         )
     except (
         AnswerAlreadySubmittedError,
@@ -185,7 +187,7 @@ async def get_test_attempt(
         ValueError,
     ) as exc:
         _raise_http(exc)
-    return _attempt_response(attempt)
+    return _attempt_response(attempt, locale)
 
 
 @router.post("/attempts/{attempt_ref}/questions/{question_ref}/answer", response_model=TestAnswerResponse)

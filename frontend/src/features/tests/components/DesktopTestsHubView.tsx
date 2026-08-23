@@ -218,13 +218,13 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
                   {sort === 'importance'
                     ? t('tests.desktopSortImportance', { defaultValue: 'По значимости раздела' })
                     : sort === 'accuracy'
-                      ? t('tests.desktopSortAccuracy', { defaultValue: 'По точности' })
+                      ? t('tests.desktopSortAccuracy', { defaultValue: 'По точности ответов пользователя' })
                       : t('tests.desktopSortCount', { defaultValue: 'По количеству вопросов' })}
                   <HugeiconsIcon icon={ArrowDown01Icon} size={20} strokeWidth={1.7} aria-hidden />
                 </button>
                 {sortOpen ? (
                   <div role="listbox" className="absolute right-0 top-full z-20 mt-2 min-w-[220px] rounded-[8px] bg-white p-2" data-tests-sort-menu>
-                    {(['importance', 'accuracy', 'count'] as const).map((option) => (
+                    {(['importance', 'count', 'accuracy'] as const).map((option) => (
                       <button
                         key={option}
                         type="button"
@@ -236,7 +236,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
                           setSortOpen(false);
                         }}
                       >
-                        {option === 'importance' ? t('tests.desktopSortImportance', { defaultValue: 'По значимости раздела' }) : option === 'accuracy' ? t('tests.desktopSortAccuracy', { defaultValue: 'По точности' }) : t('tests.desktopSortCount', { defaultValue: 'По количеству вопросов' })}
+                        {option === 'importance' ? t('tests.desktopSortImportance', { defaultValue: 'По значимости раздела' }) : option === 'accuracy' ? t('tests.desktopSortAccuracy', { defaultValue: 'По точности ответов пользователя' }) : t('tests.desktopSortCount', { defaultValue: 'По количеству вопросов' })}
                       </button>
                     ))}
                   </div>

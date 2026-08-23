@@ -196,7 +196,6 @@ export function Register() {
                 setAccountFieldErrors((errors) => ({ ...errors, email: undefined }));
               }}
               error={accountFieldErrors.email}
-              hideMobileLeadingIconWhenFilled
               mobileFieldLayout="figma-auth"
               desktopVisual="onboarding"
             />
@@ -212,7 +211,6 @@ export function Register() {
               toggleLabel={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               autoComplete="new-password"
               error={accountFieldErrors.password}
-              hideMobileLeadingIconWhenFilled
               mobileFieldLayout="figma-auth"
               desktopVisual="onboarding"
             />

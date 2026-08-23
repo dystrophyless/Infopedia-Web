@@ -4,13 +4,9 @@ import logging.config
 
 from sqlalchemy.exc import SQLAlchemyError
 
-import src.favorites.models
-import src.tests.models  # noqa: F401 - register model before create_all
 from src.database import (
     AsyncSessionMaker,
     async_engine,
-    init_similarity_extension,
-    init_vector_extension,
 )
 from src.loader import (
     get_data_file_path,
@@ -20,13 +16,11 @@ from src.loader import (
     refresh_book_chapter_coverage_core,
 )
 from src.logging_settings import logging_config
-from src.migrations.chapter_migration import migrate_chapter_schema
-from src.migrations.favorites_migration import migrate_favorites_schema
-from src.migrations.tests_migration import migrate_tests_schema
-from src.models import Base
+from src.schema import initialize_schema
 from src.terms.service import get_embedder
 from src.tests.catalog_stats import publish_test_catalog_generation
 from src.tests.question_loader import load_test_questions_core
+from src.topics.chapter_seed import seed_chapter_catalog
 
 logger = logging.getLogger(__name__)
 logging.config.dictConfig(logging_config)
@@ -34,14 +28,7 @@ logging.config.dictConfig(logging_config)
 
 async def create_tables() -> None:
     try:
-        await init_vector_extension(async_engine)
-
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-        await migrate_chapter_schema(async_engine)
-        await migrate_favorites_schema(async_engine)
-        await migrate_tests_schema(async_engine)
+        await initialize_schema(async_engine)
 
         logger.debug("Схема базы данных успешно инициализирована.")
     except SQLAlchemyError:
@@ -54,10 +41,13 @@ async def create_tables() -> None:
 
 async def main() -> None:
     try:
-        embedder = get_embedder()
         await create_tables()
 
         async with AsyncSessionMaker() as session:
+            await seed_chapter_catalog(session)
+            await session.commit()
+            embedder = get_embedder()
+
             async def load_all() -> None:
                 await load_chapters_and_topic_codes_core(
                     session,
@@ -75,8 +65,6 @@ async def main() -> None:
                     await load_all()
             else:
                 await load_all()
-
-        await init_similarity_extension(async_engine)
     finally:
         await async_engine.dispose()
 

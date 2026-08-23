@@ -152,6 +152,48 @@ describe('test runner state transitions', () => {
     expect(reset).toEqual(createTestRunnerState(9_000));
   });
 
+  it('shows the server summary when an attempt finishes with unanswered questions', () => {
+    const selected = reduceTestRunner(createTestRunnerState(1_000), {
+      type: 'select-option',
+      optionId: 'a',
+    });
+    const checked = reduceTestRunner(selected, {
+      type: 'answer-submitted',
+      question: question(),
+      feedback: feedback('question-1', 'a', false),
+      now: 2_000,
+    });
+    const serverSummary: TestCompletionSummary = {
+      ...summary,
+      correctAnswerCount: 0,
+      totalQuestions: 3,
+      answeredQuestions: 1,
+      scorePercent: 0,
+    };
+
+    const completed = reduceTestRunner(checked, {
+      type: 'complete',
+      summary: serverSummary,
+      now: 3_000,
+    });
+
+    expect(completed.resultVisible).toBe(true);
+    expect(completed.completionSummary).toEqual(serverSummary);
+    expect(completed.currentQuestionIndex).toBe(0);
+    expect(completed.answerRecords).toHaveLength(1);
+  });
+
+  it('does not reveal a result when completion has no server summary', () => {
+    const initial = createTestRunnerState(1_000);
+    const completed = reduceTestRunner(initial, {
+      type: 'complete',
+      summary: null,
+      now: 2_000,
+    });
+
+    expect(completed).toEqual(initial);
+  });
+
   it('hydrates persisted server answers and resumes at the server cursor', () => {
     const initial = createTestRunnerState(1_000);
     const hydrated = reduceTestRunner(initial, {

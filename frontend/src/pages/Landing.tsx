@@ -271,15 +271,15 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
   return (
     <section id="desktop-analysis" data-nav-section className="bg-[#efebf6] pb-[220px]">
       <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
-        <div data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-[327px]">
-          <h2 className="text-[48px] font-medium leading-[48px] text-[#161519] md:col-span-2 xl:absolute xl:left-0 xl:top-0">
+        <div data-analysis-stage className="grid gap-6 md:grid-cols-2 lg:relative lg:block lg:h-[327px]">
+          <h2 className="text-[48px] font-medium leading-[48px] text-[#161519] md:col-span-2 lg:absolute lg:left-0 lg:top-0">
             {t('landing.desktopAnalyzeTitleLead', { defaultValue: 'Проанализируйте свой ЕНТ' })}
             <br />
             <span className="text-[#6a37c3]">
               {t('landing.desktopAnalyzeTitleAccent', { defaultValue: 'за 5 минут' })}
             </span>
           </h2>
-          <div data-analysis-snippet="result" className="rounded-[8px] bg-white p-6 md:col-start-2 md:row-start-2 md:w-[292px] md:justify-self-end xl:absolute xl:left-[803px] xl:top-0 xl:w-[292px] transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
+          <div data-analysis-snippet="result" className="rounded-[8px] bg-white p-6 md:col-start-2 md:row-start-2 md:w-[292px] md:justify-self-end lg:absolute lg:right-[25px] lg:top-0 lg:w-[292px] transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[14px] font-medium leading-[14px] text-[#161519]">
@@ -323,7 +323,7 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
             </Link>
           </div>
 
-          <div data-analysis-snippet="registration" className="grid w-full max-w-[284px] gap-2 md:col-start-1 md:row-start-2 md:self-end xl:absolute xl:left-[29px] xl:top-[223px] xl:h-[88px] xl:w-[284px] xl:max-w-none transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
+          <div data-analysis-snippet="registration" className="grid w-full max-w-[284px] gap-2 md:col-start-1 md:row-start-2 md:self-end lg:absolute lg:left-[29px] lg:top-[223px] lg:h-[88px] lg:w-[284px] lg:max-w-none transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
             <div className="flex h-10 items-center gap-4 rounded-[8px] bg-white px-6 text-[14px] text-[#c5b1e7]">
               <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.7} aria-hidden="true" />
               <span>{t('landing.desktopAnalyzeEmail', { defaultValue: 'Электронная почта' })}</span>
@@ -337,7 +337,7 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
             </div>
           </div>
 
-          <div data-analysis-snippet="upload" className="flex h-44 w-full max-w-[300px] flex-col items-center justify-center gap-4 rounded-[8px] border-[1.5px] border-dashed border-[#a585db] bg-white px-6 text-center md:col-span-2 md:mx-auto xl:absolute xl:left-[410px] xl:top-[135px] xl:m-0 xl:h-[176px] xl:w-[300px] xl:max-w-none transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
+          <div data-analysis-snippet="upload" className="flex h-44 w-full max-w-[300px] flex-col items-center justify-center gap-4 rounded-[8px] border-[1.5px] border-dashed border-[#a585db] bg-white px-6 text-center md:col-span-2 md:mx-auto lg:absolute lg:left-1/2 lg:top-[135px] lg:-translate-x-1/2 lg:m-0 lg:h-[176px] lg:w-[300px] lg:max-w-none transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
             <span className="flex size-12 items-center justify-center rounded-full bg-[#ded2f1] text-[#6a37c3]">
               <HugeiconsIcon icon={DocumentAttachmentIcon} size={24} strokeWidth={1.6} aria-hidden="true" />
             </span>

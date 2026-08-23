@@ -39,7 +39,7 @@ class TestQuestion(Base):
     source_key: Mapped[str] = mapped_column(String(255), nullable=False)
     topic_id: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey("topic.id", ondelete="SET NULL"),
+        ForeignKey("topic.id", name="fk_test_question_topic_id", ondelete="SET NULL"),
         nullable=True,
     )
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
@@ -66,6 +66,13 @@ class TestCatalogGeneration(Base):
     """Immutable materialized generation for the public Tests catalog."""
 
     __tablename__ = "test_catalog_generation"
+    __table_args__ = (
+        UniqueConstraint(
+            "schema_version",
+            "source_fingerprint",
+            name="uq_test_catalog_generation_fingerprint",
+        ),
+    )
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
     source_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -86,7 +93,13 @@ class TestCatalogState(Base):
 
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, default=1, server_default=sa_text("1"))
     current_generation_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("test_catalog_generation.id", ondelete="SET NULL"), nullable=True,
+        BigInteger,
+        ForeignKey(
+            "test_catalog_generation.id",
+            name="fk_test_catalog_state_generation",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
     )
     generation: Mapped[TestCatalogGeneration | None] = relationship("TestCatalogGeneration")
 
@@ -117,10 +130,22 @@ class TestCatalogStat(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     generation_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("test_catalog_generation.id", ondelete="CASCADE"), nullable=False,
+        BigInteger,
+        ForeignKey(
+            "test_catalog_generation.id",
+            name="fk_test_catalog_stat_generation",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
     )
     chapter_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=True,
+        Integer,
+        ForeignKey(
+            "chapter.id",
+            name="fk_test_catalog_stat_chapter",
+            ondelete="CASCADE",
+        ),
+        nullable=True,
     )
     active_question_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=sa_text("0"),

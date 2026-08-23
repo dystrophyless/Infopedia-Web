@@ -431,7 +431,7 @@ function FeatureSlideCard({
 
   if (isDesktop) {
     return (
-      <div className="relative h-[372px]">
+      <div className="group relative h-[372px]">
         <div className="absolute inset-x-0 bottom-0 h-[280px] rounded-[16px] bg-[#f8f5fc]" />
 
         <div className="absolute left-0 top-[92px] flex h-[280px] w-[480px] p-[48px]">
@@ -470,7 +470,7 @@ function FeatureSlideCard({
             alt=""
             aria-hidden="true"
             draggable={false}
-            className={`h-full w-full object-contain ${card.desktopImageClassName}`}
+            className={`h-full w-full object-contain transition-transform duration-200 ease-out group-hover:scale-[1.01] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${card.desktopImageClassName}`}
           />
         </div>
       </div>
@@ -478,7 +478,7 @@ function FeatureSlideCard({
   }
 
   return (
-    <div className="relative h-[493px] overflow-hidden rounded-[16px]">
+    <div className="group relative h-[493px] overflow-hidden rounded-[16px]">
       <div className="absolute inset-x-0 bottom-0 top-[93px] rounded-[16px] bg-surface" />
       <div className={`pointer-events-none absolute ${card.imageFrameClassName}`}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -487,7 +487,7 @@ function FeatureSlideCard({
             alt=""
             aria-hidden="true"
             draggable={false}
-            className={`h-full w-full object-contain ${card.imageClassName}`}
+            className={`h-full w-full object-contain transition-transform duration-200 ease-out group-hover:scale-[1.01] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${card.imageClassName}`}
           />
         </div>
       </div>

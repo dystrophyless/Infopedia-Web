@@ -1,3 +1,5 @@
+# ruff: noqa: I001, PT009, Q004
+
 import unittest
 from pathlib import Path
 
@@ -30,11 +32,7 @@ class FavoritesRouterSourceContractTests(unittest.TestCase):
         self.assertEqual(status_source.count("await get_existing_term_ids("), 1)
         self.assertEqual(status_source.count("await get_favorite_term_ids("), 1)
 
-    def test_production_startup_registers_and_migrates_favorites(self):
+    def test_production_startup_is_schema_side_effect_free(self):
         self.assertIn("import src.favorites.models", MAIN_SOURCE)
-        self.assertIn("from src.migrations.favorites_migration import migrate_favorites_schema", MAIN_SOURCE)
         startup = MAIN_SOURCE[MAIN_SOURCE.index("async def lifespan"):MAIN_SOURCE.index("def get_cors_origins")]
-        self.assertLess(
-            startup.index("await ensure_user_schema_compatibility(async_engine)"),
-            startup.index("await migrate_favorites_schema(async_engine)"),
-        )
+        self.assertNotRegex(startup, r"create_all|migrat|seed|loader|ensure_user_schema")

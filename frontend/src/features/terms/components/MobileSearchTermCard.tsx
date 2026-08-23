@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { Definition, Term } from '../../../types';
 import { FavoriteToggle } from '../../favorites/components';
 import { normalizeDefinitionPreviewText } from '../model';
@@ -31,6 +32,42 @@ export function MobileSearchTermCard({
       ? t('search.pageChip', { page: definition.page })
       : null;
   const chips = [source, page].filter(Boolean);
+  const previewRef = useRef<HTMLParagraphElement>(null);
+  const [definitionOverflowing, setDefinitionOverflowing] = useState(false);
+  const definitionText = definition ? normalizeDefinitionPreviewText(definition.text) : '';
+
+  useLayoutEffect(() => {
+    const node = previewRef.current;
+    if (!node) return;
+
+    let cancelled = false;
+    const measure = () => {
+      if (cancelled) return;
+      const lineHeight = Number.parseFloat(window.getComputedStyle(node).lineHeight) || 16;
+      const previousMaxHeight = node.style.maxHeight;
+      const previousOverflow = node.style.overflow;
+      node.style.maxHeight = 'none';
+      node.style.overflow = 'visible';
+      const contentHeight = node.scrollHeight;
+      node.style.maxHeight = previousMaxHeight;
+      node.style.overflow = previousOverflow;
+      const visibleLines = Math.round(contentHeight / lineHeight);
+      setDefinitionOverflowing(visibleLines > 6);
+    };
+
+    measure();
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) measure();
+    });
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(node);
+    if (!observer) window.addEventListener('resize', measure);
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      if (!observer) window.removeEventListener('resize', measure);
+    };
+  }, [definitionText]);
 
   return (
     <article className="flex flex-col gap-8 rounded-[16px] bg-white px-6 py-8 text-[#161519]">
@@ -49,16 +86,26 @@ export function MobileSearchTermCard({
         </div>
 
         {definition && (
-          <div className="relative h-24 overflow-hidden">
-            <p className="line-clamp-6 whitespace-pre-line text-[16px] leading-none text-[#8c8698]">
-              {normalizeDefinitionPreviewText(definition.text)}
+          <div data-mobile-definition-preview className="relative h-24 overflow-hidden">
+            <p
+              ref={previewRef}
+              style={{ maxHeight: 96, overflowWrap: 'anywhere' }}
+              className="break-words overflow-hidden whitespace-pre-line text-[16px] leading-[16px] text-[#8c8698]"
+            >
+              {definitionText}
             </p>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white to-transparent" />
+            {definitionOverflowing && (
+              <div
+                aria-hidden="true"
+                data-mobile-definition-fade
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white to-transparent"
+              />
+            )}
           </div>
         )}
 
         {chips.length > 0 && (
-          <div className="flex h-6 flex-wrap items-center gap-2 overflow-hidden">
+          <div data-mobile-definition-metadata className="flex h-6 flex-wrap items-center gap-2 overflow-hidden">
             {chips.map((chip) => (
               <span
                 key={chip}

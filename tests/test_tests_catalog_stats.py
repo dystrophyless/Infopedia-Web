@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 import src.models  # noqa: F401
 from src.database import Base
-from src.migrations.tests_migration import _migrate_test_tables
 from src.tests.catalog_stats import (
     canonical_catalog_fingerprint,
     publish_test_catalog_generation,
@@ -168,7 +167,7 @@ class CatalogStatsDatabaseTests(unittest.IsolatedAsyncioTestCase):
             self.session.commit()
         self.session.rollback()
 
-    def test_migration_creates_catalog_tables_and_is_idempotent(self):
+    def test_metadata_creates_catalog_tables_and_is_idempotent(self):
         engine = create_engine("sqlite:///:memory:")
         try:
             Base.metadata.create_all(
@@ -182,10 +181,16 @@ class CatalogStatsDatabaseTests(unittest.IsolatedAsyncioTestCase):
                 ],
             )
             with engine.begin() as connection:
-                _migrate_test_tables(connection)
+                Base.metadata.create_all(
+                    connection,
+                    tables=[TestCatalogGeneration.__table__, TestCatalogState.__table__, TestCatalogStat.__table__],
+                )
             first_tables = set(inspect(engine).get_table_names())
             with engine.begin() as connection:
-                _migrate_test_tables(connection)
+                Base.metadata.create_all(
+                    connection,
+                    tables=[TestCatalogGeneration.__table__, TestCatalogState.__table__, TestCatalogStat.__table__],
+                )
             second_tables = set(inspect(engine).get_table_names())
             self.assertTrue({
                 "test_catalog_generation",

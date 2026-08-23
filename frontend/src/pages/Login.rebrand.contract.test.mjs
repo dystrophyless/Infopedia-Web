@@ -7,8 +7,10 @@ assert.match(loginSource, /function getLoginValidationErrors\([\s\S]*?email: str
 assert.match(loginSource, /const loginCanSubmit = Object\.keys\(loginValidationErrors\)\.length === 0/);
 assert.match(loginSource, /<AuthSubmit[\s\S]*disabled=\{!loginCanSubmit\}/);
 assert.match(loginSource, /const nextErrors = getLoginValidationErrors\(email, password, t\)/);
-assert.match(loginSource, /const credentialsComplete = loginCanSubmit/);
-assert.match(loginSource, /mobileProgress=\{\{ step: 3, completedSegments: credentialsComplete \? 3 : 2 \}\}/);
+assert.doesNotMatch(loginSource, /const credentialsComplete/);
+assert.doesNotMatch(loginSource, /mobileProgress=/);
+assert.doesNotMatch(loginSource, /mobileHeaderMode="status-aware"/);
+assert.doesNotMatch(loginSource, /mobileHeaderMode=/);
 assert.match(loginSource, /desktopLayout="centered-card"/);
 assert.doesNotMatch(loginSource, /desktopFlowStep=\{3\}/);
 assert.match(loginSource, /<AuthSubmit[\s\S]*loading=\{loading\}[\s\S]*mobileVisual="figma-auth"[\s\S]*desktopVisual="onboarding">/);

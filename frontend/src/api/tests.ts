@@ -109,6 +109,29 @@ export type TestsDashboard = {
   modeAvailability: TestsModeAvailability[];
 };
 
+const TEST_MODE_TITLES: Record<'ru' | 'kk', Record<TestMode, string>> = {
+  ru: {
+    random: 'Случайный тест',
+    weak: 'Тест по слабым темам',
+    mock: 'Пробный тест',
+    chapter: 'Тест по разделу',
+  },
+  kk: {
+    random: 'Кездейсоқ тест',
+    weak: 'Әлсіз тақырыптар бойынша тест',
+    mock: 'Сынақ тесті',
+    chapter: 'Бөлім бойынша тест',
+  },
+};
+
+export function normalizeTestLocale(locale: string | undefined): 'ru' | 'kk' {
+  return locale?.toLowerCase() === 'kk' ? 'kk' : 'ru';
+}
+
+export function getTestModeTitle(mode: TestMode, locale = 'ru'): string {
+  return TEST_MODE_TITLES[normalizeTestLocale(locale)][mode];
+}
+
 type UnknownRecord = Record<string, unknown>;
 const asRecord = (value: unknown): UnknownRecord =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as UnknownRecord) : {};
@@ -202,7 +225,7 @@ const normalizeSummary = (value: unknown): TestCompletionSummary | null => {
   };
 };
 
-const normalizeSession = (value: unknown): TestSession => {
+const normalizeSession = (value: unknown, locale = 'ru'): TestSession => {
   const record = asRecord(value);
   const questions = Array.isArray(record.questions) ? record.questions.map(normalizeQuestion) : [];
   const rawAnswers = asRecord(record.answers);
@@ -213,7 +236,7 @@ const normalizeSession = (value: unknown): TestSession => {
     id: firstString(record, 'id', 'attempt_id', 'attemptId', 'attempt_ref', 'attemptRef'),
     attemptRef: firstString(record, 'attempt_ref', 'attemptRef', 'ref', 'id'),
     mode: normalizeMode(record.mode),
-    title: firstString(record, 'title', 'name'),
+    title: getTestModeTitle(normalizeMode(record.mode), locale),
     status: record.status === 'completed' || Boolean(record.completed_at ?? record.completedAt) ? 'completed' : 'active',
     questions,
     answers: Object.keys(answers).length ? answers : undefined,
@@ -224,7 +247,7 @@ const normalizeSession = (value: unknown): TestSession => {
   };
 };
 
-const normalizeDashboard = (value: unknown): TestsDashboard => {
+const normalizeDashboard = (value: unknown, locale = 'ru'): TestsDashboard => {
   const record = asRecord(value);
   const chapters = Array.isArray(record.chapters)
     ? record.chapters.map((item) => {
@@ -248,7 +271,7 @@ const normalizeDashboard = (value: unknown): TestsDashboard => {
         return {
           id: firstString(recent, 'id', 'attempt_ref', 'attemptRef'),
           mode: normalizeMode(recent.mode),
-          title: firstString(recent, 'title', 'name'),
+          title: getTestModeTitle(normalizeMode(recent.mode), locale),
           completedAt: firstString(recent, 'completed_at', 'completedAt'),
           displayDate: firstString(recent, 'display_date', 'displayDate') || undefined,
           accuracy: firstNumber(recent, 'accuracy', 'score_percent', 'scorePercent') ?? 0,
@@ -301,7 +324,7 @@ export const normalizeTestCompletion = (value: unknown): TestCompletionSummary |
 export async function getTestsDashboard(locale = 'ru'): Promise<TestsDashboard> {
   try {
     const { data } = await apiClient.get('/api/tests/dashboard', { params: { locale } });
-    return normalizeDashboard(data);
+    return normalizeDashboard(data, locale);
   } catch (error) {
     const response = (error as { response?: { status?: unknown; data?: unknown } } | null)?.response;
     const payload = asRecord(response?.data);
@@ -313,17 +336,23 @@ export async function getTestsDashboard(locale = 'ru'): Promise<TestsDashboard> 
   }
 }
 
-export async function createTestAttempt(mode: TestMode | 'default', chapterRef?: string): Promise<TestSession> {
+export function createTestAttempt(mode: TestMode | 'default', chapterRef?: string): Promise<TestSession>;
+export function createTestAttempt(mode: TestMode | 'default', chapterRef?: string, locale?: string): Promise<TestSession>;
+export async function createTestAttempt(mode: TestMode | 'default', chapterRef?: string, locale?: string): Promise<TestSession> {
   const normalizedMode: TestMode = mode === 'default' ? 'random' : mode;
   const payload: { mode: TestMode; chapter_ref?: string } = { mode: normalizedMode };
   if (chapterRef) payload.chapter_ref = chapterRef;
-  const { data } = await apiClient.post('/api/tests/attempts', payload);
-  return normalizeSession(data);
+  const { data } = locale
+    ? await apiClient.post('/api/tests/attempts', payload, { params: { locale } })
+    : await apiClient.post('/api/tests/attempts', payload);
+  return normalizeSession(data, locale);
 }
 
-export async function getTestAttempt(attemptRef: string): Promise<TestSession> {
-  const { data } = await apiClient.get('/api/tests/attempts/' + encodeURIComponent(attemptRef));
-  return normalizeSession(data);
+export async function getTestAttempt(attemptRef: string, locale?: string): Promise<TestSession> {
+  const { data } = locale
+    ? await apiClient.get('/api/tests/attempts/' + encodeURIComponent(attemptRef), { params: { locale } })
+    : await apiClient.get('/api/tests/attempts/' + encodeURIComponent(attemptRef));
+  return normalizeSession(data, locale);
 }
 
 export async function submitTestAnswer(attemptRef: string, questionRef: string, optionRef: string): Promise<TestAnswerFeedback> {

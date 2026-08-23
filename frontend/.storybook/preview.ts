@@ -16,11 +16,6 @@ const preview = {
     },
     a11y: {
       test: 'error',
-      // Approved source-palette exception: keep every axe rule blocking except
-      // color-contrast, whose exact Figma colors are intentionally retained.
-      config: {
-        rules: [{ id: 'color-contrast', enabled: false }],
-      },
     },
     backgrounds: {
       options: {

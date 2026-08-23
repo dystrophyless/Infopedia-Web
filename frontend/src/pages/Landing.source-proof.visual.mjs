@@ -105,6 +105,7 @@ async function inspectViewport(browser, name, width, height) {
           fontWeight: style.fontWeight,
           gap: style.gap,
           margin: style.margin,
+          textAlign: style.textAlign,
           overflow: style.overflow,
           outlineStyle: style.outlineStyle,
           outlineWidth: style.outlineWidth,
@@ -134,6 +135,11 @@ async function inspectViewport(browser, name, width, height) {
       const analysisRail = document.querySelector('#desktop-analysis [data-desktop-content-rail]');
       const featureGrid = document.querySelector('#desktop-feature-rail');
       const analysisStage = document.querySelector('[data-analysis-stage]');
+      const analysisTitle = analysisStage?.querySelector('h2');
+      const analysisResult = document.querySelector('#desktop-analysis [data-analysis-snippet="result"]');
+      const analysisRegistration = document.querySelector('#desktop-analysis [data-analysis-snippet="registration"]');
+      const analysisUpload = document.querySelector('#desktop-analysis [data-analysis-snippet="upload"]');
+      const analysisStepList = document.querySelector('#desktop-analysis [data-desktop-content-rail] > ol');
       const desktopBranch = card?.closest('.hidden.md\\:block');
       const mobileBranch = document.querySelector('#mobile-source-proof')?.closest('.md\\:hidden');
       const cta = card?.querySelector('a');
@@ -160,10 +166,8 @@ async function inspectViewport(browser, name, width, height) {
         imageStyle: styleOf(element.querySelector('img')),
         href: element.getAttribute('href'),
       }));
-      const analysisSteps = [...document.querySelectorAll('[data-analysis-steps] > li')].map((element) => ({
+      const analysisSteps = [...document.querySelectorAll('#desktop-analysis [data-desktop-content-rail] > ol > li')].map((element) => ({
         rect: rectOf(element),
-        visual: rectOf(element.querySelector('[data-analysis-visual]')),
-        snippet: rectOf(element.querySelector('[data-analysis-snippet]')),
         number: rectOf(element.querySelector('span')),
         title: rectOf(element.querySelector('h3')),
         description: rectOf(element.querySelector('p')),
@@ -196,6 +200,14 @@ async function inspectViewport(browser, name, width, height) {
         },
         featureGrid: rectOf(featureGrid),
         analysisStage: rectOf(analysisStage),
+        analysisTitle: rectOf(analysisTitle),
+        analysisStepList: rectOf(analysisStepList),
+        analysisSnippets: {
+          result: rectOf(analysisResult),
+          registration: rectOf(analysisRegistration),
+          upload: rectOf(analysisUpload),
+        },
+        analysisResultStyle: styleOf(analysisResult),
         featureCards,
         analysisSteps,
         guestTermCards,
@@ -260,15 +272,49 @@ async function inspectViewport(browser, name, width, height) {
         interactions.feature = { before, after, ...hoverState, ...focusState };
         await page.mouse.move(0, 0);
       }
+      const analysisInteractionTarget = page.locator('[data-analysis-stage]');
+      await analysisInteractionTarget.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
       const snippets = page.locator('[data-analysis-snippet]');
       interactions.analysis = [];
       for (let index = 0; index < await snippets.count(); index += 1) {
         const snippet = snippets.nth(index);
         const before = await snippet.boundingBox();
+        const beforeLayout = await snippet.evaluate((element) => ({
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+        }));
+        const beforeScroll = await page.evaluate(() => ({
+          x: window.scrollX,
+          y: window.scrollY,
+          documentWidth: document.documentElement.scrollWidth,
+          bodyWidth: document.body.scrollWidth,
+        }));
         await snippet.hover();
         const after = await snippet.boundingBox();
+        const afterLayout = await snippet.evaluate((element) => ({
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+        }));
+        const afterScroll = await page.evaluate(() => ({
+          x: window.scrollX,
+          y: window.scrollY,
+          documentWidth: document.documentElement.scrollWidth,
+          bodyWidth: document.body.scrollWidth,
+        }));
         const transform = await snippet.evaluate((element) => getComputedStyle(element).transform);
-        interactions.analysis.push({ name: await snippet.getAttribute('data-analysis-snippet'), before, after, transform });
+        const center = (box) => box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : null;
+        interactions.analysis.push({
+          name: await snippet.getAttribute('data-analysis-snippet'),
+          before,
+          after,
+          beforeCenter: center(before),
+          afterCenter: center(after),
+          beforeLayout,
+          afterLayout,
+          beforeScroll,
+          afterScroll,
+          transform,
+        });
         await page.mouse.move(0, 0);
       }
     } else {
@@ -282,6 +328,7 @@ async function inspectViewport(browser, name, width, height) {
         await page.waitForTimeout(160);
         const moving = await readScrollLeft();
         await guestCard.hover({ force: true });
+        await page.waitForTimeout(32);
         const pausedBefore = await readScrollLeft();
         await page.waitForTimeout(160);
         const pausedAfter = await readScrollLeft();
@@ -397,19 +444,53 @@ async function inspectViewport(browser, name, width, height) {
       assert.equal(metrics.interactions.feature.focusVisible, true, 'feature card should retain a visible keyboard focus ring');
       assert.equal(metrics.interactions.feature.outlineStyle, 'solid');
       assert.equal(metrics.interactions.feature.outlineWidth, '2px');
-      assert.deepEqual(metrics.interactions.analysis.map(({ name }) => name), ['registration', 'upload', 'result']);
+      assert.deepEqual(metrics.interactions.analysis.map(({ name }) => name), ['result', 'registration', 'upload']);
       for (const interaction of metrics.interactions.analysis) {
-        assert.notEqual(interaction.transform, 'none', `${interaction.name} hover should transform its whole shell`);
-        assert.ok(interaction.after.width > interaction.before.width, `${interaction.name} hover width should increase`);
+        assert.notEqual(interaction.transform, 'none', interaction.name + ' hover should transform its whole shell');
+        assert.ok(interaction.after.width > interaction.before.width, interaction.name + ' hover width should increase');
+        assert.ok(Math.abs(interaction.afterCenter.x - interaction.beforeCenter.x) <= 0.5, interaction.name + ' hover should stay center-stable on x');
+        assert.ok(Math.abs(interaction.afterCenter.y - interaction.beforeCenter.y) <= 0.5, interaction.name + ' hover should stay center-stable on y');
+        assert.deepEqual(interaction.afterLayout, interaction.beforeLayout, interaction.name + ' hover must not change layout dimensions');
+        assert.deepEqual(interaction.afterScroll, interaction.beforeScroll, interaction.name + ' hover must not move document scroll or width');
       }
+      assert.equal(metrics.analysisStage.height, 327, 'Analyze stage height must remain 327px at the xl source viewport');
+      assert.equal(metrics.analysisTitle.x, metrics.analysisStage.x, 'Analyze title must stay at the stage left edge');
+      assert.equal(metrics.analysisTitle.y, metrics.analysisStage.y, 'Analyze title must stay at the stage top edge');
+      assert.deepEqual(
+        {
+          result: {
+            x: metrics.analysisStage.x + 803,
+            y: metrics.analysisStage.y,
+            width: 292,
+          },
+          registration: {
+            x: metrics.analysisStage.x + 29,
+            y: metrics.analysisStage.y + 223,
+            width: 284,
+          },
+          upload: {
+            x: metrics.analysisStage.x + 410,
+            y: metrics.analysisStage.y + 135,
+            width: 300,
+          },
+        },
+        Object.fromEntries(Object.entries(metrics.analysisSnippets).map(([name, rect]) => [name, {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+        }])),
+        'Analyze visual siblings must keep the oracle xl offsets and widths',
+      );
+      assert.equal(metrics.analysisSnippets.registration.height, 88);
+      assert.equal(metrics.analysisSnippets.upload.height, 176);
+      assert.equal(metrics.analysisResultStyle.textAlign, 'start', 'Analyze result text must remain left/start aligned');
+      assert.equal(metrics.analysisStepList.y, metrics.analysisStage.bottom, 'Analyze step copy must start immediately below the 327px visual stage');
       assert.equal(metrics.analysisSteps.length, 3, 'Analyze should render three paired columns');
-      const stepBottoms = metrics.analysisSteps.map(({ bottom }) => bottom);
-      assert.ok(Math.max(...stepBottoms) - Math.min(...stepBottoms) <= 0.5, 'Analyze columns should share a bottom edge');
       for (const step of metrics.analysisSteps) {
-        assert.ok(step.rect.x >= metrics.analysisStage.x - 0.5, 'Analyze column must stay inside the desktop rail');
-        assert.ok(step.rect.right <= metrics.analysisStage.right + 0.5, 'Analyze column must not drift past the desktop rail');
-        assert.ok(step.snippet.x >= metrics.analysisStage.x - 0.5, 'Analyze visual must stay inside its paired column');
-        assert.ok(step.snippet.right <= metrics.analysisStage.right + 0.5, 'Analyze visual must stay inside the desktop rail');
+        assert.ok(Math.abs(step.rect.y - metrics.analysisStage.bottom) <= 0.5, 'Analyze step copy must share the stage bottom Y');
+        assert.ok(Math.abs(step.number.y - step.rect.y - 32) <= 0.5, 'Analyze number must retain its original 32px top padding');
+        assert.ok(Math.abs(step.title.y - step.number.bottom - 16) <= 0.5, 'Analyze title must retain the original 16px gap');
+        assert.ok(Math.abs(step.description.y - step.title.bottom - 16) <= 0.5, 'Analyze description must retain the original 16px gap');
       }
     }
 
@@ -426,12 +507,12 @@ async function inspectViewport(browser, name, width, height) {
       assert.ok(metrics.featureGrid.x >= 23.5 && metrics.featureGrid.right <= 1000.5, 'fallback feature grid must fit the 24px rail');
       assert.ok(metrics.analysisStage.x >= 23.5 && metrics.analysisStage.right <= 1000.5, 'fallback analysis stage must fit the 24px rail');
       assert.ok(metrics.card.x >= 23.5 && metrics.card.right <= 1000.5, 'fallback source card must fit the 24px rail');
-      assert.equal(metrics.analysisSteps.length, 3, '1024px Analyze layout should keep three columns at lg');
-      const stepBottoms = metrics.analysisSteps.map(({ bottom }) => bottom);
-      assert.ok(Math.max(...stepBottoms) - Math.min(...stepBottoms) <= 0.5, '1024px Analyze columns should share a bottom edge');
-      for (const step of metrics.analysisSteps) {
-        assert.ok(step.snippet.x >= metrics.analysisStage.x - 0.5 && step.snippet.right <= metrics.analysisStage.right + 0.5, '1024px visual must stay in the rail');
+      for (const [name, snippet] of Object.entries(metrics.analysisSnippets)) {
+        assert.ok(snippet.x >= metrics.analysisStage.x - 0.5, `${name} 1024px visual must stay inside the fallback stage`);
+        assert.ok(snippet.right <= metrics.analysisStage.right + 0.5, `${name} 1024px visual must stay inside the fallback stage`);
       }
+      assert.ok(metrics.analysisStepList.y >= metrics.analysisStage.bottom + 31.5, '1024px Analyze step copy must remain separate below the fallback stage');
+      assert.notEqual(metrics.analysisResultStyle.textAlign, 'center', '1024px Analyze result text must not inherit centered step copy');
       assert.ok(metrics.scroll.documentWidth <= metrics.viewport.width, '1024px document must not overflow horizontally');
       assert.ok(metrics.scroll.bodyWidth <= metrics.viewport.width, '1024px body must not overflow horizontally');
     }
@@ -480,6 +561,13 @@ async function inspectViewport(browser, name, width, height) {
         if (position === 'fixed' || position === 'sticky') element.style.visibility = 'hidden';
       });
     });
+    if (name === 'desktop-1440') {
+      const analysisTarget = page.locator('#desktop-analysis');
+      await analysisTarget.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+      const analysisBox = await analysisTarget.boundingBox();
+      assert.ok(analysisBox, 'desktop-1440 Analyze screenshot target must have a bounding box');
+      await page.screenshot({ path: path.join(outputDir, 'desktop-1440-analysis.png'), clip: analysisBox });
+    }
     await target.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
     const screenshotBox = await target.boundingBox();
     assert.ok(screenshotBox, `${name} screenshot target must have a bounding box`);

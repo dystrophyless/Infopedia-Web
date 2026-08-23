@@ -1,20 +1,18 @@
-# ruff: noqa: C901, PLR0915, PT009
+# ruff: noqa: C901, PLR0915, PT009, PT027
 import asyncio
 import os
+import re
 import sys
 import unittest
 from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import delete
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 import src.favorites.models  # noqa: F401 - mirror production bootstrap model registration
-from src.database import init_vector_extension
-from src.migrations.chapter_migration import migrate_chapter_schema
-from src.migrations.favorites_migration import migrate_favorites_schema
-from src.migrations.tests_migration import migrate_tests_schema
-from src.models import Base
+from src.schema import initialize_schema
 from src.security.public_refs import encode_public_ref
 from src.tests.errors import AttemptCompletedError
 from src.tests.models import (
@@ -33,15 +31,49 @@ if sys.platform == "win32" and hasattr(asyncio, "WindowsSelectorEventLoopPolicy"
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
+def _validated_concurrency_database_url() -> str:
+    if os.environ.get("ALLOW_DISPOSABLE_POSTGRES") != "1":
+        raise ValueError("ALLOW_DISPOSABLE_POSTGRES=1 is required")
+    database_url = os.environ.get("TEST_DISPOSABLE_DATABASE_URL", "").strip()
+    if not database_url.startswith("postgresql+psycopg://"):
+        raise ValueError("TEST_DISPOSABLE_DATABASE_URL must use postgresql+psycopg://")
+    database_name = make_url(database_url).database or ""
+    if not re.fullmatch(r"infopedia_concurrency_[0-9a-f]{12}", database_name):
+        raise ValueError("TEST_DISPOSABLE_DATABASE_URL must target infopedia_concurrency_<12hex>")
+    return database_url
+
+
 class TestTestsAttemptConcurrencyPostgres(unittest.IsolatedAsyncioTestCase):
+    def test_database_configuration_fails_closed(self):
+        original_opt_in = os.environ.pop("ALLOW_DISPOSABLE_POSTGRES", None)
+        original_url = os.environ.pop("TEST_DISPOSABLE_DATABASE_URL", None)
+        try:
+            with self.assertRaises(ValueError):
+                _validated_concurrency_database_url()
+            os.environ["ALLOW_DISPOSABLE_POSTGRES"] = "1"
+            os.environ["TEST_DISPOSABLE_DATABASE_URL"] = "postgresql+psycopg://example@localhost:5432/infopedia"
+            with self.assertRaises(ValueError):
+                _validated_concurrency_database_url()
+        finally:
+            if original_opt_in is not None:
+                os.environ["ALLOW_DISPOSABLE_POSTGRES"] = original_opt_in
+            else:
+                os.environ.pop("ALLOW_DISPOSABLE_POSTGRES", None)
+            if original_url is not None:
+                os.environ["TEST_DISPOSABLE_DATABASE_URL"] = original_url
+            else:
+                os.environ.pop("TEST_DISPOSABLE_DATABASE_URL", None)
+
     async def test_two_client_answer_and_complete_linearization(self):  # noqa: PLR0912
-        database_url = os.environ.get("TEST_DATABASE_URL", "")
+        database_url = os.environ.get("TEST_DISPOSABLE_DATABASE_URL", "")
         if not database_url:
             if os.environ.get("REQUIRE_POSTGRES_INTEGRATION") == "1":
-                self.fail("NOT RUN: TEST_DATABASE_URL is required for PostgreSQL concurrency verification")
-            self.skipTest("NOT RUN: set TEST_DATABASE_URL for the two-client PostgreSQL concurrency gate")
-        if not database_url.startswith("postgresql+psycopg"):
-            self.fail("PostgreSQL concurrency gate requires a postgresql+psycopg TEST_DATABASE_URL")
+                self.fail("NOT RUN: TEST_DISPOSABLE_DATABASE_URL is required for PostgreSQL concurrency verification")
+            self.skipTest("NOT RUN: set TEST_DISPOSABLE_DATABASE_URL and ALLOW_DISPOSABLE_POSTGRES=1 for the concurrency gate")
+        try:
+            database_url = _validated_concurrency_database_url()
+        except ValueError as exc:
+            self.fail(str(exc))
 
         engine = create_async_engine(database_url, pool_size=4, max_overflow=0)
         sessions = async_sessionmaker(engine, expire_on_commit=False)
@@ -54,15 +86,9 @@ class TestTestsAttemptConcurrencyPostgres(unittest.IsolatedAsyncioTestCase):
         created_book_ids: list[int] = []
         created_user_ids: list[int] = []
         try:
-            # Mirror the production bootstrap order on this disposable engine:
-            # initialize required extensions, create referenced app tables,
-            # then run compatibility migrations before Tests adds catalog FKs.
-            await init_vector_extension(engine)
-            async with engine.begin() as connection:
-                await connection.run_sync(Base.metadata.create_all)
-            await migrate_chapter_schema(engine)
-            await migrate_favorites_schema(engine)
-            await migrate_tests_schema(engine)
+            # The caller must provide a uniquely named disposable database;
+            # this gate never initializes or mutates the live target.
+            await initialize_schema(engine)
             async with sessions() as setup:
                 fixture_tag = uuid4().hex
                 user = User(
@@ -197,7 +223,7 @@ class TestTestsAttemptConcurrencyPostgres(unittest.IsolatedAsyncioTestCase):
             )
 
             async with sessions() as session:
-                with self.assertRaises(AttemptCompletedError):  # noqa: PT027
+                with self.assertRaises(AttemptCompletedError):
                     await TestsService(session, now=fixed_now).submit_answer(
                         user_id=user_ref,
                         attempt_ref=empty_attempt_ref,
@@ -260,7 +286,7 @@ class TestTestsAttemptConcurrencyPostgres(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(race_summary["answered_questions"], 1)
 
             async with sessions() as session:
-                with self.assertRaises(AttemptCompletedError):  # noqa: PT027
+                with self.assertRaises(AttemptCompletedError):
                     await TestsService(session, now=fixed_now).submit_answer(
                         user_id=user_ref,
                         attempt_ref=race_attempt_ref,

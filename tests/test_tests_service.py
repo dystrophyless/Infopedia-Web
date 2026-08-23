@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import selectinload
 
 import src.models  # noqa: F401 - register SQLAlchemy relationships for snapshot construction
-from src.migrations.tests_migration import migrate_tests_schema
 from src.security.public_refs import encode_public_ref
 from src.tests.errors import AttemptCompletedError
 from src.tests.models import TestAttempt, TestQuestion, TestQuestionOption
@@ -568,7 +567,6 @@ class TestAttemptSelectionTests(unittest.IsolatedAsyncioTestCase):
         attempt_id: int | None = None
         question_ids: list[int] = []
         try:
-            await migrate_tests_schema(engine)
             async with sessions() as session:
                 user_id = (await session.execute(select(User.id).order_by(User.id).limit(1))).scalar_one_or_none()
                 eligibility = (

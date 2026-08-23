@@ -39,8 +39,6 @@ PROPAGATOR_NAMES = {
     "seed_question_bank_core",
     "load_test_questions",
     "load_test_questions_core",
-    "migrate_chapter_schema",
-    "migrate_tests_schema",
 }
 
 # These helpers contain the ORM mutations, but their public wrappers own the
@@ -61,15 +59,10 @@ ALLOWLIST = {
     "src.loader:load_books_topics_and_mappings",
     "src.loader:load_books_topics_and_mappings_core",
     "src.prepare_app:main.load_all",
-    "src.prepare_app:create_tables",
-    "src.main:lifespan",
     "src.tests.question_loader:seed_question_bank",
     "src.tests.question_loader:load_test_questions",
     "src.tests.question_loader:seed_question_bank_core",
     "src.tests.question_loader:load_test_questions_core",
-    "src.migrations.chapter_migration:migrate_chapter_schema",
-    "src.migrations.tests_migration:_migrate_test_tables",
-    "src.migrations.tests_migration:postgresql_legacy_question_statements",
 }
 
 
@@ -99,8 +92,6 @@ class _WriterVisitor(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.scope.append(node.name)
-        if node.name in {"migrate_chapter_schema"}:
-            self._mark_candidate()
         self.generic_visit(node)
         self.scope.pop()
 

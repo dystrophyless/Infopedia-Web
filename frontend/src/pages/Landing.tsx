@@ -251,24 +251,6 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
       description: t('landing.desktopAnalyzeStep1Body', {
         defaultValue: 'Не занимает много времени, 30 секунд',
       }),
-      visual: (
-        <div
-          data-analysis-snippet="registration"
-          className="grid w-full max-w-[284px] gap-2 transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100"
-        >
-          <div className="flex h-10 items-center gap-4 rounded-[8px] bg-white px-6 text-[14px] text-[#c5b1e7]">
-            <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.7} aria-hidden="true" />
-            <span>{t('landing.desktopAnalyzeEmail', { defaultValue: 'Электронная почта' })}</span>
-          </div>
-          <div className="flex h-10 items-center justify-between rounded-[8px] bg-white px-6 text-[14px] text-[#c5b1e7]">
-            <span className="flex items-center gap-4">
-              <HugeiconsIcon icon={LockPasswordIcon} size={16} strokeWidth={1.7} aria-hidden="true" />
-              <span>{t('landing.desktopAnalyzePassword', { defaultValue: 'Пароль' })}</span>
-            </span>
-            <HugeiconsIcon icon={ViewIcon} size={16} strokeWidth={1.7} aria-hidden="true" />
-          </div>
-        </div>
-      ),
     },
     {
       number: 2,
@@ -276,24 +258,6 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
       description: t('landing.desktopAnalyzeStep2Body', {
         defaultValue: 'Скачайте файл со статистикой тем вашего ЕНТ в личном кабинете тестцентра и загрузите его',
       }),
-      visual: (
-        <div
-          data-analysis-snippet="upload"
-          className="flex h-44 w-full max-w-[300px] flex-col items-center justify-center gap-4 rounded-[8px] border-[1.5px] border-dashed border-[#a585db] bg-white px-6 text-center transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100"
-        >
-          <span className="flex size-12 items-center justify-center rounded-full bg-[#ded2f1] text-[#6a37c3]">
-            <HugeiconsIcon icon={DocumentAttachmentIcon} size={24} strokeWidth={1.6} aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-[14px] font-medium leading-[14px] text-[#161519]">
-              {t('landing.desktopAnalyzeUpload', { defaultValue: 'Нажмите, чтобы загрузить файл' })}
-            </p>
-            <p className="mt-2 text-[12px] leading-3 text-[#a585db]">
-              {t('landing.desktopAnalyzeUploadHelp', { defaultValue: 'Не знаете как его получить? Узнать' })}
-            </p>
-          </div>
-        </div>
-      ),
     },
     {
       number: 3,
@@ -301,85 +265,104 @@ function DesktopEntAnalysis({ isAuthenticated = false }: { isAuthenticated?: boo
       description: t('landing.desktopAnalyzeStep3Body', {
         defaultValue: 'Мы персонализируем подготовку и наглядно покажем, где вы ошибаетесь чаще всего',
       }),
-      visual: (
-        <div
-          data-analysis-snippet="result"
-          className="w-full max-w-[292px] rounded-[8px] bg-white p-6 transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[14px] font-medium leading-[14px] text-[#161519]">
-                {t('landing.desktopAnalyzeResultTopic', { defaultValue: 'Веб-проектирование' })}
-              </p>
-              <p className="mt-1 text-[10px] leading-[10px] text-[#8c8698]">
-                {t('landing.desktopAnalyzeResultScore', { defaultValue: '1 из 5 баллов — 20%' })}
-              </p>
-            </div>
-            <span className="text-[10px] leading-[10px] text-[#bc251a]">
-              {t('landing.desktopAnalyzeResultLost', { defaultValue: 'Потеряно 4 балла' })}
-            </span>
-          </div>
-          <div className="my-4 h-px bg-[#f6f5f7]" />
-          <div className="px-2">
-            <p className="text-[12px] font-medium leading-3 text-[#6a37c3]">
-              {t('landing.desktopAnalyzeResultPrep', { defaultValue: 'Все темы для подготовки' })}
-            </p>
-            <p className="mt-1 text-[10px] leading-[10px] text-[#a585db]">
-              {t('landing.desktopAnalyzeResultGrade', { defaultValue: 'Материалы 10 класса' })}
-            </p>
-            <ul className="mt-4 grid gap-2 text-[10px] leading-[10px] text-[#6e6779]">
-              {[
-                t('landing.desktopAnalyzeResultItem1', { defaultValue: 'Использование HTML-тегов при создании веб-страниц' }),
-                t('landing.desktopAnalyzeResultItem2', { defaultValue: 'Использование CSS для создания веб-страниц' }),
-                t('landing.desktopAnalyzeResultItem3', { defaultValue: 'Использование готовых скриптов при создании веб-страниц' }),
-                t('landing.desktopAnalyzeResultItem4', { defaultValue: 'Использование HTML-тегов для вставки мультимедийных объектов на веб-страницу' }),
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <HugeiconsIcon icon={BookOpen01Icon} size={16} strokeWidth={1.6} className="shrink-0" aria-hidden="true" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <Link
-            to={landingCtaTarget('/practice-by-topic', isAuthenticated)}
-            className="mt-6 flex h-8 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[12px] font-medium leading-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
-          >
-            {t('landing.desktopAnalyzeResultCta', { defaultValue: 'Начать практику →' })}
-          </Link>
-        </div>
-      ),
     },
   ];
 
   return (
     <section id="desktop-analysis" data-nav-section className="bg-[#efebf6] pb-[220px]">
       <div data-desktop-content-rail className="mx-auto w-full max-w-[1152px] px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
-        <div data-analysis-stage className="flex flex-col gap-10">
-          <h2 className="text-[48px] font-medium leading-[48px] text-[#161519]">
+        <div data-analysis-stage className="grid gap-6 md:grid-cols-2 xl:relative xl:block xl:h-[327px]">
+          <h2 className="text-[48px] font-medium leading-[48px] text-[#161519] md:col-span-2 xl:absolute xl:left-0 xl:top-0">
             {t('landing.desktopAnalyzeTitleLead', { defaultValue: 'Проанализируйте свой ЕНТ' })}
             <br />
             <span className="text-[#6a37c3]">
               {t('landing.desktopAnalyzeTitleAccent', { defaultValue: 'за 5 минут' })}
             </span>
           </h2>
-          <ol data-analysis-steps className="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:items-end lg:gap-[clamp(32px,4vw,64px)]">
+          <div data-analysis-snippet="result" className="rounded-[8px] bg-white p-6 md:col-start-2 md:row-start-2 md:w-[292px] md:justify-self-end xl:absolute xl:left-[803px] xl:top-0 xl:w-[292px] transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[14px] font-medium leading-[14px] text-[#161519]">
+                  {t('landing.desktopAnalyzeResultTopic', { defaultValue: 'Веб-проектирование' })}
+                </p>
+                <p className="mt-1 text-[10px] leading-[10px] text-[#8c8698]">
+                  {t('landing.desktopAnalyzeResultScore', { defaultValue: '1 из 5 баллов — 20%' })}
+                </p>
+              </div>
+              <span className="text-[10px] leading-[10px] text-[#bc251a]">
+                {t('landing.desktopAnalyzeResultLost', { defaultValue: 'Потеряно 4 балла' })}
+              </span>
+            </div>
+            <div className="my-4 h-px bg-[#f6f5f7]" />
+            <div className="px-2">
+              <p className="text-[12px] font-medium leading-3 text-[#6a37c3]">
+                {t('landing.desktopAnalyzeResultPrep', { defaultValue: 'Все темы для подготовки' })}
+              </p>
+              <p className="mt-1 text-[10px] leading-[10px] text-[#a585db]">
+                {t('landing.desktopAnalyzeResultGrade', { defaultValue: 'Материалы 10 класса' })}
+              </p>
+              <ul className="mt-4 grid gap-2 text-[10px] leading-[10px] text-[#6e6779]">
+                {[
+                  t('landing.desktopAnalyzeResultItem1', { defaultValue: 'Использование HTML-тегов при создании веб-страниц' }),
+                  t('landing.desktopAnalyzeResultItem2', { defaultValue: 'Использование CSS для создания веб-страниц' }),
+                  t('landing.desktopAnalyzeResultItem3', { defaultValue: 'Использование готовых скриптов при создании веб-страниц' }),
+                  t('landing.desktopAnalyzeResultItem4', { defaultValue: 'Использование HTML-тегов для вставки мультимедийных объектов на веб-страницу' }),
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <HugeiconsIcon icon={BookOpen01Icon} size={16} strokeWidth={1.6} className="shrink-0" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Link
+              to={landingCtaTarget('/practice-by-topic', isAuthenticated)}
+              className="mt-6 flex h-8 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[12px] font-medium leading-3 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+            >
+              {t('landing.desktopAnalyzeResultCta', { defaultValue: 'Начать практику →' })}
+            </Link>
+          </div>
+
+          <div data-analysis-snippet="registration" className="grid w-full max-w-[284px] gap-2 md:col-start-1 md:row-start-2 md:self-end xl:absolute xl:left-[29px] xl:top-[223px] xl:h-[88px] xl:w-[284px] xl:max-w-none transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
+            <div className="flex h-10 items-center gap-4 rounded-[8px] bg-white px-6 text-[14px] text-[#c5b1e7]">
+              <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.7} aria-hidden="true" />
+              <span>{t('landing.desktopAnalyzeEmail', { defaultValue: 'Электронная почта' })}</span>
+            </div>
+            <div className="flex h-10 items-center justify-between rounded-[8px] bg-white px-6 text-[14px] text-[#c5b1e7]">
+              <span className="flex items-center gap-4">
+                <HugeiconsIcon icon={LockPasswordIcon} size={16} strokeWidth={1.7} aria-hidden="true" />
+                <span>{t('landing.desktopAnalyzePassword', { defaultValue: 'Пароль' })}</span>
+              </span>
+              <HugeiconsIcon icon={ViewIcon} size={16} strokeWidth={1.7} aria-hidden="true" />
+            </div>
+          </div>
+
+          <div data-analysis-snippet="upload" className="flex h-44 w-full max-w-[300px] flex-col items-center justify-center gap-4 rounded-[8px] border-[1.5px] border-dashed border-[#a585db] bg-white px-6 text-center md:col-span-2 md:mx-auto xl:absolute xl:left-[410px] xl:top-[135px] xl:m-0 xl:h-[176px] xl:w-[300px] xl:max-w-none transition-transform duration-200 ease-out hover:scale-[1.01] motion-reduce:transition-none motion-reduce:hover:scale-100">
+            <span className="flex size-12 items-center justify-center rounded-full bg-[#ded2f1] text-[#6a37c3]">
+              <HugeiconsIcon icon={DocumentAttachmentIcon} size={24} strokeWidth={1.6} aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-[14px] font-medium leading-[14px] text-[#161519]">
+                {t('landing.desktopAnalyzeUpload', { defaultValue: 'Нажмите, чтобы загрузить файл' })}
+              </p>
+              <p className="mt-2 text-[12px] leading-3 text-[#a585db]">
+                {t('landing.desktopAnalyzeUploadHelp', { defaultValue: 'Не знаете как его получить? Узнать' })}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <ol className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3 xl:mt-0 xl:gap-12">
           {steps.map((step) => (
-            <li key={step.number} data-analysis-step={step.number} className="flex min-w-0 flex-col items-center text-center">
-              <div data-analysis-visual className="flex min-h-0 w-full items-end justify-center lg:h-[327px]">
-                {step.visual}
-              </div>
-              <div className="mt-8 flex flex-col items-center gap-4 px-6">
-                <span className="flex size-12 items-center justify-center rounded-full bg-[#6a37c3] text-[24px] font-medium leading-6 text-[#ded2f1]">
-                  {step.number}
-                </span>
-                <h3 className="text-[20px] font-medium leading-5 text-[#161519]">{step.title}</h3>
-                <p className="max-w-[300px] text-[16px] leading-4 text-[#6e6779]">{step.description}</p>
-              </div>
+            <li key={step.number} className="flex flex-col items-center gap-4 px-6 py-8 text-center">
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#6a37c3] text-[24px] font-medium leading-6 text-[#ded2f1]">
+                {step.number}
+              </span>
+              <h3 className="text-[20px] font-medium leading-5 text-[#161519]">{step.title}</h3>
+              <p className="max-w-[300px] text-[16px] leading-4 text-[#6e6779]">{step.description}</p>
             </li>
           ))}
-          </ol>
-        </div>
+        </ol>
       </div>
     </section>
   );

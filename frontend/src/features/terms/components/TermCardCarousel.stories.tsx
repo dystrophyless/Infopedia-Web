@@ -15,6 +15,15 @@ const featured = (index: number): FeaturedTerm => ({
   },
 });
 const terms = [featured(1), featured(2), featured(3)];
+const mobileGuestTerms = [1, 2, 3, 4].map((index) => ({
+  term: { public_id: `guest-term-${index}`, name: `Гостевой термин ${index}` },
+  featured_definition: {
+    public_id: `guest-definition-${index}`,
+    text: 'Первая строка определения для гостевой карточки. Вторая строка с источником. Третья строка с пояснением. Четвёртая строка полностью видима. Пятая строка должна быть скрыта.',
+    page: 20 + index,
+    topic: { name: 'Алгоритмы', book: { publisher: 'Мектеп', grade: 10 }, },
+  },
+} satisfies FeaturedTerm));
 
 const meta = {
   title: 'Features/Terms/Featured carousel',
@@ -49,3 +58,11 @@ export const MultipleWithClonesAndPause: Story = {
   },
 };
 export const MobileFinite: Story = { args: { variant: 'mobile' }, globals: { viewport: { value: 'mobile430', isRotated: false } } };
+export const GuestMobileFourLinePreview: Story = {
+  args: { terms: mobileGuestTerms, variant: 'guest' },
+  globals: { viewport: { value: 'mobile390', isRotated: false } },
+};
+export const GuestLandingFourLinePreview: Story = {
+  args: { terms: mobileGuestTerms, variant: 'guestLanding' },
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+};

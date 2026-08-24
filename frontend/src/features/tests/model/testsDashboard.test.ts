@@ -20,8 +20,8 @@ const chapters: TestsDashboardChapter[] = [
 describe('tests dashboard chapter model', () => {
   it('formats a recent completion with local date and time in both supported locales', () => {
     const completedAt = '2026-08-24T18:30:00';
-    expect(formatRecentTestDateTime(completedAt, 'ru')).toBe('24 авг. 2026 г., 18:30');
-    expect(formatRecentTestDateTime(completedAt, 'kk')).toBe('2026 ж. 24 там., 18:30');
+    expect(formatRecentTestDateTime(completedAt, 'ru')).toBe('24 авг., 18:30');
+    expect(formatRecentTestDateTime(completedAt, 'kk')).toBe('24 там., 18:30');
   });
   it('sorts by importance, accuracy, and count with stable null/id tie breakers', () => {
     expect(sortDashboardChapters(chapters, 'importance').map((item) => item.code)).toEqual(['a', 'b', 'c', 'd']);

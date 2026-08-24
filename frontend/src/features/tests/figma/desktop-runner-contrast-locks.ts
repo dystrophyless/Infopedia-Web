@@ -25,7 +25,7 @@ export const FIGMA_CONTRAST_LOCKS = {
   'results-secondary-action': { foreground: '#865bcf', background: '#efeaf8', sourceNodes: ['910:4101', '921:4432'] },
   'results-pace-label': { foreground: '#8c8698', background: '#ffffff', sourceNodes: ['910:4101', '921:4432'] },
   'results-overview-correct': { foreground: '#6ed8a7', background: '#e7f8f0', sourceNodes: ['910:4101', '921:4432'] },
-  'results-overview-wrong': { foreground: '#f25f54', background: '#fce5e3', sourceNodes: ['910:4101', '921:4432'] },
+  'results-overview-wrong': { foreground: '#f25f54', background: '#fce5e3', hoverBackground: '#f8d5d2', sourceNodes: ['910:4101', '921:4432'] },
   'results-overview-unavailable': { foreground: '#c5b1e7', background: '#f8f5fc', sourceNodes: ['910:4101', '921:4432'] },
   'review-meta': { foreground: '#c5b1e7', background: '#ffffff', sourceNodes: ['921:4432'] },
   'review-feedback-wrong-title': { foreground: '#f25f54', background: '#fce5e3', sourceNodes: ['921:4432'] },
@@ -39,7 +39,7 @@ const exactLockSelector = (id: FigmaContrastLockId) => `[data-figma-contrast-loc
 // Axe accepts a rule-specific selector. This negated chain leaves every node in
 // the audit except the exact inventory values above, and only for color-contrast.
 export const FIGMA_CONTRAST_RULE_SELECTOR = `*${(Object.keys(FIGMA_CONTRAST_LOCKS) as FigmaContrastLockId[]).map((id) => `:not(${exactLockSelector(id)})`).join('')}`;
-const FIGMA_CONTRAST_NODE_SELECTOR = (Object.keys(FIGMA_CONTRAST_LOCKS) as FigmaContrastLockId[]).map(exactLockSelector).join(',');
+const FIGMA_CONTRAST_NODE_SELECTOR = '[data-figma-contrast-lock]';
 
 const questionOne = { 'question-exit': 1, 'question-meta': 1, 'question-status-upcoming': 14, 'question-finish-early': 1 };
 const questionSeven = { 'question-exit': 1, 'question-meta': 1, 'question-status-answered': 5, 'question-status-skipped': 1, 'question-status-upcoming': 8, 'question-finish-early': 1 };
@@ -80,7 +80,10 @@ const effectiveBackgroundColor = (element: HTMLElement) => {
   return 'rgba(0, 0, 0, 0)';
 };
 
-export function assertFigmaContrastLocks(canvasElement: HTMLElement, story: FigmaContrastStory) {
+type ContrastLockSnapshot = { id: FigmaContrastLockId; actual: string; expected: string; kind: 'foreground' | 'background' };
+type ContrastAuditFailure = ContrastLockSnapshot | { id: FigmaContrastLockId; actual: string; expected: string; kind: 'inventory' } | { id: string; actual: string; expected: string; kind: 'unknown' };
+
+const snapshotFigmaContrastLocks = (canvasElement: HTMLElement, story: FigmaContrastStory): ContrastAuditFailure | null => {
   const document = canvasElement.ownerDocument;
   const expected = FIGMA_CONTRAST_EXPECTATIONS[story];
   const elements = [...document.querySelectorAll<HTMLElement>(FIGMA_CONTRAST_NODE_SELECTOR)];
@@ -89,18 +92,48 @@ export function assertFigmaContrastLocks(canvasElement: HTMLElement, story: Figm
   for (const element of elements) {
     const id = element.dataset.figmaContrastLock as FigmaContrastLockId;
     const lock = FIGMA_CONTRAST_LOCKS[id];
-    if (!lock) throw new Error(`Unapproved Figma contrast lock: ${id}`);
+    if (!lock) return { id, actual: 'present', expected: 'approved inventory', kind: 'unknown' };
     actualCounts[id] = (actualCounts[id] ?? 0) + 1;
-    const style = getComputedStyle(element);
-    const background = effectiveBackgroundColor(element);
-    if (style.color !== hexToRgb(lock.foreground) || background !== hexToRgb(lock.background)) {
-      throw new Error(`${story}/${id} color drift: ${style.color}/${background}; expected ${lock.foreground}/${lock.background}`);
-    }
   }
 
   for (const id of Object.keys(FIGMA_CONTRAST_LOCKS) as FigmaContrastLockId[]) {
     const expectedCount = expected[id] ?? 0;
     const actualCount = actualCounts[id] ?? 0;
-    if (actualCount !== expectedCount) throw new Error(`${story}/${id} inventory drift: found ${actualCount}, expected ${expectedCount}`);
+    if (actualCount !== expectedCount) return { id, actual: String(actualCount), expected: String(expectedCount), kind: 'inventory' };
   }
+
+  for (const element of elements) {
+    const id = element.dataset.figmaContrastLock as FigmaContrastLockId;
+    const lock = FIGMA_CONTRAST_LOCKS[id];
+    const style = getComputedStyle(element);
+    const background = effectiveBackgroundColor(element);
+    if (style.color !== hexToRgb(lock.foreground)) return { id, actual: style.color, expected: lock.foreground, kind: 'foreground' };
+    if (background !== hexToRgb(lock.background)) return { id, actual: background, expected: lock.background, kind: 'background' };
+  }
+
+  return null;
+};
+
+const formatAuditFailure = (story: FigmaContrastStory, failure: ContrastAuditFailure, frames: number, elapsed: number) => {
+  if (failure.kind === 'inventory') return `${story}/${failure.id} inventory drift: actual ${failure.actual}, expected ${failure.expected}; frames=${frames}, elapsed=${Math.round(elapsed)}ms`;
+  if (failure.kind === 'unknown') return `${story}/${failure.id} unknown contrast lock: actual ${failure.actual}, expected ${failure.expected}; frames=${frames}, elapsed=${Math.round(elapsed)}ms`;
+  return `${story}/${failure.id} color drift: actual ${failure.actual}, expected ${failure.expected}; frames=${frames}, elapsed=${Math.round(elapsed)}ms`;
+};
+
+const isRecognizedTransitionDrift = (failure: ContrastAuditFailure) => failure.kind === 'background' && failure.id === 'results-overview-wrong' && Boolean(FIGMA_CONTRAST_LOCKS[failure.id].hoverBackground);
+
+export async function assertFigmaContrastLocks(canvasElement: HTMLElement, story: FigmaContrastStory) {
+  const startedAt = performance.now();
+  const maxFrames = 30;
+  let frames = 0;
+  let failure: ContrastAuditFailure | null = null;
+  while (frames < maxFrames) {
+    frames += 1;
+    failure = snapshotFigmaContrastLocks(canvasElement, story);
+    if (!failure) return;
+    if (!isRecognizedTransitionDrift(failure)) throw new Error(formatAuditFailure(story, failure, frames, performance.now() - startedAt));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+  if (!failure) return;
+  throw new Error(formatAuditFailure(story, failure, frames, performance.now() - startedAt));
 }

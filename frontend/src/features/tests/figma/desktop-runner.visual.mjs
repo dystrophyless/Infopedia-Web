@@ -41,6 +41,7 @@ try {
     assert.notEqual(await root.evaluate(node => getComputedStyle(node).display), 'none', `${name} desktop composition must be visible`);
     await page.evaluate(async () => document.fonts.ready);
     const dialogInteractions = name === 'review' ? await verifyDialogLifecycle(page) : null;
+    const resultsHover = name === 'results' ? await verifyResultsHoverContract(page) : null;
     const target = path.join(outputRoot, name);
     await fs.mkdir(target, { recursive: true });
     const actualPath = path.join(target, 'actual.png');
@@ -75,7 +76,7 @@ try {
     const diff = await compare(referencePath, actualPath, target);
     assertVisualGate(name, diff);
     const interactionMatrix = await verifyInteractionMatrix(page, name);
-    report.states[name] = { nodeId: source.nodeId, measurements, diff, interactionMatrix, dialogInteractions };
+    report.states[name] = { nodeId: source.nodeId, measurements, diff, interactionMatrix, dialogInteractions, resultsHover };
     await fs.writeFile(path.join(target, 'measurements.json'), JSON.stringify(report.states[name], null, 2));
     await page.close();
   }
@@ -100,7 +101,10 @@ async function verifyInteractionMatrix(page, name) {
     const label = await button.getAttribute('aria-label') ?? (await button.innerText()).trim();
     const before = await button.evaluate(visualState);
     await button.hover();
-    await page.waitForTimeout(200);
+    const buttonHandle = await button.elementHandle();
+    assert.ok(buttonHandle, `${name}/${label}: enabled button DOM handle must exist`);
+    const hoverChanged = await waitForHoverPaintChange(page, buttonHandle, before, `${name}/${label}`);
+    await buttonHandle.dispose();
     const hover = await button.evaluate(visualState);
     assert.deepEqual(hover.rect, before.rect, `${name}/${label}: hover must be layout-neutral`);
     assert.notDeepEqual({ ...hover, rect: undefined }, { ...before, rect: undefined }, `${name}/${label}: hover must be visible`);
@@ -109,7 +113,7 @@ async function verifyInteractionMatrix(page, name) {
     const focus = await button.evaluate(visualState);
     assert.deepEqual(focus.rect, before.rect, `${name}/${label}: focus-visible must be layout-neutral`);
     assert.notEqual(focus.boxShadow, before.boxShadow, `${name}/${label}: focus-visible must be visible`);
-    evidence.push({ label, hoverChanged: true, focusChanged: true, rectStable: true });
+    evidence.push({ label, hoverChanged, focusChanged: true, rectStable: true });
   }
   return evidence;
 }
@@ -119,7 +123,7 @@ async function verifyDialogLifecycle(page) {
   const close = () => page.getByRole('button', { name: 'Закрыть разбор вопроса' });
   await close().click();
   await trigger.click(); await close().waitFor();
-  await page.waitForTimeout(50);
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Закрыть разбор вопроса', { polling: 'raf', timeout: 1000 });
   assert.equal(await close().evaluate(node => document.activeElement === node), true, 'dialog initial focus must target close control');
   await page.keyboard.press('Tab');
   assert.equal(await close().evaluate(node => document.activeElement === node), true, 'dialog Tab loop must retain its only enabled control');
@@ -134,6 +138,51 @@ async function verifyDialogLifecycle(page) {
   assert.equal(await trigger.evaluate(node => document.activeElement === node), true, 'close control must restore trigger focus');
   await trigger.click(); await close().waitFor(); await close().evaluate(node => node.blur());
   return { initialFocus: true, tabLoop: true, escape: true, backdrop: true, close: true, focusRestored: true };
+}
+
+async function waitForHoverPaintChange(page, button, before, label) {
+  // Playwright polling:'raf' is requestAnimationFrame-backed and bounded below.
+  try {
+    await page.waitForFunction(({ node, before }) => {
+    if (!node || !node.isConnected) return false;
+    const style = getComputedStyle(node);
+    return style.backgroundColor !== before.background || style.borderColor !== before.border || style.color !== before.color || style.boxShadow !== before.boxShadow || style.transform !== before.transform || style.opacity !== before.opacity;
+    }, { node: button, before }, { polling: 'raf', timeout: 1000 });
+    return true;
+  } catch (error) {
+    const actual = await button.evaluate(visualState);
+    throw new Error(`${label} hover did not settle to a visible paint change; last actual=${JSON.stringify(actual)}`, { cause: error });
+  }
+}
+
+async function waitForExactPaint(page, button, expected, label) {
+  const selector = '[data-figma-contrast-lock="results-overview-wrong"]';
+  const started = Date.now();
+  try {
+    await page.waitForFunction(({ selector, expected }) => {
+      const node = document.querySelector(selector);
+      if (!node) return false;
+      const style = getComputedStyle(node);
+      return style.backgroundColor === expected.background && style.color === expected.foreground;
+    }, { selector, expected }, { polling: 'raf', timeout: 1000 });
+  } catch (error) {
+    const actual = await button.evaluate(visualState);
+    throw new Error(`${label} exact paint did not settle; last actual=${JSON.stringify(actual)}; expected=${JSON.stringify(expected)}; elapsed=${Date.now() - started}ms`, { cause: error });
+  }
+  return button.evaluate(visualState);
+}
+
+async function verifyResultsHoverContract(page) {
+  const wrongCard = page.locator('[data-figma-contrast-lock="results-overview-wrong"]').first();
+  const base = { background: 'rgb(252, 229, 227)', foreground: 'rgb(242, 95, 84)' };
+  const hover = { background: 'rgb(248, 213, 210)', foreground: base.foreground };
+  await page.mouse.move(0, 0);
+  const baseBefore = await waitForExactPaint(page, wrongCard, base, 'results base before screenshot');
+  await wrongCard.hover();
+  const exactHover = await waitForExactPaint(page, wrongCard, hover, 'results hover');
+  await page.mouse.move(0, 0);
+  const baseAfter = await waitForExactPaint(page, wrongCard, base, 'results base after neutral pointer');
+  return { baseBefore, exactHover, baseAfter };
 }
 
 function assertVisualGate(name, diff) {

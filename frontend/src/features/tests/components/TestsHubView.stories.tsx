@@ -1,7 +1,7 @@
 import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import type { TestsDashboard } from '../../../api/tests';
 import { DesktopSidebar } from '../../../components/DesktopSidebar';
 import { TestsHubView } from './TestsHubView';
@@ -169,18 +169,23 @@ export const Desktop: Story = {
     await expect(mockCard).toHaveAttribute('aria-disabled', 'true');
     const recentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/random?attemptRef=attempt-1"]');
     await expect(recentLink).not.toBeNull();
+    const recentRowBox = recentLink!.getBoundingClientRect();
+    await expect({ width: recentRowBox.width, height: recentRowBox.height }).toEqual({ width: 272, height: 50 });
+    await expect(getComputedStyle(recentLink!).backgroundColor).toBe('rgb(255, 255, 255)');
+    await expect(recentLink!.querySelector('[data-tests-recent-date]')).toBeVisible();
+    await expect(recentLink!.querySelector('[data-tests-recent-metrics]')).not.toBeVisible();
+    await expect(recentLink!.querySelector('[data-tests-recent-arrow]')).not.toBeVisible();
     weakCard!.focus();
     await userEvent.tab();
     await expect(recentLink).toHaveFocus();
-    const tooltip = document.getElementById(recentLink!.getAttribute('aria-describedby')!);
-    await expect(tooltip).toHaveAttribute('role', 'tooltip');
-    await expect(tooltip).toHaveTextContent('Правильные ответы: 14');
-    await expect(tooltip).toHaveTextContent('Неправильные ответы: 4');
-    await expect(tooltip).toHaveTextContent('Пропущено: 2');
-    const noSkipLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/weak?attemptRef=attempt-2"]')!;
-    const noSkipTooltip = document.getElementById(noSkipLink.getAttribute('aria-describedby')!);
-    await expect(noSkipTooltip).not.toHaveTextContent('Пропущено:');
-    recentLink!.focus();
+    await expect(getComputedStyle(recentLink!).backgroundColor).toBe('rgb(251, 251, 251)');
+    await expect(recentLink!.querySelector('[data-tests-recent-date]')).not.toBeVisible();
+    await expect(recentLink!.querySelector('[data-tests-recent-metrics]')).toBeVisible();
+    await expect(recentLink!.querySelector('[data-tests-recent-correct]')).toHaveTextContent('14');
+    await expect(recentLink!.querySelector('[data-tests-recent-incorrect]')).toHaveTextContent('4');
+    await expect(recentLink!.querySelector('[data-tests-recent-skipped]')).toHaveTextContent('2');
+    await expect(recentLink!.querySelector('[data-tests-recent-arrow]')).toBeVisible();
+    await expect(recentLink!.getBoundingClientRect()).toMatchObject({ width: recentRowBox.width, height: recentRowBox.height });
     await userEvent.keyboard('{Enter}');
     await expect(canvasElement.querySelector('[data-location-url]')).toHaveTextContent('/tests/random?attemptRef=attempt-1');
   },
@@ -193,9 +198,35 @@ export const DesktopRecentMouseNavigation: Story = {
     dashboardStatus: 'ready',
   },
   play: async ({ canvasElement }) => {
+    const { userEvent: browserUserEvent } = await import('vitest/browser');
     const recentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/random?attemptRef=attempt-1"]')!;
-    await userEvent.click(recentLink);
+    const initialBox = recentLink.getBoundingClientRect();
+    await browserUserEvent.hover(recentLink);
+    await waitFor(
+      () => expect(getComputedStyle(recentLink).backgroundColor).toBe('rgb(251, 251, 251)'),
+      { timeout: 1000 },
+    );
+    await expect(recentLink.querySelector('[data-tests-recent-metrics]')).toBeVisible();
+    await expect(recentLink.getBoundingClientRect()).toMatchObject({ width: initialBox.width, height: initialBox.height });
+    await expect(recentLink).toHaveClass('active:bg-[#f6f5f7]', 'active:hover:bg-[#f6f5f7]');
+    await browserUserEvent.click(recentLink);
     await expect(canvasElement.querySelector('[data-location-url]')).toHaveTextContent('/tests/random?attemptRef=attempt-1');
+  },
+};
+
+export const DesktopRecentZeroSkipped: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  args: { dashboard: desktopDashboard, dashboardStatus: 'ready' },
+  play: async ({ canvasElement }) => {
+    const { userEvent: browserUserEvent } = await import('vitest/browser');
+    const firstRecentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/random?attemptRef=attempt-1"]')!;
+    const recentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/weak?attemptRef=attempt-2"]')!;
+    firstRecentLink.focus();
+    await browserUserEvent.tab();
+    await expect(recentLink).toHaveFocus();
+    await expect(recentLink).toHaveAccessibleName(/Пропущено: 0/);
+    await expect(recentLink.querySelector('[data-tests-recent-skipped]')).toHaveTextContent('0');
+    await expect(recentLink.querySelector('[data-tests-recent-skipped]')).toBeVisible();
   },
 };
 

@@ -897,7 +897,6 @@
     "desktopRecentCorrect": "Дұрыс жауаптар: {{count}}",
     "desktopRecentIncorrect": "Қате жауаптар: {{count}}",
     "desktopRecentSkipped": "Өткізілді: {{count}}",
-    "desktopRecentOpenHint": "Нәтижені ашу үшін басыңыз",
     "desktopChaptersTitle": "Информатика бөлімдері",
     "desktopSortImportance": "Бөлім маңыздылығы бойынша",
     "desktopSortAccuracy": "Дәлдік бойынша",

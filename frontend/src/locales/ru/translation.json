@@ -909,7 +909,6 @@
     "desktopRecentCorrect": "Правильные ответы: {{count}}",
     "desktopRecentIncorrect": "Неправильные ответы: {{count}}",
     "desktopRecentSkipped": "Пропущено: {{count}}",
-    "desktopRecentOpenHint": "Нажмите, чтобы открыть результат",
     "desktopChaptersTitle": "Разделы информатики",
     "desktopSortImportance": "По значимости раздела",
     "desktopSortAccuracy": "По точности ответов пользователя",

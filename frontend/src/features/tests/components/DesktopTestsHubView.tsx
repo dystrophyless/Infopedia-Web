@@ -4,9 +4,12 @@
   ShuffleIcon,
   Target03Icon,
   ArrowDown01Icon,
+  ArrowRight02Icon,
+  Cancel01Icon,
+  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '../../../ui';
@@ -61,32 +64,54 @@ function RecentTestLink({ recent, locale, t }: {
   locale: 'ru' | 'kk';
   t: ReturnType<typeof useTranslation>['t'];
 }) {
-  const tooltipId = useId();
+  const recentDate = formatRecentTestDateTime(recent.completedAt, locale);
+  const recentAccessibleLabel = [
+    recent.title,
+    recentDate,
+    formatPercent(recent.accuracy),
+    t('tests.desktopRecentCorrect', { count: recent.correctAnswerCount }),
+    t('tests.desktopRecentIncorrect', { count: recent.incorrectAnswerCount }),
+    t('tests.desktopRecentSkipped', { count: recent.skippedQuestionCount }),
+  ].join('. ');
+
   return (
-    <div className="group relative">
-      <Link
-        to={`/tests/${recent.mode}?attemptRef=${encodeURIComponent(recent.attemptRef)}`}
-        aria-describedby={tooltipId}
-        className="flex items-center justify-between px-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
-        data-tests-recent-link
-      >
-        <span className="flex min-w-0 flex-col gap-1">
-          <span className="truncate text-[16px] font-normal leading-4 text-[#39363f]">{recent.title}</span>
-          <span className="text-[14px] font-normal leading-[14px] text-[#8c8698]">{formatRecentTestDateTime(recent.completedAt, locale)}</span>
+    <Link
+      to={`/tests/${recent.mode}?attemptRef=${encodeURIComponent(recent.attemptRef)}`}
+      aria-label={recentAccessibleLabel}
+      className="group flex h-[50px] w-full items-center justify-between rounded-[8px] bg-white p-2 hover:bg-[#fbfbfb] focus-visible:bg-[#fbfbfb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3] active:bg-[#f6f5f7] active:hover:bg-[#f6f5f7]"
+      data-tests-recent-link
+    >
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-[16px] font-normal leading-4 text-[#39363f]">{recent.title}</span>
+        <span className="relative h-[14px]">
+          <span data-tests-recent-date className="block text-[14px] font-normal leading-[14px] text-[#8c8698] group-hover:hidden group-focus-visible:hidden group-active:hidden">{recentDate}</span>
+          <span data-tests-recent-metrics aria-hidden="true" className="hidden h-[14px] items-center gap-2 group-hover:flex group-focus-visible:flex group-active:flex">
+            <span data-tests-recent-correct className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#22915d]">
+              <span className="flex size-[14px] items-center justify-center rounded-full bg-[#29ae70] text-white">
+                <HugeiconsIcon icon={Tick02Icon} size={8} strokeWidth={1.5} aria-hidden />
+              </span>
+              <span>{recent.correctAnswerCount}</span>
+            </span>
+            <span data-tests-recent-incorrect className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#bc251a]">
+              <span className="flex size-[14px] items-center justify-center rounded-full bg-[#e73023] text-white">
+                <HugeiconsIcon icon={Cancel01Icon} size={8} strokeWidth={1.5} aria-hidden />
+              </span>
+              <span>{recent.incorrectAnswerCount}</span>
+            </span>
+            <span data-tests-recent-skipped className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#6e6779]">
+              <span className="size-[14px] rounded-full border border-[#8c8698]" aria-hidden="true" />
+              <span>{recent.skippedQuestionCount}</span>
+            </span>
+          </span>
         </span>
-        <span className="text-[16px] font-medium leading-4 text-[#161519]">{formatPercent(recent.accuracy)}</span>
-      </Link>
-      <span
-        id={tooltipId}
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-max max-w-[280px] rounded-[8px] bg-[#161519] px-3 py-2 text-[13px] leading-[13px] text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-      >
-        <span className="block">{t('tests.desktopRecentCorrect', { count: recent.correctAnswerCount })}</span>
-        <span className="block">{t('tests.desktopRecentIncorrect', { count: recent.incorrectAnswerCount })}</span>
-        {recent.skippedQuestionCount > 0 ? <span className="block">{t('tests.desktopRecentSkipped', { count: recent.skippedQuestionCount })}</span> : null}
-        <span className="mt-1 block text-[#d5d3d9]">{t('tests.desktopRecentOpenHint')}</span>
       </span>
-    </div>
+      <span className="flex shrink-0 items-center gap-1">
+        <span className="text-[16px] font-medium leading-4 text-[#161519]">{formatPercent(recent.accuracy)}</span>
+        <span data-tests-recent-arrow aria-hidden="true" className="hidden size-[18px] text-[#b1acb9] group-hover:block group-focus-visible:block group-active:block">
+          <HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} aria-hidden />
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -179,7 +204,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
           </div>
 
           <div className="flex min-w-0 flex-col gap-4" data-tests-right-column>
-            <section className="flex h-[142px] flex-col gap-6 rounded-[16px] bg-white px-6 pb-8 pt-6" aria-labelledby="tests-statistics-title">
+            <section className="flex h-[134px] flex-col gap-4 rounded-[16px] bg-white px-6 pb-8 pt-6" aria-labelledby="tests-statistics-title">
               <div className="flex items-center justify-between">
                 <h2 id="tests-statistics-title" className="text-[20px] font-medium leading-5 text-[#161519]">
                   {t('tests.desktopStatistics', { defaultValue: 'Статистика' })}
@@ -207,7 +232,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
                 <p className="text-[16px] font-medium leading-4 text-[#161519]">{formatPercent(dashboard?.overallAccuracy ?? null)}</p>
               </div> : null}
             </section>
-            <section className="flex h-[234px] flex-col gap-6 rounded-[16px] bg-white px-6 pb-8 pt-6" aria-labelledby="tests-recent-title">
+            <section className="flex h-[242px] flex-col gap-4 rounded-[16px] bg-white px-6 pb-8 pt-6" aria-labelledby="tests-recent-title">
               <h2 id="tests-recent-title" className="text-[20px] font-medium leading-5 text-[#161519]">{t('tests.desktopRecent', { defaultValue: 'Недавние тесты' })}</h2>
               {status === 'error' ? (
                 <div className="flex items-center justify-between gap-4 text-[14px] text-[#9a2219]" role="alert">
@@ -219,7 +244,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
               ) : status === 'loading' ? (
                 <div className="flex flex-col gap-4" data-tests-recent-skeleton aria-hidden="true">{[0, 1, 2].map((item) => <div key={item} className="flex items-center justify-between px-2"><div className="flex flex-col gap-2"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-20" /></div><Skeleton className="h-4 w-12" /></div>)}</div>
               ) : dashboard?.recentTests.length ? (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-0" data-tests-recent-list>
                   {dashboard.recentTests.slice(0, 3).map((recent) => (
                     <RecentTestLink key={recent.attemptRef} recent={recent} locale={locale} t={t} />
                   ))}

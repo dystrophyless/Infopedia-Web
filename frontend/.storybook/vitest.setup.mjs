@@ -1,4 +1,5 @@
-import { afterEach, beforeAll } from 'vitest';
+import { afterEach, beforeAll, beforeEach } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { setProjectAnnotations } from '@storybook/react-vite';
 import * as a11yAnnotations from '@storybook/addon-a11y/preview';
 import * as previewAnnotations from './preview';
@@ -11,6 +12,10 @@ import { useLangStore } from '../src/stores/langStore';
 const annotations = setProjectAnnotations([a11yAnnotations, previewAnnotations]);
 
 beforeAll(annotations.beforeAll);
+
+beforeEach(async () => {
+  await userEvent.unhover(document.body);
+});
 
 afterEach(async () => {
   useAuthStore.setState({ isAuthenticated: false, token: null, refreshToken: null, user: null });

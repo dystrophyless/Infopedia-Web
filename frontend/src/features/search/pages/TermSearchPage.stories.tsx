@@ -150,7 +150,9 @@ function DesktopSearchStory({
   const [bookCatalogFailureReleased, setBookCatalogFailureReleased] = useState(false);
   const [catalogRefreshKey, setCatalogRefreshKey] = useState(0);
   const [lastSearchBooks, setLastSearchBooks] = useState('');
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
   const searchReleaseRef = useRef<Set<() => void>>(new Set());
+  const searchRequestsReleasedRef = useRef(false);
   const bookCatalogReleaseRef = useRef<((markReleased?: boolean) => void) | null>(null);
   const requestClientRef = useRef<SearchRequestClient | null>(null);
   const catalogRefreshTriggeredRef = useRef(false);
@@ -205,6 +207,7 @@ function DesktopSearchStory({
       }
       if (url.includes('/search/terms')) {
         setSearchRequestCount((count) => count + 1);
+        setLastSearchQuery(config?.params?.get('query')?.trim() ?? '');
         setLastSearchBooks(config?.params?.getAll('book').join('|') ?? '');
         const pageTerms = terms.map(({ term, featured_definition }) => ({
           ...term,
@@ -225,6 +228,7 @@ function DesktopSearchStory({
           deferSearch &&
           (!deferSearchOnlyWithQuery || Boolean(config?.params?.get('query')?.trim()));
         if (!shouldDeferSearch) return response;
+        if (searchRequestsReleasedRef.current) return response;
         config?.signal?.addEventListener('abort', () => setSearchAbortCount((count) => count + 1), { once: true });
         return new Promise<typeof response>((resolve) => {
           searchReleaseRef.current.add(() => resolve(response));
@@ -253,6 +257,7 @@ function DesktopSearchStory({
       bookCatalogReleaseRef.current?.(false);
       bookCatalogReleaseRef.current = null;
       searchReleaseRef.current.clear();
+      searchRequestsReleasedRef.current = false;
       useSearchStore.getState().reset();
       useSearchStore.getState().resetSearchFilters();
       useAuthStore.setState({
@@ -291,6 +296,7 @@ function DesktopSearchStory({
       <output data-story-book-catalog-request-count className="sr-only">{bookCatalogRequestCount}</output>
       <output data-story-book-catalog-failure-released className="sr-only">{String(bookCatalogFailureReleased)}</output>
       <output data-story-last-search-books className="sr-only">{lastSearchBooks}</output>
+      <output data-story-last-search-query className="sr-only">{lastSearchQuery}</output>
       {deferCatalogFailure && (
         <button
           type="button"
@@ -315,6 +321,7 @@ function DesktopSearchStory({
           data-story-release-search
           className="sr-only"
           onClick={() => {
+            searchRequestsReleasedRef.current = true;
             const releases = [...searchReleaseRef.current];
             searchReleaseRef.current.clear();
             releases.forEach((release) => release());
@@ -1148,10 +1155,11 @@ export const DesktopFiltersCatalogRefreshSelectedRaceContract: Story = {
       expect(count).toBeGreaterThan(0);
     });
     await userEvent.type(input, 'algorithm');
-    await waitFor(() => {
-      const count = Number(canvasElement.querySelector('[data-story-search-request-count]')?.textContent ?? 0);
-      expect(count).toBeGreaterThan(0);
-    }, { timeout: 5000 });
+    await waitFor(() => expect(canvasElement.querySelector('[data-story-last-search-query]')).toHaveTextContent('algorithm'));
+    const querySearchRequestCount = Number(
+      canvasElement.querySelector('[data-story-search-request-count]')?.textContent ?? 0,
+    );
+    expect(querySearchRequestCount).toBeGreaterThan(0);
     await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-request-count]')).toHaveTextContent('2'));
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Release book catalog' }));
     await waitFor(() => expect(canvasElement.querySelector('[data-story-book-catalog-failure-released]')).toHaveTextContent('true'));
@@ -1188,6 +1196,9 @@ export const DesktopFiltersCatalogRefreshSelectedRaceContract: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Release search request' }));
     await waitFor(() => expect(canvasElement.querySelector('[data-story-last-search-books]')).toHaveTextContent('book:signed:atamura:10'));
     await waitFor(() => expect(canvasElement.querySelector('[data-desktop-search-results][role="status"]')).toBeNull());
+    await expect(canvasElement.querySelector('[data-story-search-abort-count]')).toHaveTextContent('0');
     expect(canvasElement.querySelector('[data-story-last-search-books]')).toHaveTextContent('book:signed:atamura:10');
+    expect(canvasElement.querySelector('[data-story-last-search-query]')).toHaveTextContent('algorithm');
+    expect(canvasElement.querySelector('[data-story-search-request-count]')).toHaveTextContent(String(querySearchRequestCount));
   },
 };

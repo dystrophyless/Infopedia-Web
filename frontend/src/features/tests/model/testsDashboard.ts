@@ -112,3 +112,10 @@ export function formatDelta(value: number | null): string {
   if (value === 0) return '0%';
   return `${value > 0 ? '+' : ''}${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 }
+
+export function formatRecentTestDateTime(completedAt: string, locale: 'ru' | 'kk'): string {
+  return new Intl.DateTimeFormat(locale === 'kk' ? 'kk-KZ' : 'ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(completedAt));
+}

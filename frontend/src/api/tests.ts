@@ -92,12 +92,14 @@ export type TestsDashboardChapter = {
   deltaPoints: number | null;
 };
 export type TestsDashboardRecent = {
-  id: string;
+  attemptRef: string;
   mode: TestMode;
   title: string;
   completedAt: string;
-  displayDate?: string;
   accuracy: number;
+  correctAnswerCount: number;
+  incorrectAnswerCount: number;
+  skippedQuestionCount: number;
 };
 export type TestsDashboard = {
   completedAttemptCount: number | null;
@@ -269,12 +271,14 @@ const normalizeDashboard = (value: unknown, locale = 'ru'): TestsDashboard => {
     ? rawRecent.map((item) => {
         const recent = asRecord(item);
         return {
-          id: firstString(recent, 'id', 'attempt_ref', 'attemptRef'),
+          attemptRef: firstString(recent, 'id', 'attempt_ref', 'attemptRef'),
           mode: normalizeMode(recent.mode),
           title: getTestModeTitle(normalizeMode(recent.mode), locale),
           completedAt: firstString(recent, 'completed_at', 'completedAt'),
-          displayDate: firstString(recent, 'display_date', 'displayDate') || undefined,
           accuracy: firstNumber(recent, 'accuracy', 'score_percent', 'scorePercent') ?? 0,
+          correctAnswerCount: firstNumber(recent, 'correct_answer_count', 'correctAnswerCount') ?? 0,
+          incorrectAnswerCount: firstNumber(recent, 'incorrect_answer_count', 'incorrectAnswerCount') ?? 0,
+          skippedQuestionCount: firstNumber(recent, 'skipped_question_count', 'skippedQuestionCount') ?? 0,
         } satisfies TestsDashboardRecent;
       })
     : [];

@@ -256,6 +256,9 @@ class TestTestsDashboardPerformance(unittest.IsolatedAsyncioTestCase):
             self.assertEqual([row["accuracy"] for row in dashboard["chapters"]], [0, None])
             self.assertEqual(dashboard["recent_tests"][0]["title"], "Случайный тест")
             self.assertEqual(dashboard["recent_tests"][0]["accuracy"], 50)
+            self.assertEqual(dashboard["recent_tests"][0]["correct_answer_count"], 1)
+            self.assertEqual(dashboard["recent_tests"][0]["incorrect_answer_count"], 0)
+            self.assertEqual(dashboard["recent_tests"][0]["skipped_question_count"], 1)
 
 
 if __name__ == "__main__":

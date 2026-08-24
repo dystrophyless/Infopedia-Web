@@ -107,6 +107,9 @@ class TestDashboardRecent(BaseModel):
     title: str
     completed_at: datetime
     accuracy: float
+    correct_answer_count: int
+    incorrect_answer_count: int
+    skipped_question_count: int
 
 
 class TestsDashboardResponse(BaseModel):

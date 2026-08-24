@@ -20,6 +20,7 @@ test('tests hub visual runner records the Figma desktop/mobile contract', () => 
   assert.match(runner, /features-tests-hub--desktop-zero-bank/);
   assert.match(runner, /features-tests-hub--desktop-legacy-missing-counts/);
   assert.match(runner, /features-tests-hub--desktop-multiple-attempts/);
+  assert.match(runner, /features-tests-hub--desktop-recent-metric-stress/);
   assert.match(runner, /features-tests-desktop-test-option-card--weak-pre-analysis/);
   assert.match(runner, /features-tests-desktop-test-option-card--mock-inactive/);
   assert.match(runner, /weak-pre-analysis/);
@@ -130,6 +131,11 @@ test('tests hub visual runner records the Figma desktop/mobile contract', () => 
   assert.match(runner, /recent-hover\.png/);
   assert.match(runner, /recent-focus\.png/);
   assert.match(runner, /recent-active\.png/);
+  assert.match(runner, /recent-stress-hover\.png/);
+  assert.match(runner, /recent-stress-focus\.png/);
+  assert.match(runner, /recent-stress-active\.png/);
+  assert.match(runner, /metricGeometryMatches/);
+  assert.match(runner, /recentStates\.hover, recentStates\.focus, recentStates\.active/);
   assert.match(runner, /page\.mouse\.down\(\)/, 'trusted browser pointer-down must capture the native active state');
   assert.match(runner, /rgb\(246, 245, 247\)/, 'native active state must assert the exact clicked background');
   assert.match(runner, /data-location-url/, 'pointer release must prove native attempt navigation');
@@ -150,6 +156,9 @@ test('tests hub visual runner records the Figma desktop/mobile contract', () => 
   assert.match(runner, /noDataHover/);
   assert.match(runner, /Общая точность по разделу появится после первого теста/);
   assert.match(story, /export const DesktopLegacyMissingCounts/);
+  assert.match(story, /export const DesktopRecentMetricStress/);
+  assert.match(story, /correctAnswerCount: 0[\s\S]*incorrectAnswerCount: 0[\s\S]*skippedQuestionCount: 20/);
+  assert.match(story, /flexShrink[\s\S]*toBe\('0'\)/);
   assert.match(story, /DesktopLoading[\s\S]*data-tests-mode-skeleton[\s\S]*toHaveLength\(3\)/);
   assert.match(story, /DesktopLoading[\s\S]*toEqual\(\[196, 196, 180\]\)/);
   assert.match(story, /DesktopLoading[\s\S]*data-tests-chapter-skeleton[\s\S]*toHaveLength\(6\)/);

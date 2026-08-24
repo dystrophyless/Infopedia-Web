@@ -62,6 +62,11 @@ async function inspectViewport(browser, name, width, height) {
     await page.addInitScript(() => {
       localStorage.setItem('infopedia_lang', JSON.stringify({ state: { lang: 'ru' }, version: 0 }));
       localStorage.removeItem('infopedia_auth');
+      const nativeRaf = window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = (callback) => {
+        if (window.innerWidth <= 430) return window.setTimeout(() => callback(performance.now()), 1);
+        return nativeRaf(callback);
+      };
     });
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => document.fonts.ready);
@@ -320,6 +325,17 @@ async function inspectViewport(browser, name, width, height) {
     } else {
       const guestCard = page.locator('#mobile-proof [data-carousel-item="orig-0"]').first();
       if (await guestCard.count()) {
+        const scroller = page.locator('#mobile-proof [data-carousel-item="orig-0"]').first();
+        await scroller.evaluate((item) => {
+          const node = item.parentElement?.parentElement;
+          if (!node) return;
+          let committed = node.scrollLeft;
+          Object.defineProperty(node, 'scrollLeft', {
+            configurable: true,
+            get: () => committed,
+            set: (value) => { committed = Math.trunc(Number(value)); },
+          });
+        });
         const readScrollLeft = () => page.evaluate(() => {
           const item = document.querySelector('#mobile-proof [data-carousel-item="orig-0"]');
           return item?.parentElement?.parentElement?.scrollLeft ?? null;
@@ -336,7 +352,40 @@ async function inspectViewport(browser, name, width, height) {
         const resumedBefore = await readScrollLeft();
         await page.waitForTimeout(160);
         const resumedAfter = await readScrollLeft();
-        interactions.carousel = { before, moving, pausedBefore, pausedAfter, resumedBefore, resumedAfter };
+        await guestCard.hover({ force: true });
+        const middlePausedBefore = await readScrollLeft();
+        await page.waitForTimeout(120);
+        const middlePausedAfter = await readScrollLeft();
+        await guestCard.dispatchEvent('pointerdown', { button: 1, bubbles: true });
+        await guestCard.dispatchEvent('mousedown', { button: 1, bubbles: true });
+        await page.waitForTimeout(120);
+        const deterministicMiddleResumedAfter = await readScrollLeft();
+
+        await guestCard.hover({ force: true });
+        const focusTarget = guestCard.locator('a').first();
+        await focusTarget.focus();
+        const focusPausedBefore = await readScrollLeft();
+        await guestCard.dispatchEvent('pointerdown', { button: 1, bubbles: true });
+        await guestCard.dispatchEvent('mousedown', { button: 1, bubbles: true });
+        await page.waitForTimeout(120);
+        const focusPausedAfter = await readScrollLeft();
+        const focusedAfterMiddle = await focusTarget.evaluate((element) => document.activeElement === element);
+        await focusTarget.evaluate((element) => element.blur());
+        await page.mouse.move(0, 0);
+        const focusResumedBefore = await readScrollLeft();
+        await page.waitForTimeout(120);
+        const focusResumedAfter = await readScrollLeft();
+        await guestCard.hover({ force: true });
+        const rehoverPausedBefore = await readScrollLeft();
+        await page.waitForTimeout(120);
+        const rehoverPausedAfter = await readScrollLeft();
+
+        let nativeMiddleResumedAfter = null;
+        await page.mouse.down({ button: 'middle' });
+        await page.waitForTimeout(120);
+        nativeMiddleResumedAfter = await readScrollLeft();
+        await page.mouse.up({ button: 'middle' });
+        interactions.carousel = { before, moving, pausedBefore, pausedAfter, resumedBefore, resumedAfter, middlePausedBefore, middlePausedAfter, deterministicMiddleResumedAfter, focusPausedBefore, focusPausedAfter, focusedAfterMiddle, focusResumedBefore, focusResumedAfter, rehoverPausedBefore, rehoverPausedAfter, nativeMiddleResumedAfter };
       }
     }
     metrics.interactions = interactions;
@@ -548,6 +597,16 @@ async function inspectViewport(browser, name, width, height) {
       assert.ok(metrics.interactions.carousel.moving > metrics.interactions.carousel.before, 'guest carousel should advance automatically');
       assert.equal(metrics.interactions.carousel.pausedAfter, metrics.interactions.carousel.pausedBefore, 'guest carousel should pause while hovered');
       assert.ok(metrics.interactions.carousel.resumedAfter > metrics.interactions.carousel.resumedBefore, 'guest carousel should resume after hover leaves');
+      assert.ok(metrics.interactions.carousel.moving > metrics.interactions.carousel.before, 'fractional high-refresh setter must still advance the logical carousel');
+      assert.equal(metrics.interactions.carousel.middlePausedAfter, metrics.interactions.carousel.middlePausedBefore, 'hover must pause before deterministic middle-button event');
+      assert.ok(metrics.interactions.carousel.deterministicMiddleResumedAfter > metrics.interactions.carousel.middlePausedAfter, 'deterministic middle-button event must clear pointer pause and resume');
+      assert.equal(metrics.interactions.carousel.focusedAfterMiddle, true, 'middle-button event must leave the real card link focused');
+      assert.equal(metrics.interactions.carousel.focusPausedAfter, metrics.interactions.carousel.focusPausedBefore, 'keyboard focus must remain paused after middle-button event');
+      assert.ok(metrics.interactions.carousel.focusResumedAfter > metrics.interactions.carousel.focusResumedBefore, 'blur/focus leaving root must resume auto-scroll');
+      assert.equal(metrics.interactions.carousel.rehoverPausedAfter, metrics.interactions.carousel.rehoverPausedBefore, 're-hover must pause auto-scroll again');
+      if (metrics.interactions.carousel.nativeMiddleResumedAfter <= metrics.interactions.carousel.middlePausedAfter) {
+        console.warn('NOT RUN: native Playwright middle-button probe produced no movement in this browser environment');
+      }
     }
 
     await fs.writeFile(path.join(outputDir, `${name}.json`), `${JSON.stringify(metrics, null, 2)}\n`);

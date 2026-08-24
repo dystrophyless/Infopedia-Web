@@ -48,8 +48,15 @@ assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'g
 assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/, 'Auto-scroll variants must duplicate multiple items for the loop');
 assert.match(view, /clone-0[\s\S]*offsetLeft[\s\S]*orig-0[\s\S]*offsetLeft/, 'Loop distance must use measured clone and original offsets');
 assert.match(view, /AUTO_SCROLL_PX_PER_SECOND = 46/, 'Loop speed must remain the named fixed speed');
-assert.match(view, /onMouseEnter[\s\S]*pausedRef\.current = true[\s\S]*onMouseLeave[\s\S]*pausedRef\.current = false/, 'Hover must pause and resume auto-scroll');
-assert.match(view, /onFocusCapture[\s\S]*pausedRef\.current = true[\s\S]*onBlurCapture[\s\S]*pausedRef\.current = false/, 'Keyboard focus must pause and resume auto-scroll');
+assert.match(view, /pointerPausedRef/, 'Pointer pause state must be independent');
+assert.match(view, /focusPausedRef/, 'Focus pause state must be independent');
+assert.match(view, /onMouseEnter[\s\S]*pointerPausedRef\.current = true[\s\S]*onMouseLeave[\s\S]*pointerPausedRef\.current = false/, 'Hover must pause and resume pointer auto-scroll');
+assert.match(view, /onFocusCapture[\s\S]*focusPausedRef\.current = true/, 'Keyboard focus must pause auto-scroll');
+assert.match(view, /onBlurCapture[\s\S]*focusPausedRef\.current = false/, 'Focus leaving carousel must resume auto-scroll');
+assert.match(view, /button === 1|buttons === 4|middle/, 'Middle-button interaction must clear only pointer pause');
+assert.match(view, /logicalScrollLeft|committedScrollLeft/, 'Auto-scroll must retain a logical fractional accumulator');
+assert.match(view, /elapsed\s*\/\s*1000\)\s*\*\s*AUTO_SCROLL_PX_PER_SECOND/, 'Auto-scroll must advance the logical accumulator at the fixed speed');
+assert.match(view, /loopDistance/, 'Logical accumulator must resync and wrap at the measured loop distance');
 assert.match(view, /touch-pan-x snap-x/, 'Finite mobile carousel must retain native horizontal panning');
 assert.match(view, /mobile: 'gap-3 pl-0 pr-\[24vw\]'/, 'Mobile track must bleed only to the right');
 assert.match(view, /guest: 'gap-4 pl-8 pr-8'/, 'Guest track must own complete-card gutters');

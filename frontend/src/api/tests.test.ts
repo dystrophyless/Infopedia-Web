@@ -89,6 +89,30 @@ describe('tests API adapter', () => {
     expect(normalizeTestsDashboard({ recent_tests: [{ id: 'a', mode: 'chapter', title: 'historical English' }] }, 'ru').recentTests[0].title).toBe('Тест по разделу');
   });
 
+  it('normalizes the public recent attempt reference and persisted answer totals', () => {
+    expect(normalizeTestsDashboard({
+      recent_tests: [{
+        id: 'attempt-public',
+        mode: 'random',
+        completed_at: '2026-08-24T12:30:00Z',
+        display_date: 'legacy label',
+        accuracy: 65,
+        correct_answer_count: 13,
+        incorrect_answer_count: 5,
+        skipped_question_count: 2,
+      }],
+    }, 'ru').recentTests[0]).toEqual({
+      attemptRef: 'attempt-public',
+      mode: 'random',
+      title: 'Случайный тест',
+      completedAt: '2026-08-24T12:30:00Z',
+      accuracy: 65,
+      correctAnswerCount: 13,
+      incorrectAnswerCount: 5,
+      skippedQuestionCount: 2,
+    });
+  });
+
   it('passes the requested KK locale to create and get attempt calls', async () => {
     const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: { mode: 'random' } } as never);
     const get = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { mode: 'chapter' } } as never);

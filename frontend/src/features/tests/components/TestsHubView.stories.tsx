@@ -214,6 +214,20 @@ export const DesktopRecentMouseNavigation: Story = {
   },
 };
 
+const desktopRecentMetricStressDashboard: TestsDashboard = {
+  ...desktopDashboard,
+  recentTests: [
+    {
+      ...desktopDashboard.recentTests[0],
+      accuracy: 0,
+      correctAnswerCount: 0,
+      incorrectAnswerCount: 0,
+      skippedQuestionCount: 20,
+    },
+    ...desktopDashboard.recentTests.slice(1),
+  ],
+};
+
 export const DesktopRecentZeroSkipped: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
   args: { dashboard: desktopDashboard, dashboardStatus: 'ready' },
@@ -227,6 +241,43 @@ export const DesktopRecentZeroSkipped: Story = {
     await expect(recentLink).toHaveAccessibleName(/Пропущено: 0/);
     await expect(recentLink.querySelector('[data-tests-recent-skipped]')).toHaveTextContent('0');
     await expect(recentLink.querySelector('[data-tests-recent-skipped]')).toBeVisible();
+  },
+};
+
+export const DesktopRecentMetricStress: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  args: { dashboard: desktopRecentMetricStressDashboard, dashboardStatus: 'ready' },
+  play: async ({ canvasElement }) => {
+    const { userEvent: browserUserEvent } = await import('vitest/browser');
+    const recentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/random?attemptRef=attempt-1"]')!;
+    const assertMetrics = async () => {
+      const correct = recentLink.querySelector<HTMLElement>('[data-tests-recent-correct]')!;
+      const incorrect = recentLink.querySelector<HTMLElement>('[data-tests-recent-incorrect]')!;
+      const skipped = recentLink.querySelector<HTMLElement>('[data-tests-recent-skipped]')!;
+      await expect(correct).toHaveTextContent('0');
+      await expect(incorrect).toHaveTextContent('0');
+      await expect(skipped).toHaveTextContent('20');
+      for (const metric of [correct, incorrect, skipped]) {
+        const marker = metric.children[0] as HTMLElement;
+        await expect(marker.getBoundingClientRect()).toMatchObject({ width: 14, height: 14 });
+        await expect(getComputedStyle(marker).flexShrink).toBe('0');
+      }
+      for (const metric of [correct, incorrect]) {
+        const glyph = metric.querySelector<HTMLImageElement>('img')!;
+        await expect(glyph.getBoundingClientRect()).toMatchObject({ width: 8, height: 8 });
+      }
+      const skippedMarker = skipped.children[0] as HTMLElement;
+      await expect(getComputedStyle(skippedMarker).borderWidth).toBe('1px');
+      await expect(getComputedStyle(skippedMarker).borderColor).toBe('rgb(140, 134, 152)');
+      await expect(recentLink.getBoundingClientRect()).toMatchObject({ width: 272, height: 50 });
+    };
+
+    await browserUserEvent.hover(recentLink);
+    await assertMetrics();
+    recentLink.focus();
+    await expect(recentLink).toHaveFocus();
+    await assertMetrics();
+    await expect(recentLink).toHaveAccessibleName(/Правильные ответы: 0.*Неправильные ответы: 0.*Пропущено: 20/);
   },
 };
 

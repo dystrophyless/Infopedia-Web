@@ -19,6 +19,7 @@ test('tests hub visual runner records the Figma desktop/mobile contract', () => 
   assert.match(runner, /features-tests-result--with-weak-topic/);
   assert.match(runner, /features-tests-hub--desktop-zero-bank/);
   assert.match(runner, /features-tests-hub--desktop-legacy-missing-counts/);
+  assert.match(runner, /features-tests-hub--desktop-multiple-attempts/);
   assert.match(runner, /features-tests-desktop-test-option-card--weak-pre-analysis/);
   assert.match(runner, /features-tests-desktop-test-option-card--mock-inactive/);
   assert.match(runner, /weak-pre-analysis/);
@@ -91,7 +92,7 @@ test('tests hub visual runner records the Figma desktop/mobile contract', () => 
   assert.match(runner, /href !== '\/analyze'/);
   assert.match(runner, /contractIcon/);
   assert.match(runner, /contractGlyph/);
-  for (const node of ['954:2976', '954:2962', '954:2947', '724:3011', '724:3042']) {
+  for (const node of ['954:2976', '954:2962', '954:2947']) {
     assert.match(runner, new RegExp(node), `runner must identify Figma node ${node}`);
   }
   for (const storyId of [
@@ -122,11 +123,24 @@ test('tests hub visual runner records the Figma desktop/mobile contract', () => 
   assert.match(runner, /dashboard-error state must not infer empty statistics without a ready dashboard/);
   assert.match(runner, /ready legacy payload must render only inferred empty statistics and chapter badges/);
   assert.match(runner, /data-tests-recent-empty/);
+  for (const node of ['1325:2920', '1325:2867', '1325:2934']) {
+    assert.match(runner, new RegExp(node), `runner must identify current Test history Figma node ${node}`);
+  }
+  assert.match(runner, /recent-default\.png/);
+  assert.match(runner, /recent-hover\.png/);
+  assert.match(runner, /recent-focus\.png/);
+  assert.match(runner, /recent-active\.png/);
+  assert.match(runner, /page\.mouse\.down\(\)/, 'trusted browser pointer-down must capture the native active state');
+  assert.match(runner, /rgb\(246, 245, 247\)/, 'native active state must assert the exact clicked background');
+  assert.match(runner, /data-location-url/, 'pointer release must prove native attempt navigation');
+  assert.match(runner, /width: 1024, height: 768/, 'current history cards must be measured at deterministic 1024x768');
   assert.match(runner, /lineRects/);
   assert.match(runner, /pointerEvents/);
   assert.match(runner, /elementScreenshot/);
   assert.match(runner, /TESTS_VISUAL_SCOPE/);
   assert.match(runner, /figma-exact/);
+  assert.match(runner, /test-history/);
+  assert.match(runner, /history-mobile/);
   assert.match(runner, /weak-navigation/);
   assert.match(runner, /AbortSignal\.timeout/);
   assert.match(runner, /reference-self-shift/);

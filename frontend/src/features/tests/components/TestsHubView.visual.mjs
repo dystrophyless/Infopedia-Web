@@ -38,7 +38,7 @@ const RASTER_REGIONS = {
   'chapter-first-test': { surface: { x: 24, y: 178, width: 272, height: 8 }, badge: { x: 24, y: 24, width: 88, height: 22 }, title: { x: 24, y: 70, width: 272, height: 64 }, question: { x: 24, y: 158, width: 272, height: 14 } },
   'chapter-full': { surface: { x: 24, y: 178, width: 272, height: 8 }, badge: { x: 24, y: 24, width: 88, height: 22 }, delta: { x: 226, y: 24, width: 70, height: 20 }, title: { x: 24, y: 70, width: 272, height: 64 }, question: { x: 24, y: 158, width: 272, height: 14 } },
   'statistics-empty': { surface: { x: 24, y: 122, width: 272, height: 8 }, heading: { x: 24, y: 24, width: 180, height: 20 }, copy: { x: 32, y: 68, width: 264, height: 34 } },
-  'recent-empty': { surface: { x: 24, y: 214, width: 272, height: 8 }, heading: { x: 24, y: 24, width: 220, height: 20 }, copy: { x: 32, y: 68, width: 264, height: 34 } },
+  'recent-empty': { surface: { x: 24, y: 222, width: 272, height: 8 }, heading: { x: 24, y: 24, width: 220, height: 20 }, copy: { x: 32, y: 60, width: 264, height: 34 } },
 };
 
 export function classifyRasterRegion(candidate, negativeControls, options = {}) {
@@ -89,8 +89,11 @@ const captures = [
   { id: 'chapter-first-test', story: 'features-tests-desktop-chapter-test-card--first-test', selector: '[data-chapter-card]', width: 320, height: 196, region: 'chapter-first-test', figmaNode: '954:2962', referenceKey: 'chapterFirstTest', referenceWidth: 320, referenceHeight: 196, elementScreenshot: true },
   { id: 'chapter-full', story: 'features-tests-desktop-chapter-test-card--full', selector: '[data-chapter-card]', width: 320, height: 196, region: 'chapter-full', figmaNode: '954:2947', referenceKey: 'chapterFull', referenceWidth: 320, referenceHeight: 196, elementScreenshot: true },
   { id: 'chapter-short-title', story: 'features-tests-desktop-chapter-test-card--short-title', selector: '[data-chapter-card]', width: 320, height: 196, region: 'chapter-short-title', elementScreenshot: true },
-  { id: 'statistics-empty', story: 'features-tests-hub--desktop-legacy-missing-counts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1440, height: 1080, region: 'statistics-empty', figmaNode: '724:3011', referenceKey: 'statisticsEmpty', referenceWidth: 320, referenceHeight: 142, elementScreenshot: true },
-  { id: 'recent-empty', story: 'features-tests-hub--desktop-zero-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1440, height: 1080, region: 'recent-empty', figmaNode: '724:3042', referenceKey: 'recentEmpty', referenceWidth: 320, referenceHeight: 234, elementScreenshot: true },
+  { id: 'statistics-filled', story: 'features-tests-hub--desktop-multiple-attempts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1024, height: 768, region: 'statistics-filled', figmaNode: '1325:2920', elementScreenshot: true },
+  { id: 'recent-states', story: 'features-tests-hub--desktop-multiple-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-states', figmaNode: '1325:2867', elementScreenshot: true },
+  { id: 'statistics-empty', story: 'features-tests-hub--desktop-legacy-missing-counts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1440, height: 1080, region: 'statistics-empty', figmaNode: '1325:2920', referenceWidth: 320, referenceHeight: 134, elementScreenshot: true },
+  { id: 'recent-empty', story: 'features-tests-hub--desktop-zero-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1440, height: 1080, region: 'recent-empty', figmaNode: '1325:2934', referenceWidth: 320, referenceHeight: 242, elementScreenshot: true },
+  ...[320, 360, 390, 430].map((width) => ({ id: `history-mobile-${width}`, story: 'features-tests-hub--live-analysis', selector: '[data-tests-mobile]', width, height: 844, region: 'history-mobile' })),
   ...[320, 360, 390, 430].flatMap((width) => [
     { id: `mobile-live-${width}`, story: 'features-tests-hub--live-analysis', selector: '[data-tests-mobile]', width, height: 844, region: 'full' },
     { id: `mobile-negative-${width}`, story: 'features-tests-hub--load-error', selector: '[data-tests-mobile]', width, height: 844, region: 'negative' },
@@ -99,7 +102,7 @@ const captures = [
     { id: `mobile-result-${width}`, story: 'features-tests-result--with-weak-topic', selector: 'main', width, height: 844, region: 'result' },
   ]),
 ];
-const exactFigmaCaptureIds = new Set(['desktop-legacy-missing-counts', 'chapter-no-test', 'chapter-legacy-no-test', 'chapter-first-test', 'chapter-full', 'chapter-short-title', 'statistics-empty', 'recent-empty']);
+const exactFigmaCaptureIds = new Set(['desktop-legacy-missing-counts', 'chapter-no-test', 'chapter-legacy-no-test', 'chapter-first-test', 'chapter-full', 'chapter-short-title', 'statistics-filled', 'recent-states', 'statistics-empty', 'recent-empty']);
 const weakNavigationCaptureIds = new Set([
   'desktop-full-1080',
   'desktop-analyze-loading-stale',
@@ -112,6 +115,8 @@ const weakNavigationCaptureIds = new Set([
 const visualScope = process.env.TESTS_VISUAL_SCOPE ?? 'all';
 const activeCaptures = visualScope === 'figma-exact'
   ? captures.filter((descriptor) => exactFigmaCaptureIds.has(descriptor.id))
+  : visualScope === 'test-history'
+    ? captures.filter((descriptor) => ['statistics-filled', 'recent-states', 'statistics-empty', 'recent-empty', 'history-mobile'].includes(descriptor.region))
   : visualScope === 'weak-navigation'
     ? captures.filter((descriptor) => weakNavigationCaptureIds.has(descriptor.id))
   : captures;
@@ -628,6 +633,164 @@ async function capture(page, descriptor) {
         await page.waitForTimeout(200);
         measurements.optionCardInteraction = { random, weak };
       }
+      if (descriptor.region === 'statistics-filled') {
+        measurements.statisticsFilled = await page.locator(descriptor.selector).evaluate((panel) => {
+          const box = (element) => {
+            const rect = element.getBoundingClientRect();
+            return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom };
+          };
+          const style = (element) => {
+            const computed = getComputedStyle(element);
+            return { backgroundColor: computed.backgroundColor, borderRadius: computed.borderRadius, borderWidth: computed.borderWidth, padding: computed.padding, gap: computed.gap };
+          };
+          const heading = panel.querySelector('#tests-statistics-title');
+          const header = heading?.parentElement;
+          const accuracy = panel.querySelector('[data-tests-statistics-accuracy]');
+          return {
+            node: '1325:2920',
+            panel: { box: box(panel), style: style(panel) },
+            header: box(header),
+            accuracy: box(accuracy),
+            bboxGap: box(accuracy).y - box(header).bottom,
+          };
+        });
+        const contract = measurements.statisticsFilled;
+        if (contract.panel.box.width !== 320 || contract.panel.box.height !== 134
+          || contract.panel.style.backgroundColor !== 'rgb(255, 255, 255)'
+          || contract.panel.style.borderRadius !== '16px' || contract.panel.style.borderWidth !== '0px'
+          || contract.panel.style.padding !== '24px 24px 32px' || contract.panel.style.gap !== '16px'
+          || contract.header.height !== 28 || contract.accuracy.height !== 34 || contract.bboxGap !== 16) {
+          throw new VisualContractError(`${descriptor.id}: exact 320x134 statistics geometry failed (${JSON.stringify(contract)})`);
+        }
+      }
+      if (descriptor.region === 'recent-states') {
+        const panel = page.locator(descriptor.selector);
+        const links = panel.locator('[data-tests-recent-link]');
+        const firstLink = links.first();
+        const state = () => firstLink.evaluate((link) => {
+          const box = (element) => {
+            const rect = element.getBoundingClientRect();
+            return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom };
+          };
+          const computed = (element) => getComputedStyle(element);
+          const metric = (selector) => {
+            const root = link.querySelector(selector);
+            const marker = root?.children[0] ?? null;
+            const count = root?.children[1] ?? null;
+            return root ? {
+              box: box(root),
+              gap: computed(root).gap,
+              marker: { box: box(marker), backgroundColor: computed(marker).backgroundColor, borderColor: computed(marker).borderColor, borderWidth: computed(marker).borderWidth },
+              count: { text: count?.textContent?.trim() ?? '', color: computed(count).color, fontSize: computed(count).fontSize, lineHeight: computed(count).lineHeight },
+            } : null;
+          };
+          const date = link.querySelector('[data-tests-recent-date]');
+          const metrics = link.querySelector('[data-tests-recent-metrics]');
+          const arrow = link.querySelector('[data-tests-recent-arrow]');
+          const arrowSvg = arrow?.querySelector('svg') ?? null;
+          const scoreGroup = link.children[1];
+          return {
+            box: box(link),
+            backgroundColor: computed(link).backgroundColor,
+            accessibleName: link.getAttribute('aria-label'),
+            dateDisplay: computed(date).display,
+            metricsDisplay: computed(metrics).display,
+            metricsGap: computed(metrics).gap,
+            arrowDisplay: computed(arrow).display,
+            arrow: arrowSvg ? { box: box(arrowSvg), color: computed(arrow).color } : null,
+            scoreGap: computed(scoreGroup).gap,
+            correct: metric('[data-tests-recent-correct]'),
+            incorrect: metric('[data-tests-recent-incorrect]'),
+            skipped: metric('[data-tests-recent-skipped]'),
+            tooltipCount: link.closest('[aria-labelledby="tests-recent-title"]')?.querySelectorAll('[role="tooltip"]').length ?? 0,
+          };
+        });
+        measurements.recentPanel = await panel.evaluate((element) => {
+          const box = (target) => { const rect = target.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom }; };
+          const computed = getComputedStyle(element);
+          const list = element.querySelector('[data-tests-recent-list]');
+          const rows = [...element.querySelectorAll('[data-tests-recent-link]')];
+          return {
+            node: '1325:2934',
+            box: box(element),
+            padding: computed.padding,
+            gap: computed.gap,
+            backgroundColor: computed.backgroundColor,
+            borderRadius: computed.borderRadius,
+            list: { box: box(list), gap: getComputedStyle(list).gap },
+            rows: rows.map(box),
+          };
+        });
+        await page.mouse.move(0, 0);
+        await firstLink.evaluate((element) => element.blur());
+        measurements.recentStates = { default: await state() };
+        await panel.screenshot({ path: path.join(outputDir, 'recent-default.png') });
+
+        await firstLink.hover();
+        measurements.recentStates.hover = await state();
+        await panel.screenshot({ path: path.join(outputDir, 'recent-hover.png') });
+
+        await page.mouse.move(0, 0);
+        await page.locator('[data-testid="tests-weak-mode-card"]').focus();
+        await page.keyboard.press('Tab');
+        measurements.recentStates.focus = await state();
+        await panel.screenshot({ path: path.join(outputDir, 'recent-focus.png') });
+
+        await firstLink.evaluate((element) => element.blur());
+        await page.mouse.move(0, 0);
+        await firstLink.hover();
+        await page.mouse.down();
+        measurements.recentStates.active = await state();
+        await panel.screenshot({ path: path.join(outputDir, 'recent-active.png') });
+        await page.mouse.up();
+        await page.waitForFunction(() => document.querySelector('[data-location-url]')?.textContent?.includes('/tests/random?attemptRef=attempt-1'));
+        measurements.recentStates.navigation = await page.locator('[data-location-url]').textContent();
+
+        const { recentPanel, recentStates } = measurements;
+        const sameBox = (actual, expected) => actual.width === expected.width && actual.height === expected.height && actual.x === expected.x && actual.y === expected.y;
+        const detailsVisible = (snapshot, backgroundColor) => snapshot.backgroundColor === backgroundColor && snapshot.dateDisplay === 'none'
+          && snapshot.metricsDisplay === 'flex' && snapshot.arrowDisplay === 'block' && sameBox(snapshot.box, recentStates.default.box);
+        if (recentPanel.box.width !== 320 || recentPanel.box.height !== 242 || recentPanel.padding !== '24px 24px 32px'
+          || recentPanel.gap !== '16px' || recentPanel.backgroundColor !== 'rgb(255, 255, 255)' || recentPanel.borderRadius !== '16px'
+          || recentPanel.list.box.width !== 272 || recentPanel.list.box.height !== 150 || recentPanel.list.gap !== '0px'
+          || recentPanel.rows.length !== 3 || recentPanel.rows.some((row) => row.width !== 272 || row.height !== 50)) {
+          throw new VisualContractError(`${descriptor.id}: exact 320x242 panel or 272x150 gapless row geometry failed (${JSON.stringify(recentPanel)})`);
+        }
+        if (recentStates.default.backgroundColor !== 'rgb(255, 255, 255)' || recentStates.default.dateDisplay === 'none'
+          || recentStates.default.metricsDisplay !== 'none' || recentStates.default.arrowDisplay !== 'none'
+          || !detailsVisible(recentStates.hover, 'rgb(251, 251, 251)')
+          || !detailsVisible(recentStates.focus, 'rgb(251, 251, 251)')
+          || !detailsVisible(recentStates.active, 'rgb(246, 245, 247)')) {
+          throw new VisualContractError(`${descriptor.id}: default/hover/focus/native active state paint or layout stability failed (${JSON.stringify(recentStates)})`);
+        }
+        const visible = recentStates.hover;
+        if (visible.metricsGap !== '8px' || visible.scoreGap !== '4px' || visible.arrow.box.width !== 18 || visible.arrow.box.height !== 18 || visible.arrow.color !== 'rgb(177, 172, 185)'
+          || visible.correct.gap !== '4px' || visible.correct.marker.box.width !== 14 || visible.correct.marker.box.height !== 14 || visible.correct.marker.backgroundColor !== 'rgb(41, 174, 112)' || visible.correct.count.color !== 'rgb(34, 145, 93)'
+          || visible.incorrect.gap !== '4px' || visible.incorrect.marker.box.width !== 14 || visible.incorrect.marker.box.height !== 14 || visible.incorrect.marker.backgroundColor !== 'rgb(231, 48, 35)' || visible.incorrect.count.color !== 'rgb(188, 37, 26)'
+          || visible.skipped.gap !== '4px' || visible.skipped.marker.box.width !== 14 || visible.skipped.marker.box.height !== 14 || visible.skipped.marker.borderWidth !== '1px' || visible.skipped.marker.borderColor !== 'rgb(140, 134, 152)' || visible.skipped.count.color !== 'rgb(110, 103, 121)'
+          || visible.tooltipCount !== 0 || !recentStates.navigation?.includes('/tests/random?attemptRef=attempt-1')) {
+          throw new VisualContractError(`${descriptor.id}: metric marker, arrow, tooltip removal, or native navigation contract failed`);
+        }
+      }
+      if (descriptor.region === 'history-mobile') {
+        measurements.mobileSanity = await page.evaluate(() => {
+          const desktop = document.querySelector('[data-tests-desktop]');
+          const mobile = document.querySelector('[data-tests-mobile]');
+          return {
+            viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
+            desktopDisplay: desktop ? getComputedStyle(desktop).display : null,
+            desktopRects: desktop?.getClientRects().length ?? 0,
+            mobileDisplay: mobile ? getComputedStyle(mobile).display : null,
+            mobileRects: mobile?.getClientRects().length ?? 0,
+            scrollWidth: document.documentElement.scrollWidth,
+          };
+        });
+        const sanity = measurements.mobileSanity;
+        if (sanity.viewport.devicePixelRatio !== 1 || sanity.desktopDisplay !== 'none' || sanity.desktopRects !== 0
+          || sanity.mobileDisplay === 'none' || sanity.mobileRects === 0 || sanity.scrollWidth !== descriptor.width) {
+          throw new VisualContractError(`${descriptor.id}: desktop must stay hidden and unchanged mobile must fit the viewport (${JSON.stringify(sanity)})`);
+        }
+      }
       if (descriptor.selector === '[data-tests-desktop]' && measurements.chapterCards.length > 0 && measurements.chapterMetrics.length > 0) {
         const card = page.locator('[data-chapter-card]').first();
         await card.hover();
@@ -749,11 +912,11 @@ async function capture(page, descriptor) {
     const contract = measurements.emptyPanelContract;
     const statistics = descriptor.region === 'statistics-empty';
     const expected = statistics
-      ? { width: 320, height: 142, heading: 'Статистика', title: 'Общая точность появится здесь' }
-      : { width: 320, height: 234, heading: 'Недавние тесты', title: 'История тестов появится здесь' };
+      ? { width: 320, height: 134, heading: 'Статистика', title: 'Общая точность появится здесь' }
+      : { width: 320, height: 242, heading: 'Недавние тесты', title: 'История тестов появится здесь' };
     if (!contract || contract.panel.box.width !== expected.width || contract.panel.box.height !== expected.height
       || contract.panel.style.backgroundColor !== 'rgb(255, 255, 255)' || contract.panel.style.borderRadius !== '16px'
-      || contract.panel.style.borderWidth !== '0px' || contract.panel.style.padding !== '24px 24px 32px' || contract.panel.style.gap !== '24px') {
+      || contract.panel.style.borderWidth !== '0px' || contract.panel.style.padding !== '24px 24px 32px' || contract.panel.style.gap !== '16px') {
       throw new VisualContractError(`${descriptor.id}: exact empty-panel surface contract failed (${JSON.stringify(contract ? { box: contract.panel.box, style: contract.panel.style } : null)})`);
     }
     if (contract.heading.text !== expected.heading || contract.heading.style.fontSize !== '20px' || contract.heading.style.fontWeight !== '500'

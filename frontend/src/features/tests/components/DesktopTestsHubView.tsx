@@ -6,14 +6,16 @@
   ArrowDown01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Skeleton } from '../../../ui';
 import type { TestsDashboard, TestMode } from '../../../api/tests';
 import {
   filterDashboardChapters,
   formatDelta,
   formatPercent,
+  formatRecentTestDateTime,
   getDashboardMetricVisibility,
   getVisibleDashboardChapters,
   sortDashboardChapters,
@@ -54,12 +56,47 @@ function ChapterCardSkeleton() {
   );
 }
 
+function RecentTestLink({ recent, locale, t }: {
+  recent: TestsDashboard['recentTests'][number];
+  locale: 'ru' | 'kk';
+  t: ReturnType<typeof useTranslation>['t'];
+}) {
+  const tooltipId = useId();
+  return (
+    <div className="group relative">
+      <Link
+        to={`/tests/${recent.mode}?attemptRef=${encodeURIComponent(recent.attemptRef)}`}
+        aria-describedby={tooltipId}
+        className="flex items-center justify-between px-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+        data-tests-recent-link
+      >
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="truncate text-[16px] font-normal leading-4 text-[#39363f]">{recent.title}</span>
+          <span className="text-[14px] font-normal leading-[14px] text-[#8c8698]">{formatRecentTestDateTime(recent.completedAt, locale)}</span>
+        </span>
+        <span className="text-[16px] font-medium leading-4 text-[#161519]">{formatPercent(recent.accuracy)}</span>
+      </Link>
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-max max-w-[280px] rounded-[8px] bg-[#161519] px-3 py-2 text-[13px] leading-[13px] text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        <span className="block">{t('tests.desktopRecentCorrect', { count: recent.correctAnswerCount })}</span>
+        <span className="block">{t('tests.desktopRecentIncorrect', { count: recent.incorrectAnswerCount })}</span>
+        {recent.skippedQuestionCount > 0 ? <span className="block">{t('tests.desktopRecentSkipped', { count: recent.skippedQuestionCount })}</span> : null}
+        <span className="mt-1 block text-[#d5d3d9]">{t('tests.desktopRecentOpenHint')}</span>
+      </span>
+    </div>
+  );
+}
+
 export function defaultQuestionLabel(count: number) {
   return `${count} ${count === 1 ? 'вопрос' : count < 5 ? 'вопроса' : 'вопросов'}`;
 }
 
 export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry, questionLabel }: DesktopTestsHubViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale: 'ru' | 'kk' = i18n.resolvedLanguage?.startsWith('kk') ? 'kk' : 'ru';
   const [sort, setSort] = useState<DashboardSort>('importance');
   const [filter, setFilter] = useState<DashboardFilter>('all');
   const [expanded, setExpanded] = useState(false);
@@ -184,13 +221,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
               ) : dashboard?.recentTests.length ? (
                 <div className="flex flex-col gap-4">
                   {dashboard.recentTests.slice(0, 3).map((recent) => (
-                    <div key={recent.id} className="flex items-center justify-between px-2">
-                      <div className="flex min-w-0 flex-col gap-1">
-                        <p className="truncate text-[16px] font-normal leading-4 text-[#39363f]">{recent.title}</p>
-                        <p className="text-[14px] font-normal leading-[14px] text-[#8c8698]">{recent.displayDate ?? new Date(recent.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
-                      </div>
-                      <p className="text-[16px] font-medium leading-4 text-[#161519]">{formatPercent(recent.accuracy)}</p>
-                    </div>
+                    <RecentTestLink key={recent.attemptRef} recent={recent} locale={locale} t={t} />
                   ))}
                 </div>
               ) : (

@@ -12,6 +12,7 @@ const optionStoryPath = path.resolve(import.meta.dirname, '../features/tests/com
 const optionStory = existsSync(optionStoryPath) ? readFileSync(optionStoryPath, 'utf8') : '';
 const chapterStoryPath = path.resolve(import.meta.dirname, '../features/tests/components/DesktopChapterTestCard.stories.tsx');
 const chapterStory = existsSync(chapterStoryPath) ? readFileSync(chapterStoryPath, 'utf8') : '';
+const dashboardModel = readFileSync(path.resolve(import.meta.dirname, '../features/tests/model/testsDashboard.ts'), 'utf8');
 const ru = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../locales/ru/translation.json'), 'utf8'));
 const kk = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../locales/kk/translation.json'), 'utf8'));
 
@@ -174,6 +175,8 @@ assert.match(view, /desktopRecentEmptyBody/);
 assert.match(view, /<Link[\s\S]*to=\{`\/tests\/\$\{recent\.mode\}\?attemptRef=\$\{encodeURIComponent\(recent\.attemptRef\)\}`\}/, 'every recent row must be a native attempt link');
 assert.match(view, /formatRecentTestDateTime\(recent\.completedAt, locale\)/, 'recent rows must show localized local date and time');
 assert.doesNotMatch(view, /recent\.displayDate|toLocaleDateString/, 'legacy displayDate and date-only formatting must not drive the desktop UI');
+assert.match(dashboardModel, /new Intl\.DateTimeFormat\(locale === 'kk' \? 'kk-KZ' : 'ru-RU', \{[\s\S]*day: 'numeric',[\s\S]*month: 'short',[\s\S]*hour: '2-digit',[\s\S]*minute: '2-digit',/, 'recent dates must use locale-aware day, short month, hour, and minute fields');
+assert.doesNotMatch(dashboardModel, /dateStyle: 'medium'|timeStyle: 'short'/, 'recent dates must not include the year through dateStyle or timeStyle');
 assert.match(view, /role="tooltip"/);
 assert.match(view, /aria-describedby=\{tooltipId\}/);
 assert.match(view, /useId\(\)/);

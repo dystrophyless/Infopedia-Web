@@ -333,6 +333,54 @@ def _history_attempt_counts(
     }
 
 
+def _recent_attempt_totals(
+    history: Sequence[dict[str, object]],
+) -> dict[object, dict[str, int | float]]:
+    """Derive recent-attempt totals from persisted question/answer snapshots."""
+    totals: dict[object, dict[str, int | float]] = defaultdict(
+        lambda: {
+            "correct_answer_count": 0,
+            "answered_question_count": 0,
+            "total_question_count": 0,
+            "earned_weight": 0.0,
+        },
+    )
+    for row in history:
+        attempt_id = row.get("attempt_id")
+        if attempt_id is None:
+            continue
+        attempt = totals[attempt_id]
+        attempt["total_question_count"] += 1
+        awarded_weight = row.get("awarded_weight")
+        if awarded_weight is None:
+            continue
+        attempt["answered_question_count"] += 1
+        try:
+            weight = max(0.0, float(awarded_weight))
+        except (TypeError, ValueError):
+            weight = 0.0
+        attempt["earned_weight"] += weight
+        if weight > 0:
+            attempt["correct_answer_count"] += 1
+    return dict(totals)
+
+
+def _recent_attempt_metrics(
+    totals: dict[object, dict[str, int | float]], attempt_id: object
+) -> dict[str, int | float]:
+    attempt = totals.get(attempt_id, {})
+    total = int(attempt.get("total_question_count", 0))
+    answered = int(attempt.get("answered_question_count", 0))
+    correct = int(attempt.get("correct_answer_count", 0))
+    earned = float(attempt.get("earned_weight", 0.0))
+    return {
+        "accuracy": _round_metric(earned / total * 100) if total else 0,
+        "correct_answer_count": correct,
+        "incorrect_answer_count": max(0, answered - correct),
+        "skipped_question_count": max(0, total - answered),
+    }
+
+
 def _attempt_history_rows(attempts: Sequence[object]) -> list[dict[str, object]]:
     """Materialize the same immutable snapshot rows used by both dashboard paths."""
     rows: list[dict[str, object]] = []
@@ -373,7 +421,7 @@ def _attempt_history_rows(attempts: Sequence[object]) -> list[dict[str, object]]
                     "mode": getattr(attempt, "mode", None),
                     "attempt_chapter_id": getattr(attempt, "chapter_id", None),
                     "chapter_id": getattr(question, "chapter_id", None),
-                    "awarded_weight": getattr(answer, "awarded_weight", 0) if answer is not None else 0,
+                    "awarded_weight": getattr(answer, "awarded_weight", 0) if answer is not None else None,
                 },
             )
     return rows
@@ -673,26 +721,14 @@ class TestsService:
             }
             for chapter in ordered_chapters
         ]
-        recent_accuracy: dict[object, tuple[float, int]] = defaultdict(lambda: (0.0, 0))
-        for row in history:
-            attempt_id = row.get("attempt_id")
-            if attempt_id is None:
-                continue
-            earned, count = recent_accuracy[attempt_id]
-            try:
-                row_weight = max(0.0, float(row.get("awarded_weight", 0) or 0))
-            except (TypeError, ValueError):
-                row_weight = 0.0
-            recent_accuracy[attempt_id] = (earned + row_weight, count + 1)
+        recent_totals = _recent_attempt_totals(history)
         recent = [
             {
                 "id": encode_public_ref("attempt", attempt.id),
                 "mode": attempt.mode,
                 "title": localized_test_title(attempt.mode, locale),
                 "completed_at": _utc(attempt.completed_at),
-                "accuracy": _round_metric(recent_accuracy[attempt.id][0] / recent_accuracy[attempt.id][1] * 100)
-                if recent_accuracy[attempt.id][1]
-                else 0,
+                **_recent_attempt_metrics(recent_totals, attempt.id),
             }
             for attempt in attempts[:3]
         ]
@@ -760,32 +796,14 @@ class TestsService:
             }
             for chapter in ordered_chapters
         ]
-        recent_accuracy: dict[int, tuple[float, int]] = defaultdict(lambda: (0.0, 0))
-        for row in history:
-            attempt_id = row.get("attempt_id")
-            if attempt_id is None:
-                continue
-            earned, count = recent_accuracy[int(attempt_id)]
-            try:
-                row_weight = max(0.0, float(row.get("awarded_weight", 0) or 0))
-            except (TypeError, ValueError):
-                row_weight = 0.0
-            recent_accuracy[int(attempt_id)] = (earned + row_weight, count + 1)
+        recent_totals = _recent_attempt_totals(history)
         recent = [
             {
                 "id": encode_public_ref("attempt", int(row["id"])),
                 "mode": row["mode"],
                 "title": localized_test_title(str(row["mode"]), locale),
                 "completed_at": _utc(row["completed_at"]),
-                "accuracy": _round_metric(
-                    (
-                        recent_accuracy[int(row["id"])][0]
-                        / recent_accuracy[int(row["id"])][1]
-                    )
-                    * 100
-                )
-                if recent_accuracy[int(row["id"])][1]
-                else 0,
+                **_recent_attempt_metrics(recent_totals, int(row["id"])),
             }
             for row in recent_rows[:3]
         ]

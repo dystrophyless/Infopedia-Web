@@ -1,7 +1,7 @@
 import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { expect, fn, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import type { TestsDashboard } from '../../../api/tests';
 import { DesktopSidebar } from '../../../components/DesktopSidebar';
 import { TestsHubView } from './TestsHubView';
@@ -36,9 +36,9 @@ const desktopDashboard: TestsDashboard = {
     },
   ],
   recentTests: [
-    { id: 'attempt-1', mode: 'random', title: 'Случайный тест', completedAt: '2026-08-01T12:00:00Z', displayDate: 'Авг. 1', accuracy: 78 },
-    { id: 'attempt-2', mode: 'weak', title: 'Слабые темы', completedAt: '2026-07-31T12:00:00Z', displayDate: 'Июль 31', accuracy: 43 },
-    { id: 'attempt-3', mode: 'mock', title: 'Тест по разделу', completedAt: '2026-07-31T09:00:00Z', displayDate: 'Июль 31', accuracy: 88 },
+    { attemptRef: 'attempt-1', mode: 'random', title: 'Случайный тест', completedAt: '2026-08-01T12:00:00Z', accuracy: 78, correctAnswerCount: 14, incorrectAnswerCount: 4, skippedQuestionCount: 2 },
+    { attemptRef: 'attempt-2', mode: 'weak', title: 'Слабые темы', completedAt: '2026-07-31T12:00:00Z', accuracy: 43, correctAnswerCount: 8, incorrectAnswerCount: 12, skippedQuestionCount: 0 },
+    { attemptRef: 'attempt-3', mode: 'mock', title: 'Тест по разделу', completedAt: '2026-07-31T09:00:00Z', accuracy: 88, correctAnswerCount: 18, incorrectAnswerCount: 2, skippedQuestionCount: 0 },
   ],
   chapters: [
     { chapterRef: 'computer-devices', code: '01', title: 'Устройства компьютера', importanceRank: 1, questionCount: 91, completedAttemptCount: 2, accuracy: 79, deltaPoints: 3.2 },
@@ -75,7 +75,7 @@ const desktopWeakUnavailableDashboard: TestsDashboard = {
 
 function LocationProbe() {
   const location = useLocation();
-  return <output className="sr-only" data-location-pathname>{location.pathname}</output>;
+  return <output className="sr-only" data-location-pathname data-location-url>{location.pathname}{location.search}</output>;
 }
 
 const meta = {
@@ -167,6 +167,40 @@ export const Desktop: Story = {
     await expect(weakCard?.querySelectorAll('a, button, input, select, textarea, [role="button"], [role="link"]')).toHaveLength(0);
     await expect(mockCard?.tagName).toBe('DIV');
     await expect(mockCard).toHaveAttribute('aria-disabled', 'true');
+    const recentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/random?attemptRef=attempt-1"]');
+    await expect(recentLink).not.toBeNull();
+    weakCard!.focus();
+    await userEvent.tab();
+    await expect(recentLink).toHaveFocus();
+    const tooltip = document.getElementById(recentLink!.getAttribute('aria-describedby')!);
+    await expect(tooltip).toHaveAttribute('role', 'tooltip');
+    await waitFor(() => expect(getComputedStyle(tooltip!).opacity).toBe('1'));
+    await expect(tooltip).toHaveTextContent('Правильные ответы: 14');
+    await expect(tooltip).toHaveTextContent('Неправильные ответы: 4');
+    await expect(tooltip).toHaveTextContent('Пропущено: 2');
+    recentLink!.blur();
+    await userEvent.hover(recentLink!);
+    await waitFor(() => expect(getComputedStyle(tooltip!).opacity).toBe('1'));
+    await userEvent.unhover(recentLink!);
+    const noSkipLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/weak?attemptRef=attempt-2"]')!;
+    const noSkipTooltip = document.getElementById(noSkipLink.getAttribute('aria-describedby')!);
+    await expect(noSkipTooltip).not.toHaveTextContent('Пропущено:');
+    recentLink!.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(canvasElement.querySelector('[data-location-url]')).toHaveTextContent('/tests/random?attemptRef=attempt-1');
+  },
+};
+
+export const DesktopRecentMouseNavigation: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  args: {
+    dashboard: desktopDashboard,
+    dashboardStatus: 'ready',
+  },
+  play: async ({ canvasElement }) => {
+    const recentLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/random?attemptRef=attempt-1"]')!;
+    await userEvent.click(recentLink);
+    await expect(canvasElement.querySelector('[data-location-url]')).toHaveTextContent('/tests/random?attemptRef=attempt-1');
   },
 };
 
@@ -200,8 +234,7 @@ export const DesktopWeakPrerequisite: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
   args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty' },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const weakCard = canvas.getByRole('link', { name: /Слабые темы/ });
+    const weakCard = canvasElement.querySelector<HTMLAnchorElement>('[data-option-card-contract="weak-pre-analysis"]')!;
     await expect(weakCard).toHaveTextContent('После анализа ЕНТ');
     await expect(weakCard).toHaveTextContent('Подборка вопросов по разделам, где вы теряете баллы');
     await expect(weakCard).toHaveAttribute('href', '/analyze');
@@ -219,8 +252,7 @@ export const DesktopWeakPrerequisiteMouse: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
   args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty' },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const weakCard = canvas.getByRole('link', { name: /Слабые темы/ });
+    const weakCard = canvasElement.querySelector<HTMLAnchorElement>('[data-option-card-contract="weak-pre-analysis"]')!;
     await expect(weakCard).toHaveAttribute('href', '/analyze');
     await userEvent.click(weakCard);
     await expect(canvasElement.querySelector('[data-location-pathname]')).toHaveTextContent('/analyze');

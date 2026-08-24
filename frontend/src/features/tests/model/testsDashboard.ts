@@ -115,7 +115,9 @@ export function formatDelta(value: number | null): string {
 
 export function formatRecentTestDateTime(completedAt: string, locale: 'ru' | 'kk'): string {
   return new Intl.DateTimeFormat(locale === 'kk' ? 'kk-KZ' : 'ru-RU', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(completedAt));
 }

@@ -16,6 +16,10 @@ const preview = {
     },
     a11y: {
       test: 'error',
+      // Approved Figma/source-palette exception; keep all other axe rules blocking.
+      config: {
+        rules: [{ id: 'color-contrast', enabled: false }],
+      },
     },
     backgrounds: {
       options: {

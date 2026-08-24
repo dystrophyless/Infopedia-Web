@@ -6,6 +6,7 @@ import i18n from '../src/i18n';
 import { useAuthStore } from '../src/stores/authStore';
 import { useFavoritesStore } from '../src/features/favorites/model';
 import { useSearchStore } from '../src/features/search/model';
+import { useLangStore } from '../src/stores/langStore';
 
 const annotations = setProjectAnnotations([a11yAnnotations, previewAnnotations]);
 
@@ -16,5 +17,6 @@ afterEach(async () => {
   useFavoritesStore.getState().reset();
   useSearchStore.getState().reset();
   useSearchStore.getState().resetSearchFilters();
+  useLangStore.getState().setLang('ru');
   await i18n.changeLanguage('ru');
 });

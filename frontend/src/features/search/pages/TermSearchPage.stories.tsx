@@ -151,7 +151,7 @@ function DesktopSearchStory({
   const [catalogRefreshKey, setCatalogRefreshKey] = useState(0);
   const [lastSearchBooks, setLastSearchBooks] = useState('');
   const searchReleaseRef = useRef<Set<() => void>>(new Set());
-  const bookCatalogReleaseRef = useRef<(() => void) | null>(null);
+  const bookCatalogReleaseRef = useRef<((markReleased?: boolean) => void) | null>(null);
   const requestClientRef = useRef<SearchRequestClient | null>(null);
   const catalogRefreshTriggeredRef = useRef(false);
   const bookCatalogFailureRequestsKey = bookCatalogFailureRequests.join(',');
@@ -170,10 +170,14 @@ function DesktopSearchStory({
         ) {
           if (deferCatalogFailure && bookCatalogFailureRequests.includes(bookRequests)) {
             return new Promise<never>((_, reject) => {
-              bookCatalogReleaseRef.current = () => {
-                setBookCatalogFailureReleased(true);
+              const release = (markReleased = true) => {
+                if (bookCatalogReleaseRef.current !== release) return;
+                bookCatalogReleaseRef.current = null;
+                if (markReleased) setBookCatalogFailureReleased(true);
                 reject(new Error('Deterministic Storybook book catalog failure'));
               };
+              bookCatalogReleaseRef.current = release;
+              config?.signal?.addEventListener('abort', () => release(false), { once: true });
             });
           }
           throw new Error('Deterministic Storybook book catalog failure');
@@ -246,6 +250,8 @@ function DesktopSearchStory({
     return () => {
       active = false;
       requestClientRef.current = null;
+      bookCatalogReleaseRef.current?.(false);
+      bookCatalogReleaseRef.current = null;
       searchReleaseRef.current.clear();
       useSearchStore.getState().reset();
       useSearchStore.getState().resetSearchFilters();

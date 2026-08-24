@@ -186,7 +186,9 @@ assert.match(view, /className="[^"]*h-\[50px\][^"]*rounded-\[8px\][^"]*p-2[^"]*"
 assert.match(view, /hover:bg-\[#fbfbfb\][\s\S]*focus-visible:bg-\[#fbfbfb\][\s\S]*active:bg-\[#f6f5f7\][\s\S]*active:hover:bg-\[#f6f5f7\]/, 'hover, keyboard focus and pointer-down must match the Figma state palette with active paint winning the hover cascade');
 assert.match(view, /data-tests-recent-date[\s\S]*group-hover:hidden[\s\S]*group-focus-visible:hidden[\s\S]*group-active:hidden/, 'interactive states must replace the localized date inline');
 assert.match(view, /data-tests-recent-metrics[\s\S]*group-hover:flex[\s\S]*group-focus-visible:flex[\s\S]*group-active:flex/, 'hover, focus-visible and active states must reveal the same inline metrics');
-assert.match(view, /Tick02Icon[\s\S]*Cancel01Icon[\s\S]*ArrowRight02Icon/, 'recent states must use the exact HugeIcons glyphs');
+assert.match(view, /import recentTick02Asset from '\.\.\/figma\/assets\/recent-tick-02\.svg';/, 'the exact Figma tick export must use a raw URL import');
+assert.match(view, /import recentCancel01Asset from '\.\.\/figma\/assets\/recent-cancel-01\.svg';/, 'the exact Figma cancel export must use a raw URL import');
+assert.doesNotMatch(view, /\bTick02Icon\b|\bCancel01Icon\b/, 'recent metric glyphs must not fall back to HugeIcons');
 assert.match(view, /correctAnswerCount/);
 assert.match(view, /incorrectAnswerCount/);
 assert.match(view, /skippedQuestionCount/);
@@ -194,6 +196,10 @@ assert.doesNotMatch(view, /skippedQuestionCount > 0/, 'all counts, including zer
 assert.match(view, /data-tests-recent-correct[\s\S]*text-\[#22915d\][\s\S]*bg-\[#29ae70\]/, 'correct metric must keep exact marker and number colors');
 assert.match(view, /data-tests-recent-incorrect[\s\S]*text-\[#bc251a\][\s\S]*bg-\[#e73023\]/, 'incorrect metric must keep exact marker and number colors');
 assert.match(view, /data-tests-recent-skipped[\s\S]*text-\[#6e6779\][\s\S]*border-\[#8c8698\]/, 'skipped metric must keep the exact outlined marker and number colors');
+assert.equal((view.match(/className="flex size-\[14px\] shrink-0 items-center justify-center rounded-full bg-\[#(?:29ae70|e73023)\]"/g) ?? []).length, 2, 'both filled 14px marker containers must be non-shrinking');
+assert.match(view, /className="size-\[14px\] shrink-0 rounded-full border border-\[#8c8698\]"/, 'the skipped 14px marker must be non-shrinking');
+assert.match(view, /<img src=\{recentTick02Asset\} alt="" className="block size-2 shrink-0" \/>/, 'the tick glyph must render as the exact 8x8 Figma image');
+assert.match(view, /<img src=\{recentCancel01Asset\} alt="" className="block size-2 shrink-0" \/>/, 'the cancel glyph must render as the exact 8x8 Figma image');
 assert.match(view, /aria-label=\{recentAccessibleLabel\}/, 'localized metric labels must be exposed on the native link');
 const recentLinkSource = view.match(/<Link[\s\S]*?<\/Link>/)?.[0] ?? '';
 assert.doesNotMatch(recentLinkSource, /<button/, 'recent links must not contain nested interactive controls');

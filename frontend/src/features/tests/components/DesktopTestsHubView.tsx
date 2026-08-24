@@ -5,13 +5,13 @@
   Target03Icon,
   ArrowDown01Icon,
   ArrowRight02Icon,
-  Cancel01Icon,
-  Tick02Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import recentTick02Asset from '../figma/assets/recent-tick-02.svg';
+import recentCancel01Asset from '../figma/assets/recent-cancel-01.svg';
 import { Skeleton } from '../../../ui';
 import type { TestsDashboard, TestMode } from '../../../api/tests';
 import {
@@ -87,19 +87,19 @@ function RecentTestLink({ recent, locale, t }: {
           <span data-tests-recent-date className="block text-[14px] font-normal leading-[14px] text-[#8c8698] group-hover:hidden group-focus-visible:hidden group-active:hidden">{recentDate}</span>
           <span data-tests-recent-metrics aria-hidden="true" className="hidden h-[14px] items-center gap-2 group-hover:flex group-focus-visible:flex group-active:flex">
             <span data-tests-recent-correct className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#22915d]">
-              <span className="flex size-[14px] items-center justify-center rounded-full bg-[#29ae70] text-white">
-                <HugeiconsIcon icon={Tick02Icon} size={8} strokeWidth={1.5} aria-hidden />
+              <span className="flex size-[14px] shrink-0 items-center justify-center rounded-full bg-[#29ae70]">
+                <img src={recentTick02Asset} alt="" className="block size-2 shrink-0" />
               </span>
               <span>{recent.correctAnswerCount}</span>
             </span>
             <span data-tests-recent-incorrect className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#bc251a]">
-              <span className="flex size-[14px] items-center justify-center rounded-full bg-[#e73023] text-white">
-                <HugeiconsIcon icon={Cancel01Icon} size={8} strokeWidth={1.5} aria-hidden />
+              <span className="flex size-[14px] shrink-0 items-center justify-center rounded-full bg-[#e73023]">
+                <img src={recentCancel01Asset} alt="" className="block size-2 shrink-0" />
               </span>
               <span>{recent.incorrectAnswerCount}</span>
             </span>
             <span data-tests-recent-skipped className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#6e6779]">
-              <span className="size-[14px] rounded-full border border-[#8c8698]" aria-hidden="true" />
+              <span className="size-[14px] shrink-0 rounded-full border border-[#8c8698]" aria-hidden="true" />
               <span>{recent.skippedQuestionCount}</span>
             </span>
           </span>

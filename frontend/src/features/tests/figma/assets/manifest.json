@@ -5,6 +5,14 @@
       "nodeId": "910:4204",
       "sourceAssetUrl": "https://www.figma.com/api/mcp/asset/aaf2cba8-c5f8-472d-8039-5d5dba8ca0f1.svg",
       "sha256": "9df66d47bc6cddf43ffdf444e48e02fa831cbd0f88de3155886d5f88472e2139"
+    },
+    "recent-tick-02.svg": {
+      "nodeId": "1325:3107",
+      "sha256": "d9a818fea3c29db1056e983a92963a19beed733d7bcabc1f2e3fdbd1babb1c26"
+    },
+    "recent-cancel-01.svg": {
+      "nodeId": "1325:3110",
+      "sha256": "9fc431b08cd7cf48df4ee79af0a5fb2ea105a12b60d4b358f46c5c57829f4a82"
     }
   }
 }

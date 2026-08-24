@@ -18,6 +18,8 @@ const keptSvgPaths = [
   'src/assets/figma-subscription/timeline-today.svg',
   'src/assets/icons/profile.svg',
   'src/features/tests/figma/assets/result-score-ring.svg',
+  'src/features/tests/figma/assets/recent-tick-02.svg',
+  'src/features/tests/figma/assets/recent-cancel-01.svg',
 ];
 
 const removedSvgPaths = [
@@ -70,7 +72,7 @@ for (const relativePath of removedSvgPaths) {
   assert.ok(!existsSync(path.join(frontendDir, relativePath)), `${relativePath} must be removed`);
 }
 
-assert.deepEqual(collectSvgFiles(frontendDir).sort(), keptSvgPaths.slice().sort(), 'physical SVG inventory must contain exactly eleven approved assets');
+assert.deepEqual(collectSvgFiles(frontendDir).sort(), keptSvgPaths.slice().sort(), 'physical SVG inventory must contain exactly thirteen approved assets');
 
 const approvedFigmaExceptions = [
   {
@@ -87,6 +89,16 @@ const approvedFigmaExceptions = [
     relativePath: 'src/assets/figma-profile/log-out.svg',
     bytes: 1227,
     sha256: '458cb43cd062539e0492034034bd17c9c9a3bee31f94092e2e54d7ffe4396666',
+  },
+  {
+    relativePath: 'src/features/tests/figma/assets/recent-tick-02.svg',
+    bytes: 326,
+    sha256: 'd9a818fea3c29db1056e983a92963a19beed733d7bcabc1f2e3fdbd1babb1c26',
+  },
+  {
+    relativePath: 'src/features/tests/figma/assets/recent-cancel-01.svg',
+    bytes: 320,
+    sha256: '9fc431b08cd7cf48df4ee79af0a5fb2ea105a12b60d4b358f46c5c57829f4a82',
   },
 ];
 for (const { relativePath, bytes, sha256 } of approvedFigmaExceptions) {
@@ -193,6 +205,43 @@ for (const source of runtimeMaskSources) {
     /must quote every imported SVG mask/,
     `${source.relativePath} must fail closed when imported SVG mask URLs lose their quotes`,
   );
+}
+
+const recentMetricAssets = [
+  {
+    relativePath: 'src/features/tests/figma/assets/recent-tick-02.svg',
+    importName: 'recentTick02Asset',
+    nodeId: '1325:3107',
+    sha256: 'd9a818fea3c29db1056e983a92963a19beed733d7bcabc1f2e3fdbd1babb1c26',
+  },
+  {
+    relativePath: 'src/features/tests/figma/assets/recent-cancel-01.svg',
+    importName: 'recentCancel01Asset',
+    nodeId: '1325:3110',
+    sha256: '9fc431b08cd7cf48df4ee79af0a5fb2ea105a12b60d4b358f46c5c57829f4a82',
+  },
+];
+assert.equal(recentMetricAssets.length, 2, 'the custom recent metric inventory must contain exactly two Figma glyphs');
+const testsAssetManifest = JSON.parse(read('src/features/tests/figma/assets/manifest.json'));
+const desktopTestsHub = read('src/features/tests/components/DesktopTestsHubView.tsx');
+for (const asset of recentMetricAssets) {
+  const fileName = path.posix.basename(asset.relativePath);
+  assert.deepEqual(
+    testsAssetManifest.assets[fileName],
+    { nodeId: asset.nodeId, sha256: asset.sha256 },
+    `${fileName} manifest metadata must identify the exact Figma subnode and canonical hash`,
+  );
+  assert.match(
+    desktopTestsHub,
+    new RegExp(`import ${asset.importName} from '\\.\\.\\/figma\\/assets\\/${fileName.replace('.', '\\.')}'`),
+    `${fileName} must be consumed only through DesktopTestsHubView's raw URL import`,
+  );
+}
+for (const { relativePath, source } of collectRuntimeSources(path.join(frontendDir, 'src'))) {
+  if (relativePath === 'features/tests/components/DesktopTestsHubView.tsx') continue;
+  for (const asset of recentMetricAssets) {
+    assert.doesNotMatch(source, new RegExp(path.posix.basename(asset.relativePath).replace('.', '\\.')), `${asset.relativePath} must have exactly one runtime consumer`);
+  }
 }
 const profileMaskSource = runtimeMaskSources.find(({ relativePath }) => relativePath === 'pages/Profile.tsx');
 assert.ok(profileMaskSource, 'Profile.tsx must remain an approved runtime mask consumer');

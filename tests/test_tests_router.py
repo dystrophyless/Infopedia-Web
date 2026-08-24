@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from src.tests.errors import TestCatalogNotReadyError, TestCatalogStaleError
 from src.tests.router import _attempt_response, _raise_http
 from src.tests.router import router as tests_router
-from src.tests.schemas import TestCompletionResponse, TestDashboardChapter, TestsDashboardResponse
+from src.tests.schemas import TestCompletionResponse, TestDashboardChapter, TestDashboardRecent, TestsDashboardResponse
 
 ROOT = Path(__file__).resolve().parents[1]
 ROUTER_SOURCE = (ROOT / "src" / "tests" / "router.py").read_text(encoding="utf-8")
@@ -27,6 +27,18 @@ class TestTestsRouterContract(unittest.TestCase):
         self.assertTrue(TestsDashboardResponse.model_fields["completed_attempt_count"].is_required())
         self.assertIn("completed_attempt_count", TestDashboardChapter.model_fields)
         self.assertTrue(TestDashboardChapter.model_fields["completed_attempt_count"].is_required())
+
+    def test_dashboard_recent_schema_requires_persisted_answer_totals(self):
+        for field_name in (
+            "correct_answer_count",
+            "incorrect_answer_count",
+            "skipped_question_count",
+        ):
+            with self.subTest(field_name=field_name):
+                self.assertIn(field_name, TestDashboardRecent.model_fields)
+                field = TestDashboardRecent.model_fields[field_name]
+                self.assertTrue(field.is_required())
+                self.assertEqual(field.annotation, int)
 
     def test_dashboard_without_token_returns_401_not_missing_current_user(self):
         app = FastAPI()

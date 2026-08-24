@@ -91,6 +91,7 @@ const captures = [
   { id: 'chapter-short-title', story: 'features-tests-desktop-chapter-test-card--short-title', selector: '[data-chapter-card]', width: 320, height: 196, region: 'chapter-short-title', elementScreenshot: true },
   { id: 'statistics-filled', story: 'features-tests-hub--desktop-multiple-attempts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1024, height: 768, region: 'statistics-filled', figmaNode: '1325:2920', elementScreenshot: true },
   { id: 'recent-states', story: 'features-tests-hub--desktop-multiple-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-states', figmaNode: '1325:2867', elementScreenshot: true },
+  { id: 'recent-metric-stress', story: 'features-tests-hub--desktop-recent-metric-stress', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-metric-stress', figmaNode: '1325:2867', elementScreenshot: true },
   { id: 'statistics-empty', story: 'features-tests-hub--desktop-legacy-missing-counts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1440, height: 1080, region: 'statistics-empty', figmaNode: '1325:2920', referenceWidth: 320, referenceHeight: 134, elementScreenshot: true },
   { id: 'recent-empty', story: 'features-tests-hub--desktop-zero-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1440, height: 1080, region: 'recent-empty', figmaNode: '1325:2934', referenceWidth: 320, referenceHeight: 242, elementScreenshot: true },
   ...[320, 360, 390, 430].map((width) => ({ id: `history-mobile-${width}`, story: 'features-tests-hub--live-analysis', selector: '[data-tests-mobile]', width, height: 844, region: 'history-mobile' })),
@@ -116,7 +117,7 @@ const visualScope = process.env.TESTS_VISUAL_SCOPE ?? 'all';
 const activeCaptures = visualScope === 'figma-exact'
   ? captures.filter((descriptor) => exactFigmaCaptureIds.has(descriptor.id))
   : visualScope === 'test-history'
-    ? captures.filter((descriptor) => ['statistics-filled', 'recent-states', 'statistics-empty', 'recent-empty', 'history-mobile'].includes(descriptor.region))
+    ? captures.filter((descriptor) => ['statistics-filled', 'recent-states', 'recent-metric-stress', 'statistics-empty', 'recent-empty', 'history-mobile'].includes(descriptor.region))
   : visualScope === 'weak-navigation'
     ? captures.filter((descriptor) => weakNavigationCaptureIds.has(descriptor.id))
   : captures;
@@ -663,7 +664,7 @@ async function capture(page, descriptor) {
           throw new VisualContractError(`${descriptor.id}: exact 320x134 statistics geometry failed (${JSON.stringify(contract)})`);
         }
       }
-      if (descriptor.region === 'recent-states') {
+      if (descriptor.region === 'recent-states' || descriptor.region === 'recent-metric-stress') {
         const panel = page.locator(descriptor.selector);
         const links = panel.locator('[data-tests-recent-link]');
         const firstLink = links.first();
@@ -677,10 +678,12 @@ async function capture(page, descriptor) {
             const root = link.querySelector(selector);
             const marker = root?.children[0] ?? null;
             const count = root?.children[1] ?? null;
+            const glyph = marker?.querySelector('img') ?? null;
             return root ? {
               box: box(root),
               gap: computed(root).gap,
-              marker: { box: box(marker), backgroundColor: computed(marker).backgroundColor, borderColor: computed(marker).borderColor, borderWidth: computed(marker).borderWidth },
+              marker: { box: box(marker), backgroundColor: computed(marker).backgroundColor, borderColor: computed(marker).borderColor, borderWidth: computed(marker).borderWidth, flexShrink: computed(marker).flexShrink },
+              glyph: glyph ? { box: box(glyph), flexShrink: computed(glyph).flexShrink } : null,
               count: { text: count?.textContent?.trim() ?? '', color: computed(count).color, fontSize: computed(count).fontSize, lineHeight: computed(count).lineHeight },
             } : null;
           };
@@ -724,24 +727,27 @@ async function capture(page, descriptor) {
         await page.mouse.move(0, 0);
         await firstLink.evaluate((element) => element.blur());
         measurements.recentStates = { default: await state() };
-        await panel.screenshot({ path: path.join(outputDir, 'recent-default.png') });
+        const screenshotFiles = descriptor.region === 'recent-metric-stress'
+          ? { default: 'recent-stress-default.png', hover: 'recent-stress-hover.png', focus: 'recent-stress-focus.png', active: 'recent-stress-active.png' }
+          : { default: 'recent-default.png', hover: 'recent-hover.png', focus: 'recent-focus.png', active: 'recent-active.png' };
+        await panel.screenshot({ path: path.join(outputDir, screenshotFiles.default) });
 
         await firstLink.hover();
         measurements.recentStates.hover = await state();
-        await panel.screenshot({ path: path.join(outputDir, 'recent-hover.png') });
+        await panel.screenshot({ path: path.join(outputDir, screenshotFiles.hover) });
 
         await page.mouse.move(0, 0);
         await page.locator('[data-testid="tests-weak-mode-card"]').focus();
         await page.keyboard.press('Tab');
         measurements.recentStates.focus = await state();
-        await panel.screenshot({ path: path.join(outputDir, 'recent-focus.png') });
+        await panel.screenshot({ path: path.join(outputDir, screenshotFiles.focus) });
 
         await firstLink.evaluate((element) => element.blur());
         await page.mouse.move(0, 0);
         await firstLink.hover();
         await page.mouse.down();
         measurements.recentStates.active = await state();
-        await panel.screenshot({ path: path.join(outputDir, 'recent-active.png') });
+        await panel.screenshot({ path: path.join(outputDir, screenshotFiles.active) });
         await page.mouse.up();
         await page.waitForFunction(() => document.querySelector('[data-location-url]')?.textContent?.includes('/tests/random?attemptRef=attempt-1'));
         measurements.recentStates.navigation = await page.locator('[data-location-url]').textContent();
@@ -763,13 +769,21 @@ async function capture(page, descriptor) {
           || !detailsVisible(recentStates.active, 'rgb(246, 245, 247)')) {
           throw new VisualContractError(`${descriptor.id}: default/hover/focus/native active state paint or layout stability failed (${JSON.stringify(recentStates)})`);
         }
-        const visible = recentStates.hover;
-        if (visible.metricsGap !== '8px' || visible.scoreGap !== '4px' || visible.arrow.box.width !== 18 || visible.arrow.box.height !== 18 || visible.arrow.color !== 'rgb(177, 172, 185)'
-          || visible.correct.gap !== '4px' || visible.correct.marker.box.width !== 14 || visible.correct.marker.box.height !== 14 || visible.correct.marker.backgroundColor !== 'rgb(41, 174, 112)' || visible.correct.count.color !== 'rgb(34, 145, 93)'
-          || visible.incorrect.gap !== '4px' || visible.incorrect.marker.box.width !== 14 || visible.incorrect.marker.box.height !== 14 || visible.incorrect.marker.backgroundColor !== 'rgb(231, 48, 35)' || visible.incorrect.count.color !== 'rgb(188, 37, 26)'
-          || visible.skipped.gap !== '4px' || visible.skipped.marker.box.width !== 14 || visible.skipped.marker.box.height !== 14 || visible.skipped.marker.borderWidth !== '1px' || visible.skipped.marker.borderColor !== 'rgb(140, 134, 152)' || visible.skipped.count.color !== 'rgb(110, 103, 121)'
-          || visible.tooltipCount !== 0 || !recentStates.navigation?.includes('/tests/random?attemptRef=attempt-1')) {
+        const metricGeometryMatches = (visible) => visible.metricsGap === '8px' && visible.scoreGap === '4px' && visible.arrow.box.width === 18 && visible.arrow.box.height === 18 && visible.arrow.color === 'rgb(177, 172, 185)'
+          && visible.correct.gap === '4px' && visible.correct.marker.box.width === 14 && visible.correct.marker.box.height === 14 && visible.correct.marker.flexShrink === '0' && visible.correct.marker.backgroundColor === 'rgb(41, 174, 112)' && visible.correct.glyph?.box.width === 8 && visible.correct.glyph.box.height === 8 && visible.correct.glyph.flexShrink === '0' && visible.correct.count.color === 'rgb(34, 145, 93)'
+          && visible.incorrect.gap === '4px' && visible.incorrect.marker.box.width === 14 && visible.incorrect.marker.box.height === 14 && visible.incorrect.marker.flexShrink === '0' && visible.incorrect.marker.backgroundColor === 'rgb(231, 48, 35)' && visible.incorrect.glyph?.box.width === 8 && visible.incorrect.glyph.box.height === 8 && visible.incorrect.glyph.flexShrink === '0' && visible.incorrect.count.color === 'rgb(188, 37, 26)'
+          && visible.skipped.gap === '4px' && visible.skipped.marker.box.width === 14 && visible.skipped.marker.box.height === 14 && visible.skipped.marker.flexShrink === '0' && visible.skipped.marker.borderWidth === '1px' && visible.skipped.marker.borderColor === 'rgb(140, 134, 152)' && visible.skipped.count.color === 'rgb(110, 103, 121)'
+          && visible.tooltipCount === 0 && visible.accessibleName === recentStates.default.accessibleName;
+        if (![recentStates.hover, recentStates.focus, recentStates.active].every(metricGeometryMatches)
+          || !recentStates.navigation?.includes('/tests/random?attemptRef=attempt-1')) {
           throw new VisualContractError(`${descriptor.id}: metric marker, arrow, tooltip removal, or native navigation contract failed`);
+        }
+        if (descriptor.region === 'recent-metric-stress') {
+          for (const [stateName, snapshot] of Object.entries({ hover: recentStates.hover, focus: recentStates.focus, active: recentStates.active })) {
+            if (snapshot.correct.count.text !== '0' || snapshot.incorrect.count.text !== '0' || snapshot.skipped.count.text !== '20') {
+              throw new VisualContractError(`${descriptor.id}: ${stateName} must retain stress counts 0/0/20 (${JSON.stringify(snapshot)})`);
+            }
+          }
         }
       }
       if (descriptor.region === 'history-mobile') {

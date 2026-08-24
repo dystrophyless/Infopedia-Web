@@ -78,7 +78,8 @@ function ErrorCarousel({ variant, onRetry }: { variant: FeaturedTermCardVariant;
 
 export function TermCardCarouselView({ terms, loading = false, error = false, onRetry, variant = 'desktop' }: TermCardCarouselViewProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const pausedRef = useRef(false);
+  const pointerPausedRef = useRef(false);
+  const focusPausedRef = useRef(false);
   const carouselTerms = useMemo(() => terms.slice(0, FEATURED_TERMS_LIMIT), [terms]);
   const shouldAutoScroll = variant === 'desktop' || variant === 'guest' || variant === 'guestDesktop' || variant === 'guestLanding';
   const displayTerms = useMemo(
@@ -95,18 +96,26 @@ export function TermCardCarouselView({ terms, loading = false, error = false, on
     if (loopDistance <= 0) return;
     let frameId = 0;
     let lastTime = performance.now();
+    let logicalScrollLeft = node.scrollLeft;
+    let committedScrollLeft = node.scrollLeft;
     const animate = (time: number) => {
       const elapsed = time - lastTime;
       lastTime = time;
-      if (!pausedRef.current) {
-        node.scrollLeft += (elapsed / 1000) * AUTO_SCROLL_PX_PER_SECOND;
-        if (node.scrollLeft >= loopDistance) node.scrollLeft -= loopDistance;
+      if (pointerPausedRef.current || focusPausedRef.current) {
+        frameId = requestAnimationFrame(animate);
+        return;
       }
+      const observedScrollLeft = node.scrollLeft;
+      if (observedScrollLeft !== committedScrollLeft) logicalScrollLeft = observedScrollLeft;
+      logicalScrollLeft += (elapsed / 1000) * AUTO_SCROLL_PX_PER_SECOND;
+      if (logicalScrollLeft >= loopDistance) logicalScrollLeft %= loopDistance;
+      node.scrollLeft = logicalScrollLeft;
+      committedScrollLeft = node.scrollLeft;
       frameId = requestAnimationFrame(animate);
     };
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
-  }, [carouselTerms, shouldAutoScroll]);
+  }, [carouselTerms, shouldAutoScroll, variant]);
 
   if (loading) return <LoadingCarousel variant={variant} />;
   if (error) return <ErrorCarousel variant={variant} onRetry={onRetry} />;
@@ -115,10 +124,19 @@ export function TermCardCarouselView({ terms, loading = false, error = false, on
   return (
     <div
       className={`relative w-full overflow-hidden rounded-[16px] ${variant === 'desktop' ? 'pt-2' : 'pt-0'}`}
-      onMouseEnter={() => { pausedRef.current = true; }}
-      onMouseLeave={() => { pausedRef.current = false; }}
-      onFocusCapture={() => { pausedRef.current = true; }}
-      onBlurCapture={() => { pausedRef.current = false; }}
+      onMouseEnter={() => { pointerPausedRef.current = true; }}
+      onMouseLeave={() => { pointerPausedRef.current = false; }}
+      onPointerDown={(event) => {
+        if (event.button === 1) pointerPausedRef.current = false;
+      }}
+      onMouseDown={(event) => {
+        if (event.button === 1) pointerPausedRef.current = false;
+      }}
+      onFocusCapture={() => { focusPausedRef.current = true; }}
+      onBlurCapture={(event) => {
+        if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+        focusPausedRef.current = false;
+      }}
     >
       <div
         ref={scrollerRef}

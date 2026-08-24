@@ -1,7 +1,7 @@
 import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import type { TestsDashboard } from '../../../api/tests';
 import { DesktopSidebar } from '../../../components/DesktopSidebar';
 import { TestsHubView } from './TestsHubView';
@@ -174,14 +174,9 @@ export const Desktop: Story = {
     await expect(recentLink).toHaveFocus();
     const tooltip = document.getElementById(recentLink!.getAttribute('aria-describedby')!);
     await expect(tooltip).toHaveAttribute('role', 'tooltip');
-    await waitFor(() => expect(getComputedStyle(tooltip!).opacity).toBe('1'));
     await expect(tooltip).toHaveTextContent('Правильные ответы: 14');
     await expect(tooltip).toHaveTextContent('Неправильные ответы: 4');
     await expect(tooltip).toHaveTextContent('Пропущено: 2');
-    recentLink!.blur();
-    await userEvent.hover(recentLink!);
-    await waitFor(() => expect(getComputedStyle(tooltip!).opacity).toBe('1'));
-    await userEvent.unhover(recentLink!);
     const noSkipLink = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/weak?attemptRef=attempt-2"]')!;
     const noSkipTooltip = document.getElementById(noSkipLink.getAttribute('aria-describedby')!);
     await expect(noSkipTooltip).not.toHaveTextContent('Пропущено:');

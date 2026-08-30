@@ -110,16 +110,22 @@ function DesktopFeatureCards() {
   const features = [
     {
       image: '/mobile-feature-weak-topics.png',
+      width: 621,
+      height: 582,
       title: t('landing.mobileToolWeakTopicsTitle'),
       description: t('landing.mobileToolWeakTopicsDesc'),
     },
     {
       image: '/mobile-feature-tests.png',
+      width: 582,
+      height: 633,
       title: t('landing.mobileToolTestsTitle'),
       description: t('landing.mobileToolTestsDesc'),
     },
     {
       image: '/mobile-feature-term.png',
+      width: 682,
+      height: 818,
       title: t('landing.mobileToolTermTitle'),
       description: t('landing.mobileToolTermDesc'),
     },
@@ -152,6 +158,11 @@ function DesktopFeatureCards() {
                       src={feature.image}
                       alt=""
                       aria-hidden="true"
+                      loading="lazy"
+                      decoding="async"
+                      fetchPriority="low"
+                      width={feature.width}
+                      height={feature.height}
                       className="h-full w-full object-contain"
                     />
                   </div>

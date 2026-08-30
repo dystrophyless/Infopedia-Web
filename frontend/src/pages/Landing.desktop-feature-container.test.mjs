@@ -9,6 +9,12 @@ const end = landing.indexOf('function DesktopSourceProof', start);
 assert.notEqual(start, -1, 'DesktopFeatureCards should be defined');
 const features = landing.slice(start, end === -1 ? landing.length : end);
 
+const verifiedFeatureDimensions = [
+  ['mobile-feature-weak-topics.png', 621, 582],
+  ['mobile-feature-tests.png', 582, 633],
+  ['mobile-feature-term.png', 682, 818],
+];
+
 const desktopSections = [
   ['DesktopGuestHero', landing.slice(landing.indexOf('function DesktopGuestHero'), landing.indexOf('function DesktopGuestSections'))],
   ['DesktopFeatureCards', features],
@@ -67,6 +73,20 @@ assert.equal((features.match(/image: '/g) ?? []).length, 3, 'Desktop feature rai
 assert.doesNotMatch(features, /mobile-feature-semantic\.png/);
 assert.doesNotMatch(features, /ArrowLeft01Icon|ArrowRight01Icon|scrollBy|onScroll|aria-roledescription|role="region"|featureRailState|syncFeatureRailState/);
 assert.doesNotMatch(landing, /ArrowLeft01Icon|ArrowRight01Icon/);
+
+for (const [asset, width, height] of verifiedFeatureDimensions) {
+  assert.match(
+    features,
+    new RegExp(`image: '/${asset}',\\s*width: ${width},\\s*height: ${height}`),
+    `${asset} must retain its verified intrinsic dimensions in the desktop feature data`,
+  );
+}
+const desktopImageTag = features.match(/<img[\s\S]*?\/>/)?.[0] ?? '';
+assert.match(desktopImageTag, /loading="lazy"/, 'Desktop feature images must defer below-fold loading');
+assert.match(desktopImageTag, /decoding="async"/, 'Desktop feature images must decode asynchronously');
+assert.match(desktopImageTag, /fetchPriority="low"/, 'Desktop feature images must use low fetch priority');
+assert.match(desktopImageTag, /width=\{feature\.width\}/, 'Desktop feature images must reserve their intrinsic width');
+assert.match(desktopImageTag, /height=\{feature\.height\}/, 'Desktop feature images must reserve their intrinsic height');
 
 const analyze = desktopSections.find(([name]) => name === 'DesktopEntAnalysis')?.[1] ?? '';
 assert.match(

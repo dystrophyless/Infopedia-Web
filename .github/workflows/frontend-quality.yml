@@ -29,6 +29,10 @@ jobs:
       - run: npm run test:contracts
       - run: npm run test:unit
       - run: npm run build
+        env:
+          SEO_RELEASE: '1'
+          VITE_SITE_ORIGIN: https://seo-fixture.example.test
+      - run: npm run test:seo:dist -- --profile=release --origin=https://seo-fixture.example.test
 
   frontend-ui:
     name: Frontend UI

@@ -138,9 +138,7 @@ assert.match(chapterCard, /deltaPoints[^\n]+> 0 \? '-scale-x-100' : ''/);
 assert.doesNotMatch(chapterCard, /trending-up\.svg|mask-image|MaskImage/);
 
 const profile = read('src/pages/Profile.tsx');
-assert.match(profile, /import languagesAsset from '\.\.\/assets\/figma-profile\/languages\.svg';/);
 assert.match(profile, /import desktopLogOutAsset from '\.\.\/assets\/figma-profile\/log-out\.svg';/);
-assert.match(profile, /<img\s+src=\{languagesAsset\}[\s\S]*?<img\s+src=\{desktopLogOutAsset\}/);
 assert.doesNotMatch(profile, /\bLanguages(?:Icon| as LanguagesIcon)\b|\bLogOut(?:Icon| as LogOutIcon)\b/);
 assert.match(profile, /ai-co-editing\.svg/);
 assert.match(profile, /profile-1\.svg/);
@@ -248,7 +246,7 @@ assert.ok(profileMaskSource, 'Profile.tsx must remain an approved runtime mask c
 assert.throws(
   () => assertApprovedRuntimeMaskTargets([{
     ...profileMaskSource,
-    source: profileMaskSource.source.replace('${mobilePremiumAsset}', '${languagesAsset}'),
+    source: profileMaskSource.source.replace('${mobilePremiumAsset}', '${mobileProfileAsset}'),
   }]),
   /pages\/Profile\.tsx must resolve masks only to its approved SVG assets/,
   'a different imported masked asset must fail the contract even when ai-co-editing.svg remains in the same consumer',

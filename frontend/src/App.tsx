@@ -1,37 +1,57 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { RootEntry } from './components/RootEntry';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { GoogleCallback } from './pages/GoogleCallback';
-import { Onboarding } from './pages/Onboarding';
-import { ResetPassword } from './pages/ResetPassword';
-import { TermSearch } from './pages/TermSearch';
-import { SearchFilters } from './pages/SearchFilters';
-import { TermDetail } from './pages/TermDetail';
-import { Analyze } from './pages/Analyze';
-import { Tests } from './pages/Tests';
-import { TestQuestionPage } from './pages/TestQuestionPage';
-import { PracticeByTopicPage } from './pages/PracticeByTopicPage';
-import { Profile } from './pages/Profile';
-import { Favorites } from './pages/Favorites';
-import { Subscription } from './pages/Subscription';
 import { useAuthStore } from './stores/authStore';
 import { useFavoritesStore } from './features/favorites/model';
+import { DocumentSeo } from './seo/DocumentSeo';
+
+const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const Register = lazy(() => import('./pages/Register').then((module) => ({ default: module.Register })));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then((module) => ({ default: module.ForgotPassword })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then((module) => ({ default: module.ResetPassword })));
+const GoogleCallback = lazy(() => import('./pages/GoogleCallback').then((module) => ({ default: module.GoogleCallback })));
+const Onboarding = lazy(() => import('./pages/Onboarding').then((module) => ({ default: module.Onboarding })));
+const TermSearch = lazy(() => import('./pages/TermSearch').then((module) => ({ default: module.TermSearch })));
+const SearchFilters = lazy(() => import('./pages/SearchFilters').then((module) => ({ default: module.SearchFilters })));
+const TermDetail = lazy(() => import('./pages/TermDetail').then((module) => ({ default: module.TermDetail })));
+const Tests = lazy(() => import('./pages/Tests').then((module) => ({ default: module.Tests })));
+const TestQuestionPage = lazy(() => import('./pages/TestQuestionPage').then((module) => ({ default: module.TestQuestionPage })));
+const PracticeByTopicPage = lazy(() => import('./pages/PracticeByTopicPage').then((module) => ({ default: module.PracticeByTopicPage })));
+const Analyze = lazy(() => import('./pages/Analyze').then((module) => ({ default: module.Analyze })));
+const Profile = lazy(() => import('./pages/Profile').then((module) => ({ default: module.Profile })));
+const Favorites = lazy(() => import('./pages/Favorites').then((module) => ({ default: module.Favorites })));
+const Subscription = lazy(() => import('./pages/Subscription').then((module) => ({ default: module.Subscription })));
+const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
+
+function RouteLoading() {
+  const { t } = useTranslation();
+
+  return (
+    <div role="status" aria-live="polite" className="flex min-h-[240px] items-center justify-center p-6 text-[16px] text-muted">
+      {t('common.loading')}
+    </div>
+  );
+}
 
 function Protected({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
-      <Layout>{children}</Layout>
+      <Layout>
+        <Suspense fallback={<RouteLoading />}>{children}</Suspense>
+      </Layout>
     </ProtectedRoute>
   );
 }
 
 function Public({ children }: { children: React.ReactNode }) {
-  return <Layout>{children}</Layout>;
+  return (
+    <Layout>
+      <Suspense fallback={<RouteLoading />}>{children}</Suspense>
+    </Layout>
+  );
 }
 
 export default function App() {
@@ -52,13 +72,14 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <DocumentSeo />
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/auth/google/callback" element={<GoogleCallback />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/login" element={<Suspense fallback={<RouteLoading />}><Login /></Suspense>} />
+        <Route path="/register" element={<Suspense fallback={<RouteLoading />}><Register /></Suspense>} />
+        <Route path="/forgot-password" element={<Suspense fallback={<RouteLoading />}><ForgotPassword /></Suspense>} />
+        <Route path="/reset-password" element={<Suspense fallback={<RouteLoading />}><ResetPassword /></Suspense>} />
+        <Route path="/auth/google/callback" element={<Suspense fallback={<RouteLoading />}><GoogleCallback /></Suspense>} />
+        <Route path="/onboarding" element={<Suspense fallback={<RouteLoading />}><Onboarding /></Suspense>} />
 
         <Route
           path="/"
@@ -149,7 +170,7 @@ export default function App() {
             </Protected>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Suspense fallback={<RouteLoading />}><NotFound /></Suspense>} />
       </Routes>
     </BrowserRouter>
   );

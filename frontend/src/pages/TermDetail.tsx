@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { getTerm } from '../api/terms';
 import { TermDetailView, type RelatedTerm, type TermDetailLoadState } from '../features/terms/components/TermDetailView';
 import { useAuthStore } from '../stores/authStore';
 import type { Term } from '../types';
 import { useMobileBottomNavDecision } from '../features/navigation';
+import { resolveTermRouteAccess, type TermRouteAccess } from '../features/terms/model';
 
 interface TermDetailState {
   backTo?: string;
@@ -21,12 +22,49 @@ export function TermDetail() {
   const decision = useMobileBottomNavDecision();
   const state = (location.state as TermDetailState | null) ?? null;
   const routeStateTerm = state?.term;
-  const stateTerm = routeStateTerm?.public_id === termRef ? routeStateTerm : null;
+  const stateTerm = routeStateTerm?.public_id === termRef ? routeStateTerm ?? null : null;
+  const routeAccess = resolveTermRouteAccess({
+    isAuthenticated,
+    termRef,
+    routeStateTermRef: routeStateTerm?.public_id,
+  });
+
+  if (routeAccess === 'guest-denied') {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <TermDetailContent
+      termRef={termRef}
+      state={state}
+      stateTerm={stateTerm}
+      routeAccess={routeAccess}
+      isAuthenticated={isAuthenticated}
+      bottomNavVisible={decision.visible}
+    />
+  );
+}
+
+function TermDetailContent({
+  termRef,
+  state,
+  stateTerm,
+  routeAccess,
+  isAuthenticated,
+  bottomNavVisible,
+}: {
+  termRef: string | undefined;
+  state: TermDetailState | null;
+  stateTerm: Term | null;
+  routeAccess: TermRouteAccess;
+  isAuthenticated: boolean;
+  bottomNavVisible: boolean;
+}) {
   const [fetchedTerm, setFetchedTerm] = useState<Term | null>(null);
   const [loadState, setLoadState] = useState<TermDetailLoadState>('idle');
 
   useEffect(() => {
-    if (!termRef || stateTerm) return;
+    if (routeAccess !== 'authenticated-fetch' || !termRef) return;
     let cancelled = false;
     setLoadState('loading');
     getTerm(termRef)
@@ -39,16 +77,16 @@ export function TermDetail() {
         if (cancelled) return;
         setFetchedTerm(null);
         setLoadState('error');
-      });
+    });
     return () => { cancelled = true; };
-  }, [termRef, stateTerm]);
+  }, [routeAccess, termRef]);
 
   return (
     <TermDetailView
       term={stateTerm ?? fetchedTerm}
       loadState={loadState}
       backTo={state?.backTo ?? (isAuthenticated ? '/search' : '/')}
-      bottomNavVisible={decision.visible}
+      bottomNavVisible={bottomNavVisible}
       relatedTerms={state?.relatedTerms}
       selectedDefinitionPublicId={state?.selectedDefinitionPublicId}
     />

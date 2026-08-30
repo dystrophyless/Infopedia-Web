@@ -88,8 +88,8 @@ assert.doesNotMatch(
 
 assert.match(
   appSource,
-  /import \{ Tests \} from '\.\/pages\/Tests';/,
-  'App should import the Tests page',
+  /const Tests = lazy\(\(\) => import\('\.\/pages\/Tests'\)\.then\(\(module\) => \(\{ default: module\.Tests \}\)\)\);/,
+  'App should lazy-load the Tests page',
 );
 
 assert.match(

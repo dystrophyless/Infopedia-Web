@@ -28,6 +28,12 @@ const mobileToolsFeatureSource =
 const desktopToolsFeatureSource =
   landingSource.match(/function DesktopFeatureCards[\s\S]*?\r?\n\}\r?\n\r?\nfunction DesktopSourceProof/)?.[0] ?? '';
 
+const verifiedFeatureDimensions = [
+  ['mobile-feature-weak-topics.png', 621, 582],
+  ['mobile-feature-tests.png', 582, 633],
+  ['mobile-feature-term.png', 682, 818],
+];
+
 function decodePngRgba(filePath) {
   const png = readFileSync(filePath);
   let offset = 8;
@@ -440,4 +446,22 @@ for (const asset of [
 ]) {
   assert.match(carouselSource, new RegExp(`/${asset}`), `Carousel should reference ${asset}`);
   assert.ok(existsSync(path.resolve(publicDir, asset)), `${asset} should be stored in public assets`);
+}
+
+for (const [asset, width, height] of verifiedFeatureDimensions) {
+  assert.match(
+    carouselSource,
+    new RegExp(`imageSrc: '/${asset}',\\s*width: ${width},\\s*height: ${height}`),
+    `${asset} must retain its verified intrinsic dimensions in the carousel data`,
+  );
+}
+
+const carouselImageTags = [...carouselSource.matchAll(/<img[\s\S]*?\/>/g)].map(([source]) => source);
+assert.equal(carouselImageTags.length, 2, 'Carousel should keep one image tag per mobile/desktop rendering path');
+for (const imageTag of carouselImageTags) {
+  assert.match(imageTag, /loading="lazy"/, 'Carousel images must defer below-fold loading');
+  assert.match(imageTag, /decoding="async"/, 'Carousel images must decode asynchronously');
+  assert.match(imageTag, /fetchPriority="low"/, 'Carousel images must use low fetch priority');
+  assert.match(imageTag, /width=\{card\.width\}/, 'Carousel images must reserve their intrinsic width');
+  assert.match(imageTag, /height=\{card\.height\}/, 'Carousel images must reserve their intrinsic height');
 }

@@ -4,6 +4,9 @@
 __pycache__/
 AGENTS.md
 scripts/
+!frontend/scripts/
+frontend/scripts/*
+!frontend/scripts/seo-*.mjs
 .worktrees/
 .claude/
 .codex/

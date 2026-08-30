@@ -12,8 +12,10 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit --incremental false && tsc -p tsconfig.node.json --noEmit --incremental false",
     "lint": "tsc -b --noEmit",
     "test": "npm run test:contracts && npm run test:unit",
-    "test:contracts": "node src/custom-svg-hugeicons.contract.test.mjs && node src/ui/design-system.contract.test.mjs && node src/styles/theme.generated-css.test.mjs && node src/styles/typography.contract.test.mjs && node src/storybook-a11y.contract.test.mjs && node src/features/tests/components/TestQuestionView.copy.test.mjs",
+    "test:contracts": "node src/custom-svg-hugeicons.contract.test.mjs && node src/ui/design-system.contract.test.mjs && node src/styles/theme.generated-css.test.mjs && node src/styles/typography.contract.test.mjs && node src/storybook-a11y.contract.test.mjs && node src/features/tests/components/TestQuestionView.copy.test.mjs && node src/seo/seo.contract.test.mjs && node scripts/seo-build.test.mjs",
     "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:seo": "vitest run --config vitest.unit.config.ts src/seo/seoPolicy.test.ts src/features/terms/model/termRouteAccess.test.ts && node scripts/seo-build.test.mjs && node src/seo/seo.contract.test.mjs",
+    "test:seo:dist": "node scripts/seo-dist.contract.mjs",
     "test:design-system": "node src/ui/design-system.contract.test.mjs",
     "test:ui": "npm run test:design-system && npm run test-storybook",
     "test-storybook": "vitest run --project=storybook"

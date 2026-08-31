@@ -7,6 +7,7 @@ import {
   AlertCircleIcon,
   AllBookmarkIcon,
   ArrowLeft01Icon,
+  ArrowDown01Icon,
   ArrowRight01Icon,
   ChartColumnIcon,
   Coins02Icon,
@@ -45,6 +46,7 @@ import type { AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
+import languagesAsset from '../assets/figma-profile/languages.svg';
 import desktopLogOutAsset from '../assets/figma-profile/log-out.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
 import {
@@ -2042,9 +2044,19 @@ function DesktopSettingsPanel({
               <h2 id="desktop-settings-general-heading" className="pl-2 text-[16px] font-medium leading-[16px] text-[#6e6779]">
                 {t('profile.desktopSettingsGeneralSection')}
               </h2>
-              <div className="flex items-center justify-between rounded-[16px] bg-white p-4">
-                <span className="text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
-                <LanguageSwitcher compact />
+              <div className="rounded-[16px] bg-white p-4">
+                <LanguageSwitcher
+                  menuVariant="compact"
+                  triggerClassName="flex w-full items-center gap-4 border-0 bg-transparent p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
+                  renderTrigger={({ label }) => (
+                    <>
+                      <img src={languagesAsset} alt="" aria-hidden="true" width={20} height={20} className="size-5 shrink-0" />
+                      <span className="text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
+                      <span className="ml-auto text-[16px] leading-[16px] text-[#6e6779]">{label}</span>
+                      <HugeiconsIcon icon={ArrowDown01Icon} size={20} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
+                    </>
+                  )}
+                />
               </div>
             </section>
 

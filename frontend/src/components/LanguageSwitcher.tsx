@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowDown01Icon, InternetIcon, Tick02Icon } from '@hugeicons/core-free-icons';
@@ -6,7 +6,23 @@ import { useLangStore, type Language } from '../stores/langStore';
 
 const LANGS: Language[] = ['ru', 'kk'];
 
-export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
+export type LanguageSwitcherTriggerProps = {
+  lang: Language;
+  label: string;
+  open: boolean;
+};
+
+export function LanguageSwitcher({
+  compact = false,
+  menuVariant = compact ? 'compact' : 'default',
+  triggerClassName,
+  renderTrigger,
+}: {
+  compact?: boolean;
+  menuVariant?: 'compact' | 'default';
+  triggerClassName?: string;
+  renderTrigger?: (props: LanguageSwitcherTriggerProps) => ReactNode;
+}) {
   const { t } = useTranslation();
   const lang = useLangStore((s) => s.lang);
   const setLang = useLangStore((s) => s.setLang);
@@ -36,6 +52,10 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
 
   const labelFor = (l: Language) =>
     l === 'ru' ? t('common.russian') : t('common.kazakh');
+
+  const currentLabel = labelFor(lang);
+  const renderedTrigger = renderTrigger?.({ lang, label: currentLabel, open });
+  const compactMenu = menuVariant === 'compact';
 
   function handleOptionKeyDown(e: React.KeyboardEvent, index: number) {
     if (e.key === 'ArrowDown') {
@@ -72,29 +92,29 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className={compact ? 'relative flex flex-col items-end gap-[16px]' : 'relative'} ref={ref}>
+    <div className={compactMenu ? 'relative flex flex-col items-end gap-[16px]' : 'relative'} ref={ref}>
       <button
         ref={triggerRef}
         type="button"
         onPointerDown={() => { keyboardOpenRef.current = false; setKeyboardModality(false); }}
         onKeyDown={handleTriggerKeyDown}
         onClick={() => setOpen((v) => !v)}
-        className={compact
+        className={triggerClassName ?? (compact
           ? 'flex h-[32px] shrink-0 items-center justify-center gap-[8px] whitespace-nowrap rounded-[8px] border-0 bg-white px-[12px] py-[8px] text-[12px] font-normal leading-[12px] text-[#b1acb9] hover:bg-[#f6f5f7] hover:text-[#161519] aria-expanded:bg-[#d5d3d9] aria-expanded:text-[#161519] aria-expanded:hover:bg-[#d5d3d9]'
-          : 'flex items-center gap-[5px] px-2 py-2 text-[16px] leading-none text-muted transition-colors hover:text-accent'}
+          : 'flex items-center gap-[5px] px-2 py-2 text-[16px] leading-none text-muted transition-colors hover:text-accent')}
         aria-haspopup="menu"
         aria-controls="lang-menu"
         aria-expanded={open}
-        aria-label={compact ? labelFor(lang) : undefined}
+        aria-label={compact && !renderTrigger ? currentLabel : undefined}
       >
-        {compact ? (
+        {renderTrigger ? renderedTrigger : compact ? (
           <>
             <HugeiconsIcon icon={InternetIcon} size={16} strokeWidth={1.5} className="shrink-0" aria-hidden />
             <span>{lang.toUpperCase()}</span>
           </>
         ) : (
           <>
-            <span>{labelFor(lang)}</span>
+            <span>{currentLabel}</span>
             <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={2} />
           </>
         )}
@@ -103,7 +123,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         <ul
           id="lang-menu"
           role="menu"
-          className={compact
+          className={compactMenu
             ? 'absolute right-0 top-full z-50 mt-[8px] flex w-[160px] flex-col overflow-hidden rounded-[8px] border border-[#eae9ec] bg-white p-[4px] shadow-none'
             : 'absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-border bg-surface'}
         >
@@ -114,7 +134,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                 type="button"
                 onClick={() => selectLang(l)}
                 onKeyDown={(e) => handleOptionKeyDown(e, i)}
-                className={compact
+                className={compactMenu
                   ? `flex h-[28px] w-full items-center justify-between rounded-[4px] px-[8px] py-[6px] text-left text-[14px] font-normal leading-[14px] text-[#161519] hover:bg-[#f8f5fc] focus:outline-none ${
                     keyboardModality
                       ? 'focus-visible:outline-2 focus-visible:outline-[#6a37c3] focus-visible:outline-offset-[-2px]'
@@ -127,7 +147,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                 aria-current={lang === l ? 'true' : undefined}
               >
                 <span>{labelFor(l)}</span>
-                {compact && lang === l ? <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={1.5} className="text-[#6a37c3]" /> : compact ? null : (
+                {compactMenu && lang === l ? <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={1.5} className="text-[#6a37c3]" /> : compactMenu ? null : (
                   <span
                     aria-hidden="true"
                     className={`ml-auto flex size-4 items-center justify-center text-accent transition-opacity ${

@@ -54,12 +54,18 @@ for (const [headingId, key] of [
 }
 
 assert.match(profileSource, /import \{ LanguageSwitcher \} from '\.\.\/components\/LanguageSwitcher';/);
-assert.match(panelSource, /\{t\('common\.language'\)\}[\s\S]*<LanguageSwitcher compact \/>/);
+assert.match(profileSource, /import languagesAsset from '\.\.\/assets\/figma-profile\/languages\.svg';/);
+assert.match(profileSource, /ArrowDown01Icon/);
+assert.match(
+  panelSource,
+  /<LanguageSwitcher\s+menuVariant="compact"\s+triggerClassName="[^"]*w-full[^"]*"\s+renderTrigger=\{\(\{ label \}\) => \([\s\S]*languagesAsset[\s\S]*t\('common\.language'\)[\s\S]*label[\s\S]*ArrowDown01Icon[\s\S]*\)\}\s+\/>/,
+  'Desktop settings must keep the legacy languages icon + label + localized value trigger while sharing the dropdown implementation',
+);
+assert.doesNotMatch(panelSource, /<LanguageSwitcher compact \/>/);
 assert.doesNotMatch(panelSource, /const languageOptions:|languageOpen|languageMenuId|languagePopoverRef/);
 assert.match(panelSource, /desktopSettingsServiceRules[\s\S]*desktopSettingsPrivacyPolicy/, 'About rows must match Figma order');
 assert.match(panelSource, /Scroll01Icon[\s\S]*GoogleDocIcon/);
 assert.doesNotMatch(panelSource, /LanguageCircleIcon|Invoice03Icon|LegalDocument01Icon/);
-assert.doesNotMatch(profileSource, /languagesAsset/);
 assert.match(panelSource, /WebkitMaskImage: `url\("\$\{mobilePremiumAsset\}"\)`/);
 assert.match(panelSource, /h-px w-full bg-\[#f8f5fc\]/);
 assert.equal((panelSource.match(/onClick=\{\(\) => setView\('about'\)\}/g) ?? []).length, 2);

@@ -21,7 +21,58 @@ assert.deepEqual(resolveSeoBuildConfig({ VERCEL_ENV: 'production', VITE_SITE_ORI
   release: true,
   siteOrigin: 'https://example.test',
 });
+assert.deepEqual(resolveSeoBuildConfig({
+  VERCEL_ENV: 'production',
+  VERCEL_PROJECT_PRODUCTION_URL: '  infopedia.vercel.app  ',
+}), {
+  release: true,
+  siteOrigin: 'https://infopedia.vercel.app',
+});
+assert.deepEqual(resolveSeoBuildConfig({
+  VERCEL_ENV: 'production',
+  VITE_SITE_ORIGIN: '   ',
+  VERCEL_PROJECT_PRODUCTION_URL: 'infopedia.vercel.app',
+}), {
+  release: true,
+  siteOrigin: 'https://infopedia.vercel.app',
+});
+assert.deepEqual(resolveSeoBuildConfig({
+  VERCEL_ENV: 'production',
+  VITE_SITE_ORIGIN: 'https://explicit.example.test/',
+  VERCEL_PROJECT_PRODUCTION_URL: 'fallback.example.test/path',
+}), {
+  release: true,
+  siteOrigin: 'https://explicit.example.test',
+});
+assert.throws(
+  () => resolveSeoBuildConfig({
+    VERCEL_ENV: 'production',
+    VITE_SITE_ORIGIN: 'not-an-origin',
+    VERCEL_PROJECT_PRODUCTION_URL: 'fallback.example.test',
+  }),
+  /Invalid VITE_SITE_ORIGIN: not-an-origin/,
+);
+for (const host of [undefined, '', '   ']) {
+  assert.throws(
+    () => resolveSeoBuildConfig({ VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: host }),
+    /VITE_SITE_ORIGIN is required for a production SEO release/,
+  );
+}
+for (const host of ['not a valid host', 'https://infopedia.vercel.app', 'infopedia.vercel.app/path']) {
+  assert.throws(
+    () => resolveSeoBuildConfig({ VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: host }),
+    `production fallback should reject ${String(host)}`,
+  );
+}
 assert.deepEqual(resolveSeoBuildConfig({ VERCEL_ENV: 'preview' }), { release: false, siteOrigin: null });
+assert.deepEqual(resolveSeoBuildConfig({
+  VERCEL_ENV: 'preview',
+  VERCEL_PROJECT_PRODUCTION_URL: 'https://infopedia.vercel.app/path',
+}), { release: false, siteOrigin: null });
+assert.throws(
+  () => resolveSeoBuildConfig({ SEO_RELEASE: '1', VERCEL_PROJECT_PRODUCTION_URL: 'infopedia.vercel.app' }),
+  /VITE_SITE_ORIGIN is required for a production SEO release/,
+);
 assert.deepEqual(resolveSeoBuildConfig({ SEO_RELEASE: '0', VITE_SITE_ORIGIN: 'http://127.0.0.1:5173' }), {
   release: false,
   siteOrigin: 'http://127.0.0.1:5173',

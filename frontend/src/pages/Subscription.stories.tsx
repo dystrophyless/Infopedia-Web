@@ -2,7 +2,7 @@ import '../i18n';
 import { useEffect, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BrowserRouter, MemoryRouter, Route, Routes } from 'react-router-dom';
-import { expect, userEvent } from 'storybook/test';
+import { expect, userEvent, waitFor } from 'storybook/test';
 import { Subscription } from './Subscription';
 
 type HistoryHarnessMode = 'direct' | 'prior';
@@ -273,6 +273,7 @@ export const Desktop1440x1080MonthlySelected: Story = {
   parameters: { routerHarness: 'browser', a11y: { config: { rules: [{ id: 'color-contrast', selector: '*:not([data-subscription-contrast-lock="annual-equivalent"])' }] } } },
   decorators: [withBrowserHistory('prior')],
   play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('[data-subscription-desktop]')).not.toBeNull());
     const desktop = canvasElement.querySelector('[data-subscription-desktop]');
     const monthly = desktop?.querySelector('input[type="radio"][value="monthly"]') as HTMLInputElement | null;
     const annual = desktop?.querySelector('input[type="radio"][value="annual"]') as HTMLInputElement | null;

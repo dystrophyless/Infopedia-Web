@@ -98,8 +98,8 @@ for (const [viewSource, label] of [
 
 assert.match(
   appSource,
-  /import \{ TestQuestionPage \} from '\.\/pages\/TestQuestionPage';/,
-  'App should import the reusable test question page',
+  /const TestQuestionPage = lazy\(\(\) => import\('\.\/pages\/TestQuestionPage'\)\.then\(\(module\) => \(\{ default: module\.TestQuestionPage \}\)\)\);/,
+  'App should lazy-load the reusable test question page',
 );
 
 assert.match(

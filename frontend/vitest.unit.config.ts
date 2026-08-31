@@ -7,6 +7,7 @@ export default defineConfig({
       'src/features/**/*.test.ts',
       'src/features/**/*.test.tsx',
       'src/api/**/*.test.ts',
+      'src/seo/**/*.test.ts',
     ],
     passWithNoTests: false,
   },

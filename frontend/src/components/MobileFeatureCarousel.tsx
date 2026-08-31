@@ -23,6 +23,8 @@ interface MobileFeatureDefinition {
   descriptionKey: string;
   ctaKey: string;
   imageSrc: string;
+  width: number;
+  height: number;
   imageFrameClassName: string;
   imageClassName: string;
   desktopImageClassName: string;
@@ -54,6 +56,8 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolWeakTopicsDesc',
     ctaKey: 'landing.mobileToolWeakTopicsCta',
     imageSrc: '/mobile-feature-weak-topics.png',
+    width: 621,
+    height: 582,
     imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
     imageClassName: 'object-center',
     desktopImageClassName: 'object-center',
@@ -65,6 +69,8 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolTestsDesc',
     ctaKey: 'landing.mobileToolTestsCta',
     imageSrc: '/mobile-feature-tests.png',
+    width: 582,
+    height: 633,
     imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
     imageClassName: 'object-center',
     desktopImageClassName: 'object-center',
@@ -76,6 +82,8 @@ const MOBILE_FEATURES: MobileFeatureDefinition[] = [
     descriptionKey: 'landing.mobileToolTermDesc',
     ctaKey: 'landing.mobileToolTermCta',
     imageSrc: '/mobile-feature-term.png',
+    width: 682,
+    height: 818,
     imageFrameClassName: 'h-[292px] left-6 right-6 top-[24px]',
     imageClassName: 'object-center',
     desktopImageClassName: 'object-center',
@@ -470,6 +478,11 @@ function FeatureSlideCard({
             alt=""
             aria-hidden="true"
             draggable={false}
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            width={card.width}
+            height={card.height}
             className={`h-full w-full object-contain transition-transform duration-200 ease-out group-hover:scale-[1.01] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${card.desktopImageClassName}`}
           />
         </div>
@@ -487,6 +500,11 @@ function FeatureSlideCard({
             alt=""
             aria-hidden="true"
             draggable={false}
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            width={card.width}
+            height={card.height}
             className={`h-full w-full object-contain transition-transform duration-200 ease-out group-hover:scale-[1.01] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${card.imageClassName}`}
           />
         </div>

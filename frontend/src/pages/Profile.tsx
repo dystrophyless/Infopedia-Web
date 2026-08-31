@@ -7,7 +7,6 @@ import {
   AlertCircleIcon,
   AllBookmarkIcon,
   ArrowLeft01Icon,
-  ArrowDown01Icon,
   ArrowRight01Icon,
   ChartColumnIcon,
   Coins02Icon,
@@ -29,6 +28,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useAuthStore } from '../stores/authStore';
 import { useLangStore, type Language } from '../stores/langStore';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { getLatestAnalyzeResult } from '../api/analyze';
 import { getFavorites } from '../features/favorites/api/favorites';
 import { FavoritesContent } from '../features/favorites/pages/FavoritesPage';
@@ -45,7 +45,6 @@ import type { AnalyzeChapterResult, User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
-import languagesAsset from '../assets/figma-profile/languages.svg';
 import desktopLogOutAsset from '../assets/figma-profile/log-out.svg';
 import { SkeletonCard } from '../components/SkeletonCard';
 import {
@@ -1938,64 +1937,6 @@ function DesktopSettingsPanel({
 }) {
   const { t } = useTranslation();
   const [view, setView] = useState<SettingsView>('home');
-  const lang = useLangStore((state) => state.lang);
-  const setLang = useLangStore((state) => state.setLang);
-  const [languageOpen, setLanguageOpen] = useState(false);
-  const languageMenuId = useId();
-  const languagePopoverRef = useRef<HTMLDivElement>(null);
-  const languageTriggerRef = useRef<HTMLButtonElement>(null);
-  const languageOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const languageOptions: Array<{ value: Language; labelKey: 'common.kazakh' | 'common.russian' }> = [
-    { value: 'kk', labelKey: 'common.kazakh' },
-    { value: 'ru', labelKey: 'common.russian' },
-  ];
-
-  function closeLanguageMenu(returnFocus = false) {
-    setLanguageOpen(false);
-    if (returnFocus) requestAnimationFrame(() => languageTriggerRef.current?.focus());
-  }
-
-  function openLanguageMenu() {
-    setLanguageOpen(true);
-  }
-
-  function selectLanguage(value: Language) {
-    setLang(value);
-    closeLanguageMenu(true);
-  }
-
-  function handleLanguageOptionKeyDown(event: React.KeyboardEvent, index: number) {
-    let nextIndex: number | null = null;
-    if (event.key === 'ArrowDown') nextIndex = (index + 1) % languageOptions.length;
-    if (event.key === 'ArrowUp') nextIndex = (index - 1 + languageOptions.length) % languageOptions.length;
-    if (event.key === 'Home') nextIndex = 0;
-    if (event.key === 'End') nextIndex = languageOptions.length - 1;
-    if (nextIndex !== null) {
-      event.preventDefault();
-      languageOptionRefs.current[nextIndex]?.focus();
-      return;
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeLanguageMenu(true);
-    }
-    if (event.key === 'Tab') window.setTimeout(() => closeLanguageMenu(), 0);
-  }
-
-  useEffect(() => {
-    if (!languageOpen) return;
-    const selectedIndex = Math.max(0, languageOptions.findIndex((option) => option.value === lang));
-    languageOptionRefs.current[selectedIndex]?.focus();
-  }, [languageOpen, lang]);
-
-  useEffect(() => {
-    if (!languageOpen) return;
-    function handleOutsidePointerDown(event: PointerEvent) {
-      if (!languagePopoverRef.current?.contains(event.target as Node)) closeLanguageMenu();
-    }
-    document.addEventListener('pointerdown', handleOutsidePointerDown);
-    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
-  }, [languageOpen]);
 
   if (view === 'account') {
     return <section className="px-8 py-12 max-md:px-5"><div className="space-y-3">
@@ -2101,65 +2042,9 @@ function DesktopSettingsPanel({
               <h2 id="desktop-settings-general-heading" className="pl-2 text-[16px] font-medium leading-[16px] text-[#6e6779]">
                 {t('profile.desktopSettingsGeneralSection')}
               </h2>
-              <div ref={languagePopoverRef} className="relative rounded-[16px] bg-white p-4">
-                <button
-                  ref={languageTriggerRef}
-                  type="button"
-                  onClick={() => languageOpen ? closeLanguageMenu() : openLanguageMenu()}
-                  onKeyDown={(event) => {
-                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                      event.preventDefault();
-                      openLanguageMenu();
-                    }
-                    if (event.key === 'Escape' && languageOpen) {
-                      event.preventDefault();
-                      closeLanguageMenu(true);
-                    }
-                  }}
-                  aria-haspopup="menu"
-                  aria-expanded={languageOpen}
-                  aria-controls={languageMenuId}
-                  className="flex w-full items-center gap-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
-                >
-                  <img
-                    src={languagesAsset}
-                    alt=""
-                    aria-hidden="true"
-                    width={20}
-                    height={20}
-                    className="size-5 shrink-0"
-                  />
-                  <span className="flex-1 text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
-                  <span className="text-[14px] font-normal leading-[14px] text-[#161519]">{t(lang === 'kk' ? 'common.kazakh' : 'common.russian')}</span>
-                  <HugeiconsIcon icon={ArrowDown01Icon} size={18} strokeWidth={1.5} className="shrink-0 text-[#6e6779]" aria-hidden="true" />
-                </button>
-
-                {languageOpen && (
-                  <ul
-                    id={languageMenuId}
-                    role="menu"
-                    aria-label={t('common.language')}
-                    className="absolute right-4 top-[60px] z-30 w-[220px] overflow-hidden rounded-[16px] border border-[#ded2f1] bg-white p-2"
-                  >
-                    {languageOptions.map((option, index) => (
-                      <li key={option.value} className={index > 0 ? 'border-t border-[#f8f5fc]' : undefined}>
-                        <button
-                          ref={(node) => { languageOptionRefs.current[index] = node; }}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={option.value === lang}
-                          tabIndex={option.value === lang ? 0 : -1}
-                          onClick={() => selectLanguage(option.value)}
-                          onKeyDown={(event) => handleLanguageOptionKeyDown(event, index)}
-                          className="flex h-10 w-full items-center rounded-[8px] px-3 text-left text-[14px] leading-[14px] text-[#252329] hover:bg-[#f8f5fc] focus-visible:bg-[#f8f5fc] focus-visible:outline-none"
-                        >
-                          <span className="flex-1">{t(option.labelKey)}</span>
-                          {option.value === lang && <HugeiconsIcon icon={Tick02Icon} size={18} strokeWidth={1.7} className="text-[#6a37c3]" aria-hidden="true" />}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="flex items-center justify-between rounded-[16px] bg-white p-4">
+                <span className="text-[16px] font-medium leading-[16px] text-[#161519]">{t('common.language')}</span>
+                <LanguageSwitcher compact />
               </div>
             </section>
 

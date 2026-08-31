@@ -94,8 +94,8 @@ assert.match(
 
 assert.match(
   appSource,
-  /import \{ SearchFilters \} from '\.\/pages\/SearchFilters';/,
-  'App should import the dedicated search filters page',
+  /const SearchFilters = lazy\(\(\) => import\('\.\/pages\/SearchFilters'\)\.then\(\(module\) => \(\{ default: module\.SearchFilters \}\)\)\);/,
+  'App should lazy-load the dedicated search filters page',
 );
 
 assert.match(

@@ -44,10 +44,21 @@ export function parseSiteOrigin(rawValue, options = DEFAULT_ORIGIN_OPTIONS) {
  * @param {Record<string, string | undefined>} env
  */
 export function resolveSeoBuildConfig(env = {}) {
-  const release = env.VERCEL_ENV === 'production' || env.SEO_RELEASE === '1';
+  const vercelProduction = env.VERCEL_ENV === 'production';
+  const release = vercelProduction || env.SEO_RELEASE === '1';
+  const explicitOrigin = typeof env.VITE_SITE_ORIGIN === 'string' ? env.VITE_SITE_ORIGIN.trim() : '';
+  const productionHost = typeof env.VERCEL_PROJECT_PRODUCTION_URL === 'string'
+    ? env.VERCEL_PROJECT_PRODUCTION_URL.trim()
+    : '';
+  const rawOrigin = explicitOrigin
+    ? env.VITE_SITE_ORIGIN
+    : vercelProduction && productionHost
+      ? `https://${productionHost}`
+      : undefined;
+
   return {
     release,
-    siteOrigin: parseSiteOrigin(env.VITE_SITE_ORIGIN, {
+    siteOrigin: parseSiteOrigin(rawOrigin, {
       required: release,
       requireHttps: release,
     }),

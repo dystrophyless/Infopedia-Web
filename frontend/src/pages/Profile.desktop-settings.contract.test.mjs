@@ -53,20 +53,13 @@ for (const [headingId, key] of [
   );
 }
 
-assert.match(panelSource, /const languageOptions:[\s\S]*\{ value: 'kk', labelKey: 'common\.kazakh' \}[\s\S]*\{ value: 'ru', labelKey: 'common\.russian' \}/);
-assert.match(panelSource, /useLangStore\(\(state\) => state\.lang\)[\s\S]*useLangStore\(\(state\) => state\.setLang\)/);
-assert.match(panelSource, /aria-haspopup="menu"[\s\S]*aria-expanded=\{languageOpen\}[\s\S]*aria-controls=\{languageMenuId\}/);
-assert.match(panelSource, /role="menu"[\s\S]*role="menuitemradio"[\s\S]*aria-checked=\{option\.value === lang\}/);
-assert.match(panelSource, /ArrowDown[\s\S]*ArrowUp[\s\S]*Home[\s\S]*End[\s\S]*Escape[\s\S]*Tab/);
-assert.match(panelSource, /document\.addEventListener\('pointerdown',[\s\S]*document\.removeEventListener\('pointerdown'/);
-assert.match(panelSource, /setLang\(value\)[\s\S]*closeLanguageMenu\(true\)/);
+assert.match(profileSource, /import \{ LanguageSwitcher \} from '\.\.\/components\/LanguageSwitcher';/);
+assert.match(panelSource, /\{t\('common\.language'\)\}[\s\S]*<LanguageSwitcher compact \/>/);
+assert.doesNotMatch(panelSource, /const languageOptions:|languageOpen|languageMenuId|languagePopoverRef/);
 assert.match(panelSource, /desktopSettingsServiceRules[\s\S]*desktopSettingsPrivacyPolicy/, 'About rows must match Figma order');
 assert.match(panelSource, /Scroll01Icon[\s\S]*GoogleDocIcon/);
 assert.doesNotMatch(panelSource, /LanguageCircleIcon|Invoice03Icon|LegalDocument01Icon/);
-assert.match(profileSource, /import languagesAsset from '\.\.\/assets\/figma-profile\/languages\.svg';/);
-assert.doesNotMatch(profileSource, /\bLanguages(?:Icon| as LanguagesIcon)\b/);
-assertSinglePanelAssetUsage('languagesAsset');
-assert.match(panelSource, /<img\s+src=\{languagesAsset\}\s+alt=""\s+aria-hidden="true"\s+width=\{20\}\s+height=\{20\}\s+className="size-5 shrink-0"\s*\/>/);
+assert.doesNotMatch(profileSource, /languagesAsset/);
 assert.match(panelSource, /WebkitMaskImage: `url\("\$\{mobilePremiumAsset\}"\)`/);
 assert.match(panelSource, /h-px w-full bg-\[#f8f5fc\]/);
 assert.equal((panelSource.match(/onClick=\{\(\) => setView\('about'\)\}/g) ?? []).length, 2);

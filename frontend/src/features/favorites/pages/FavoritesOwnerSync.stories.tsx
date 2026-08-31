@@ -1,7 +1,7 @@
 import '../../../i18n';
 import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import App from '../../../App';
 import { useAuthStore } from '../../../stores/authStore';
 import { useFavoritesStore } from '../model';
@@ -120,12 +120,12 @@ export const AuthOwnerBarrier: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const wrapper = canvas.getByTestId('owner-sync-wrapper');
-    expect(wrapper.querySelector('form')).not.toBeNull();
+    await waitFor(() => expect(wrapper.querySelector('form')).not.toBeNull());
     await userEvent.click(canvas.getByTestId('owner-sync-switch'));
     expect(wrapper.querySelector('form')).toBeNull();
     expect(controller?.calls).toContain(ownerB.id);
     await userEvent.click(canvas.getByTestId('owner-sync-release'));
-    expect(wrapper.querySelector('form')).not.toBeNull();
+    await waitFor(() => expect(wrapper.querySelector('form')).not.toBeNull());
     await userEvent.click(canvas.getByTestId('owner-sync-remount'));
     await userEvent.click(canvas.getByTestId('owner-sync-remount'));
     await userEvent.click(canvas.getByTestId('owner-sync-logout'));

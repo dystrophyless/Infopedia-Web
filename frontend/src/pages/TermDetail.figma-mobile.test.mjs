@@ -8,6 +8,7 @@ import loadConfig from 'tailwindcss/loadConfig.js';
 const pagesDir = import.meta.dirname;
 const srcDir = path.resolve(pagesDir, '..');
 const container = readFileSync(path.resolve(pagesDir, 'TermDetail.tsx'), 'utf8');
+const routeAccess = readFileSync(path.resolve(srcDir, 'features/terms/model/termRouteAccess.ts'), 'utf8');
 const view = readFileSync(path.resolve(srcDir, 'features/terms/components/TermDetailView.tsx'), 'utf8');
 const termCard = readFileSync(path.resolve(srcDir, 'features/terms/components/TermCard.tsx'), 'utf8');
 const search = readFileSync(path.resolve(srcDir, 'features/search/pages/TermSearchPage.tsx'), 'utf8');
@@ -16,8 +17,13 @@ const kk = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/kk/translation.
 
 assert.match(container, /import \{ getTerm \} from '\.\.\/api\/terms'/, 'Route container must own direct-link API loading');
 assert.match(container, /routeStateTerm\?\.public_id === termRef/, 'Matching router state must remain the fast path');
-assert.match(container, /getTerm\(termRef\)/, 'Missing router state must fetch by public ID');
-assert.doesNotMatch(container, /<Navigate\b/, 'A deep link must not redirect away');
+assert.match(container, /resolveTermRouteAccess/, 'Route container must resolve guest/authenticated access before loading');
+assert.match(container, /if \(routeAccess !== 'authenticated-fetch' \|\| !termRef\)/, 'Guest state must not start an API effect');
+assert.match(container, /routeAccess === 'guest-denied'[\s\S]*<Navigate to="\/" replace \/>/, 'Guest deep links without matching state must redirect home');
+assert.match(container, /if \(routeAccess !== 'authenticated-fetch' \|\| !termRef\)[\s\S]*getTerm\(termRef\)/, 'Authenticated deep links must fetch by public ID');
+assert.ok(container.indexOf("routeAccess === 'guest-denied'") < container.indexOf('getTerm(termRef)'), 'Guest denial must precede the authenticated fetch implementation');
+assert.match(routeAccess, /routeStateTermRef === input\.termRef/, 'Matching guest state must be accepted without a fetch');
+assert.match(routeAccess, /return input\.isAuthenticated \? 'authenticated-fetch' : 'guest-denied'/, 'Auth state must gate direct-link fetching');
 assert.match(container, /state\?\.backTo \?\? \(isAuthenticated \? '\/search' : '\/'\)/, 'Back route must retain authenticated and guest defaults');
 assert.match(container, /<TermDetailView/, 'Route must delegate rendering to the feature view');
 

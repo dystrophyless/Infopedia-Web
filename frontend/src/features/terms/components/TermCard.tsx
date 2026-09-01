@@ -1,4 +1,4 @@
-import { ArrowLeft01Icon, ArrowRight01Icon, Flag02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -32,7 +32,6 @@ export function TermCard({ term, relatedTerms = [], backTo = '/search', selected
               <span className={`block truncate font-medium ${inspectTitleIsLong ? 'text-[20px] leading-5' : 'text-[22px] leading-6'}`}>{term.name}</span>
             </button>
             <div className="flex shrink-0 items-center gap-4" data-term-card-header-actions>
-              <span className="flex size-6 items-center justify-center" aria-hidden="true"><HugeiconsIcon icon={Flag02Icon} size={24} strokeWidth={1.7} /></span>
               <TermCardFavoriteButton termRef={term.public_id} termName={term.name} className="-my-[10px]" />
             </div>
           </div>

@@ -19,7 +19,12 @@ assert.match(view, /desktopBookMeta[\s\S]*desktopPageMeta[\s\S]*desktopRelatedTe
 assert.match(view, /data-term-detail-source-row[\s\S]*BookOpen02Icon[\s\S]*data-term-detail-definition-nav/, 'definition card footer must contain source metadata and definition navigation');
 assert.match(view, /data-term-detail-mastery[^>]*className="[^"]*rounded-\[16px\][^"]*p-6[\s\S]*w-\[74\.92%\]/, 'mastery bar must preserve the updated Figma fill independently from its 87 percent label');
 assert.match(view, /data-term-detail-test-card[^>]*className="[^"]*h-\[187px\][^"]*bg-\[#6a37c3\]/, 'desktop topic-test card must match the Figma height and primary fill');
+assert.match(view, /data-term-detail-test-title[^>]*className="(?=[^"]*text-\[18px\])(?=[^"]*font-normal)[^"]*"/, 'desktop topic-test title must use 18px regular typography');
+assert.match(view, /data-term-detail-test-meta[^>]*className="[^"]*mt-2[^"]*"/, 'desktop topic-test metadata must sit exactly 8px below its title');
 assert.match(view, /data-term-detail-related-panel[\s\S]*NotebookText[\s\S]*ArrowRight02Icon/, 'related terms must render the Figma list anatomy');
+assert.match(view, /data-term-detail-related-title[^>]*className="(?=[^"]*font-normal)(?=[^"]*text-\[#161519\])[^"]*"/, 'desktop related-term titles must use regular weight and the requested ink color');
+assert.match(view, /data-term-detail-related-leading[^>]*className="(?=[^"]*transition-transform)(?=[^"]*duration-\[160ms\])(?=[^"]*\[transition-timing-function:ease\])(?=[^"]*group-hover:translate-x-\[3px\])[^"]*"/, 'only the related-term leading wrapper must animate 3px over 160ms ease');
+assert.match(view, /data-term-detail-desktop-back[^>]*className="(?=[^"]*hover:bg-white)(?=[^"]*hover:text-\[#161519\])[^"]*"/, 'desktop Back hover must use white background and requested ink color');
 assert.match(view, /NotebookText/, 'related terms must use the exact NotebookText icon export');
 assert.match(view, /data-term-detail-desktop[^>]*className="[^"]*md:ml-\[2px\]/, 'desktop subtree must include the 2px Figma x offset');
 assert.match(view, /data-term-detail-definition-card[\s\S]*items-center/, 'definition header must vertically center title and actions');
@@ -32,5 +37,6 @@ assert.match(view, /data-term-detail-mastery[^>]*className="[^\"]*h-\[120px\]/, 
 assert.match(view, /data-term-detail-mastery-meta[^>]*className="[^\"]*mt-4/, 'mastery metadata must use 16px top margin');
 assert.match(view, /data-term-detail-test-card[\s\S]*className="[^\"]*h-\[187px\][^\"]*[\s\S]*h-8/, 'desktop test CTA must be 32px tall');
 assert.match(story, /name: 'Компьютер'[\s\S]*Офистік компьютер[\s\S]*Дербес компьютер[\s\S]*Жүйелік блок/, 'desktop Storybook fixture must reproduce node 1388:5656 content');
+assert.match(story, /data-term-detail-related-link/g, 'desktop Storybook play coverage must assert the rendered related-term collection');
 
 console.log('Desktop TermDetail Figma contract passed');

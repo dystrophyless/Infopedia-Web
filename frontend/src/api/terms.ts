@@ -2,10 +2,27 @@ import { apiClient } from './client';
 import type { FeaturedTerm, Term, Topic } from '../types';
 import type { SearchRequestClient } from '../features/search/api/searchRequestClient';
 
+export interface RelatedTerm {
+  public_id: string;
+  name: string;
+}
+
 export { searchTerms } from '../features/search/api/termSearch';
 
 export async function getTerm(publicId: string): Promise<Term> {
   const { data } = await apiClient.get<Term>(`/api/terms/${publicId}`);
+  return data;
+}
+
+export async function getRelatedTermsForDefinition(
+  termRef: string,
+  definitionRef: string,
+  signal?: AbortSignal,
+): Promise<RelatedTerm[]> {
+  const { data } = await apiClient.get<RelatedTerm[]>(
+    `/api/terms/${encodeURIComponent(termRef)}/related`,
+    { params: { definition_ref: definitionRef }, signal },
+  );
   return data;
 }
 

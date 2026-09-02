@@ -1,4 +1,5 @@
 import logging
+import random
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
@@ -166,6 +167,40 @@ async def get_term_by_id(
     logger.debug("Получили данные для термина с `id`='%s'", id)
 
     return term
+
+
+def related_term_ids_statement(*, topic_id: int, current_term_id: int) -> Select:
+    """Select each candidate term ID once for the active definition's topic."""
+    return (
+        select(Definition.term_id)
+        .where(
+            Definition.topic_id == topic_id,
+            Definition.term_id != current_term_id,
+        )
+        .distinct()
+    )
+
+
+async def get_related_terms(
+    session: AsyncSession,
+    *,
+    topic_id: int,
+    current_term_id: int,
+) -> list[Term]:
+    candidate_result = await session.execute(
+        related_term_ids_statement(
+            topic_id=topic_id,
+            current_term_id=current_term_id,
+        ),
+    )
+    candidate_ids = list(candidate_result.scalars().all())
+    if not candidate_ids:
+        return []
+
+    sampled_ids = random.sample(candidate_ids, k=min(3, len(candidate_ids)))
+    result = await session.execute(select(Term).where(Term.id.in_(sampled_ids)))
+    terms_by_id = {term.id: term for term in result.scalars().all()}
+    return [terms_by_id[term_id] for term_id in sampled_ids if term_id in terms_by_id]
 
 
 async def get_definition_by_id(

@@ -69,11 +69,13 @@ class FeaturedTermsTests(unittest.IsolatedAsyncioTestCase):
 class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.original_anti_scrape = router.enforce_anti_scrape
+        self.original_decode_related_refs = router._decode_related_refs_or_404
         self.original_get_definition = router.get_definition_by_id
         self.original_get_related = router.get_related_terms
 
     async def asyncTearDown(self):
         router.enforce_anti_scrape = self.original_anti_scrape
+        router._decode_related_refs_or_404 = self.original_decode_related_refs
         router.get_definition_by_id = self.original_get_definition
         router.get_related_terms = self.original_get_related
 
@@ -142,6 +144,31 @@ class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(raised.exception.detail, "Resource not found.")
 
         self.assertEqual(repository_calls, [12])
+
+    async def test_invalid_refs_are_rate_limited_before_decoding(self):
+        calls = []
+
+        async def anti_scrape(request, **kwargs):
+            calls.append("anti")
+
+        def decode_related_refs(term_ref, definition_ref):
+            calls.append("decode")
+            return self.original_decode_related_refs(term_ref, definition_ref)
+
+        router.enforce_anti_scrape = anti_scrape
+        router._decode_related_refs_or_404 = decode_related_refs
+
+        with self.assertRaises(HTTPException) as raised:
+            await router.get_related_term_suggestions(
+                self.request(),
+                "invalid",
+                type("User", (), {"id": 5})(),
+                object(),
+                encode_public_ref("definition", 11),
+            )
+
+        self.assertEqual(raised.exception.status_code, 404)
+        self.assertEqual(calls, ["anti", "decode"])
 
 
 class RelatedTermsHttpContractTests(unittest.TestCase):

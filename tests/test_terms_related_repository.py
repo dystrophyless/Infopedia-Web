@@ -28,7 +28,7 @@ class _Session:
 
 
 class RelatedTermRepositoryTests(unittest.IsolatedAsyncioTestCase):
-    def test_candidate_ids_are_unique_same_topic_excluding_current_and_capped_at_three(self):
+    def test_candidate_ids_are_unique_same_topic_and_exclude_current(self):
         sql = str(
             related_term_ids_statement(topic_id=7, current_term_id=11)
             .compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}),

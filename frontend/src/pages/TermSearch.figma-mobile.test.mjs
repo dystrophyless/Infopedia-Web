@@ -84,7 +84,8 @@ const canonicalResultContentY = 80 + 24 + 32;
 // card. The assertions below preserve the equivalent visible guarantees.
 assert.match(termCardSource, /hidden[^\n]*items-start[^\n]*md:flex/, 'Canonical TermCard is desktop-only; mobile search/favorites use MobileSearchTermCard');
 assert.doesNotMatch(termCardSource, /max-md:rounded-\[16px\]|max-md:bg-white|line-clamp-3 max-w-\[760px\]/, 'Canonical TermCard must not retain the removed mobile legacy branch');
-assert.match(termCardSource, /state=\{\{ backTo, term, relatedTerms \}\}/, 'Term link must preserve back navigation and related-term state');
+assert.match(termCardSource, /state=\{\{ backTo, term \}\}/, 'Term link must preserve back navigation and the term fast path');
+assert.doesNotMatch(termCardSource, /relatedTerms/, 'Term cards must not transport nearby results as related terms');
 assert.match(termCardSource, /const detailLink = <Link[\s\S]*className="flex h-10 w-\[216px\]/, 'Term link must retain a native detail link');
 assert.match(termCardSource, /data-term-card-main[\s\S]*data-term-card-header-actions[\s\S]*data-term-card-rail/, 'Canonical desktop card must retain the inspect anatomy');
 assert.match(mobileCardSource, /<FavoriteToggle[\s\S]*appearance="mobile-card"/, 'Mobile search/favorites must retain their dedicated favorite control');

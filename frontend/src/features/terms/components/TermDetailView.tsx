@@ -9,6 +9,7 @@ import {
   UserMultiple03Icon,
 } from '@hugeicons/core-free-icons';
 import type { Definition, Term } from '../../../types';
+import type { RelatedTerm } from '../../../api/terms';
 import { useAuthStore } from '../../../stores/authStore';
 import { FavoriteToggle } from '../../favorites/components';
 import { useFavoritesStore } from '../../favorites/model';
@@ -16,7 +17,6 @@ import { buildDefinitionMetadataItems, getDefinitionIndex } from '../model';
 import { MobilePinnedAppBar } from '../../../ui/patterns';
 import { DesktopTermFavoriteButton } from './DesktopTermFavoriteButton';
 
-export type RelatedTerm = Pick<Term, 'public_id' | 'name'>;
 export type TermDetailLoadState = 'idle' | 'loading' | 'error';
 
 export interface TermDetailViewProps {
@@ -26,6 +26,7 @@ export interface TermDetailViewProps {
   bottomNavVisible?: boolean;
   relatedTerms?: RelatedTerm[];
   selectedDefinitionPublicId?: string;
+  onDefinitionChange?: (definitionPublicId: string) => void;
 }
 
 function getSourceRows(definition: Definition | undefined, t: TFunction) {
@@ -174,7 +175,7 @@ function DesktopTestCard() {
   const { t } = useTranslation();
   return (
     <section data-term-detail-test-card className="flex h-[187px] flex-col items-start justify-between rounded-[16px] bg-[#6a37c3] p-6 text-white">
-      <div><h2 className="text-[20px] font-medium leading-5">{t('termDetail.testCta')}</h2><p className="mt-2 text-[16px] leading-4 text-[#c5b1e7]">{t('termDetail.testMeta')}</p></div>
+      <div><h2 data-term-detail-test-title className="text-[18px] font-normal leading-[18px]">{t('termDetail.testCta')}</h2><p data-term-detail-test-meta className="mt-2 text-[16px] leading-4 text-[#c5b1e7]">{t('termDetail.testMeta')}</p></div>
       <Link to="/tests" className="flex h-8 items-center gap-2 rounded-[8px] bg-white px-6 text-[16px] font-medium leading-4 text-[#6a37c3]">{t('termDetail.startTest')}<HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} /></Link>
     </section>
   );
@@ -187,13 +188,13 @@ function DesktopRelatedPanel({ relatedTerms, backTo }: { relatedTerms: RelatedTe
     <section data-term-detail-related-panel className="rounded-[16px] bg-white p-6">
       <h2 className="text-[12px] font-medium leading-3 text-[#6e6779]">{t('termDetail.desktopRelatedTerms').toUpperCase()}</h2>
       <div className="mt-6 flex flex-col">
-        {relatedTerms.map((item, itemIndex) => <div key={item.public_id}>{itemIndex > 0 && <div className="my-4 h-px bg-[#f6f5f7]" />}<Link to={`/terms/${item.public_id}`} state={{ backTo }} className="flex items-center justify-between gap-4"><span className="flex min-w-0 items-center gap-4"><span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-[#efeaf8] text-[#6a37c3]"><HugeiconsIcon icon={NotebookText} size={16} strokeWidth={1.5} /></span><span className="truncate text-[14px] font-medium leading-[14px] text-black">{item.name}</span></span><span data-term-detail-related-arrow className="flex size-[34px] shrink-0 items-center justify-center rounded-[8px] bg-white p-2"><HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} className="text-[#b1acb9]" /></span></Link></div>)}
+        {relatedTerms.map((item, itemIndex) => <div key={item.public_id}>{itemIndex > 0 && <div className="my-4 h-px bg-[#f6f5f7]" />}<Link data-term-detail-related-link to={`/terms/${item.public_id}`} state={{ backTo }} className="group flex items-center justify-between gap-4"><span data-term-detail-related-leading className="flex min-w-0 items-center gap-4 transition-transform duration-[160ms] [transition-timing-function:ease] group-hover:translate-x-[3px]"><span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-[#efeaf8] text-[#6a37c3]"><HugeiconsIcon icon={NotebookText} size={16} strokeWidth={1.5} /></span><span data-term-detail-related-title className="truncate text-[14px] font-normal leading-[14px] text-[#161519]">{item.name}</span></span><span data-term-detail-related-arrow className="flex size-[34px] shrink-0 items-center justify-center rounded-[8px] bg-white p-2"><HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} className="text-[#b1acb9]" /></span></Link></div>)}
       </div>
     </section>
   );
 }
 
-export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
+export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId, onDefinitionChange }: TermDetailViewProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
@@ -204,8 +205,15 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
   const current = definitions[index] ?? definitions[0];
   const isLoading = loadState === 'loading' && !term;
   const hasError = loadState === 'error' && !term;
-  const goPrevious = () => setIndex((value) => Math.max(0, value - 1));
-  const goNext = () => setIndex((value) => Math.min(total - 1, value + 1));
+  const selectDefinition = (nextIndex: number) => {
+    const boundedIndex = Math.max(0, Math.min(total - 1, nextIndex));
+    if (boundedIndex === index) return;
+    setIndex(boundedIndex);
+    const nextDefinition = definitions[boundedIndex];
+    if (nextDefinition?.public_id) onDefinitionChange?.(nextDefinition.public_id);
+  };
+  const goPrevious = () => selectDefinition(index - 1);
+  const goNext = () => selectDefinition(index + 1);
   useEffect(() => {
     if (!isAuthenticated || !term) return;
     void ensureStatuses([term.public_id]).catch(() => undefined);
@@ -234,7 +242,7 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
       <div data-term-detail-desktop className="hidden min-h-screen px-[64px] py-8 md:ml-[2px] md:block">
         <header data-term-detail-desktop-header className="flex items-center justify-between">
           <h1 className="text-[24px] font-medium leading-6 text-[#161519]">{t('termDetail.title')}</h1>
-          <Link to={backTo} className="flex h-12 items-center gap-2 rounded-[8px] bg-[#f6f5f7] px-8 text-[16px] font-medium leading-4 text-[#6e6779]"><HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} />{t('termDetail.back')}</Link>
+          <Link to={backTo} data-term-detail-desktop-back className="flex h-12 items-center gap-2 rounded-[8px] bg-[#f6f5f7] px-8 text-[16px] font-medium leading-4 text-[#6e6779] hover:bg-white hover:text-[#161519]"><HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} />{t('termDetail.back')}</Link>
         </header>
         <div data-term-detail-desktop-grid className="mt-8 grid grid-cols-[minmax(0,642px)_minmax(0,1fr)] items-start gap-4">
           <div className="flex flex-col gap-4">

@@ -27,7 +27,6 @@ import { MobileSearchTermCard } from '../../terms/components/MobileSearchTermCar
 import { TermCard } from '../../terms/components/TermCard';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import { BetweenBlocks, EmptyState, MobilePageFrame, SegmentedControl } from '../../../ui';
-import type { Term } from '../../../types';
 import { useAuthStore } from '../../../stores/authStore';
 import { SearchFilters } from './SearchFiltersPage';
 import { useSearchFilterCatalog } from '../hooks/useSearchFilterCatalog';
@@ -54,13 +53,6 @@ const DRAG_CLOSE_THRESHOLD = 72;
 const DRAG_CLOSE_ANIMATION_MS = 180;
 const DRAG_CLOSE_TRANSLATE_FALLBACK = 720;
 const TOUCH_DRAG_INTENT_THRESHOLD = 6;
-
-function getRelatedTerms(term: Term, terms: Term[]): Pick<Term, 'public_id' | 'name'>[] {
-  return terms
-    .filter((candidate) => candidate.public_id !== term.public_id)
-    .slice(0, 2)
-    .map(({ public_id, name }) => ({ public_id, name }));
-}
 
 export function MobileSearchModePills() {
   const { t } = useTranslation();
@@ -985,7 +977,6 @@ export function TermSearchPage() {
               <TermCard
                 key={term.public_id}
                 term={term}
-                relatedTerms={getRelatedTerms(term, displayResults)}
                 expansion={selectedTermId === term.public_id ? 'fill-parent' : 'intrinsic'}
                 selected={selectedTermId === term.public_id}
                 onSelectedChange={(nextSelected) => setSelectedTermId(nextSelected ? term.public_id : null)}
@@ -1009,7 +1000,6 @@ export function TermSearchPage() {
               <MobileSearchTermCard
                 key={term.public_id}
                 term={term}
-                relatedTerms={getRelatedTerms(term, displayResults)}
               />
             ))}
           </div>

@@ -262,13 +262,13 @@ async def get_related_term_suggestions(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     definition_ref: Annotated[str, Query(min_length=1)],
 ):
-    term_id, definition_id = _decode_related_refs_or_404(term_ref, definition_ref)
     await enforce_anti_scrape(
         request,
         scope="terms:related",
         user_id=current_user.id,
         limit=settings.ANTI_SCRAPE_DETAIL_LIMIT,
     )
+    term_id, definition_id = _decode_related_refs_or_404(term_ref, definition_ref)
     definition = await get_definition_by_id(session, id=definition_id)
     if definition is None or definition.term_id != term_id:
         raise HTTPException(

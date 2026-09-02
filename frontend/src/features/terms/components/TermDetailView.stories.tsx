@@ -4,6 +4,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 import { expect, userEvent, within } from 'storybook/test';
 import i18n from '../../../i18n';
+import { DesktopSidebar } from '../../../components/DesktopSidebar';
+import { useAuthStore } from '../../../stores/authStore';
+import { useFavoritesStore } from '../../favorites/model';
 import type { Term } from '../../../types';
 import { TermDetailView } from './TermDetailView';
 
@@ -43,6 +46,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const desktopStoryUser = { id: 2, username: 'storybook-term', email: 'storybook-term@example.com', language: 'ru' as const, grade: 'undefined' as const, role: 'user' as const };
+function DesktopStoryShell({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    useAuthStore.setState({ isAuthenticated: true, token: 'storybook-token', refreshToken: null, user: desktopStoryUser });
+    useFavoritesStore.setState({ statusByTermRef: { computer: false }, pendingByTermRef: {}, errorByTermRef: {} });
+    return () => { useAuthStore.setState({ isAuthenticated: false, token: null, refreshToken: null, user: null }); useFavoritesStore.setState({ statusByTermRef: {}, pendingByTermRef: {}, errorByTermRef: {} }); };
+  }, []);
+  return <div className="min-h-dvh flex flex-col bg-bg md:min-h-screen md:flex-row"><DesktopSidebar activeItem="search" onLogout={() => undefined} user={desktopStoryUser} /><main className="min-w-0 flex-1 w-full">{children}</main></div>;
+}
+
 export const Mobile430Multiple: Story = {
   globals: { viewport: { value: 'mobile430', isRotated: false } },
   play: async ({ canvasElement }) => {
@@ -57,6 +70,26 @@ export const Mobile320: Story = { globals: { viewport: { value: 'mobile320', isR
 export const Mobile360: Story = { globals: { viewport: { value: 'mobile360', isRotated: false } } };
 export const Mobile390: Story = { globals: { viewport: { value: 'mobile390', isRotated: false } } };
 export const Desktop1440: Story = { globals: { viewport: { value: 'desktop1440', isRotated: false } } };
+export const DesktopFigma13885656: Story = {
+  args: {
+    term: {
+      public_id: 'computer',
+      name: 'Компьютер',
+      definitions: [
+        { public_id: 'computer-1', text: 'Бұл электрондық құрылғы және өзімізге қажетті техникалық құрылғылардың жиынтығы (аналық тақша, бейнекарта, ЖЖҚ және т.б.).', page: 56, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
+        { public_id: 'computer-2', text: 'Компьютер ақпаратты өңдеуге арналған әмбебап электрондық құрылғы.', page: 57, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
+        { public_id: 'computer-3', text: 'Компьютер бағдарламалар арқылы деректерді сақтайды және өңдейді.', page: 58, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
+      ],
+    },
+    relatedTerms: [
+      { public_id: 'office-computer', name: 'Офистік компьютер' },
+      { public_id: 'personal-computer', name: 'Дербес компьютер' },
+      { public_id: 'system-unit', name: 'Жүйелік блок' },
+    ],
+  },
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  render: (args) => <DesktopStoryShell><TermDetailView {...args} /></DesktopStoryShell>,
+};
 export const Loading: Story = { args: { term: null, loadState: 'loading' } };
 export const Error: Story = { args: { term: null, loadState: 'error' } };
 export const EmptyDefinitions: Story = { args: { term: { public_id: 'empty', name: 'Пустой термин', definitions: [] } } };

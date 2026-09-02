@@ -13,8 +13,8 @@ const termA: Term = {
   public_id: 'term-a',
   name: 'Термин A',
   definitions: [
-    { public_id: 'definition-a1', text: 'Определение A1', page: 10, topic: { name: 'Тема A1', book: { publisher: 'Атамұра', grade: 10 } } },
-    { public_id: 'definition-a2', text: 'Определение A2', page: 11, topic: { name: 'Тема A2', book: { publisher: 'Мектеп', grade: 10 } } },
+    { public_id: 'definition-a1', name: 'Термин A', text: 'Определение A1', page: 10, topic: { name: 'Тема A1', book: { publisher: 'Атамұра', grade: 10 } } },
+    { public_id: 'definition-a2', name: 'Термин A', text: 'Определение A2', page: 11, topic: { name: 'Тема A2', book: { publisher: 'Мектеп', grade: 10 } } },
   ],
 };
 
@@ -22,7 +22,7 @@ const termB: Term = {
   public_id: 'term-b',
   name: 'Термин B',
   definitions: [
-    { public_id: 'definition-b1', text: 'Определение B1', page: 20, topic: { name: 'Тема B1', book: { publisher: 'Арман-ПВ', grade: 11 } } },
+    { public_id: 'definition-b1', name: 'Термин B', text: 'Определение B1', page: 20, topic: { name: 'Тема B1', book: { publisher: 'Арман-ПВ', grade: 11 } } },
   ],
 };
 

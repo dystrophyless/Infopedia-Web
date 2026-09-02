@@ -23,6 +23,7 @@ describe('filterTermsBySearchFilters characterization', () => {
   const catalog = [
     term('python', [
       {
+        name: 'Python',
         text: 'Python',
         page: 10,
         topic: {
@@ -33,6 +34,7 @@ describe('filterTermsBySearchFilters characterization', () => {
     ]),
     term('algorithms', [
       {
+        name: 'Algorithms',
         text: 'Algorithms',
         page: 12,
         topic: {
@@ -43,6 +45,7 @@ describe('filterTermsBySearchFilters characterization', () => {
     ]),
     term('networks', [
       {
+        name: 'Networks',
         text: 'Networks',
         page: 20,
         topic: {
@@ -51,7 +54,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         },
       },
     ]),
-    term('missing-metadata', [{ text: 'Unknown', page: 1 }]),
+    term('missing-metadata', [{ name: 'Unknown', text: 'Unknown', page: 1 }]),
   ];
 
   it('normalizes case and spacing punctuation used by publisher aliases', () => {
@@ -108,6 +111,7 @@ describe('filterTermsBySearchFilters characterization', () => {
   it('requires one definition to satisfy every active category', () => {
     const splitMetadataTerm = term('split', [
       {
+        name: 'Book match',
         text: 'Book match',
         page: 1,
         topic: {
@@ -116,6 +120,7 @@ describe('filterTermsBySearchFilters characterization', () => {
         },
       },
       {
+        name: 'Chapter match',
         text: 'Chapter match',
         page: 2,
         topic: {

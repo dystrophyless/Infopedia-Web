@@ -92,6 +92,7 @@ export function fitTextToAvailableSpace(node: HTMLElement, text: string): Fitted
 export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'desktop' }: FeaturedTermCardProps) {
   const { t } = useTranslation();
   const { term, featured_definition: definition } = featuredTerm;
+  const displayName = definition.name;
   const definitionPreviewRef = useRef<HTMLParagraphElement>(null);
   const fullDefinitionText = useMemo(() => normalizeDefinitionPreviewText(definition.text ?? ''), [definition.text]);
   const [visibleDefinition, setVisibleDefinition] = useState<FittedDefinitionText>({ text: fullDefinitionText, overflowing: false });
@@ -154,7 +155,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
     <>
       {isGuestLikeVariant ? (
         <div className="flex h-full min-h-0 min-w-0 flex-col">
-          <h3 className={`min-w-0 truncate ${isGuestDesktopVariant ? 'text-[20px] leading-[20px]' : isGuestMobileVariant ? 'text-[16px] leading-[16px]' : 'text-[15px] leading-[15px]'} font-medium text-action-selected`}>{oneLineTermName(term.name)}</h3>
+          <h3 className={`min-w-0 truncate ${isGuestDesktopVariant ? 'text-[20px] leading-[20px]' : isGuestMobileVariant ? 'text-[16px] leading-[16px]' : 'text-[15px] leading-[15px]'} font-medium text-action-selected`}>{oneLineTermName(displayName)}</h3>
           <div className={`${isGuestDesktopVariant ? 'mt-5' : isGuestMobileVariant ? 'mt-4 h-[56px] flex-none' : 'mt-3'} relative min-h-0 min-w-0 flex-1`}>
             {preview(`h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line ${isGuestDesktopVariant ? 'text-[16px] leading-[16px]' : isGuestMobileVariant ? 'text-[14px] leading-[14px]' : 'text-[12px] leading-[12px]'} text-text-body`)}
             {definitionFade}
@@ -163,13 +164,13 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
         </div>
       ) : isHomeVariant ? (
         <div className="flex h-full min-h-0 min-w-0 flex-col">
-          <h3 className="min-w-0 truncate text-[16px] font-medium leading-4 text-primary">{oneLineTermName(term.name)}</h3>
+          <h3 className="min-w-0 truncate text-[16px] font-medium leading-4 text-primary">{oneLineTermName(displayName)}</h3>
           <div className="relative mt-3 min-h-0 min-w-0 flex-1">{preview('h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line text-[12px] leading-3 text-text-body')}{definitionFade}</div>
         </div>
       ) : isMobileVariant ? (
         <div className="flex h-full min-h-0 min-w-0 flex-col">
           <div className="flex min-w-0 items-start justify-between gap-3">
-            <h3 className="min-w-0 truncate text-[23px] font-medium leading-[23px] text-text">{oneLineTermName(term.name)}</h3>
+            <h3 className="min-w-0 truncate text-[23px] font-medium leading-[23px] text-text">{oneLineTermName(displayName)}</h3>
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface/72 text-primary" aria-hidden="true"><HugeiconsIcon icon={ArrowUpRight01Icon} size={18} strokeWidth={1.8} /></span>
           </div>
           <div className="relative mt-4 h-[66px] min-w-0">{preview('h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line text-[15px] font-normal leading-[15px] text-text-body')}{definitionFade}</div>
@@ -180,7 +181,7 @@ export function FeaturedTermCard({ featuredTerm, clone = false, variant = 'deskt
         </div>
       ) : (
         <div className="flex h-full min-h-0 min-w-0 flex-col">
-          <div className="flex min-w-0 items-start justify-between gap-4"><h3 className="min-w-0 truncate text-[30px] font-medium leading-[30px] text-text max-md:text-[24px] max-md:leading-6">{oneLineTermName(term.name)}</h3><span className="flex size-8 shrink-0 items-center justify-center text-muted transition-colors group-hover:text-accent" aria-hidden="true"><HugeiconsIcon icon={ArrowUpRight01Icon} size={19} strokeWidth={1.7} /></span></div>
+          <div className="flex min-w-0 items-start justify-between gap-4"><h3 className="min-w-0 truncate text-[30px] font-medium leading-[30px] text-text max-md:text-[24px] max-md:leading-6">{oneLineTermName(displayName)}</h3><span className="flex size-8 shrink-0 items-center justify-center text-muted transition-colors group-hover:text-accent" aria-hidden="true"><HugeiconsIcon icon={ArrowUpRight01Icon} size={19} strokeWidth={1.7} /></span></div>
           <div className="relative mt-4 min-h-0 min-w-0 flex-1">{preview('h-full min-h-0 min-w-0 overflow-hidden whitespace-pre-line text-[18px] font-normal leading-[18px] text-text-body max-md:text-[15px] max-md:leading-[15px]')}{definitionFade}</div>
           <DefinitionMetadata definition={definition} variant="compact" showPage={false} topicValueClassName="max-w-[180px] max-md:max-w-[130px]" className="min-w-0 max-w-full max-md:gap-1.5 [&_dd]:max-md:text-[12px] [&_dd]:max-md:leading-3 [&_dt]:max-md:text-[12px] [&_dt]:max-md:leading-3" />
         </div>

@@ -191,7 +191,27 @@ class QuestionBankLoaderTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "terms.json"
             path.write_text(
-                json.dumps({"Term": {"Publisher: 7-сынып": []}}, ensure_ascii=False),
+                json.dumps(
+                    {
+                        "schema_version": 2,
+                        "terms": {
+                            "Term": {
+                                "variants": {
+                                    "Term": {
+                                        "Publisher: 7-сынып": [
+                                            {
+                                                "definition": "Definition",
+                                                "topic": "Topic",
+                                                "page": 1,
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
                 encoding="utf-8",
             )
 

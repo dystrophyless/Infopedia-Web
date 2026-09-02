@@ -34,6 +34,10 @@ class TermDetailedResponse(TermResponse):
     definitions: list[DefinitionResponse] = Field(min_length=1)
 
 
+class RelatedTermResponse(TermResponse):
+    pass
+
+
 class FeaturedTermResponse(BaseModel):
     term: TermDetailedResponse
     featured_definition: DefinitionResponse

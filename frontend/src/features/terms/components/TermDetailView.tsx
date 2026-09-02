@@ -9,6 +9,7 @@ import {
   UserMultiple03Icon,
 } from '@hugeicons/core-free-icons';
 import type { Definition, Term } from '../../../types';
+import type { RelatedTerm } from '../../../api/terms';
 import { useAuthStore } from '../../../stores/authStore';
 import { FavoriteToggle } from '../../favorites/components';
 import { useFavoritesStore } from '../../favorites/model';
@@ -16,7 +17,6 @@ import { buildDefinitionMetadataItems, getDefinitionIndex } from '../model';
 import { MobilePinnedAppBar } from '../../../ui/patterns';
 import { DesktopTermFavoriteButton } from './DesktopTermFavoriteButton';
 
-export type RelatedTerm = Pick<Term, 'public_id' | 'name'>;
 export type TermDetailLoadState = 'idle' | 'loading' | 'error';
 
 export interface TermDetailViewProps {
@@ -26,6 +26,7 @@ export interface TermDetailViewProps {
   bottomNavVisible?: boolean;
   relatedTerms?: RelatedTerm[];
   selectedDefinitionPublicId?: string;
+  onDefinitionChange?: (definitionPublicId: string) => void;
 }
 
 function getSourceRows(definition: Definition | undefined, t: TFunction) {
@@ -193,7 +194,7 @@ function DesktopRelatedPanel({ relatedTerms, backTo }: { relatedTerms: RelatedTe
   );
 }
 
-export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId }: TermDetailViewProps) {
+export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId, onDefinitionChange }: TermDetailViewProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
@@ -204,8 +205,15 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
   const current = definitions[index] ?? definitions[0];
   const isLoading = loadState === 'loading' && !term;
   const hasError = loadState === 'error' && !term;
-  const goPrevious = () => setIndex((value) => Math.max(0, value - 1));
-  const goNext = () => setIndex((value) => Math.min(total - 1, value + 1));
+  const selectDefinition = (nextIndex: number) => {
+    const boundedIndex = Math.max(0, Math.min(total - 1, nextIndex));
+    if (boundedIndex === index) return;
+    setIndex(boundedIndex);
+    const nextDefinition = definitions[boundedIndex];
+    if (nextDefinition?.public_id) onDefinitionChange?.(nextDefinition.public_id);
+  };
+  const goPrevious = () => selectDefinition(index - 1);
+  const goNext = () => selectDefinition(index + 1);
   useEffect(() => {
     if (!isAuthenticated || !term) return;
     void ensureStatuses([term.public_id]).catch(() => undefined);

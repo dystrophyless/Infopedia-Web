@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
-import { getTerm } from '../api/terms';
-import { TermDetailView, type RelatedTerm, type TermDetailLoadState } from '../features/terms/components/TermDetailView';
+import { getRelatedTermsForDefinition, getTerm, type RelatedTerm } from '../api/terms';
+import { TermDetailView, type TermDetailLoadState } from '../features/terms/components/TermDetailView';
 import { useAuthStore } from '../stores/authStore';
 import type { Term } from '../types';
 import { useMobileBottomNavDecision } from '../features/navigation';
@@ -11,7 +11,6 @@ interface TermDetailState {
   backTo?: string;
   term?: Term;
   selectedDefinitionPublicId?: string;
-  relatedTerms?: RelatedTerm[];
 }
 
 /** Route/API container. All visual and definition-selection behavior lives in TermDetailView. */
@@ -62,11 +61,17 @@ function TermDetailContent({
 }) {
   const [fetchedTerm, setFetchedTerm] = useState<Term | null>(null);
   const [loadState, setLoadState] = useState<TermDetailLoadState>('idle');
+  const [activeDefinitionRef, setActiveDefinitionRef] = useState<string | null>(
+    state?.selectedDefinitionPublicId ?? null,
+  );
+  const [relatedTerms, setRelatedTerms] = useState<RelatedTerm[]>([]);
+  const relatedGeneration = useRef(0);
 
   useEffect(() => {
     if (routeAccess !== 'authenticated-fetch' || !termRef) return;
     let cancelled = false;
     setLoadState('loading');
+    setFetchedTerm(null);
     getTerm(termRef)
       .then((term) => {
         if (cancelled) return;
@@ -81,14 +86,45 @@ function TermDetailContent({
     return () => { cancelled = true; };
   }, [routeAccess, termRef]);
 
+  const term = stateTerm ?? (fetchedTerm?.public_id === termRef ? fetchedTerm : null);
+
+  useEffect(() => {
+    const definitions = term?.definitions ?? [];
+    const selected = state?.selectedDefinitionPublicId;
+    const selectedExists = selected
+      ? definitions.some((definition) => definition.public_id === selected)
+      : false;
+    setActiveDefinitionRef(selectedExists ? selected ?? null : definitions[0]?.public_id ?? null);
+  }, [state?.selectedDefinitionPublicId, term]);
+
+  useEffect(() => {
+    const generation = ++relatedGeneration.current;
+    setRelatedTerms([]);
+    if (!isAuthenticated || !termRef || !activeDefinitionRef || term?.public_id !== termRef) return;
+    if (!term?.definitions?.some((definition) => definition.public_id === activeDefinitionRef)) return;
+
+    const controller = new AbortController();
+    getRelatedTermsForDefinition(termRef, activeDefinitionRef, controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted || generation !== relatedGeneration.current) return;
+        setRelatedTerms(items);
+      })
+      .catch(() => {
+        if (controller.signal.aborted || generation !== relatedGeneration.current) return;
+        setRelatedTerms([]);
+      });
+    return () => controller.abort();
+  }, [activeDefinitionRef, isAuthenticated, term, termRef]);
+
   return (
     <TermDetailView
-      term={stateTerm ?? fetchedTerm}
+      term={term}
       loadState={loadState}
       backTo={state?.backTo ?? (isAuthenticated ? '/search' : '/')}
       bottomNavVisible={bottomNavVisible}
-      relatedTerms={state?.relatedTerms}
-      selectedDefinitionPublicId={state?.selectedDefinitionPublicId}
+      relatedTerms={relatedTerms}
+      selectedDefinitionPublicId={activeDefinitionRef ?? undefined}
+      onDefinitionChange={setActiveDefinitionRef}
     />
   );
 }

@@ -39,7 +39,15 @@ const meta = {
   title: 'Features/Terms/Detail',
   component: TermDetailView,
   decorators: [(Story) => <MemoryRouter><RussianLocale><Story /></RussianLocale></MemoryRouter>],
-  args: { term, backTo: '/search', relatedTerms: [{ public_id: 'linear-search', name: 'Линейный поиск' }] },
+  args: {
+    term,
+    backTo: '/search',
+    relatedTerms: [
+      { public_id: 'linear-search', name: 'Линейный поиск' },
+      { public_id: 'interpolation-search', name: 'Интерполяционный поиск' },
+      { public_id: 'search-tree', name: 'Дерево поиска' },
+    ],
+  },
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof TermDetailView>;
 
@@ -56,14 +64,46 @@ function DesktopStoryShell({ children }: { children: ReactNode }) {
   return <div className="min-h-dvh flex flex-col bg-bg md:min-h-screen md:flex-row"><DesktopSidebar activeItem="search" onLogout={() => undefined} user={desktopStoryUser} /><main className="min-w-0 flex-1 w-full">{children}</main></div>;
 }
 
+const relatedByDefinition = {
+  d1: [
+    { public_id: 'linear-search', name: 'Линейный поиск' },
+    { public_id: 'interpolation-search', name: 'Интерполяционный поиск' },
+    { public_id: 'search-tree', name: 'Дерево поиска' },
+  ],
+  d2: [
+    { public_id: 'hash-search', name: 'Хеш-іздеу' },
+    { public_id: 'index-search', name: 'Индекстік іздеу' },
+    { public_id: 'graph-search', name: 'Графтан іздеу' },
+  ],
+};
+
+function DefinitionSwitchingStory() {
+  const [definitionRef, setDefinitionRef] = useState<keyof typeof relatedByDefinition>('d1');
+  return (
+    <TermDetailView
+      term={term}
+      backTo="/search"
+      selectedDefinitionPublicId={definitionRef}
+      relatedTerms={relatedByDefinition[definitionRef]}
+      onDefinitionChange={(next) => setDefinitionRef(next as keyof typeof relatedByDefinition)}
+    />
+  );
+}
+
 export const Mobile430Multiple: Story = {
   globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => <DefinitionSwitchingStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('heading', { name: 'Термин' })).toBeVisible();
+    await expect(canvas.getByRole('link', { name: 'Линейный поиск' })).toBeVisible();
     const nextButtons = canvas.getAllByRole('button', { name: /Далее/i });
     await userEvent.click(nextButtons[0]);
     await expect(canvas.getAllByText(/Екілік іздеу/)[0]).toBeVisible();
+    await expect(canvas.queryByRole('link', { name: 'Линейный поиск' })).not.toBeInTheDocument();
+    await expect(canvas.getByRole('link', { name: 'Хеш-іздеу' })).toBeVisible();
+    await expect(canvas.getByRole('link', { name: 'Индекстік іздеу' })).toBeVisible();
+    await expect(canvas.getByRole('link', { name: 'Графтан іздеу' })).toBeVisible();
   },
 };
 export const Mobile320: Story = { globals: { viewport: { value: 'mobile320', isRotated: false } } };

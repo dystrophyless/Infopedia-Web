@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
-import type { Term } from '../../../types';
 import {
   BetweenBlocks,
   Button,
@@ -22,13 +21,6 @@ import { TermCard } from '../../terms/components/TermCard';
 import { useFavoritesStore } from '../model';
 
 const PAGE_SIZE = 20;
-
-function getRelatedTerms(term: Term, terms: Term[]): Pick<Term, 'public_id' | 'name'>[] {
-  return terms
-    .filter((candidate) => candidate.public_id !== term.public_id)
-    .slice(0, 2)
-    .map(({ public_id, name }) => ({ public_id, name }));
-}
 
 export function FavoritesContent({
   embedded = false,
@@ -172,7 +164,6 @@ export function FavoritesContent({
               <TermCard
                 key={term.public_id}
                 term={term}
-                relatedTerms={getRelatedTerms(term, list)}
                 backTo={detailBackTo}
                 selected={selectedTermId === term.public_id}
                 onSelectedChange={(nextSelected) => setSelectedTermId(nextSelected ? term.public_id : null)}
@@ -184,7 +175,6 @@ export function FavoritesContent({
               <MobileSearchTermCard
                 key={term.public_id}
                 term={term}
-                relatedTerms={getRelatedTerms(term, list)}
                 backTo={detailBackTo}
               />
             ))}

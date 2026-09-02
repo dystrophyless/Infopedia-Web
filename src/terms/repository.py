@@ -168,6 +168,38 @@ async def get_term_by_id(
     return term
 
 
+def related_term_ids_statement(*, topic_id: int, current_term_id: int) -> Select:
+    """Select each candidate term ID once for the active definition's topic."""
+    return (
+        select(Definition.term_id)
+        .where(
+            Definition.topic_id == topic_id,
+            Definition.term_id != current_term_id,
+        )
+        .distinct()
+    )
+
+
+async def get_related_terms(
+    session: AsyncSession,
+    *,
+    topic_id: int,
+    current_term_id: int,
+) -> list[Term]:
+    candidate_ids = related_term_ids_statement(
+        topic_id=topic_id,
+        current_term_id=current_term_id,
+    ).subquery()
+    statement = (
+        select(Term)
+        .join(candidate_ids, candidate_ids.c.term_id == Term.id)
+        .order_by(func.random())
+        .limit(3)
+    )
+    result = await session.execute(statement)
+    return list(result.scalars().all())
+
+
 async def get_definition_by_id(
     session: AsyncSession,
     *,

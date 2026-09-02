@@ -30,8 +30,9 @@ assert.match(container, /<TermDetailView/, 'Route must delegate rendering to the
 assert.match(view, /max-md:bg-canvas/, 'Mobile detail must use the semantic token exactly matching the Figma canvas');
 assert.match(view, /<MobilePinnedAppBar[\s\S]*title=\{t\('termDetail\.title'\)\}[\s\S]*leading=\{[\s\S]*ArrowLeft01Icon[\s\S]*trailing=\{[\s\S]*FavoriteToggle[\s\S]*appearance="mobile-header"/, 'Mobile detail header must use the shared pinned app-bar with back and save controls');
 assert.doesNotMatch(view, /IntersectionObserver|appBarPinned|fixed inset-x-0 top-0/, 'Term detail must not own a duplicate mobile header observer or fixed clone');
-assert.match(view, /<header className="mb-10 hidden items-center justify-between gap-6 md:flex">[\s\S]*Link to=\{backTo\}[\s\S]*termDetail\.back[\s\S]*<h1 className="truncate text-\[36px\][\s\S]*term\?\.name[\s\S]*FavoriteToggle/, 'Desktop detail header must expose back navigation, semantic term title, and favorite action');
-assert.match(view, /<MobilePinnedAppBar[\s\S]*<header className="mb-10 hidden[\s\S]*md:flex">/, 'Mobile and desktop headers must be mutually exclusive by breakpoint');
+assert.match(view, /data-term-detail-desktop-header(?=[\s\S]*?<h1 className="text-\[24px\])(?=[\s\S]*?Link to=\{backTo\})(?=[\s\S]*?termDetail\.back)/, 'Desktop detail header must expose Figma back navigation and semantic page title');
+assert.match(view, /<div className="mx-auto[^\"]*md:hidden">/, 'Mobile page subtree must be hidden at the desktop breakpoint');
+assert.match(view, /data-term-detail-desktop className="hidden[^\"]*md:block"/, 'Desktop page subtree must be hidden below the desktop breakpoint');
 assert.doesNotMatch(view, /<h1 className="mb-6 hidden[\s\S]*md:block">/, 'Detail body must not duplicate the desktop semantic title');
 assert.doesNotMatch(view, /\n\s*\.\.\.\s*\n/, 'Overflow control must not regress to literal dots');
 assert.doesNotMatch(view, /max-md:pb-\[calc\(112px\+env\(safe-area-inset-bottom\)\)\][\s\S]*<h1 className="mt-4 text-\[24px\]/, 'Mobile detail content should not render a duplicate term heading before the definition section');

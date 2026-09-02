@@ -10,7 +10,12 @@ from src.database import get_async_session
 from src.security.public_refs import encode_public_ref
 from src.terms import router
 from src.terms.models import Definition, Term
-from src.terms.schemas import DefinitionCreate
+from src.terms.schemas import (
+    DefinitionCreate,
+    TermCreate,
+    TermDetailedResponse,
+    TermUpdate,
+)
 from src.topics.models import Book, Topic
 
 
@@ -36,6 +41,30 @@ def make_term(term_id: int) -> Term:
     )
     term.definitions = [definition]
     return term
+
+
+def make_featured_definition() -> Definition:
+    """Build a featured definition whose source and canonical names differ."""
+    topic = Topic(
+        id=1,
+        name="1.2. Компьютерлік жад",
+        page_start=1,
+        page_end=100,
+        book=Book(id=1, publisher="Atamura", grade=7),
+    )
+    term = Term(id=4, name="Жедел жад")
+    definition = Definition(
+        id=10,
+        name="RAM",
+        term_id=term.id,
+        term=term,
+        topic_id=topic.id,
+        topic=topic,
+        text="definition",
+        page=9,
+    )
+    term.definitions = [definition]
+    return definition
 
 
 class BuildTermDefinitionsTests(unittest.IsolatedAsyncioTestCase):
@@ -82,11 +111,83 @@ class BuildTermDefinitionsTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(hasattr(definitions[0], "name"))
         self.assertEqual(definitions[0].name, "ЖЖҚ")
 
+    async def test_create_and_update_payloads_serialize_source_names(self):
+        topic = Topic(
+            id=1,
+            name="Topic 1",
+            page_start=1,
+            page_end=100,
+            book=Book(id=1, publisher="Atamura", grade=9),
+        )
+        original_get_topic_by_name = router.get_topic_by_name
+        original_get_embedder = router.get_embedder
+        test_case = self
+
+        async def fake_get_topic_by_name(session, *, name):
+            self.assertEqual(name, "Topic 1")
+            return topic
+
+        class Embedder:
+            def encode(self, text):
+                test_case.assertEqual(text, "definition")
+                return [0.1, 0.2]
+
+        router.get_topic_by_name = fake_get_topic_by_name
+        router.get_embedder = lambda: Embedder()
+
+        try:
+            create_payload = TermCreate(
+                name="Жедел жад",
+                definitions=[
+                    DefinitionCreate(
+                        name="RAM",
+                        text="definition",
+                        topic="Topic 1",
+                        page=17,
+                    ),
+                ],
+            )
+            update_payload = TermUpdate(
+                name="Жедел жад",
+                definitions=[
+                    DefinitionCreate(
+                        name="ЖЖҚ",
+                        text="definition",
+                        topic="Topic 1",
+                        page=17,
+                    ),
+                ],
+            )
+
+            for payload, expected_name in (
+                (create_payload, "RAM"),
+                (update_payload, "ЖЖҚ"),
+            ):
+                definitions = await router._build_term_definitions(
+                    object(),
+                    payload.definitions,
+                )
+                definitions[0].id = 10
+                term = Term(
+                    id=4,
+                    name=payload.name or "Жедел жад",
+                    definitions=definitions,
+                )
+                response = TermDetailedResponse.model_validate(term)
+                self.assertEqual(response.name, "Жедел жад")
+                self.assertEqual(response.definitions[0].name, expected_name)
+        finally:
+            router.get_topic_by_name = original_get_topic_by_name
+            router.get_embedder = original_get_embedder
+
 
 class FeaturedTermsTests(unittest.IsolatedAsyncioTestCase):
     async def test_featured_terms_use_configured_definition_ids_in_order(self):
         calls = []
-        definitions = [make_term(term_id).definitions[0] for term_id in (10, 4, 27, 31, 47)]
+        definitions = [
+            make_featured_definition(),
+            *(make_term(term_id).definitions[0] for term_id in (4, 27, 31, 47)),
+        ]
         had_original = hasattr(router, "get_featured_definitions")
         original = getattr(router, "get_featured_definitions", None)
 
@@ -108,9 +209,11 @@ class FeaturedTermsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(featured_terms), 5)
         self.assertEqual(
             [item.term.name for item in featured_terms],
-            [f"Term {term_id}" for term_id in (10, 4, 27, 31, 47)],
+            ["Жедел жад", "Term 4", "Term 27", "Term 31", "Term 47"],
         )
         self.assertEqual(featured_terms[0].featured_definition.id, 10)
+        self.assertEqual(featured_terms[0].term.name, "Жедел жад")
+        self.assertEqual(featured_terms[0].featured_definition.name, "RAM")
 
 
 class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
@@ -167,6 +270,7 @@ class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual([item.name for item in response], ["A", "B", "C"])
         self.assertEqual([item.public_id for item in response], [encode_public_ref("term", value) for value in (20, 21, 22)])
+        self.assertTrue(all("definition_name" not in item.model_dump() for item in response))
 
     async def test_invalid_or_mismatched_refs_fail_closed_with_generic_not_found(self):
         repository_calls = []

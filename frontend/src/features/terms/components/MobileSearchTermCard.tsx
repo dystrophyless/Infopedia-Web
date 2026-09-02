@@ -15,13 +15,11 @@ function bookChip(definition: Definition | undefined, t: TFunction): string | nu
 
 export interface MobileSearchTermCardProps {
   term: Term;
-  relatedTerms?: Pick<Term, 'public_id' | 'name'>[];
   backTo?: string;
 }
 
 export function MobileSearchTermCard({
   term,
-  relatedTerms = [],
   backTo = '/search',
 }: MobileSearchTermCardProps) {
   const { t } = useTranslation();
@@ -120,7 +118,7 @@ export function MobileSearchTermCard({
 
       <Link
         to={`/terms/${term.public_id}`}
-        state={{ backTo, term, relatedTerms }}
+        state={{ backTo, term }}
         className="flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-[#efeaf8] transition-opacity hover:opacity-90"
       >
         {t('search.detailsCta')}

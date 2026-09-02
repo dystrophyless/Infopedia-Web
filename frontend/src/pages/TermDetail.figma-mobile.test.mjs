@@ -15,7 +15,7 @@ const search = readFileSync(path.resolve(srcDir, 'features/search/pages/TermSear
 const ru = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/ru/translation.json'), 'utf8'));
 const kk = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'));
 
-assert.match(container, /import \{ getTerm \} from '\.\.\/api\/terms'/, 'Route container must own direct-link API loading');
+assert.match(container, /import \{[^}]*getTerm[^}]*\} from '\.\.\/api\/terms'/, 'Route container must own direct-link API loading');
 assert.match(container, /routeStateTerm\?\.public_id === termRef/, 'Matching router state must remain the fast path');
 assert.match(container, /resolveTermRouteAccess/, 'Route container must resolve guest/authenticated access before loading');
 assert.match(container, /if \(routeAccess !== 'authenticated-fetch' \|\| !termRef\)/, 'Guest state must not start an API effect');
@@ -78,8 +78,16 @@ assert.ok(mobileOffsetRule, 'Tailwind must generate the responsive max-md:pt-[42
 assert.match(mobileOffsetRule.toString(), /padding-top:\s*42px/, 'Responsive mobile detail offset must compile to padding-top: 42px');
 assert.match(mobileOffsetRule.parent?.params ?? '', /max-width|not all and \(min-width:/, 'Responsive mobile detail offset must remain breakpoint-scoped');
 
-assert.match(search, /relatedTerms=\{getRelatedTerms\(term, displayResults\)\}/, 'Search must keep passing nearby terms into detail state');
-assert.match(termCard, /relatedTerms\?: Pick<Term, 'public_id' \| 'name'>\[\]/, 'Term cards must accept related terms');
+assert.doesNotMatch(search, /getRelatedTerms|relatedTerms=/, 'Search must not derive related terms from nearby results');
+assert.doesNotMatch(termCard, /relatedTerms/, 'Term cards must not transport related terms through location state');
+assert.match(container, /getRelatedTermsForDefinition/, 'Authenticated term detail must load server-authoritative related terms');
+assert.match(container, /onDefinitionChange/, 'Definition pager changes must update the related-term request key');
+assert.match(container, /setRelatedTerms\(\[\]\)[\s\S]*!isAuthenticated/, 'Changing the request key or entering guest mode must clear stale related terms immediately');
+assert.match(container, /new AbortController\(\)[\s\S]*controller\.abort\(\)/, 'Related-term requests must be abortable');
+assert.match(container, /generation !== relatedGeneration\.current/, 'Late related-term responses must not replace the active definition list');
+assert.match(container, /setLoadState\('loading'\)[\s\S]*setFetchedTerm\(null\)[\s\S]*getTerm\(termRef\)/, 'Direct navigation must clear the previous term before deriving a related request key');
+assert.match(container, /fetchedTerm\?\.public_id === termRef \? fetchedTerm : null/, 'Only a fetched term owned by the current URL may be displayed');
+assert.match(container, /term\?\.public_id !== termRef/, 'Related loading must reject a displayed term from another URL before issuing a request');
 
 for (const translations of [ru, kk]) {
   for (const key of ['title', 'definition', 'source', 'relatedTerms', 'knownStatValue', 'knownStatLabel', 'testedStatValue', 'testedStatLabel', 'testCta', 'testMeta', 'loading', 'loadFailed', 'saveAria', 'moreAria']) {

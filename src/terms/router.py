@@ -9,12 +9,13 @@ from src.config import settings
 from src.database import get_async_session
 from src.security.anti_scrape import enforce_anti_scrape
 from src.security.public_refs import InvalidPublicRef, decode_public_ref
-from src.users.models import User
 from src.terms.models import Definition, Term
 from src.terms.repository import (
     check_if_term_exists,
     count_terms,
+    get_definition_by_id,
     get_featured_definitions,
+    get_related_terms,
     get_term_by_id,
     get_terms_paginated,
 )
@@ -22,6 +23,7 @@ from src.terms.schemas import (
     DefinitionResponse,
     FeaturedTermResponse,
     PaginatedTermsResponse,
+    RelatedTermResponse,
     TermCreate,
     TermDetailedResponse,
     TermUpdate,
@@ -29,6 +31,7 @@ from src.terms.schemas import (
 from src.terms.service import get_embedder
 from src.topics.repository import get_topic_by_name
 from src.topics.schemas import BookResponse
+from src.users.models import User
 
 router = APIRouter()
 FEATURED_TERMS_LIMIT = 10
@@ -236,6 +239,48 @@ async def get_term(
         )
 
     return term
+
+
+def _decode_related_refs_or_404(term_ref: str, definition_ref: str) -> tuple[int, int]:
+    try:
+        return (
+            decode_public_ref("term", term_ref),
+            decode_public_ref("definition", definition_ref),
+        )
+    except (InvalidPublicRef, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found.",
+        ) from None
+
+
+@router.get("/{term_ref}/related", response_model=list[RelatedTermResponse])
+async def get_related_term_suggestions(
+    request: Request,
+    term_ref: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    definition_ref: Annotated[str, Query(min_length=1)],
+):
+    term_id, definition_id = _decode_related_refs_or_404(term_ref, definition_ref)
+    await enforce_anti_scrape(
+        request,
+        scope="terms:related",
+        user_id=current_user.id,
+        limit=settings.ANTI_SCRAPE_DETAIL_LIMIT,
+    )
+    definition = await get_definition_by_id(session, id=definition_id)
+    if definition is None or definition.term_id != term_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found.",
+        )
+    terms = await get_related_terms(
+        session,
+        topic_id=definition.topic_id,
+        current_term_id=term_id,
+    )
+    return [RelatedTermResponse.model_validate(term) for term in terms]
 
 
 @router.patch("/{term_ref}", response_model=TermDetailedResponse)

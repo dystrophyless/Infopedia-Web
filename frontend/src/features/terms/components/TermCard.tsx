@@ -10,18 +10,17 @@ import { TermCardFavoriteButton } from './TermCardFavoriteButton';
 
 export interface TermCardProps {
   term: Term;
-  relatedTerms?: Pick<Term, 'public_id' | 'name'>[];
   backTo?: string;
   selected?: boolean;
   onSelectedChange?: (selected: boolean) => void;
   expansion?: 'intrinsic' | 'fill-parent';
 }
 
-export function TermCard({ term, relatedTerms = [], backTo = '/search', selected = false, onSelectedChange, expansion = 'intrinsic' }: TermCardProps) {
+export function TermCard({ term, backTo = '/search', selected = false, onSelectedChange, expansion = 'intrinsic' }: TermCardProps) {
   const { t } = useTranslation();
   const definition = term.definitions?.[0];
   const inspectTitleIsLong = term.name.length > 48;
-  const detailLink = <Link to={`/terms/${term.public_id}`} state={{ backTo, term, relatedTerms }} className="flex h-10 w-[216px] shrink-0 items-center justify-center rounded-[8px] bg-[#6a37c3] px-8 text-[16px] font-medium leading-4 text-[#efeaf8] outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2">{t('terms.inspectDetailsCta')}</Link>;
+  const detailLink = <Link to={`/terms/${term.public_id}`} state={{ backTo, term }} className="flex h-10 w-[216px] shrink-0 items-center justify-center rounded-[8px] bg-[#6a37c3] px-8 text-[16px] font-medium leading-4 text-[#efeaf8] outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2">{t('terms.inspectDetailsCta')}</Link>;
 
   return (
     <div className={`group/inspect relative hidden min-w-0 items-start md:flex ${selected ? (expansion === 'fill-parent' ? 'w-full max-[1131px]:flex-wrap' : 'w-[951px]') : 'w-full max-w-[684px] min-[1132px]:hover:w-[716px] min-[1132px]:hover:max-w-[716px] min-[1132px]:focus-within:w-[716px] min-[1132px]:focus-within:max-w-[716px]'}`} data-term-card-state={selected ? 'clicked' : 'default'}>

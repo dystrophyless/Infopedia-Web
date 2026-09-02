@@ -2,7 +2,7 @@ import '../../../i18n';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import i18n from '../../../i18n';
 import { DesktopSidebar } from '../../../components/DesktopSidebar';
 import { useAuthStore } from '../../../stores/authStore';
@@ -129,6 +129,53 @@ export const DesktopFigma13885656: Story = {
   },
   globals: { viewport: { value: 'desktop1440', isRotated: false } },
   render: (args) => <DesktopStoryShell><TermDetailView {...args} /></DesktopStoryShell>,
+  play: async ({ canvasElement }) => {
+    const { page } = await import('vitest/browser');
+    const desktop = canvasElement.querySelector<HTMLElement>('[data-term-detail-desktop]');
+    await waitFor(() => expect(desktop).not.toBeNull());
+
+    const testTitle = desktop!.querySelector<HTMLElement>('[data-term-detail-test-title]');
+    const testMeta = desktop!.querySelector<HTMLElement>('[data-term-detail-test-meta]');
+    const relatedLinks = desktop!.querySelectorAll<HTMLElement>('[data-term-detail-related-link]');
+    expect(testTitle).not.toBeNull();
+    expect(testMeta).not.toBeNull();
+    expect(relatedLinks).toHaveLength(3);
+    expect(getComputedStyle(testTitle!).fontSize).toBe('18px');
+    expect(getComputedStyle(testTitle!).fontWeight).toBe('400');
+    expect(testMeta!.getBoundingClientRect().top - testTitle!.getBoundingClientRect().bottom).toBe(8);
+
+    const relatedTitle = relatedLinks[0].querySelector<HTMLElement>('[data-term-detail-related-title]');
+    const relatedLeading = relatedLinks[0].querySelector<HTMLElement>('[data-term-detail-related-leading]');
+    const relatedArrow = relatedLinks[0].querySelector<HTMLElement>('[data-term-detail-related-arrow]');
+    expect(relatedTitle).not.toBeNull();
+    expect(relatedLeading).not.toBeNull();
+    expect(relatedArrow).not.toBeNull();
+    expect(getComputedStyle(relatedTitle!).fontWeight).toBe('400');
+    expect(getComputedStyle(relatedTitle!).color).toBe('rgb(22, 21, 25)');
+    expect(getComputedStyle(relatedLeading!).transitionProperty).toBe('transform');
+    expect(getComputedStyle(relatedLeading!).transitionDuration).toBe('0.16s');
+    expect(getComputedStyle(relatedLeading!).transitionTimingFunction).toBe('ease');
+
+    const leadingX = relatedLeading!.getBoundingClientRect().x;
+    const arrowX = relatedArrow!.getBoundingClientRect().x;
+    await page.elementLocator(relatedLinks[0]).hover();
+    await waitFor(() => expect(relatedLeading!.getBoundingClientRect().x - leadingX).toBeCloseTo(3, 1));
+    expect(relatedArrow!.getBoundingClientRect().x - arrowX).toBeCloseTo(0, 1);
+
+    const back = desktop!.querySelector<HTMLElement>('[data-term-detail-desktop-back]');
+    expect(back).not.toBeNull();
+    const backIcon = back!.querySelector<SVGElement>('svg');
+    expect(backIcon).not.toBeNull();
+    expect(getComputedStyle(back!).color).toBe('rgb(110, 103, 121)');
+    expect(getComputedStyle(back!).backgroundColor).toBe('rgb(246, 245, 247)');
+    expect(getComputedStyle(backIcon!).color).toBe('rgb(110, 103, 121)');
+    await page.elementLocator(back!).hover();
+    await waitFor(() => {
+      expect(getComputedStyle(back!).color).toBe('rgb(22, 21, 25)');
+      expect(getComputedStyle(back!).backgroundColor).toBe('rgb(255, 255, 255)');
+      expect(getComputedStyle(backIcon!).color).toBe('rgb(22, 21, 25)');
+    });
+  },
 };
 export const Loading: Story = { args: { term: null, loadState: 'loading' } };
 export const Error: Story = { args: { term: null, loadState: 'error' } };

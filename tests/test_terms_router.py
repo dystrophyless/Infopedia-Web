@@ -70,13 +70,11 @@ class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.original_anti_scrape = router.enforce_anti_scrape
         self.original_decode_related_refs = router._decode_related_refs_or_404
-        self.original_get_definition = router.get_definition_by_id
         self.original_get_related = router.get_related_terms
 
     async def asyncTearDown(self):
         router.enforce_anti_scrape = self.original_anti_scrape
         router._decode_related_refs_or_404 = self.original_decode_related_refs
-        router.get_definition_by_id = self.original_get_definition
         router.get_related_terms = self.original_get_related
 
     @staticmethod
@@ -89,46 +87,52 @@ class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
         definition = current.definitions[0]
         related = [Term(id=20, name="A"), Term(id=21, name="B"), Term(id=22, name="C")]
 
+        class Session:
+            async def get(self, model, definition_id):
+                calls.append(("definition", model, definition_id))
+                return definition
+
         async def anti_scrape(request, **kwargs):
             calls.append(("anti", kwargs))
-
-        async def get_definition(session, *, id):
-            calls.append(("definition", id))
-            return definition
 
         async def get_related(session, **kwargs):
             calls.append(("related", kwargs))
             return related
 
         router.enforce_anti_scrape = anti_scrape
-        router.get_definition_by_id = get_definition
         router.get_related_terms = get_related
 
         response = await router.get_related_term_suggestions(
             self.request(),
             encode_public_ref("term", 11),
             type("User", (), {"id": 5})(),
-            object(),
+            Session(),
             encode_public_ref("definition", 11),
         )
 
         self.assertEqual(calls[0], ("anti", {"scope": "terms:related", "user_id": 5, "limit": router.settings.ANTI_SCRAPE_DETAIL_LIMIT}))
-        self.assertEqual(calls[1:], [("definition", 11), ("related", {"topic_id": 11, "current_term_id": 11})])
+        self.assertEqual(
+            calls[1:],
+            [
+                ("definition", Definition, 11),
+                ("related", {"topic_id": 11, "current_term_id": 11}),
+            ],
+        )
         self.assertEqual([item.name for item in response], ["A", "B", "C"])
         self.assertEqual([item.public_id for item in response], [encode_public_ref("term", value) for value in (20, 21, 22)])
 
     async def test_invalid_or_mismatched_refs_fail_closed_with_generic_not_found(self):
         repository_calls = []
 
+        class Session:
+            async def get(self, model, definition_id):
+                repository_calls.append((model, definition_id))
+                return make_term(12).definitions[0]
+
         async def anti_scrape(request, **kwargs):
             return None
 
-        async def get_definition(session, *, id):
-            repository_calls.append(id)
-            return make_term(12).definitions[0]
-
         router.enforce_anti_scrape = anti_scrape
-        router.get_definition_by_id = get_definition
 
         for term_ref, definition_ref in (
             ("invalid", encode_public_ref("definition", 11)),
@@ -138,12 +142,12 @@ class RelatedTermsTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(term_ref=term_ref, definition_ref=definition_ref):
                 with self.assertRaises(HTTPException) as raised:
                     await router.get_related_term_suggestions(
-                        self.request(), term_ref, type("User", (), {"id": 5})(), object(), definition_ref,
+                        self.request(), term_ref, type("User", (), {"id": 5})(), Session(), definition_ref,
                     )
                 self.assertEqual(raised.exception.status_code, 404)
                 self.assertEqual(raised.exception.detail, "Resource not found.")
 
-        self.assertEqual(repository_calls, [12])
+        self.assertEqual(repository_calls, [(Definition, 12)])
 
     async def test_invalid_refs_are_rate_limited_before_decoding(self):
         calls = []

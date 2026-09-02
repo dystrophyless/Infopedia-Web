@@ -40,6 +40,7 @@ class SearchTopicDTO:
 @dataclass(frozen=True, slots=True)
 class SearchDefinitionDTO:
     id: int
+    name: str
     text: str
     page: int
     topic: SearchTopicDTO
@@ -574,16 +575,16 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _term_name_predicate(filters: TermSearchFilters, mode: SearchTermsMode):
+def _definition_name_predicate(filters: TermSearchFilters, mode: SearchTermsMode):
     if mode == "all_filtered":
         return true()
     escaped_query = _escape_like(filters.query)
     if mode == "prefix":
-        return Term.name.ilike(f"{escaped_query}%", escape="\\")
+        return Definition.name.ilike(f"{escaped_query}%", escape="\\")
     if mode == "contains":
-        return Term.name.ilike(f"%{escaped_query}%", escape="\\")
+        return Definition.name.ilike(f"%{escaped_query}%", escape="\\")
     if mode == "similarity":
-        return Term.name.op("%")(filters.query)
+        return Definition.name.op("%")(filters.query)
     message = f"Unknown search terms mode: {mode}"
     raise ValueError(message)
 
@@ -606,7 +607,7 @@ def build_search_terms_statements(
     page_term_ids: Sequence[int],
 ) -> SearchTermsStatements:
     qualification = _qualifying_definition_predicate(filters)
-    name_predicate = _term_name_predicate(filters, mode)
+    name_predicate = _definition_name_predicate(filters, mode)
     common_predicate = and_(qualification, name_predicate)
 
     count_statement = _search_terms_from_clause(
@@ -621,16 +622,25 @@ def build_search_terms_statements(
         )
         .where(common_predicate)
         .group_by(Definition.term_id)
-        .order_by(func.min(Definition.id), Definition.term_id)
-        .offset(skip)
-        .limit(limit)
     )
+    if mode == "similarity":
+        best_similarity = func.max(func.similarity(Definition.name, filters.query))
+        page_statement = page_statement.order_by(
+            best_similarity.desc(),
+            func.min(Definition.id),
+            Definition.term_id,
+        )
+    else:
+        page_statement = page_statement.order_by(func.min(Definition.id), Definition.term_id)
+    page_statement = page_statement.offset(skip).limit(limit)
+
     hydration_statement = (
         _search_terms_from_clause(
             select(
                 Term.id.label("term_id"),
                 Term.name.label("term_name"),
                 Definition.id.label("definition_id"),
+                Definition.name.label("definition_name"),
                 Definition.text.label("definition_text"),
                 Definition.page.label("definition_page"),
                 Topic.id.label("topic_id"),
@@ -646,8 +656,15 @@ def build_search_terms_statements(
             Term.id.in_(list(page_term_ids)),
             common_predicate,
         )
-        .order_by(Definition.id)
     )
+    if mode == "similarity":
+        hydration_statement = hydration_statement.order_by(
+            func.similarity(Definition.name, filters.query).desc(),
+            Definition.id,
+        )
+    else:
+        hydration_statement = hydration_statement.order_by(Definition.id)
+
     return SearchTermsStatements(
         count=count_statement,
         page=page_statement,
@@ -665,7 +682,7 @@ async def _mode_has_matches(
         _search_terms_from_clause(select(literal(1)))
         .where(
             _qualifying_definition_predicate(filters),
-            _term_name_predicate(filters, mode),
+            _definition_name_predicate(filters, mode),
         )
         .limit(1)
     )
@@ -710,6 +727,7 @@ async def _hydrate_search_terms(
         term.definitions.append(
             SearchDefinitionDTO(
                 id=row.definition_id,
+                name=row.definition_name,
                 text=row.definition_text,
                 page=row.definition_page,
                 topic=SearchTopicDTO(

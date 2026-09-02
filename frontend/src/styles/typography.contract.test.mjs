@@ -8,6 +8,7 @@ const tokensPath = path.join(srcDir, 'styles', 'tokens.css');
 const tailwindPath = path.join(frontendDir, 'tailwind.config.ts');
 const featuredTermCardPath = path.join(srcDir, 'features', 'terms', 'components', 'FeaturedTermCard.tsx');
 const termCardPath = path.join(srcDir, 'features', 'terms', 'components', 'TermCard.tsx');
+const termDetailViewPath = path.join(srcDir, 'features', 'terms', 'components', 'TermDetailView.tsx');
 const desktopSearchFiltersDialogPath = path.join(srcDir, 'features', 'search', 'components', 'DesktopSearchFiltersDialog.tsx');
 
 const typeRoles = ['screen-title', 'section-title', 'card-title', 'body', 'helper', 'caption'];
@@ -163,7 +164,7 @@ function classTokens(content) {
 }
 
 function isReferenceTypographyPair(filePath, content, scope, sizeEntry, lineEntry) {
-  return path.normalize(filePath) === path.normalize(termCardPath)
+  const termCardReference = path.normalize(filePath) === path.normalize(termCardPath)
     && content.includes('block truncate font-medium')
     && scope === 'base'
     && sizeEntry.token === 'text-[22px]'
@@ -171,6 +172,15 @@ function isReferenceTypographyPair(filePath, content, scope, sizeEntry, lineEntr
     && lineEntry.token === 'leading-6'
     && lineEntry.resolved.kind === 'length'
     && lineEntry.resolved.value === 24;
+  const termDetailReference = path.normalize(filePath) === path.normalize(termDetailViewPath)
+    && content.includes('max-w-[514px] whitespace-pre-line text-[18px] leading-6 text-[#6e6779]')
+    && scope === 'base'
+    && sizeEntry.token === 'text-[18px]'
+    && sizeEntry.size === 18
+    && lineEntry.token === 'leading-6'
+    && lineEntry.resolved.kind === 'length'
+    && lineEntry.resolved.value === 24;
+  return termCardReference || termDetailReference;
 }
 
 // Task-5 filter controls intentionally preserve source-backed Figma typography:

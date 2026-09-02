@@ -13,7 +13,6 @@ from src.terms.models import Definition, Term
 from src.terms.repository import (
     check_if_term_exists,
     count_terms,
-    get_definition_by_id,
     get_featured_definitions,
     get_related_terms,
     get_term_by_id,
@@ -269,7 +268,7 @@ async def get_related_term_suggestions(
         limit=settings.ANTI_SCRAPE_DETAIL_LIMIT,
     )
     term_id, definition_id = _decode_related_refs_or_404(term_ref, definition_ref)
-    definition = await get_definition_by_id(session, id=definition_id)
+    definition = await session.get(Definition, definition_id)
     if definition is None or definition.term_id != term_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

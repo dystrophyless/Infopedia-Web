@@ -10,15 +10,11 @@ from src.search.schemas import SearchTermsResponse
 from src.search.term_filters import (
     INVALID_SEARCH_FILTERS_DETAIL,
     InvalidTermSearchFiltersError,
+    TermSearchFilters,
     parse_term_search_filters,
 )
 from src.security.anti_scrape import enforce_anti_scrape
-from src.terms.models import Term
-from src.terms.repository import (
-    search_filtered_terms,
-    search_terms_by_prefix,
-    search_terms_by_similarity,
-)
+from src.terms.repository import search_filtered_terms
 from src.terms.schemas import TermDetailedResponse
 from src.users.models import User
 
@@ -39,28 +35,15 @@ async def search_terms(
         user_id=current_user.id,
         limit=settings.ANTI_SCRAPE_SEARCH_LIMIT,
     )
-    terms: list[Term] | None = await search_terms_by_prefix(
-        session,
-        limit=limit,
-        user_query=query,
+    filters = TermSearchFilters(
+        query=query.strip(),
+        grades=(),
+        book_ids=(),
+        chapter_ids=(),
+        ent_only=False,
     )
-
-    if not terms:
-        terms = await search_terms_by_prefix(
-            session,
-            limit=limit,
-            user_query=query,
-            prefix=False,
-        )
-
-    if not terms:
-        terms = await search_terms_by_similarity(
-            session,
-            limit=limit,
-            user_query=query,
-        )
-
-    return terms or []
+    page = await search_filtered_terms(session, filters=filters, skip=0, limit=limit)
+    return [TermDetailedResponse.model_validate(term) for term in page.terms]
 
 
 @router.get("/terms", response_model=SearchTermsResponse)

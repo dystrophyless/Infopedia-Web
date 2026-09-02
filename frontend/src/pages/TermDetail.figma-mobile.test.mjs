@@ -16,14 +16,15 @@ const ru = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/ru/translation.
 const kk = JSON.parse(readFileSync(path.resolve(srcDir, 'locales/kk/translation.json'), 'utf8'));
 
 assert.match(container, /import \{[^}]*getTerm[^}]*\} from '\.\.\/api\/terms'/, 'Route container must own direct-link API loading');
-assert.match(container, /routeStateTerm\?\.public_id === termRef/, 'Matching router state must remain the fast path');
+assert.match(container, /routeStateTerm\?\.public_id === termRef/, 'Matching router state must remain available for preview and guest access');
 assert.match(container, /resolveTermRouteAccess/, 'Route container must resolve guest/authenticated access before loading');
 assert.match(container, /if \(routeAccess !== 'authenticated-fetch' \|\| !termRef\)/, 'Guest state must not start an API effect');
 assert.match(container, /routeAccess === 'guest-denied'[\s\S]*<Navigate to="\/" replace \/>/, 'Guest deep links without matching state must redirect home');
 assert.match(container, /if \(routeAccess !== 'authenticated-fetch' \|\| !termRef\)[\s\S]*getTerm\(termRef\)/, 'Authenticated deep links must fetch by public ID');
 assert.ok(container.indexOf("routeAccess === 'guest-denied'") < container.indexOf('getTerm(termRef)'), 'Guest denial must precede the authenticated fetch implementation');
 assert.match(routeAccess, /routeStateTermRef === input\.termRef/, 'Matching guest state must be accepted without a fetch');
-assert.match(routeAccess, /return input\.isAuthenticated \? 'authenticated-fetch' : 'guest-denied'/, 'Auth state must gate direct-link fetching');
+assert.match(routeAccess, /if \(input\.isAuthenticated\) return 'authenticated-fetch'/, 'Authenticated routes must fetch the canonical term even when route state matches');
+assert.match(routeAccess, /return input\.routeStateTermRef === input\.termRef \? 'state' : 'guest-denied'/, 'Only matching route state may grant guest detail access');
 assert.match(container, /state\?\.backTo \?\? \(isAuthenticated \? '\/search' : '\/'\)/, 'Back route must retain authenticated and guest defaults');
 assert.match(container, /<TermDetailView/, 'Route must delegate rendering to the feature view');
 
@@ -36,7 +37,7 @@ assert.match(view, /data-term-detail-desktop className="hidden[^\"]*md:block"/, 
 assert.doesNotMatch(view, /<h1 className="mb-6 hidden[\s\S]*md:block">/, 'Detail body must not duplicate the desktop semantic title');
 assert.doesNotMatch(view, /\n\s*\.\.\.\s*\n/, 'Overflow control must not regress to literal dots');
 assert.doesNotMatch(view, /max-md:pb-\[calc\(112px\+env\(safe-area-inset-bottom\)\)\][\s\S]*<h1 className="mt-4 text-\[24px\]/, 'Mobile detail content should not render a duplicate term heading before the definition section');
-assert.match(view, /<MobilePinnedAppBar[\s\S]*max-md:pt-\[42px\][\s\S]*<section><h2 className="text-\[20px\][\s\S]*termDetail\.definition[\s\S]*<div className="mt-4 min-h-\[124px\] rounded-\[8px\] bg-surface p-6[\s\S]*term\.name[\s\S]*current\.text/, 'Source/CSS geometry must place the shared app-bar rail at y=80, definition heading at y=146, and card top at y=182');
+assert.match(view, /<MobilePinnedAppBar[\s\S]*max-md:pt-\[42px\][\s\S]*<section><h2 className="text-\[20px\][\s\S]*termDetail\.definition[\s\S]*<div className="mt-4 min-h-\[124px\] rounded-\[8px\] bg-surface p-6[\s\S]*current\.name[\s\S]*current\.text/, 'Source/CSS geometry must place the shared app-bar rail at y=80, definition heading at y=146, and card top at y=182');
 assert.doesNotMatch(view, /safe-area-inset-top|<section className="mt-2">/, 'Mobile detail must not retain legacy safe-area or margin offsets');
 assert.match(view, /<MobilePinnedAppBar/, 'Mobile detail header must retain the shared 24px visual row');
 assert.doesNotMatch(view, /(?:^|[\s"])h-11(?:[\s"])/, 'Mobile detail must not add an in-flow h-11 row');

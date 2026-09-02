@@ -155,6 +155,8 @@ assert.match(seoRuntime, /data-seo-owned/, 'Runtime SEO nodes must use stable ow
 assert.match(featuredCard, /to=\{`\/terms\/\$\{term\.public_id\}`\}/, 'Featured cards must link to the term public ID');
 assert.match(featuredCard, /state=\{\{ backTo: '\/', term, selectedDefinitionPublicId: definition\.public_id \}\}/, 'Featured term links must preserve matching route state');
 assert.ok(termDetail.indexOf("routeAccess === 'guest-denied'") < termDetail.indexOf('getTerm(termRef)'), 'Guest denial must be evaluated before authenticated API fetch');
+assert.match(termDetail, /const fetchedMatches = fetchedTerm\?\.public_id === termRef \? fetchedTerm : null/, 'Authenticated detail must only display a fetched term that matches the current route');
+assert.match(termDetail, /const term = routeAccess === 'authenticated-fetch'[\s\S]*fetchedMatches \?\? stateTerm[\s\S]*: stateTerm;/, 'Authenticated routes must prefer the full fetched term while guests retain matching route-state access');
 assert.match(termDetail, /<Navigate to="\/" replace \/>/, 'Guest-denied term routes must navigate home');
 
 const expectedLocales = {

@@ -13,6 +13,7 @@ export interface Topic {
 
 export interface Definition {
   public_id?: string;
+  name: string;
   text: string;
   page: number;
   topic?: Topic;

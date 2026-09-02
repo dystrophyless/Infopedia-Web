@@ -1,7 +1,7 @@
 import '../../../i18n';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import type { Definition, Term } from '../../../types';
@@ -15,20 +15,32 @@ import { TermCard } from './TermCard';
 
 const longDefinition: Definition = {
   public_id: 'definition-long',
+  name: 'Алгоритмы поиска',
   text: 'Практикалық есептерді шешу үшін іздеу алгоритмдерін іске асыру және олардың тиімділігін әртүрлі деректер жиынтығында салыстыру.',
   page: 142,
   topic: { name: 'Алгоритмы поиска и практическое применение вычислительных методов', book: { publisher: 'Арман-ПВ', grade: 10 } },
 };
 const term: Term = { public_id: 'search-algorithms', name: 'Алгоритмы поиска', definitions: [longDefinition] };
-const shortTerm: Term = { public_id: 'ram', name: 'RAM', definitions: [{ text: 'Fast temporary memory.', page: 12, topic: { name: 'Memory', book: { publisher: 'Infopedia', grade: 10 } } }] };
-const descenderTerm: Term = { ...shortTerm, public_id: 'pygame-surface', name: 'Pygame.surface \u043c\u043e\u0434\u0443\u043b\u0456' };
-const longTitleTerm: Term = { ...shortTerm, public_id: 'long-title', name: 'A very long desktop term title that uses compact 20px typography' };
-const fiveLineTerm: Term = { ...shortTerm, public_id: 'five-lines', name: 'Five line definition', definitions: [{ text: 'Line one of the exact five line definition.\nLine two of the exact five line definition.\nLine three of the exact five line definition.\nLine four of the exact five line definition.\nLine five of the exact five line definition.', page: 1 }] };
-const overflowTerm: Term = { ...shortTerm, public_id: 'overflow-definition', name: 'Overflow definition', definitions: [{ text: 'Line one of the overflow definition.\nLine two of the overflow definition.\nLine three of the overflow definition.\nLine four of the overflow definition.\nLine five of the overflow definition.\nLine six must trigger the fade overlay.', page: 1 }] };
-const mobileSevenLineTerm: Term = { ...shortTerm, public_id: 'mobile-seven-lines', name: 'Жеті жолды анықтама', definitions: [{ text: 'Бірінші жол анықтама мәтіні.\nЕкінші жол анықтама мәтіні.\nҮшінші жол анықтама мәтіні.\nТөртінші жол анықтама мәтіні.\nБесінші жол анықтама мәтіні.\nАлтыншы жол анықтама мәтіні.\nЖетінші жол градиентті іске қосады.', page: 2 }] };
-const mobileUnbrokenTerm: Term = { ...shortTerm, public_id: 'mobile-unbroken', name: 'Unbroken token definition', definitions: [{ text: 'X'.repeat(4000), page: 3 }] };
-const mobileRussianTerm: Term = { ...shortTerm, public_id: 'mobile-russian-long', name: 'Длинное русское определение', definitions: [{ text: 'Русское определение должно занимать больше шести строк на узком мобильном экране.\nВторая строка проверяет перенос текста.\nТретья строка сохраняет читаемый ритм.\nЧетвёртая строка продолжает длинное описание.\nПятая строка остаётся внутри карточки.\nШестая строка касается нижней границы.\nСедьмая строка включает градиент.', page: 4 }] };
-const mobileKazakhTerm: Term = { ...shortTerm, public_id: 'mobile-kazakh-long', name: 'Қазақша ұзын анықтама', definitions: [{ text: 'Қазақша анықтама мобильді карточкада алты жолдық шектен асады.\nЕкінші жол мәтіннің дұрыс оралуын тексереді.\nҮшінші жол мазмұнның ретін сақтайды.\nТөртінші жол карточка енін ескереді.\nБесінші жол төменгі аймаққа жақындайды.\nАлтыншы жол шектеудің алдында қалады.\nЖетінші жол градиентті іске қосады.', page: 5 }] };
+const shortTerm: Term = { public_id: 'ram', name: 'RAM', definitions: [{ name: 'RAM', text: 'Fast temporary memory.', page: 12, topic: { name: 'Memory', book: { publisher: 'Infopedia', grade: 10 } } }] };
+const sourceNamedTerm: Term = {
+  public_id: 'term_ram',
+  name: 'Жедел жад',
+  definitions: [{
+    public_id: 'definition_zhzhq',
+    name: 'ЖЖҚ',
+    text: 'Source definition',
+    page: 17,
+    topic: { name: 'Компьютерлік жад', book: { publisher: 'Атамұра', grade: 7 } },
+  }],
+};
+const descenderTerm: Term = { ...shortTerm, public_id: 'pygame-surface', name: 'Pygame.surface \u043c\u043e\u0434\u0443\u043b\u0456', definitions: [{ ...shortTerm.definitions![0], name: 'Pygame.surface модулі' }] };
+const longTitleTerm: Term = { ...shortTerm, public_id: 'long-title', name: 'A very long desktop term title that uses compact 20px typography', definitions: [{ ...shortTerm.definitions![0], name: 'A very long desktop term title that uses compact 20px typography' }] };
+const fiveLineTerm: Term = { ...shortTerm, public_id: 'five-lines', name: 'Five line definition', definitions: [{ name: 'Five line definition', text: 'Line one of the exact five line definition.\nLine two of the exact five line definition.\nLine three of the exact five line definition.\nLine four of the exact five line definition.\nLine five of the exact five line definition.', page: 1 }] };
+const overflowTerm: Term = { ...shortTerm, public_id: 'overflow-definition', name: 'Overflow definition', definitions: [{ name: 'Overflow definition', text: 'Line one of the overflow definition.\nLine two of the overflow definition.\nLine three of the overflow definition.\nLine four of the overflow definition.\nLine five of the overflow definition.\nLine six must trigger the fade overlay.', page: 1 }] };
+const mobileSevenLineTerm: Term = { ...shortTerm, public_id: 'mobile-seven-lines', name: 'Жеті жолды анықтама', definitions: [{ name: 'Жеті жолды анықтама', text: 'Бірінші жол анықтама мәтіні.\nЕкінші жол анықтама мәтіні.\nҮшінші жол анықтама мәтіні.\nТөртінші жол анықтама мәтіні.\nБесінші жол анықтама мәтіні.\nАлтыншы жол анықтама мәтіні.\nЖетінші жол градиентті іске қосады.', page: 2 }] };
+const mobileUnbrokenTerm: Term = { ...shortTerm, public_id: 'mobile-unbroken', name: 'Unbroken token definition', definitions: [{ name: 'Unbroken token definition', text: 'X'.repeat(4000), page: 3 }] };
+const mobileRussianTerm: Term = { ...shortTerm, public_id: 'mobile-russian-long', name: 'Длинное русское определение', definitions: [{ name: 'Длинное русское определение', text: 'Русское определение должно занимать больше шести строк на узком мобильном экране.\nВторая строка проверяет перенос текста.\nТретья строка сохраняет читаемый ритм.\nЧетвёртая строка продолжает длинное описание.\nПятая строка остаётся внутри карточки.\nШестая строка касается нижней границы.\nСедьмая строка включает градиент.', page: 4 }] };
+const mobileKazakhTerm: Term = { ...shortTerm, public_id: 'mobile-kazakh-long', name: 'Қазақша ұзын анықтама', definitions: [{ name: 'Қазақша ұзын анықтама', text: 'Қазақша анықтама мобильді карточкада алты жолдық шектен асады.\nЕкінші жол мәтіннің дұрыс оралуын тексереді.\nҮшінші жол мазмұнның ретін сақтайды.\nТөртінші жол карточка енін ескереді.\nБесінші жол төменгі аймаққа жақындайды.\nАлтыншы жол шектеудің алдында қалады.\nЖетінші жол градиентті іске қосады.', page: 5 }] };
 
 const meta = {
   title: 'Features/Terms/Cards',
@@ -141,11 +153,43 @@ function AuthenticatedDesktopStory({ children }: { children: ReactNode }) {
   return authenticated ? <>{children}</> : null;
 }
 
+function SelectedDefinitionProbe() {
+  const location = useLocation();
+  const selectedDefinitionPublicId = (location.state as { selectedDefinitionPublicId?: string } | null)?.selectedDefinitionPublicId;
+  return <output data-selected-definition-public-id>{selectedDefinitionPublicId ?? 'none'}</output>;
+}
+
 export const LongRussianKazakh: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: /Алгоритмы поиска/ })).toBeVisible();
     await expect(canvas.getByRole('link', { name: /Узнать подробнее/ })).toHaveAttribute('href', '/terms/search-algorithms');
+  },
+};
+
+export const MatchedSourceNameSearchCards: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  render: () => (
+    <div className="grid gap-4">
+      <TermCard term={sourceNamedTerm} />
+      <MobileSearchTermCard term={sourceNamedTerm} />
+      <SelectedDefinitionProbe />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const desktopTitle = canvasElement.querySelector<HTMLElement>('[data-term-card-title]');
+    const mobileTitle = canvasElement.querySelector<HTMLElement>('h2');
+    await waitFor(() => {
+      expect(desktopTitle?.textContent).toContain('ЖЖҚ');
+      expect(desktopTitle?.textContent).not.toContain('Жедел жад');
+      expect(mobileTitle?.textContent).toBe('ЖЖҚ');
+      expect(mobileTitle?.textContent).not.toBe('Жедел жад');
+    });
+
+    const links = Array.from(canvasElement.querySelectorAll<HTMLAnchorElement>('a[href="/terms/term_ram"]'));
+    expect(links).toHaveLength(2);
+    await userEvent.click(links[0]);
+    await waitFor(() => expect(canvasElement.querySelector('[data-selected-definition-public-id]')?.textContent).toBe('definition_zhzhq'));
   },
 };
 
@@ -340,11 +384,11 @@ export const DesktopClicked: Story = {
 };
 
 export const MissingMetadata: Story = {
-  render: () => <DefinitionMetadata definition={{ text: 'Без метаданных', page: 0, topic: undefined }} showPage={false} />,
+  render: () => <DefinitionMetadata definition={{ name: 'Без метаданных', text: 'Без метаданных', page: 0, topic: undefined }} showPage={false} />,
 };
 
 export const DesktopMissingMetadata: Story = {
-  render: () => <TermCard term={{ ...shortTerm, definitions: [{ text: 'No source metadata.', page: 0, topic: undefined }] }} selected />,
+  render: () => <TermCard term={{ ...shortTerm, definitions: [{ name: 'No source metadata.', text: 'No source metadata.', page: 0, topic: undefined }] }} selected />,
 };
 
 export const FavoriteStates: Story = {

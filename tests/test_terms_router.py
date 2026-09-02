@@ -10,6 +10,7 @@ from src.database import get_async_session
 from src.security.public_refs import encode_public_ref
 from src.terms import router
 from src.terms.models import Definition, Term
+from src.terms.schemas import DefinitionCreate
 from src.topics.models import Book, Topic
 
 
@@ -29,11 +30,57 @@ def make_term(term_id: int) -> Term:
         topic_id=term_id,
         term=term,
         topic=topic,
+        name=f"Source {term_id}",
         text=f"Definition {term_id}",
         page=term_id,
     )
     term.definitions = [definition]
     return term
+
+
+class BuildTermDefinitionsTests(unittest.IsolatedAsyncioTestCase):
+    async def test_build_preserves_requested_source_name(self):
+        topic = Topic(
+            id=1,
+            name="Topic 1",
+            page_start=1,
+            page_end=100,
+            book=Book(id=1, publisher="Atamura", grade=9),
+        )
+        original_get_topic_by_name = router.get_topic_by_name
+        original_get_embedder = router.get_embedder
+        test_case = self
+
+        async def fake_get_topic_by_name(session, *, name):
+            self.assertEqual(name, "Topic 1")
+            return topic
+
+        class Embedder:
+            def encode(self, text):
+                test_case.assertEqual(text, "definition")
+                return [0.1, 0.2]
+
+        router.get_topic_by_name = fake_get_topic_by_name
+        router.get_embedder = lambda: Embedder()
+
+        try:
+            definitions = await router._build_term_definitions(
+                object(),
+                [
+                    DefinitionCreate(
+                        name="ЖЖҚ",
+                        text="definition",
+                        topic="Topic 1",
+                        page=17,
+                    ),
+                ],
+            )
+        finally:
+            router.get_topic_by_name = original_get_topic_by_name
+            router.get_embedder = original_get_embedder
+
+        self.assertTrue(hasattr(definitions[0], "name"))
+        self.assertEqual(definitions[0].name, "ЖЖҚ")
 
 
 class FeaturedTermsTests(unittest.IsolatedAsyncioTestCase):

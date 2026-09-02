@@ -1,6 +1,9 @@
 import unittest
 
+import src.models  # noqa: F401 - register all SQLAlchemy metadata/indexes
 from src.terms.catalog import parse_terms_catalog_v2
+from src.terms.models import Definition, Term
+from src.terms.schemas import DefinitionCreate, DefinitionResponse
 
 
 VALID = {
@@ -25,6 +28,29 @@ VALID = {
 
 
 class TermsCatalogV2Tests(unittest.TestCase):
+    def test_definition_model_owns_source_name_and_trigram_index(self):
+        self.assertTrue(hasattr(Definition.__table__.c, "name"))
+        self.assertEqual(Definition.__table__.c.name.type.length, 255)
+        self.assertFalse(Definition.__table__.c.name.nullable)
+        self.assertIn(
+            "idx_definition_name_trgm",
+            {index.name for index in Definition.__table__.indexes},
+        )
+        self.assertNotIn(
+            "idx_term_name_trgm",
+            {index.name for index in Term.__table__.indexes},
+        )
+
+    def test_definition_create_requires_source_name(self):
+        payload = DefinitionCreate(
+            name="ЖЖҚ",
+            text="definition",
+            topic="topic",
+            page=17,
+        )
+        self.assertEqual(payload.model_dump().get("name"), "ЖЖҚ")
+        self.assertIn("name", DefinitionResponse.model_fields)
+
     def test_flattens_canonical_term_and_source_names_without_losing_definitions(self):
         catalog = parse_terms_catalog_v2(VALID)
         self.assertEqual(catalog.canonical_names, ("Жедел жад",))

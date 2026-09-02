@@ -82,11 +82,14 @@ function TermDetailContent({
         if (cancelled) return;
         setFetchedTerm(null);
         setLoadState('error');
-    });
+      });
     return () => { cancelled = true; };
   }, [routeAccess, termRef]);
 
-  const term = stateTerm ?? (fetchedTerm?.public_id === termRef ? fetchedTerm : null);
+  const fetchedMatches = fetchedTerm?.public_id === termRef ? fetchedTerm : null;
+  const term = routeAccess === 'authenticated-fetch'
+    ? (fetchedMatches ?? stateTerm)
+    : stateTerm;
 
   useEffect(() => {
     const definitions = term?.definitions ?? [];
@@ -94,8 +97,12 @@ function TermDetailContent({
     const selectedExists = selected
       ? definitions.some((definition) => definition.public_id === selected)
       : false;
+    if (selected && !selectedExists && routeAccess === 'authenticated-fetch' && loadState !== 'error' && fetchedTerm === null) {
+      setActiveDefinitionRef(selected);
+      return;
+    }
     setActiveDefinitionRef(selectedExists ? selected ?? null : definitions[0]?.public_id ?? null);
-  }, [state?.selectedDefinitionPublicId, term]);
+  }, [fetchedTerm, loadState, routeAccess, state?.selectedDefinitionPublicId, term]);
 
   useEffect(() => {
     const generation = ++relatedGeneration.current;

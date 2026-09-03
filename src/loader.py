@@ -10,7 +10,7 @@ from pathlib import Path
 from sqlalchemy import bindparam, delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.terms.catalog import TermsCatalogV2, parse_terms_catalog_v2
+from src.terms.catalog import TermsCatalogV2, load_terms_catalog
 from src.terms.models import (
     Definition,
     Term,
@@ -567,8 +567,7 @@ async def _load_terms_from_json_impl(
     json_path: str | Path,
 ) -> None:
     """Load terms using bulk lookups, batched inference and bulk writes."""
-    raw_data = await asyncio.to_thread(_load_json_file, json_path)
-    catalog = parse_terms_catalog_v2(raw_data)
+    catalog = await asyncio.to_thread(load_terms_catalog, json_path)
     if not catalog.canonical_names:
         logger.info("Файл терминов пуст: %s", json_path)
         return

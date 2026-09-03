@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import asyncio
-import json
+import contextlib
+import io
 import os
 import sys
-import tempfile
 import unittest
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -14,45 +14,113 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from src.migrations.terms_v2 import load_normalization_mapping, migrate_terms_v2
+from src.migrations.terms_v2 import (
+    _parse_args,
+    build_normalization_mapping,
+    migrate_terms_v2,
+)
+from src.terms.catalog import parse_terms_catalog_v2
 
 
 class NormalizationMappingTests(unittest.TestCase):
-    def test_loads_schema_v1_mapping_to_old_and_canonical_names(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "terms.normalization-map.json"
-            path.write_text(
-                json.dumps(
-                    {
-                        "schema_version": 1,
-                        "mapping": {
-                            "RAM": {"canonical_name": "Жедел жад"},
-                            "ЖЖҚ": {"canonical_name": "Жедел жад"},
+    @staticmethod
+    def _catalog():
+        return parse_terms_catalog_v2(
+            {
+                "schema_version": 2,
+                "terms": {
+                    "Жедел жад": {
+                        "variants": {
+                            "Жедел жад": {
+                                "Алматыкітап: 7-сынып": [
+                                    {"definition": "canonical", "topic": "Topic", "page": 1},
+                                ],
+                            },
+                            "RAM": {
+                                "Алматыкітап: 7-сынып": [
+                                    {"definition": "ram", "topic": "Topic", "page": 2},
+                                ],
+                            },
+                            "ЖЖҚ": {
+                                "Атамұра: 7-сынып": [
+                                    {"definition": "jjq", "topic": "Topic", "page": 3},
+                                ],
+                            },
                         },
                     },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
-
-            self.assertEqual(
-                load_normalization_mapping(path),
-                {"RAM": "Жедел жад", "ЖЖҚ": "Жедел жад"},
-            )
-
-    def test_rejects_invalid_mapping_payloads(self):
-        invalid_payloads = (
-            {"schema_version": 2, "mapping": {}},
-            {"schema_version": 1},
-            {"schema_version": 1, "mapping": {"": {"canonical_name": "x"}}},
-            {"schema_version": 1, "mapping": {"RAM": {}}},
+                },
+            },
         )
-        for payload in invalid_payloads:
-            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as directory:
-                path = Path(directory) / "map.json"
-                path.write_text(json.dumps(payload), encoding="utf-8")
-                with self.assertRaises(ValueError):
-                    load_normalization_mapping(path)
+
+    def test_build_normalization_mapping_uses_v2_variants_as_single_source_of_truth(self):
+        self.assertEqual(
+            build_normalization_mapping(self._catalog()),
+            {
+                "Жедел жад": "Жедел жад",
+                "RAM": "Жедел жад",
+                "ЖЖҚ": "Жедел жад",
+            },
+        )
+
+    def test_build_normalization_mapping_rejects_ambiguous_source_name(self):
+        catalog = parse_terms_catalog_v2(
+            {
+                "schema_version": 2,
+                "terms": {
+                    "Canonical A": {
+                        "variants": {
+                            "Shared source": {
+                                "Book": [{"definition": "a", "topic": "Topic", "page": 1}],
+                            },
+                        },
+                    },
+                    "Canonical B": {
+                        "variants": {
+                            "Shared source": {
+                                "Book": [{"definition": "b", "topic": "Topic", "page": 2}],
+                            },
+                        },
+                    },
+                },
+            },
+        )
+
+        with self.assertRaisesRegex(ValueError, "belongs to multiple canonical terms"):
+            build_normalization_mapping(catalog)
+
+    def test_build_normalization_mapping_requires_canonical_source_variant(self):
+        catalog = parse_terms_catalog_v2(
+            {
+                "schema_version": 2,
+                "terms": {
+                    "Canonical": {
+                        "variants": {
+                            "Alias": {
+                                "Book": [{"definition": "alias", "topic": "Topic", "page": 1}],
+                            },
+                        },
+                    },
+                },
+            },
+        )
+
+        with self.assertRaisesRegex(ValueError, "is not present among its source variants"):
+            build_normalization_mapping(catalog)
+
+    def test_cli_accepts_terms_json_and_rejects_obsolete_mapping_json(self):
+        try:
+            args = _parse_args(["--terms-json", "catalog.json"])
+        except SystemExit as exc:
+            self.fail(f"--terms-json was not accepted (exit {exc.code})")
+        self.assertEqual(args.terms_json, Path("catalog.json"))
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            try:
+                _parse_args(["--mapping-json", "terms.normalization-map.json"])
+            except SystemExit as exc:
+                self.assertEqual(exc.code, 2)
+            else:
+                self.fail("obsolete --mapping-json option was accepted")
 
 
 class TermsV2MigrationPostgresTests(unittest.IsolatedAsyncioTestCase):

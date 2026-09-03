@@ -12,6 +12,8 @@ from pathlib import Path
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from src.terms.catalog import TermsCatalogV2, parse_terms_catalog_v2
+
 
 @dataclass(frozen=True, slots=True)
 class MigrationStats:
@@ -26,29 +28,31 @@ class MigrationStats:
     definitions_repointed: int
 
 
-def load_normalization_mapping(path: Path) -> dict[str, str]:
-    """Load and validate the generated schema-v1 normalization map."""
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    schema_version = payload.get("schema_version") if isinstance(payload, dict) else None
-    if type(schema_version) is not int or schema_version != 1:
-        raise ValueError("normalization map schema_version must be 1")
-    entries = payload.get("mapping")
-    if not isinstance(entries, dict):
-        raise ValueError("normalization map must contain mapping")  # noqa: TRY004
+def build_normalization_mapping(catalog: TermsCatalogV2) -> dict[str, str]:
+    """Derive source-name to canonical-name identities from a v2 catalog."""
+    mapping: dict[str, str] = {}
+    source_names_by_canonical: dict[str, set[str]] = {
+        canonical_name: set() for canonical_name in catalog.canonical_names
+    }
 
-    result: dict[str, str] = {}
-    for old_name, item in entries.items():
-        if not isinstance(old_name, str) or not old_name.strip():
-            raise ValueError("normalization map contains an invalid source name")
-        if not isinstance(item, dict):
-            message = f"normalization map item {old_name!r} must be an object"
-            raise ValueError(message)  # noqa: TRY004
-        canonical_name = item.get("canonical_name")
-        if not isinstance(canonical_name, str) or not canonical_name.strip():
-            message = f"normalization map item {old_name!r} has no canonical_name"
+    for definition in catalog.definitions:
+        source_names_by_canonical[definition.canonical_name].add(definition.source_name)
+        previous = mapping.setdefault(definition.source_name, definition.canonical_name)
+        if previous != definition.canonical_name:
+            message = (
+                f"source name {definition.source_name!r} belongs to multiple canonical terms: "
+                f"{previous!r}, {definition.canonical_name!r}"
+            )
             raise ValueError(message)
-        result[old_name] = canonical_name
-    return result
+
+    for canonical_name, source_names in source_names_by_canonical.items():
+        if canonical_name not in source_names:
+            message = (
+                f"canonical term {canonical_name!r} is not present among its source variants"
+            )
+            raise ValueError(message)
+
+    return mapping
 
 
 async def migrate_terms_v2(
@@ -165,16 +169,18 @@ async def migrate_terms_v2(
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mapping-json",
+        "--terms-json",
         required=True,
         type=Path,
-        help="path to terms.normalization-map.json",
+        help="Path to strict normalized terms.json schema_version=2",
     )
     return parser.parse_args(argv)
 
 
-async def _run(mapping_path: Path) -> MigrationStats:
-    mapping = load_normalization_mapping(mapping_path)
+async def _run(terms_json: Path) -> MigrationStats:
+    raw = json.loads(terms_json.read_text(encoding="utf-8"))
+    catalog = parse_terms_catalog_v2(raw)
+    mapping = build_normalization_mapping(catalog)
     # Importing the application engine lazily keeps pure mapping validation
     # usable without constructing the full application configuration.
     from src.database import async_engine  # noqa: PLC0415
@@ -187,7 +193,7 @@ async def _run(mapping_path: Path) -> MigrationStats:
 def main(argv: list[str] | None = None) -> int:
     """Run the one-shot migration CLI and print its counters as JSON."""
     args = _parse_args(argv)
-    stats = asyncio.run(_run(args.mapping_json))
+    stats = asyncio.run(_run(args.terms_json))
     print(json.dumps(asdict(stats), ensure_ascii=False, sort_keys=True))
     return 0
 

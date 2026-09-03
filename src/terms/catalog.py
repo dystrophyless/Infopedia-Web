@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +19,24 @@ class CatalogDefinition:
 class TermsCatalogV2:
     canonical_names: tuple[str, ...]
     definitions: tuple[CatalogDefinition, ...]
+
+
+def load_terms_catalog(path: str | Path) -> TermsCatalogV2:
+    """Read and validate a terms catalog while rejecting duplicate JSON keys."""
+
+    def reject_duplicate_keys(pairs):
+        value = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError(f"duplicate JSON object key: {key!r}")
+            value[key] = item
+        return value
+
+    raw = json.loads(
+        Path(path).read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_keys,
+    )
+    return parse_terms_catalog_v2(raw)
 
 
 def _required_name(value: object, *, field: str) -> str:
@@ -38,6 +58,8 @@ def parse_terms_catalog_v2(data: object) -> TermsCatalogV2:
 
     canonical_names: list[str] = []
     flattened: list[CatalogDefinition] = []
+    seen_identities: set[tuple[str, str, str, str, str, int]] = set()
+    source_owners: dict[str, str] = {}
     for raw_canonical_name, term_payload in terms.items():
         canonical_name = _required_name(raw_canonical_name, field="canonical name")
         if not isinstance(term_payload, dict) or set(term_payload) != {"variants"}:
@@ -49,6 +71,12 @@ def parse_terms_catalog_v2(data: object) -> TermsCatalogV2:
 
         for raw_source_name, books in variants.items():
             source_name = _required_name(raw_source_name, field="source name")
+            previous_owner = source_owners.setdefault(source_name, canonical_name)
+            if previous_owner != canonical_name:
+                raise ValueError(
+                    f"source name {source_name!r} belongs to multiple canonical terms: "
+                    f"{previous_owner!r}, {canonical_name!r}",
+                )
             if not isinstance(books, dict) or not books:
                 raise ValueError(f"variant {source_name!r} books must be a non-empty object")
             for raw_book_key, definitions in books.items():
@@ -67,6 +95,17 @@ def parse_terms_catalog_v2(data: object) -> TermsCatalogV2:
                         raise ValueError("definition topic must be a non-empty string")
                     if isinstance(page, bool) or not isinstance(page, int) or page < 1:
                         raise ValueError("definition page must be a positive integer")
+                    identity = (
+                        canonical_name,
+                        source_name,
+                        book_key,
+                        topic_name,
+                        text,
+                        page,
+                    )
+                    if identity in seen_identities:
+                        continue
+                    seen_identities.add(identity)
                     flattened.append(
                         CatalogDefinition(
                             canonical_name=canonical_name,

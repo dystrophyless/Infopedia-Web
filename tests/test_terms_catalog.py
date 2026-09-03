@@ -1,10 +1,11 @@
+import tempfile
 import unittest
+from pathlib import Path
 
 import src.models  # noqa: F401 - register all SQLAlchemy metadata/indexes
-from src.terms.catalog import parse_terms_catalog_v2
+from src.terms.catalog import load_terms_catalog, parse_terms_catalog_v2
 from src.terms.models import Definition, Term
 from src.terms.schemas import DefinitionCreate, DefinitionResponse
-
 
 VALID = {
     "schema_version": 2,
@@ -84,3 +85,60 @@ class TermsCatalogV2Tests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "source name"):
             parse_terms_catalog_v2(invalid)
+
+    def test_collapses_exact_duplicate_definition_identities(self):
+        duplicate = {
+            "schema_version": 2,
+            "terms": {
+                "Term": {
+                    "variants": {
+                        "Term": {
+                            "Publisher: 7-сынып": [
+                                {"definition": "same", "topic": "Topic", "page": 1},
+                                {"definition": "same", "topic": "Topic", "page": 1},
+                            ],
+                        },
+                    },
+                },
+            },
+        }
+        catalog = parse_terms_catalog_v2(duplicate)
+        self.assertEqual(len(catalog.definitions), 1)
+        self.assertEqual(catalog.definitions[0].source_name, "Term")
+
+    def test_load_terms_catalog_rejects_duplicate_json_object_keys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "terms.json"
+            path.write_text(
+                '{"schema_version": 2, "schema_version": 2, "terms": {}}',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate JSON object key"):
+                load_terms_catalog(path)
+
+    def test_rejects_source_name_owned_by_multiple_canonical_terms(self):
+        ambiguous = {
+            "schema_version": 2,
+            "terms": {
+                "Canonical A": {
+                    "variants": {
+                        "Shared": {
+                            "Publisher: 7-сынып": [
+                                {"definition": "a", "topic": "Topic", "page": 1},
+                            ],
+                        },
+                    },
+                },
+                "Canonical B": {
+                    "variants": {
+                        "Shared": {
+                            "Publisher: 7-сынып": [
+                                {"definition": "b", "topic": "Topic", "page": 2},
+                            ],
+                        },
+                    },
+                },
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "multiple canonical terms"):
+            parse_terms_catalog_v2(ambiguous)

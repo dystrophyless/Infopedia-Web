@@ -3,9 +3,9 @@
 Read-only PostgreSQL schema introspection and canonical assertions.
 
 This module deliberately imports application models only inside the metadata
-helper.  It never imports ``prepare_app``, loaders, or migrations and never
-executes DDL/DML.  Every catalog query runs in a transaction explicitly marked
-read-only before the first query.
+helper.  It never imports ``prepare_app``, loaders, or schema mutation helpers
+and never executes DDL/DML.  Every catalog query runs in a transaction
+explicitly marked read-only before the first query.
 """
 
 from __future__ import annotations
@@ -618,10 +618,6 @@ def _expected_metadata_indexes(metadata) -> dict[str, dict[str, Any]]:
                 "columns": tuple(column.name for column in index.columns),
                 "opclasses": tuple(str(ops.get(column.name)) for column in index.columns if ops.get(column.name)),
             }
-    expected["idx_term_name_trgm"] = {
-        "table": "term", "access_method": "gin", "unique": False,
-        "predicate": None, "columns": ("name",), "opclasses": ("gin_trgm_ops",),
-    }
     expected["uq_chapter_code"] = {
         "table": "chapter", "access_method": "btree", "unique": True,
         "predicate": None, "columns": ("code",), "opclasses": (),

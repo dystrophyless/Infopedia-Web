@@ -3,10 +3,40 @@ import unittest
 from types import SimpleNamespace
 
 from src.loader import _build_pending_definitions
-from src.terms.catalog import CatalogDefinition, TermsCatalogV2
+from src.terms.catalog import CatalogDefinition, TermsCatalogV2, parse_terms_catalog_v2
 
 
 class TermsLoaderV2Tests(unittest.TestCase):
+    def test_exact_duplicate_catalog_definition_yields_one_pending_insert(self):
+        catalog = parse_terms_catalog_v2(
+            {
+                "schema_version": 2,
+                "terms": {
+                    "Canonical": {
+                        "variants": {
+                            "Source": {
+                                "Book: 7-сынып": [
+                                    {"definition": "same", "topic": "Topic", "page": 1},
+                                    {"definition": "same", "topic": "Topic", "page": 1},
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        )
+        pending, new_count, backfill_count, skipped = _build_pending_definitions(
+            catalog,
+            {"Canonical": SimpleNamespace(id=10)},
+            {"Book: 7-сынып": SimpleNamespace(id=20)},
+            {(20, "Topic"): SimpleNamespace(id=30)},
+            {},
+        )
+
+        self.assertEqual(len(pending), 1)
+        self.assertEqual((new_count, backfill_count, skipped), (1, 0, 0))
+        self.assertEqual(pending[0].name, "Source")
+
     def test_same_canonical_term_keeps_two_source_names_as_two_definition_identities(
         self,
     ):

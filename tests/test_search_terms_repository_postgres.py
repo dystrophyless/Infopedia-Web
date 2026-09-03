@@ -76,6 +76,9 @@ class SearchTermsStatementTests(unittest.TestCase):
         self.assertIn("LIMIT 10", page_sql)
         self.assertIn("term.id IN (7, 8)", hydration_sql)
         self.assertNotIn("ORDER BY term.id", hydration_sql)
+        self.assertNotIn("join term", count_sql.lower())
+        self.assertNotIn("join term", page_sql.lower())
+        self.assertIn("join term", hydration_sql.lower())
 
     def test_chapter_mapping_is_correlated_exists_not_an_outer_join(self):
         statements = build_search_terms_statements(

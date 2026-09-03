@@ -511,12 +511,18 @@ def _definition_name_predicate(filters: TermSearchFilters, mode: SearchTermsMode
     raise ValueError(message)
 
 
-def _search_terms_from_clause(statement: Select) -> Select:
+def _search_terms_candidate_from_clause(statement: Select) -> Select:
     return (
         statement.select_from(Definition)
-        .join(Term, Term.id == Definition.term_id)
         .join(Topic, Topic.id == Definition.topic_id)
         .join(Book, Book.id == Topic.book_id)
+    )
+
+
+def _search_terms_hydration_from_clause(statement: Select) -> Select:
+    return _search_terms_candidate_from_clause(statement).join(
+        Term,
+        Term.id == Definition.term_id,
     )
 
 
@@ -532,11 +538,11 @@ def build_search_terms_statements(
     name_predicate = _definition_name_predicate(filters, mode)
     common_predicate = and_(qualification, name_predicate)
 
-    count_statement = _search_terms_from_clause(
+    count_statement = _search_terms_candidate_from_clause(
         select(func.count(func.distinct(Definition.term_id))),
     ).where(common_predicate)
     page_statement = (
-        _search_terms_from_clause(
+        _search_terms_candidate_from_clause(
             select(
                 Definition.term_id,
                 func.min(Definition.id).label("first_qualifying_definition_id"),
@@ -557,7 +563,7 @@ def build_search_terms_statements(
     page_statement = page_statement.offset(skip).limit(limit)
 
     hydration_statement = (
-        _search_terms_from_clause(
+        _search_terms_hydration_from_clause(
             select(
                 Term.id.label("term_id"),
                 Term.name.label("term_name"),
@@ -601,7 +607,7 @@ async def _mode_has_matches(
     mode: SearchTermsMode,
 ) -> bool:
     statement = (
-        _search_terms_from_clause(select(literal(1)))
+        _search_terms_candidate_from_clause(select(literal(1)))
         .where(
             _qualifying_definition_predicate(filters),
             _definition_name_predicate(filters, mode),

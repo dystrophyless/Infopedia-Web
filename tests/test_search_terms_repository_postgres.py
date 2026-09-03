@@ -76,6 +76,9 @@ class SearchTermsStatementTests(unittest.TestCase):
         self.assertIn("LIMIT 10", page_sql)
         self.assertIn("term.id IN (7, 8)", hydration_sql)
         self.assertNotIn("ORDER BY term.id", hydration_sql)
+        self.assertNotIn("join term", count_sql.lower())
+        self.assertNotIn("join term", page_sql.lower())
+        self.assertIn("join term", hydration_sql.lower())
 
     def test_chapter_mapping_is_correlated_exists_not_an_outer_join(self):
         statements = build_search_terms_statements(
@@ -90,6 +93,19 @@ class SearchTermsStatementTests(unittest.TestCase):
 
         self.assertNotIn("topic_mapping", before_exists)
         self.assertIn("topic_mapping join topic_code", exists_sql)
+
+    def test_name_predicate_targets_definition_name(self):
+        statements = build_search_terms_statements(
+            filters=filters(query="ЖЖҚ", chapter_ids=(1,)),
+            mode="prefix",
+            skip=0,
+            limit=20,
+            page_term_ids=[],
+        )
+        prefix_sql = compiled(statements.page).lower()
+
+        self.assertIn("definition.name ilike", prefix_sql)
+        self.assertNotIn("term.name ilike", prefix_sql)
 
 
 class SearchTermsPostgresTests(unittest.IsolatedAsyncioTestCase):
@@ -118,7 +134,7 @@ class SearchTermsPostgresTests(unittest.IsolatedAsyncioTestCase):
                     "CREATE TABLE topic (id integer PRIMARY KEY, name varchar(255) NOT NULL, page_start integer NOT NULL, page_end integer NOT NULL, book_id integer NOT NULL REFERENCES book(id))",
                     "CREATE TABLE topic_mapping (topic_code_id integer NOT NULL REFERENCES topic_code(id), topic_id integer NOT NULL REFERENCES topic(id), PRIMARY KEY (topic_code_id, topic_id))",
                     "CREATE TABLE term (id integer PRIMARY KEY, name varchar(255) NOT NULL UNIQUE)",
-                    "CREATE TABLE definition (id integer PRIMARY KEY, term_id integer NOT NULL REFERENCES term(id), topic_id integer NOT NULL REFERENCES topic(id), text text NOT NULL, page integer NOT NULL)",
+                    "CREATE TABLE definition (id integer PRIMARY KEY, term_id integer NOT NULL REFERENCES term(id), name varchar(255) NOT NULL, topic_id integer NOT NULL REFERENCES topic(id), text text NOT NULL, page integer NOT NULL)",
                 ):
                     await connection.execute(text(ddl))
                 await self._insert_fixture(connection)
@@ -133,16 +149,17 @@ class SearchTermsPostgresTests(unittest.IsolatedAsyncioTestCase):
             "INSERT INTO topic_code VALUES (1, 'selected-a', 1), (2, 'selected-b', 1), (3, 'other', 2), (4, 'unmapped', NULL)",
             "INSERT INTO topic VALUES (1, 'Qualifying', 1, 20, 1), (2, 'Nonqualifying', 21, 40, 2), (3, 'Selected grade 11', 41, 60, 3), (4, 'No ENT', 61, 80, 1)",
             "INSERT INTO topic_mapping VALUES (1, 1), (2, 1), (3, 2), (4, 4)",
-            "INSERT INTO term VALUES (1, 'Alpha'), (2, 'Alphabet'), (3, 'Beta Alpha'), (4, 'Gamma'), (5, 'Counterexample')",
+            "INSERT INTO term VALUES (1, 'Жедел жад'), (2, 'Басқа термин'), (3, 'Канонический один'), (4, 'Канонический два'), (5, 'Counterexample')",
             (
-                "INSERT INTO definition VALUES (1, 1, 2, 'nonqualifying first', 21), "
-                "(2, 1, 1, 'qualifying first', 2), "
-                "(3, 1, 1, 'qualifying second', 3), "
-                "(4, 2, 1, 'alphabet definition', 4), "
-                "(5, 3, 1, 'contains definition', 5), "
-                "(6, 4, 1, 'gamma definition', 6), "
-                "(7, 5, 1, 'selected book wrong grade', 7), "
-                "(8, 5, 3, 'selected grade wrong book', 8)"
+                "INSERT INTO definition (id, term_id, name, topic_id, text, page) VALUES "
+                "(1, 1, 'RAM', 1, 'ram definition', 2), "
+                "(2, 1, 'ЖЖҚ', 1, 'zhzhq definition', 3), "
+                "(3, 1, 'Жедел жады (ЖЖҚ немесе RAM)', 1, 'combined definition', 4), "
+                "(4, 2, 'Басқа термин', 1, 'other definition', 5), "
+                "(5, 3, 'Alpha', 1, 'alpha definition', 6), "
+                "(6, 4, 'Alphabet', 1, 'alphabet definition', 7), "
+                "(7, 5, 'Beta Alpha', 1, 'contains definition', 8), "
+                "(8, 5, 'Selected grade 11', 3, 'selected grade wrong book', 9)"
             ),
         )
         for statement in statements:
@@ -170,8 +187,9 @@ class SearchTermsPostgresTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(page.total, 5)
         self.assertEqual([term.id for term in page.terms], [1, 2, 3, 4, 5])
         alpha = page.terms[0]
-        self.assertEqual([definition.id for definition in alpha.definitions], [2, 3])
-        self.assertEqual(alpha.definitions[0].text, "qualifying first")
+        self.assertEqual([definition.id for definition in alpha.definitions], [1, 2, 3])
+        self.assertEqual(alpha.definitions[0].name, "RAM")
+        self.assertEqual(alpha.definitions[0].text, "ram definition")
         self.assertEqual(alpha.definitions[0].topic.book.publisher, "Selected")
         self.assertEqual(alpha.definitions[0].topic.book.grade, 10)
 
@@ -199,12 +217,36 @@ class SearchTermsPostgresTests(unittest.IsolatedAsyncioTestCase):
         similarity = await self._search(query="Alphx", chapter_ids=(1,))
 
         self.assertEqual(empty.mode, "all_filtered")
-        self.assertEqual([term.name for term in prefix.terms], ["Alpha", "Alphabet"])
+        self.assertEqual([term.name for term in prefix.terms], ["Канонический один", "Канонический два"])
         self.assertEqual(prefix.mode, "prefix")
-        self.assertEqual([term.name for term in contains.terms], ["Alpha", "Alphabet", "Beta Alpha"])
+        self.assertEqual(
+            [term.name for term in contains.terms],
+            ["Канонический один", "Канонический два", "Counterexample"],
+        )
         self.assertEqual(contains.mode, "contains")
         self.assertEqual(similarity.mode, "similarity")
-        self.assertIn("Alpha", [term.name for term in similarity.terms])
+        self.assertIn("Канонический один", [term.name for term in similarity.terms])
+
+    async def test_source_name_search_returns_one_canonical_term_and_only_matching_definitions(self):
+        page = await self._search(query="ЖЖҚ", chapter_ids=(1,))
+
+        self.assertEqual(page.total, 1)
+        self.assertEqual([term.name for term in page.terms], ["Жедел жад"])
+        self.assertTrue(page.terms[0].definitions)
+        self.assertEqual([definition.id for definition in page.terms[0].definitions], [2])
+        self.assertTrue(all("ЖЖҚ" in definition.name for definition in page.terms[0].definitions))
+
+    async def test_multiple_ram_source_variants_do_not_duplicate_canonical_term(self):
+        page = await self._search(query="RAM", chapter_ids=(1,))
+
+        self.assertEqual([term.name for term in page.terms].count("Жедел жад"), 1)
+
+    async def test_similarity_ranking_uses_source_names_not_canonical_names(self):
+        page = await self._search(query="Alphx", chapter_ids=(1,))
+
+        self.assertEqual(page.mode, "similarity")
+        self.assertEqual(page.terms[0].name, "Канонический один")
+        self.assertEqual(page.terms[0].definitions[0].name, "Alpha")
 
     async def test_missing_hydration_rows_raise_invariant_failure(self):
         quoted = '"' + self.schema.replace('"', '""') + '"'

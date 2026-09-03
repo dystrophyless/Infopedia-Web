@@ -10,6 +10,7 @@ from pathlib import Path
 from sqlalchemy import bindparam, delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.terms.catalog import TermsCatalogV2, load_terms_catalog
 from src.terms.models import (
     Definition,
     Term,
@@ -44,6 +45,7 @@ DEFINITION_EMBEDDING_DIMENSION = 1024
 @dataclass(frozen=True, slots=True)
 class _PendingDefinition:
     term_id: int
+    name: str
     topic_id: int
     text: str
     page: int
@@ -307,6 +309,7 @@ async def _persist_definition_window(
             insert_rows.append(
                 {
                     "term_id": definition.term_id,
+                    "name": definition.name,
                     "topic_id": definition.topic_id,
                     "text": definition.text,
                     "page": definition.page,
@@ -337,26 +340,18 @@ async def _persist_definition_window(
 
 
 def _collect_term_requirements(
-    data: dict,
+    catalog: TermsCatalogV2,
 ) -> tuple[dict[str, tuple[str, int]], set[tuple[str, int, str]]]:
     parsed_book_keys: dict[str, tuple[str, int]] = {}
     required_topic_specs: set[tuple[str, int, str]] = set()
 
-    for books in data.values():
-        if not isinstance(books, dict):
-            raise ValueError("Каждый термин в terms.json должен содержать объект книг")
-
-        for book_key, definitions in books.items():
-            book_spec = parsed_book_keys.get(book_key)
-            if book_spec is None:
-                book_spec = parse_book_key(book_key)
-                parsed_book_keys[book_key] = book_spec
-
-            publisher, grade = book_spec
-            for definition_data in definitions:
-                required_topic_specs.add(
-                    (publisher, grade, definition_data["topic"]),
-                )
+    for item in catalog.definitions:
+        book_spec = parsed_book_keys.setdefault(
+            item.book_key,
+            parse_book_key(item.book_key),
+        )
+        publisher, grade = book_spec
+        required_topic_specs.add((publisher, grade, item.topic_name))
 
     return parsed_book_keys, required_topic_specs
 
@@ -444,7 +439,7 @@ async def _load_existing_definition_states(
     session: AsyncSession,
     term_ids: set[int],
     topic_ids: set[int],
-) -> dict[tuple[int, int, str, int], tuple[int, bool]]:
+) -> dict[tuple[int, str, int, str, int], tuple[int, bool]]:
     if not term_ids or not topic_ids:
         return {}
 
@@ -454,6 +449,7 @@ async def _load_existing_definition_states(
         select(
             Definition.id,
             Definition.term_id,
+            Definition.name,
             Definition.topic_id,
             Definition.text,
             Definition.page,
@@ -464,7 +460,7 @@ async def _load_existing_definition_states(
         ),
     )
     return {
-        (row.term_id, row.topic_id, row.text, row.page): (
+        (row.term_id, row.name, row.topic_id, row.text, row.page): (
             row.id,
             bool(row.has_embedding),
         )
@@ -473,64 +469,62 @@ async def _load_existing_definition_states(
 
 
 def _build_pending_definitions(
-    data: dict,
+    catalog: TermsCatalogV2,
     terms_by_name: dict[str, Term],
     books_by_source_key: dict[str, Book],
     topics_by_key: dict[tuple[int, str], Topic],
-    existing_definitions: dict[tuple[int, int, str, int], tuple[int, bool]],
+    existing_definitions: dict[tuple[int, str, int, str, int], tuple[int, bool]],
 ) -> tuple[list[_PendingDefinition], int, int, int]:
     pending: list[_PendingDefinition] = []
     seen_keys = set(existing_definitions)
-    scheduled_embedding_keys: set[tuple[int, int, str, int]] = set()
+    scheduled_embedding_keys: set[tuple[int, str, int, str, int]] = set()
     skipped_existing = 0
     backfill_count = 0
     new_count = 0
 
-    for term_name, books in data.items():
-        term = terms_by_name[term_name]
-        for book_key, definitions in books.items():
-            book = books_by_source_key[book_key]
-            for definition_data in definitions:
-                topic = topics_by_key[(book.id, definition_data["topic"])]
-                text = definition_data["definition"]
-                page = definition_data["page"]
-                definition_key = (term.id, topic.id, text, page)
-                existing = existing_definitions.get(definition_key)
+    for item in catalog.definitions:
+        term = terms_by_name[item.canonical_name]
+        book = books_by_source_key[item.book_key]
+        topic = topics_by_key[(book.id, item.topic_name)]
+        definition_key = (term.id, item.source_name, topic.id, item.text, item.page)
+        existing = existing_definitions.get(definition_key)
 
-                if existing is not None:
-                    definition_id, has_embedding = existing
-                    if has_embedding or definition_key in scheduled_embedding_keys:
-                        skipped_existing += 1
-                        continue
+        if existing is not None:
+            definition_id, has_embedding = existing
+            if has_embedding or definition_key in scheduled_embedding_keys:
+                skipped_existing += 1
+                continue
 
-                    scheduled_embedding_keys.add(definition_key)
-                    pending.append(
-                        _PendingDefinition(
-                            term_id=term.id,
-                            topic_id=topic.id,
-                            text=text,
-                            page=page,
-                            existing_definition_id=definition_id,
-                        ),
-                    )
-                    backfill_count += 1
-                    continue
+            scheduled_embedding_keys.add(definition_key)
+            pending.append(
+                _PendingDefinition(
+                    term_id=term.id,
+                    name=item.source_name,
+                    topic_id=topic.id,
+                    text=item.text,
+                    page=item.page,
+                    existing_definition_id=definition_id,
+                ),
+            )
+            backfill_count += 1
+            continue
 
-                if definition_key in seen_keys:
-                    skipped_existing += 1
-                    continue
+        if definition_key in seen_keys:
+            skipped_existing += 1
+            continue
 
-                seen_keys.add(definition_key)
-                scheduled_embedding_keys.add(definition_key)
-                pending.append(
-                    _PendingDefinition(
-                        term_id=term.id,
-                        topic_id=topic.id,
-                        text=text,
-                        page=page,
-                    ),
-                )
-                new_count += 1
+        seen_keys.add(definition_key)
+        scheduled_embedding_keys.add(definition_key)
+        pending.append(
+            _PendingDefinition(
+                term_id=term.id,
+                name=item.source_name,
+                topic_id=topic.id,
+                text=item.text,
+                page=item.page,
+            ),
+        )
+        new_count += 1
 
     return pending, new_count, backfill_count, skipped_existing
 
@@ -573,20 +567,18 @@ async def _load_terms_from_json_impl(
     json_path: str | Path,
 ) -> None:
     """Load terms using bulk lookups, batched inference and bulk writes."""
-    data = await asyncio.to_thread(_load_json_file, json_path)
-    if not data:
+    catalog = await asyncio.to_thread(load_terms_catalog, json_path)
+    if not catalog.canonical_names:
         logger.info("Файл терминов пуст: %s", json_path)
         return
-    if not isinstance(data, dict):
-        raise ValueError("terms.json must contain an object at the top level")
 
-    parsed_book_keys, required_topic_specs = _collect_term_requirements(data)
+    parsed_book_keys, required_topic_specs = _collect_term_requirements(catalog)
     books_by_source_key, topics_by_key = await _resolve_term_books_and_topics(
         session,
         parsed_book_keys,
         required_topic_specs,
     )
-    terms_by_name = await _resolve_terms_by_name(session, list(data))
+    terms_by_name = await _resolve_terms_by_name(session, catalog.canonical_names)
     existing_definitions = await _load_existing_definition_states(
         session,
         {term.id for term in terms_by_name.values()},
@@ -594,7 +586,7 @@ async def _load_terms_from_json_impl(
     )
     pending, new_count, backfill_count, skipped_existing = (
         _build_pending_definitions(
-            data,
+            catalog,
             terms_by_name,
             books_by_source_key,
             topics_by_key,

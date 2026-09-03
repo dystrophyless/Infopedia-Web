@@ -128,7 +128,7 @@ function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onN
     <section data-term-detail-definition-card className="flex min-h-[319px] flex-col justify-between rounded-[16px] bg-white p-6">
       <div className="flex flex-col gap-4">
         <div className="flex min-h-6 items-center justify-between gap-8">
-          <h2 className="truncate text-[22px] font-medium leading-[22px] text-[#161519]">{term.name}</h2>
+          <h2 className="truncate text-[22px] font-medium leading-[22px] text-[#161519]">{definition.name}</h2>
           <div data-term-detail-header-actions className="flex shrink-0 items-center gap-4 text-[#6e6779]">
             <span data-term-detail-flag className="flex size-10 items-center justify-center" aria-hidden="true"><HugeiconsIcon icon={Flag02Icon} size={24} strokeWidth={2} /></span>
             <DesktopTermFavoriteButton termRef={term.public_id} termName={term.name} />
@@ -229,7 +229,7 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
         {term && <>
           {total === 0 && <p className="py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
           {current && <>
-            <section><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{term.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
+            <section><h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.definition')}</h2><div className="mt-4 min-h-[124px] rounded-[8px] bg-surface p-6"><p className="text-[18px] font-medium leading-[18px] text-text-body">{current.name}</p><p className="mt-4 whitespace-pre-line text-[14px] leading-[14px] text-[#39363f]">{current.text}</p></div></section>
             <TermDetailStatPanel />
             {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] leading-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
             <TermDetailSourcePanel definition={current} />

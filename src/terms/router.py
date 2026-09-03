@@ -112,6 +112,7 @@ async def _build_term_definitions(
         )
         definitions.append(
             Definition(
+                name=definition_data.name,
                 text=definition_data.text,
                 topic=topic,
                 page=definition_data.page,

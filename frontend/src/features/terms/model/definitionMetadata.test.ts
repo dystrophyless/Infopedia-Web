@@ -36,6 +36,7 @@ const definition = (overrides: Partial<Definition> = {}): Definition => ({
     },
   },
   ...overrides,
+  name: overrides.name ?? 'Definition',
 });
 
 describe('term definition model characterization', () => {

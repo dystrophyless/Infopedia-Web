@@ -4,7 +4,7 @@ import { appendSearchPage, replaceSearchPage } from './searchPageState';
 const term = (id: string, definitions = [`definition-${id}`]) => ({
   public_id: id,
   name: id,
-  definitions: definitions.map((text) => ({ text, page: 1 })),
+  definitions: definitions.map((text) => ({ name: text, text, page: 1 })),
 });
 
 describe('server search page state', () => {

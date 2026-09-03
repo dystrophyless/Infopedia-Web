@@ -50,8 +50,11 @@ assert.match(src, /size-6|size=\{24\}/, 'desktop directional controls should exp
 assert.doesNotMatch(src, /Flag02Icon/, 'desktop TermCard should not render the flag icon');
 assert.match(src, /className="[^"]*flex[^"]*shrink-0[^"]*items-center[^"]*"[^>]*data-term-card-header-actions/, 'bookmark should retain the existing header-actions alignment wrapper');
 assert.match(src, /TermCardFavoriteButton[^\n]*termRef=\{term\.public_id\}/, 'inspect branch must use the local favorite control');
-assert.match(src, /<button[\s\S]*aria-label=\{term\.name\}/, 'inspect title toggle must remain a separate native button');
+assert.match(src, /const displayName = definition\?\.name \?\? term\.name/, 'inspect title should derive its source name with a canonical fallback');
+assert.match(src, /<button[\s\S]*aria-label=\{displayName\}/, 'inspect title toggle must remain a separate native button with the source name');
 assert.match(src, /const detailLink = <Link/, 'detail navigation must remain a separate native link');
+assert.match(src, /selectedDefinitionPublicId: definition\?\.public_id/, 'detail navigation must preserve the matched definition id');
+assert.match(src, /TermCardFavoriteButton[^\n]*termName=\{term\.name\}/, 'favorite labels must keep the canonical term name');
 assert.match(src, /source-panel|DefinitionMetadata[^\n]*variant=["']source-panel/, 'clicked state should render the named source-panel metadata variant');
 assert.match(src, /ArrowRight01Icon|ArrowLeft01Icon/, 'hover and clicked states should use directional HugeIcons');
 assert.match(src, /focus-visible/, 'hover information should be keyboard accessible');

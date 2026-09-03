@@ -14,8 +14,17 @@ const term: Term = {
   public_id: 'binary-search',
   name: 'Бинарный поиск',
   definitions: [
-    { public_id: 'd1', text: 'Алгоритм поиска элемента в отсортированном массиве.', page: 42, topic: { name: 'Алгоритмы поиска', book: { publisher: 'Арман-ПВ', grade: 10 } } },
-    { public_id: 'd2', text: 'Екілік іздеу әр қадамда іздеу аралығын екі есе қысқартады.', page: 43, topic: { name: 'Іздеу алгоритмдері', book: { publisher: 'Мектеп', grade: 10 } } },
+    { public_id: 'd1', name: 'Бинарный поиск', text: 'Алгоритм поиска элемента в отсортированном массиве.', page: 42, topic: { name: 'Алгоритмы поиска', book: { publisher: 'Арман-ПВ', grade: 10 } } },
+    { public_id: 'd2', name: 'Бинарный поиск (каз.)', text: 'Екілік іздеу әр қадамда іздеу аралығын екі есе қысқартады.', page: 43, topic: { name: 'Іздеу алгоритмдері', book: { publisher: 'Мектеп', grade: 10 } } },
+  ],
+};
+
+const sourceNamedTerm: Term = {
+  public_id: 'term_ram',
+  name: 'Жедел жад',
+  definitions: [
+    { public_id: 'd1', name: 'RAM', text: 'First', page: 9, topic: { name: 'Компьютерлік жад', book: { publisher: 'Атамұра', grade: 7 } } },
+    { public_id: 'd2', name: 'ЖЖҚ', text: 'Second', page: 17, topic: { name: 'Компьютерлік жад', book: { publisher: 'Атамұра', grade: 7 } } },
   ],
 };
 
@@ -90,6 +99,44 @@ function DefinitionSwitchingStory() {
   );
 }
 
+function SourceNameSwitchingStory() {
+  const [definitionRef, setDefinitionRef] = useState<'d1' | 'd2'>('d1');
+  return (
+    <div data-selected-definition-public-id={definitionRef}>
+      <TermDetailView
+        term={sourceNamedTerm}
+        backTo="/search"
+        selectedDefinitionPublicId={definitionRef}
+        onDefinitionChange={(next) => setDefinitionRef(next as 'd1' | 'd2')}
+      />
+    </div>
+  );
+}
+
+export const SourceNameSwitchingDesktop: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  render: () => <SourceNameSwitchingStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'RAM' })).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Далее' }));
+    await expect(canvas.getByRole('heading', { name: 'ЖЖҚ' })).toBeVisible();
+    await expect(canvasElement.querySelector('[data-selected-definition-public-id]')).toHaveAttribute('data-selected-definition-public-id', 'd2');
+  },
+};
+
+export const SourceNameSwitchingMobile: Story = {
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  render: () => <SourceNameSwitchingStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByText('RAM', { exact: true })[0]).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Далее' }));
+    await expect(canvas.getAllByText('ЖЖҚ', { exact: true })[0]).toBeVisible();
+    await expect(canvasElement.querySelector('[data-selected-definition-public-id]')).toHaveAttribute('data-selected-definition-public-id', 'd2');
+  },
+};
+
 export const Mobile430Multiple: Story = {
   globals: { viewport: { value: 'mobile430', isRotated: false } },
   render: () => <DefinitionSwitchingStory />,
@@ -116,9 +163,9 @@ export const DesktopFigma13885656: Story = {
       public_id: 'computer',
       name: 'Компьютер',
       definitions: [
-        { public_id: 'computer-1', text: 'Бұл электрондық құрылғы және өзімізге қажетті техникалық құрылғылардың жиынтығы (аналық тақша, бейнекарта, ЖЖҚ және т.б.).', page: 56, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
-        { public_id: 'computer-2', text: 'Компьютер ақпаратты өңдеуге арналған әмбебап электрондық құрылғы.', page: 57, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
-        { public_id: 'computer-3', text: 'Компьютер бағдарламалар арқылы деректерді сақтайды және өңдейді.', page: 58, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
+        { public_id: 'computer-1', name: 'Компьютер', text: 'Бұл электрондық құрылғы және өзімізге қажетті техникалық құрылғылардың жиынтығы (аналық тақша, бейнекарта, ЖЖҚ және т.б.).', page: 56, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
+        { public_id: 'computer-2', name: 'Компьютер', text: 'Компьютер ақпаратты өңдеуге арналған әмбебап электрондық құрылғы.', page: 57, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
+        { public_id: 'computer-3', name: 'Компьютер', text: 'Компьютер бағдарламалар арқылы деректерді сақтайды және өңдейді.', page: 58, topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } } },
       ],
     },
     relatedTerms: [

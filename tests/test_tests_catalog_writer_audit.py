@@ -51,7 +51,7 @@ PRIVATE_WRITER_HELPERS = {
 }
 
 # Exact symbols that are currently permitted to mutate eligibility inputs.
-# Keep wrappers and migration entry-points explicit: a new writer must be
+# Keep wrappers and writer entry-points explicit: a new writer must be
 # reviewed rather than silently becoming part of the rollout contract.
 ALLOWLIST = {
     "src.loader:load_chapters_and_topic_codes",

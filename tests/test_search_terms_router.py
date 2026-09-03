@@ -34,8 +34,8 @@ def repository_page() -> SearchTermsRepositoryPage:
         id=9,
         name="Algorithm",
         definitions=[
-            SearchDefinitionDTO(id=12, text="First", page=4, topic=topic),
-            SearchDefinitionDTO(id=14, text="Second", page=6, topic=topic),
+            SearchDefinitionDTO(id=12, name="Algorithm", text="First", page=4, topic=topic),
+            SearchDefinitionDTO(id=14, name="Algorithm (alt)", text="Second", page=6, topic=topic),
         ],
     )
     return SearchTermsRepositoryPage(terms=[term], total=3, mode="prefix")
@@ -87,6 +87,7 @@ class SearchTermsRouterTests(unittest.IsolatedAsyncioTestCase):
                         "public_id": encode_public_ref("term", 9),
                         "definitions": [
                             {
+                                "name": "Algorithm",
                                 "text": "First",
                                 "topic": {
                                     "name": "Algorithms",
@@ -103,6 +104,7 @@ class SearchTermsRouterTests(unittest.IsolatedAsyncioTestCase):
                                 "public_id": encode_public_ref("definition", 12),
                             },
                             {
+                                "name": "Algorithm (alt)",
                                 "text": "Second",
                                 "topic": {
                                     "name": "Algorithms",
@@ -189,15 +191,51 @@ class SearchTermsRouterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 401)
 
     async def test_legacy_search_route_contract_is_unchanged(self):
+        matching_definition = SearchDefinitionDTO(
+            id=12,
+            name="ЖЖҚ",
+            text="First",
+            page=4,
+            topic=SearchTopicDTO(
+                id=3,
+                name="Algorithms",
+                page_start=1,
+                page_end=20,
+                book=SearchBookDTO(id=2, publisher="Atamura", grade=10),
+            ),
+        )
+        page = SearchTermsRepositoryPage(
+            terms=[
+                SearchTermDTO(
+                    id=9,
+                    name="Жедел жад",
+                    definitions=[matching_definition],
+                ),
+            ],
+            total=1,
+            mode="contains",
+        )
         with (
             patch("src.search.router.enforce_anti_scrape", new=AsyncMock()),
-            patch("src.search.router.search_terms_by_prefix", new=AsyncMock(return_value=[])),
-            patch("src.search.router.search_terms_by_similarity", new=AsyncMock(return_value=[])),
+            patch("src.search.router.search_filtered_terms", new=AsyncMock(return_value=page)) as search,
         ):
-            response = await self.client.get("/api/search/", params={"query": "alpha"})
+            response = await self.client.get(
+                "/api/search/",
+                params={"query": " ЖЖҚ ", "limit": "7"},
+            )
 
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(response.json()[0]["name"], "Жедел жад")
+        self.assertEqual(response.json()[0]["definitions"][0]["name"], "ЖЖҚ")
+        search.assert_awaited_once()
+        filters = search.await_args.kwargs["filters"]
+        self.assertEqual(filters.query, "ЖЖҚ")
+        self.assertEqual(filters.grades, ())
+        self.assertEqual(filters.book_ids, ())
+        self.assertEqual(filters.chapter_ids, ())
+        self.assertFalse(filters.ent_only)
+        self.assertEqual(search.await_args.kwargs["skip"], 0)
+        self.assertEqual(search.await_args.kwargs["limit"], 7)
 
 
 if __name__ == "__main__":

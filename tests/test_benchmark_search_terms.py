@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # ruff: noqa: PT009, S603
+import inspect
 import json
 import os
 import subprocess
@@ -9,7 +10,12 @@ import unittest
 from pathlib import Path
 
 import src.models  # noqa: F401 - register SQLAlchemy relationships
-from scripts.benchmark_search_terms import _compiled, _table_copy_scale
+from scripts import benchmark_search_terms
+from scripts.benchmark_search_terms import (
+    _compiled,
+    _reference_page_sql,
+    _table_copy_scale,
+)
 from scripts.verify_search_terms_postgres import _database_name, _parse_unittest_summary
 from src.search.term_filters import TermSearchFilters
 from src.terms.repository import build_search_terms_statements
@@ -19,6 +25,27 @@ SCRIPT = ROOT / "scripts" / "benchmark_search_terms.py"
 
 
 class SearchTermsBenchmarkHarnessTests(unittest.TestCase):
+    def test_benchmark_schema_copies_definition_source_names_and_index(self):
+        source = inspect.getsource(benchmark_search_terms._create_schema)
+
+        self.assertIn("name varchar(255) NOT NULL", source)
+        self.assertIn("d.name", source)
+        self.assertIn("bench_definition_name_trgm", source)
+        self.assertNotIn("bench_term_name_trgm", source)
+
+    def test_representative_name_comes_from_definition_name(self):
+        source = inspect.getsource(benchmark_search_terms._representative_filters)
+
+        self.assertIn("min(d.name)", source)
+        self.assertNotIn("min(t.name)", source)
+
+    def test_reference_sql_matches_definition_name(self):
+        reference_sql = _reference_page_sql(mode="prefix")
+
+        self.assertIn("d.name ILIKE", reference_sql)
+        self.assertNotIn("t.name ILIKE", reference_sql)
+        self.assertIn("GROUP BY d.term_id", reference_sql)
+
     def test_compose_verifier_uses_strict_disposable_database_name(self):
         self.assertEqual(
             _database_name("20260810T120102", "abc12345"),

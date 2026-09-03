@@ -175,7 +175,7 @@ async def _create_schema(connection, *, schema: str, scale: int) -> None:
         "CREATE TABLE topic (id bigint PRIMARY KEY, name varchar(255) NOT NULL, page_start integer NOT NULL, page_end integer NOT NULL, book_id bigint NOT NULL)",
         "CREATE TABLE topic_mapping (topic_code_id bigint NOT NULL, topic_id bigint NOT NULL, PRIMARY KEY (topic_code_id, topic_id))",
         "CREATE TABLE term (id bigint PRIMARY KEY, name varchar(255) NOT NULL)",
-        "CREATE TABLE definition (id bigint PRIMARY KEY, term_id bigint NOT NULL, topic_id bigint NOT NULL, text text NOT NULL, page integer NOT NULL)",
+        "CREATE TABLE definition (id bigint PRIMARY KEY, term_id bigint NOT NULL, name varchar(255) NOT NULL, topic_id bigint NOT NULL, text text NOT NULL, page integer NOT NULL)",
     ):
         await connection.execute(text(ddl))
 
@@ -195,7 +195,7 @@ async def _create_schema(connection, *, schema: str, scale: int) -> None:
         "INSERT INTO topic SELECT tp.id, tp.name, tp.page_start, tp.page_end, tp.book_id FROM public.topic tp",
         "INSERT INTO topic_mapping SELECT tm.topic_code_id, tm.topic_id FROM public.topic_mapping tm",
         f"INSERT INTO term SELECT t.id + replica.copy_no * :term_stride, CASE WHEN replica.copy_no = 0 THEN t.name ELSE left(t.name, 230) || ' [bench ' || replica.copy_no || ']' END FROM public.term t CROSS JOIN {copies}",
-        f"INSERT INTO definition SELECT d.id + replica.copy_no * :definition_stride, d.term_id + replica.copy_no * :term_stride, d.topic_id, d.text, d.page FROM public.definition d CROSS JOIN {copies}",
+        f"INSERT INTO definition SELECT d.id + replica.copy_no * :definition_stride, d.term_id + replica.copy_no * :term_stride, d.name, d.topic_id, d.text, d.page FROM public.definition d CROSS JOIN {copies}",
     )
     params = {
         "fact_scale": _table_copy_scale("term", scale),
@@ -211,7 +211,7 @@ async def _create_schema(connection, *, schema: str, scale: int) -> None:
         "CREATE INDEX bench_topic_mapping_topic ON topic_mapping (topic_id)",
         "CREATE INDEX bench_definition_term ON definition (term_id)",
         "CREATE INDEX bench_definition_topic ON definition (topic_id)",
-        "CREATE INDEX bench_term_name_trgm ON term USING gin (name gin_trgm_ops)",
+        "CREATE INDEX bench_definition_name_trgm ON definition USING gin (name gin_trgm_ops)",
     ):
         await connection.execute(text(index_sql))
     await connection.execute(text("ANALYZE"))
@@ -222,9 +222,8 @@ async def _representative_filters(session: AsyncSession) -> tuple[TermSearchFilt
         await session.execute(
             text(
                 """
-                SELECT tp.book_id, b.grade, tc.chapter_id, min(t.name) AS sample_name
+                SELECT tp.book_id, b.grade, tc.chapter_id, min(d.name) AS sample_name
                 FROM definition d
-                JOIN term t ON t.id = d.term_id
                 JOIN topic tp ON tp.id = d.topic_id
                 JOIN book b ON b.id = tp.book_id
                 JOIN topic_mapping tm ON tm.topic_id = tp.id
@@ -256,11 +255,10 @@ async def _representative_filters(session: AsyncSession) -> tuple[TermSearchFilt
 def _reference_page_sql(*, mode: str) -> str:
     name_clause = ""
     if mode == "prefix":
-        name_clause = "AND t.name ILIKE :name_pattern ESCAPE E'\\\\'"
+        name_clause = "AND d.name ILIKE :name_pattern ESCAPE E'\\\\'"
     return f"""
         SELECT d.term_id, min(d.id) AS first_qualifying_definition_id
         FROM definition d
-        JOIN term t ON t.id = d.term_id
         JOIN topic tp ON tp.id = d.topic_id
         JOIN book b ON b.id = tp.book_id
         WHERE tp.book_id = :book_id

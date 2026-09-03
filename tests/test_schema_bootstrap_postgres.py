@@ -141,8 +141,8 @@ class SchemaBootstrapPostgresContractTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(signature["transaction_read_only"])
 
             async with target_engine.begin() as connection:
-                await connection.execute(text("DROP INDEX public.idx_term_name_trgm"))
-                await connection.execute(text("CREATE INDEX idx_term_name_trgm ON public.term (name)"))
+                await connection.execute(text("DROP INDEX public.idx_definition_name_trgm"))
+                await connection.execute(text("CREATE INDEX idx_definition_name_trgm ON public.definition (name)"))
             with self.assertRaises(RuntimeError):
                 await initialize_schema(target_engine)
         finally:

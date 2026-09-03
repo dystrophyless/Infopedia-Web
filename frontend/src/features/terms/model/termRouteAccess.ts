@@ -6,6 +6,6 @@ export function resolveTermRouteAccess(input: {
   routeStateTermRef: string | undefined;
 }): TermRouteAccess {
   if (!input.termRef) return 'guest-denied';
-  if (input.routeStateTermRef === input.termRef) return 'state';
-  return input.isAuthenticated ? 'authenticated-fetch' : 'guest-denied';
+  if (input.isAuthenticated) return 'authenticated-fetch';
+  return input.routeStateTermRef === input.termRef ? 'state' : 'guest-denied';
 }

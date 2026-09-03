@@ -9,16 +9,28 @@ const featured = (index: number): FeaturedTerm => ({
   term: { public_id: `term-${index}`, name: `Термин ${index}` },
   featured_definition: {
     public_id: `definition-${index}`,
+    name: `Термин ${index}`,
     text: `Определение ${index} с текстом для проверки доступного пространства карточки.`,
     page: 10 + index,
     topic: { name: 'Алгоритмы', book: { publisher: 'Мектеп', grade: 10 } },
   },
 });
 const terms = [featured(1), featured(2), featured(3)];
+const sourceNamedFeatured: FeaturedTerm = {
+  term: { public_id: 'term_ram', name: 'Жедел жад' },
+  featured_definition: {
+    public_id: 'definition_ram',
+    name: 'RAM',
+    text: 'Source definition',
+    page: 17,
+    topic: { name: 'Компьютерлік жад', book: { publisher: 'Атамұра', grade: 7 } },
+  },
+};
 const mobileGuestTerms = [1, 2, 3, 4].map((index) => ({
   term: { public_id: `guest-term-${index}`, name: `Гостевой термин ${index}` },
   featured_definition: {
     public_id: `guest-definition-${index}`,
+    name: `Гостевой термин ${index}`,
     text: 'Первая строка определения для гостевой карточки. Вторая строка с источником. Третья строка с пояснением. Четвёртая строка полностью видима. Пятая строка должна быть скрыта.',
     page: 20 + index,
     topic: { name: 'Алгоритмы', book: { publisher: 'Мектеп', grade: 10 }, },
@@ -45,6 +57,14 @@ export const RequestError: Story = {
 };
 export const Empty: Story = { args: { terms: [] } };
 export const Single: Story = { args: { terms: [terms[0]] } };
+export const MatchedSourceName: Story = {
+  args: { terms: [sourceNamedFeatured], variant: 'desktop' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'RAM' })).toBeVisible();
+    await expect(canvas.queryByRole('heading', { name: 'Жедел жад' })).not.toBeInTheDocument();
+  },
+};
 export const MultipleWithClonesAndPause: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

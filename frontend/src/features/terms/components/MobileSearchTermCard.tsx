@@ -24,6 +24,7 @@ export function MobileSearchTermCard({
 }: MobileSearchTermCardProps) {
   const { t } = useTranslation();
   const definition = term.definitions?.[0];
+  const displayName = definition?.name ?? term.name;
   const source = bookChip(definition, t);
   const page =
     definition?.page !== undefined && definition.page !== null
@@ -72,7 +73,7 @@ export function MobileSearchTermCard({
       <div className="flex flex-col gap-6 px-2">
         <div className="relative grid min-w-0 grid-cols-[minmax(0,1fr)_24px] items-start gap-6">
           <h2 className="min-w-0 w-full max-w-[274px] text-[20px] font-medium leading-[20px] text-[#161519]">
-            {term.name}
+            {displayName}
           </h2>
           <FavoriteToggle
             termRef={term.public_id}
@@ -118,7 +119,7 @@ export function MobileSearchTermCard({
 
       <Link
         to={`/terms/${term.public_id}`}
-        state={{ backTo, term }}
+        state={{ backTo, term, selectedDefinitionPublicId: definition?.public_id }}
         className="flex h-10 w-full items-center justify-center rounded-[8px] bg-[#6a37c3] px-4 text-[16px] font-medium leading-none text-[#efeaf8] transition-opacity hover:opacity-90"
       >
         {t('search.detailsCta')}

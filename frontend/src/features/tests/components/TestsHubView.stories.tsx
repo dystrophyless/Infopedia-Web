@@ -1,9 +1,11 @@
 import '../../../i18n';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useEffect, useState } from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import type { TestsDashboard } from '../../../api/tests';
 import { DesktopSidebar } from '../../../components/DesktopSidebar';
+import i18n from '../../../i18n';
 import { TestsHubView } from './TestsHubView';
 
 const liveTopics = [
@@ -240,6 +242,8 @@ const desktopRecentMetricStressDashboard: TestsDashboard = {
   recentTests: [
     {
       ...desktopDashboard.recentTests[0],
+      title: 'Тест',
+      completedAt: '2026-09-30T23:59:00Z',
       accuracy: 0,
       correctAnswerCount: 0,
       incorrectAnswerCount: 0,
@@ -248,6 +252,33 @@ const desktopRecentMetricStressDashboard: TestsDashboard = {
     ...desktopDashboard.recentTests.slice(1),
   ],
 };
+
+function RecentMetricStressLanguageStory({ language, bounded = false }: { language: 'ru' | 'kk'; bounded?: boolean }) {
+  const [ready, setReady] = useState(i18n.resolvedLanguage?.startsWith(language) === true);
+
+  useEffect(() => {
+    let mounted = true;
+    void i18n.changeLanguage(language).then(() => {
+      if (mounted) setReady(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [language]);
+
+  if (!ready) return null;
+  // Bound only the KK stress story so its Intl-generated date exercises the clipping path.
+  return <div className="contents" data-tests-recent-stress-bounded={bounded ? 'true' : undefined}>
+    {bounded && <style>{'[data-tests-recent-stress-bounded="true"] [data-tests-recent-metadata] { width: 48px !important; }'}</style>}
+    <TestsHubView
+      weakTopics={liveTopics}
+      weakTopicSearchTarget="/search"
+      status="ready"
+      dashboard={desktopRecentMetricStressDashboard}
+      dashboardStatus="ready"
+    />
+  </div>;
+}
 
 export const DesktopRecentZeroSkipped: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
@@ -304,6 +335,11 @@ export const DesktopRecentMetricStress: Story = {
     await assertMetrics();
     await expect(recentLink).toHaveAccessibleName(/Правильные ответы: 0.*Неправильные ответы: 0.*Пропущено: 20/);
   },
+};
+
+export const DesktopRecentMetricStressKazakh: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  render: () => <RecentMetricStressLanguageStory language="kk" bounded />,
 };
 
 export const DesktopShowMoreHover: Story = {

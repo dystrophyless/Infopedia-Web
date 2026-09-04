@@ -691,17 +691,45 @@ async function capture(page, descriptor) {
           const metrics = link.querySelector('[data-tests-recent-metrics]');
           const arrow = link.querySelector('[data-tests-recent-arrow]');
           const arrowSvg = arrow?.querySelector('svg') ?? null;
+          const score = link.querySelector('[data-tests-recent-score]');
           const scoreGroup = link.children[1];
+          const linkStyle = computed(link);
+          const dateStyle = computed(date);
+          const metricsStyle = computed(metrics);
+          const scoreStyle = computed(score);
+          const arrowStyle = computed(arrow);
           return {
             box: box(link),
-            backgroundColor: computed(link).backgroundColor,
+            backgroundColor: linkStyle.backgroundColor,
+            transitionProperty: linkStyle.transitionProperty,
+            transitionDuration: linkStyle.transitionDuration,
+            transitionTimingFunction: linkStyle.transitionTimingFunction,
             accessibleName: link.getAttribute('aria-label'),
-            dateDisplay: computed(date).display,
-            metricsDisplay: computed(metrics).display,
-            metricsGap: computed(metrics).gap,
-            arrowDisplay: computed(arrow).display,
-            arrow: arrowSvg ? { box: box(arrowSvg), color: computed(arrow).color } : null,
+            dateDisplay: dateStyle.display,
+            dateOpacity: dateStyle.opacity,
+            dateTransform: dateStyle.transform,
+            dateTransitionProperty: dateStyle.transitionProperty,
+            dateTransitionDuration: dateStyle.transitionDuration,
+            dateTransitionTimingFunction: dateStyle.transitionTimingFunction,
+            metricsDisplay: metricsStyle.display,
+            metricsOpacity: metricsStyle.opacity,
+            metricsTransform: metricsStyle.transform,
+            metricsTransitionProperty: metricsStyle.transitionProperty,
+            metricsTransitionDuration: metricsStyle.transitionDuration,
+            metricsTransitionTimingFunction: metricsStyle.transitionTimingFunction,
+            metricsGap: metricsStyle.gap,
+            arrowDisplay: arrowStyle.display,
+            arrowOpacity: arrowStyle.opacity,
+            arrowTransform: arrowStyle.transform,
+            arrowTransitionProperty: arrowStyle.transitionProperty,
+            arrowTransitionDuration: arrowStyle.transitionDuration,
+            arrowTransitionTimingFunction: arrowStyle.transitionTimingFunction,
+            arrow: arrowSvg ? { box: box(arrowSvg), color: arrowStyle.color } : null,
             scoreGap: computed(scoreGroup).gap,
+            scoreTransform: scoreStyle.transform,
+            scoreTransitionProperty: scoreStyle.transitionProperty,
+            scoreTransitionDuration: scoreStyle.transitionDuration,
+            scoreTransitionTimingFunction: scoreStyle.transitionTimingFunction,
             correct: metric('[data-tests-recent-correct]'),
             incorrect: metric('[data-tests-recent-incorrect]'),
             skipped: metric('[data-tests-recent-skipped]'),
@@ -733,12 +761,14 @@ async function capture(page, descriptor) {
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.default) });
 
         await firstLink.hover();
+        await page.waitForTimeout(220);
         measurements.recentStates.hover = await state();
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.hover) });
 
         await page.mouse.move(0, 0);
         await page.locator('[data-testid="tests-weak-mode-card"]').focus();
         await page.keyboard.press('Tab');
+        await page.waitForTimeout(220);
         measurements.recentStates.focus = await state();
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.focus) });
 
@@ -746,6 +776,7 @@ async function capture(page, descriptor) {
         await page.mouse.move(0, 0);
         await firstLink.hover();
         await page.mouse.down();
+        await page.waitForTimeout(220);
         measurements.recentStates.active = await state();
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.active) });
         await page.mouse.up();
@@ -754,19 +785,48 @@ async function capture(page, descriptor) {
 
         const { recentPanel, recentStates } = measurements;
         const sameBox = (actual, expected) => actual.width === expected.width && actual.height === expected.height && actual.x === expected.x && actual.y === expected.y;
-        const detailsVisible = (snapshot, backgroundColor) => snapshot.backgroundColor === backgroundColor && snapshot.dateDisplay === 'none'
-          && snapshot.metricsDisplay === 'flex' && snapshot.arrowDisplay === 'block' && sameBox(snapshot.box, recentStates.default.box);
+        const detailsVisible = (snapshot, backgroundColor) => snapshot.backgroundColor === backgroundColor && snapshot.dateOpacity === '0'
+          && snapshot.metricsOpacity === '1' && snapshot.arrowOpacity === '1' && sameBox(snapshot.box, recentStates.default.box);
+        const transitionContract = (snapshot) => snapshot.transitionProperty === 'background-color'
+          && snapshot.transitionDuration === '0.16s' && snapshot.transitionTimingFunction === 'cubic-bezier(0, 0, 0.2, 1)'
+          && [
+            [snapshot.dateTransitionProperty, snapshot.dateTransitionDuration, snapshot.dateTransitionTimingFunction],
+            [snapshot.metricsTransitionProperty, snapshot.metricsTransitionDuration, snapshot.metricsTransitionTimingFunction],
+            [snapshot.arrowTransitionProperty, snapshot.arrowTransitionDuration, snapshot.arrowTransitionTimingFunction],
+            [snapshot.scoreTransitionProperty, snapshot.scoreTransitionDuration, snapshot.scoreTransitionTimingFunction],
+          ].every(([property, duration, timing]) => Boolean(property?.includes('opacity') || property?.includes('transform'))
+            && duration === '0.16s' && timing === 'cubic-bezier(0, 0, 0.2, 1)');
+        const translation = (transform) => {
+          if (transform === 'none') return { x: 0, y: 0 };
+          const matrix = transform?.match(/^matrix(?:3d)?\(([^)]+)\)$/)?.[1]?.split(',').map(Number) ?? [];
+          return matrix.length === 6 ? { x: matrix[4], y: matrix[5] } : matrix.length === 16 ? { x: matrix[12], y: matrix[13] } : { x: Number.NaN, y: Number.NaN };
+        };
+        const close = (actual, expected) => Number.isFinite(actual) && Math.abs(actual - expected) < 0.5;
+        const defaultDateTranslation = translation(recentStates.default.dateTransform);
+        const defaultMetricsTranslation = translation(recentStates.default.metricsTransform);
+        const defaultArrowTranslation = translation(recentStates.default.arrowTransform);
+        const detailTransforms = [recentStates.hover, recentStates.focus, recentStates.active].every((snapshot) => {
+          const dateTranslation = translation(snapshot.dateTransform);
+          const metricsTranslation = translation(snapshot.metricsTransform);
+          const scoreTranslation = translation(snapshot.scoreTransform);
+          const arrowTranslation = translation(snapshot.arrowTransform);
+          return close(dateTranslation.y, -2) && close(metricsTranslation.y, 0)
+            && close(scoreTranslation.x, -24) && close(arrowTranslation.x, 0);
+        });
         if (recentPanel.box.width !== 320 || recentPanel.box.height !== 242 || recentPanel.padding !== '24px 24px 32px'
           || recentPanel.gap !== '16px' || recentPanel.backgroundColor !== 'rgb(255, 255, 255)' || recentPanel.borderRadius !== '16px'
           || recentPanel.list.box.width !== 272 || recentPanel.list.box.height !== 150 || recentPanel.list.gap !== '0px'
           || recentPanel.rows.length !== 3 || recentPanel.rows.some((row) => row.width !== 272 || row.height !== 50)) {
           throw new VisualContractError(`${descriptor.id}: exact 320x242 panel or 272x150 gapless row geometry failed (${JSON.stringify(recentPanel)})`);
         }
-        if (recentStates.default.backgroundColor !== 'rgb(255, 255, 255)' || recentStates.default.dateDisplay === 'none'
-          || recentStates.default.metricsDisplay !== 'none' || recentStates.default.arrowDisplay !== 'none'
+        if (recentStates.default.backgroundColor !== 'rgb(255, 255, 255)' || recentStates.default.dateOpacity !== '1'
+          || recentStates.default.metricsOpacity !== '0' || recentStates.default.arrowOpacity !== '0'
+          || !close(defaultDateTranslation.y, 0) || !close(defaultMetricsTranslation.y, 2) || !close(defaultArrowTranslation.x, 4)
           || !detailsVisible(recentStates.hover, 'rgb(251, 251, 251)')
           || !detailsVisible(recentStates.focus, 'rgb(251, 251, 251)')
-          || !detailsVisible(recentStates.active, 'rgb(246, 245, 247)')) {
+          || !detailsVisible(recentStates.active, 'rgb(246, 245, 247)')
+          || ![recentStates.default, recentStates.hover, recentStates.focus, recentStates.active].every(transitionContract)
+          || !detailTransforms) {
           throw new VisualContractError(`${descriptor.id}: default/hover/focus/native active state paint or layout stability failed (${JSON.stringify(recentStates)})`);
         }
         const metricGeometryMatches = (visible) => visible.metricsGap === '8px' && visible.scoreGap === '4px' && visible.arrow.box.width === 18 && visible.arrow.box.height === 18 && visible.arrow.color === 'rgb(177, 172, 185)'

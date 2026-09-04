@@ -78,14 +78,14 @@ function RecentTestLink({ recent, locale, t }: {
     <Link
       to={`/tests/${recent.mode}?attemptRef=${encodeURIComponent(recent.attemptRef)}`}
       aria-label={recentAccessibleLabel}
-      className="group flex h-[50px] w-full items-center justify-between rounded-[8px] bg-white p-2 hover:bg-[#fbfbfb] focus-visible:bg-[#fbfbfb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3] active:bg-[#f6f5f7] active:hover:bg-[#f6f5f7]"
+      className="group relative flex h-[50px] w-full items-center justify-between rounded-[8px] bg-white p-2 transition-[background-color] duration-[160ms] ease-out hover:bg-[#fbfbfb] focus-visible:bg-[#fbfbfb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3] active:bg-[#f6f5f7] active:hover:bg-[#f6f5f7]"
       data-tests-recent-link
     >
       <span className="flex min-w-0 flex-col gap-1">
         <span className="truncate text-[16px] font-normal leading-4 text-[#39363f]">{recent.title}</span>
         <span className="relative h-[14px]">
-          <span data-tests-recent-date className="block text-[14px] font-normal leading-[14px] text-[#8c8698] group-hover:hidden group-focus-visible:hidden group-active:hidden">{recentDate}</span>
-          <span data-tests-recent-metrics aria-hidden="true" className="hidden h-[14px] items-center gap-2 group-hover:flex group-focus-visible:flex group-active:flex">
+          <span data-tests-recent-date className="absolute inset-0 block opacity-100 translate-y-0 text-[14px] font-normal leading-[14px] text-[#8c8698] transition-[opacity,transform] duration-[160ms] ease-out group-hover:opacity-0 group-hover:-translate-y-0.5 group-focus-visible:opacity-0 group-focus-visible:-translate-y-0.5 group-active:opacity-0 group-active:-translate-y-0.5">{recentDate}</span>
+          <span data-tests-recent-metrics aria-hidden="true" className="pointer-events-none absolute inset-0 flex h-[14px] items-center gap-2 opacity-0 translate-y-0.5 transition-[opacity,transform] duration-[160ms] ease-out group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0 group-active:opacity-100 group-active:translate-y-0">
             <span data-tests-recent-correct className="flex items-center gap-1 text-[12px] font-normal leading-3 text-[#22915d]">
               <span className="flex size-[14px] shrink-0 items-center justify-center rounded-full bg-[#29ae70]">
                 <img src={recentTick02Asset} alt="" className="block size-2 shrink-0" />
@@ -106,8 +106,8 @@ function RecentTestLink({ recent, locale, t }: {
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-1">
-        <span className="text-[16px] font-medium leading-4 text-[#161519]">{formatPercent(recent.accuracy)}</span>
-        <span data-tests-recent-arrow aria-hidden="true" className="hidden size-[18px] text-[#b1acb9] group-hover:block group-focus-visible:block group-active:block">
+        <span data-tests-recent-score className="text-[16px] font-medium leading-4 text-[#161519] transition-transform duration-[160ms] ease-out group-hover:-translate-x-6 group-focus-visible:-translate-x-6 group-active:-translate-x-6">{formatPercent(recent.accuracy)}</span>
+        <span data-tests-recent-arrow aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 size-[18px] opacity-0 translate-x-1 -translate-y-1/2 text-[#b1acb9] transition-[opacity,transform] duration-[160ms] ease-out group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 group-active:opacity-100 group-active:translate-x-0">
           <HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} aria-hidden />
         </span>
       </span>

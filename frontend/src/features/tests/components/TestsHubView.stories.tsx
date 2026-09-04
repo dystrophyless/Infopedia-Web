@@ -172,19 +172,26 @@ export const Desktop: Story = {
     const recentRowBox = recentLink!.getBoundingClientRect();
     await expect({ width: recentRowBox.width, height: recentRowBox.height }).toEqual({ width: 272, height: 50 });
     await expect(getComputedStyle(recentLink!).backgroundColor).toBe('rgb(255, 255, 255)');
-    await expect(recentLink!.querySelector('[data-tests-recent-date]')).toBeVisible();
-    await expect(recentLink!.querySelector('[data-tests-recent-metrics]')).not.toBeVisible();
-    await expect(recentLink!.querySelector('[data-tests-recent-arrow]')).not.toBeVisible();
+    const recentDate = recentLink!.querySelector<HTMLElement>('[data-tests-recent-date]')!;
+    const recentMetrics = recentLink!.querySelector<HTMLElement>('[data-tests-recent-metrics]')!;
+    const recentArrow = recentLink!.querySelector<HTMLElement>('[data-tests-recent-arrow]')!;
+    await expect(getComputedStyle(recentDate).opacity).toBe('1');
+    await expect(getComputedStyle(recentMetrics).opacity).toBe('0');
+    await expect(getComputedStyle(recentMetrics).display).toBe('flex');
+    await expect(getComputedStyle(recentArrow).opacity).toBe('0');
     weakCard!.focus();
     await userEvent.tab();
     await expect(recentLink).toHaveFocus();
-    await expect(getComputedStyle(recentLink!).backgroundColor).toBe('rgb(251, 251, 251)');
-    await expect(recentLink!.querySelector('[data-tests-recent-date]')).not.toBeVisible();
-    await expect(recentLink!.querySelector('[data-tests-recent-metrics]')).toBeVisible();
+    await waitFor(
+      () => expect(getComputedStyle(recentLink!).backgroundColor).toBe('rgb(251, 251, 251)'),
+      { timeout: 1000 },
+    );
+    await waitFor(() => expect(getComputedStyle(recentDate).opacity).toBe('0'), { timeout: 1000 });
+    await waitFor(() => expect(getComputedStyle(recentMetrics).opacity).toBe('1'), { timeout: 1000 });
+    await waitFor(() => expect(getComputedStyle(recentArrow).opacity).toBe('1'), { timeout: 1000 });
     await expect(recentLink!.querySelector('[data-tests-recent-correct]')).toHaveTextContent('14');
     await expect(recentLink!.querySelector('[data-tests-recent-incorrect]')).toHaveTextContent('4');
     await expect(recentLink!.querySelector('[data-tests-recent-skipped]')).toHaveTextContent('2');
-    await expect(recentLink!.querySelector('[data-tests-recent-arrow]')).toBeVisible();
     await expect(recentLink!.getBoundingClientRect()).toMatchObject({ width: recentRowBox.width, height: recentRowBox.height });
     await userEvent.keyboard('{Enter}');
     await expect(canvasElement.querySelector('[data-location-url]')).toHaveTextContent('/tests/random?attemptRef=attempt-1');
@@ -206,9 +213,23 @@ export const DesktopRecentMouseNavigation: Story = {
       () => expect(getComputedStyle(recentLink).backgroundColor).toBe('rgb(251, 251, 251)'),
       { timeout: 1000 },
     );
-    await expect(recentLink.querySelector('[data-tests-recent-metrics]')).toBeVisible();
+    await waitFor(
+      () => expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-metrics]')!)).toMatchObject({ display: 'flex', opacity: '1' }),
+      { timeout: 1000 },
+    );
+    await expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-date]')!)).toMatchObject({ display: 'block', opacity: '0' });
+    await expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-arrow]')!)).toMatchObject({ display: 'block', opacity: '1' });
     await expect(recentLink.getBoundingClientRect()).toMatchObject({ width: initialBox.width, height: initialBox.height });
     await expect(recentLink).toHaveClass('active:bg-[#f6f5f7]', 'active:hover:bg-[#f6f5f7]');
+    await browserUserEvent.unhover(recentLink);
+    await waitFor(
+      () => expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-date]')!)).toHaveProperty('opacity', '1'),
+      { timeout: 1000 },
+    );
+    await waitFor(
+      () => expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-metrics]')!)).toHaveProperty('opacity', '0'),
+      { timeout: 1000 },
+    );
     await browserUserEvent.click(recentLink);
     await expect(canvasElement.querySelector('[data-location-url]')).toHaveTextContent('/tests/random?attemptRef=attempt-1');
   },
@@ -240,7 +261,11 @@ export const DesktopRecentZeroSkipped: Story = {
     await expect(recentLink).toHaveFocus();
     await expect(recentLink).toHaveAccessibleName(/Пропущено: 0/);
     await expect(recentLink.querySelector('[data-tests-recent-skipped]')).toHaveTextContent('0');
-    await expect(recentLink.querySelector('[data-tests-recent-skipped]')).toBeVisible();
+    await waitFor(
+      () => expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-metrics]')!).opacity).toBe('1'),
+      { timeout: 1000 },
+    );
+    await expect(getComputedStyle(recentLink.querySelector('[data-tests-recent-skipped]')!)).toMatchObject({ opacity: '1' });
   },
 };
 

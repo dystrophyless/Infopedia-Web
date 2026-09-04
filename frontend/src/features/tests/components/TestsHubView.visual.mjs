@@ -91,7 +91,8 @@ const captures = [
   { id: 'chapter-short-title', story: 'features-tests-desktop-chapter-test-card--short-title', selector: '[data-chapter-card]', width: 320, height: 196, region: 'chapter-short-title', elementScreenshot: true },
   { id: 'statistics-filled', story: 'features-tests-hub--desktop-multiple-attempts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1024, height: 768, region: 'statistics-filled', figmaNode: '1325:2920', elementScreenshot: true },
   { id: 'recent-states', story: 'features-tests-hub--desktop-multiple-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-states', figmaNode: '1325:2867', elementScreenshot: true },
-  { id: 'recent-metric-stress', story: 'features-tests-hub--desktop-recent-metric-stress', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-metric-stress', figmaNode: '1325:2867', elementScreenshot: true },
+  { id: 'recent-metric-stress', story: 'features-tests-hub--desktop-recent-metric-stress', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-metric-stress', locale: 'ru-RU', figmaNode: '1325:2867', elementScreenshot: true },
+  { id: 'recent-metric-stress-kk', story: 'features-tests-hub--desktop-recent-metric-stress-kazakh', selector: '[aria-labelledby="tests-recent-title"]', width: 1024, height: 768, region: 'recent-metric-stress', locale: 'kk-KZ', figmaNode: '1325:2867', elementScreenshot: true },
   { id: 'statistics-empty', story: 'features-tests-hub--desktop-legacy-missing-counts', selector: '[aria-labelledby="tests-statistics-title"]', width: 1440, height: 1080, region: 'statistics-empty', figmaNode: '1325:2920', referenceWidth: 320, referenceHeight: 134, elementScreenshot: true },
   { id: 'recent-empty', story: 'features-tests-hub--desktop-zero-attempts', selector: '[aria-labelledby="tests-recent-title"]', width: 1440, height: 1080, region: 'recent-empty', figmaNode: '1325:2934', referenceWidth: 320, referenceHeight: 242, elementScreenshot: true },
   ...[320, 360, 390, 430].map((width) => ({ id: `history-mobile-${width}`, story: 'features-tests-hub--live-analysis', selector: '[data-tests-mobile]', width, height: 844, region: 'history-mobile' })),
@@ -364,6 +365,88 @@ async function waitForTooltipOpacity(page, expected) {
         && tooltips.every((tooltip, index) => getComputedStyle(tooltip).opacity === values[index]);
     },
     { values: expected },
+    { polling: 25, timeout: 2000 },
+  );
+}
+
+const RECENT_STATE_EXPECTATIONS = {
+  default: {
+    backgroundColor: 'rgb(255, 255, 255)',
+    dateOpacity: '1',
+    metricsOpacity: '0',
+    arrowOpacity: '0',
+    dateY: 0,
+    metricsY: 2,
+    scoreX: 0,
+    arrowX: 4,
+  },
+  hover: {
+    backgroundColor: 'rgb(251, 251, 251)',
+    dateOpacity: '0',
+    metricsOpacity: '1',
+    arrowOpacity: '1',
+    dateY: -2,
+    metricsY: 0,
+    scoreX: -24,
+    arrowX: 0,
+  },
+  focus: {
+    backgroundColor: 'rgb(251, 251, 251)',
+    dateOpacity: '0',
+    metricsOpacity: '1',
+    arrowOpacity: '1',
+    dateY: -2,
+    metricsY: 0,
+    scoreX: -24,
+    arrowX: 0,
+  },
+  active: {
+    backgroundColor: 'rgb(246, 245, 247)',
+    dateOpacity: '0',
+    metricsOpacity: '1',
+    arrowOpacity: '1',
+    dateY: -2,
+    metricsY: 0,
+    scoreX: -24,
+    arrowX: 0,
+  },
+};
+
+async function waitForRecentState(page, stateName, selector = '[data-tests-recent-link]') {
+  const expected = RECENT_STATE_EXPECTATIONS[stateName];
+  if (!expected) throw new Error(`Unknown recent state ${stateName}`);
+  await page.waitForFunction(
+    ({ selector: targetSelector, expectedState }) => {
+      const link = document.querySelector(targetSelector);
+      const date = link?.querySelector('[data-tests-recent-date]');
+      const metrics = link?.querySelector('[data-tests-recent-metrics]');
+      const score = link?.querySelector('[data-tests-recent-score]');
+      const arrow = link?.querySelector('[data-tests-recent-arrow]');
+      if (!link || !date || !metrics || !score || !arrow) return false;
+      const translation = (value) => {
+        if (value === 'none') return { x: 0, y: 0 };
+        const matrix = value?.match(/^matrix(?:3d)?\(([^)]+)\)$/)?.[1]?.split(',').map(Number) ?? [];
+        return matrix.length === 6
+          ? { x: matrix[4], y: matrix[5] }
+          : matrix.length === 16
+            ? { x: matrix[12], y: matrix[13] }
+            : { x: Number.NaN, y: Number.NaN };
+      };
+      const close = (actual, wanted) => Number.isFinite(actual) && Math.abs(actual - wanted) < 0.5;
+      const dateTranslation = translation(getComputedStyle(date).transform);
+      const metricsTranslation = translation(getComputedStyle(metrics).transform);
+      const scoreTranslation = translation(getComputedStyle(score).transform);
+      const arrowTranslation = translation(getComputedStyle(arrow).transform);
+      return getComputedStyle(link).backgroundColor === expectedState.backgroundColor
+        && getComputedStyle(date).opacity === expectedState.dateOpacity
+        && getComputedStyle(metrics).opacity === expectedState.metricsOpacity
+        && getComputedStyle(arrow).opacity === expectedState.arrowOpacity
+        && close(dateTranslation.y, expectedState.dateY)
+        && close(metricsTranslation.y, expectedState.metricsY)
+        && close(scoreTranslation.x, expectedState.scoreX)
+        && close(arrowTranslation.x, expectedState.arrowX);
+    },
+    { selector, expectedState: expected },
     { polling: 25, timeout: 2000 },
   );
 }
@@ -692,12 +775,25 @@ async function capture(page, descriptor) {
           const arrow = link.querySelector('[data-tests-recent-arrow]');
           const arrowSvg = arrow?.querySelector('svg') ?? null;
           const score = link.querySelector('[data-tests-recent-score]');
+          const title = link.querySelector(':scope > span:first-child > span:first-child');
+          const metadata = link.querySelector('[data-tests-recent-metadata]');
           const scoreGroup = link.children[1];
           const linkStyle = computed(link);
           const dateStyle = computed(date);
           const metricsStyle = computed(metrics);
           const scoreStyle = computed(score);
           const arrowStyle = computed(arrow);
+          const metricsChildren = metrics ? [...metrics.children].map(box) : [];
+          const metricsContentBox = metricsChildren.length > 0
+            ? {
+              x: Math.min(...metricsChildren.map((item) => item.x)),
+              y: Math.min(...metricsChildren.map((item) => item.y)),
+              right: Math.max(...metricsChildren.map((item) => item.right)),
+              bottom: Math.max(...metricsChildren.map((item) => item.bottom)),
+              width: Math.max(...metricsChildren.map((item) => item.right)) - Math.min(...metricsChildren.map((item) => item.x)),
+              height: Math.max(...metricsChildren.map((item) => item.bottom)) - Math.min(...metricsChildren.map((item) => item.y)),
+            }
+            : null;
           return {
             box: box(link),
             backgroundColor: linkStyle.backgroundColor,
@@ -705,9 +801,33 @@ async function capture(page, descriptor) {
             transitionDuration: linkStyle.transitionDuration,
             transitionTimingFunction: linkStyle.transitionTimingFunction,
             accessibleName: link.getAttribute('aria-label'),
+            title: title ? {
+              box: box(title),
+              textOverflow: computed(title).textOverflow,
+              overflow: computed(title).overflow,
+              whiteSpace: computed(title).whiteSpace,
+              scrollWidth: title.scrollWidth,
+              clientWidth: title.clientWidth,
+            } : null,
+            metadata: metadata ? {
+              box: box(metadata),
+              overflow: computed(metadata).overflow,
+              scrollWidth: metadata.scrollWidth,
+              clientWidth: metadata.clientWidth,
+            } : null,
+            dateBox: box(date),
+            dateScrollWidth: date?.scrollWidth ?? null,
+            dateClientWidth: date?.clientWidth ?? null,
+            metricsBox: box(metrics),
+            metricsContentBox,
+            scoreBox: box(score),
+            arrowLayerBox: box(arrow),
             dateDisplay: dateStyle.display,
             dateOpacity: dateStyle.opacity,
             dateTransform: dateStyle.transform,
+            dateWhiteSpace: dateStyle.whiteSpace,
+            dateTextOverflow: dateStyle.textOverflow,
+            dateOverflow: dateStyle.overflow,
             dateTransitionProperty: dateStyle.transitionProperty,
             dateTransitionDuration: dateStyle.transitionDuration,
             dateTransitionTimingFunction: dateStyle.transitionTimingFunction,
@@ -754,21 +874,27 @@ async function capture(page, descriptor) {
         });
         await page.mouse.move(0, 0);
         await firstLink.evaluate((element) => element.blur());
+        await waitForRecentState(page, 'default');
         measurements.recentStates = { default: await state() };
         const screenshotFiles = descriptor.region === 'recent-metric-stress'
-          ? { default: 'recent-stress-default.png', hover: 'recent-stress-hover.png', focus: 'recent-stress-focus.png', active: 'recent-stress-active.png' }
+          ? descriptor.id === 'recent-metric-stress-kk'
+            ? { default: 'recent-stress-default-kk.png', hover: 'recent-stress-hover-kk.png', focus: 'recent-stress-focus-kk.png', active: 'recent-stress-active-kk.png' }
+            : { default: 'recent-stress-default.png', hover: 'recent-stress-hover.png', focus: 'recent-stress-focus.png', active: 'recent-stress-active.png' }
           : { default: 'recent-default.png', hover: 'recent-hover.png', focus: 'recent-focus.png', active: 'recent-active.png' };
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.default) });
 
         await firstLink.hover();
-        await page.waitForTimeout(220);
+        await waitForRecentState(page, 'hover');
         measurements.recentStates.hover = await state();
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.hover) });
 
         await page.mouse.move(0, 0);
+        await waitForRecentState(page, 'default');
+        measurements.recentStates.reverseHover = await state();
+
         await page.locator('[data-testid="tests-weak-mode-card"]').focus();
         await page.keyboard.press('Tab');
-        await page.waitForTimeout(220);
+        await waitForRecentState(page, 'focus');
         measurements.recentStates.focus = await state();
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.focus) });
 
@@ -776,15 +902,43 @@ async function capture(page, descriptor) {
         await page.mouse.move(0, 0);
         await firstLink.hover();
         await page.mouse.down();
-        await page.waitForTimeout(220);
+        await waitForRecentState(page, 'active');
         measurements.recentStates.active = await state();
         await panel.screenshot({ path: path.join(outputDir, screenshotFiles.active) });
         await page.mouse.up();
+
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.mouse.move(0, 0);
+        await firstLink.evaluate((element) => element.blur());
+        await waitForRecentState(page, 'default');
+        const reducedDefault = await state();
+        await firstLink.hover();
+        await waitForRecentState(page, 'hover');
+        const reducedHover = await state();
+        await page.mouse.move(0, 0);
+        await page.locator('[data-testid="tests-weak-mode-card"]').focus();
+        await page.keyboard.press('Tab');
+        await waitForRecentState(page, 'focus');
+        const reducedFocus = await state();
+        await firstLink.evaluate((element) => element.blur());
+        await page.mouse.move(0, 0);
+        await firstLink.hover();
+        await page.mouse.down();
+        await waitForRecentState(page, 'active');
+        const reducedActive = await state();
+        await page.mouse.up();
+        await page.mouse.move(0, 0);
+        await waitForRecentState(page, 'default');
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        measurements.reducedMotionStates = { default: reducedDefault, hover: reducedHover, focus: reducedFocus, active: reducedActive };
         await page.waitForFunction(() => document.querySelector('[data-location-url]')?.textContent?.includes('/tests/random?attemptRef=attempt-1'));
         measurements.recentStates.navigation = await page.locator('[data-location-url]').textContent();
 
         const { recentPanel, recentStates } = measurements;
         const sameBox = (actual, expected) => actual.width === expected.width && actual.height === expected.height && actual.x === expected.x && actual.y === expected.y;
+        const boxesOverlap = (first, second) => Boolean(first && second
+          && first.x < second.right && first.right > second.x
+          && first.y < second.bottom && first.bottom > second.y);
         const detailsVisible = (snapshot, backgroundColor) => snapshot.backgroundColor === backgroundColor && snapshot.dateOpacity === '0'
           && snapshot.metricsOpacity === '1' && snapshot.arrowOpacity === '1' && sameBox(snapshot.box, recentStates.default.box);
         const transitionContract = (snapshot) => snapshot.transitionProperty === 'background-color'
@@ -813,6 +967,35 @@ async function capture(page, descriptor) {
           return close(dateTranslation.y, -2) && close(metricsTranslation.y, 0)
             && close(scoreTranslation.x, -24) && close(arrowTranslation.x, 0);
         });
+        const recentLayoutSafe = (snapshot) => snapshot.metadata?.box?.width > 0
+          && snapshot.title?.whiteSpace === 'nowrap' && snapshot.title?.textOverflow === 'ellipsis' && snapshot.title?.overflow === 'hidden'
+          && snapshot.dateWhiteSpace === 'nowrap' && snapshot.dateTextOverflow === 'ellipsis' && snapshot.dateOverflow === 'hidden'
+          && snapshot.dateBox?.right <= snapshot.metadata.box.right + 0.5
+          && (snapshot.metricsOpacity === '1'
+            ? !boxesOverlap(snapshot.metricsContentBox, snapshot.scoreBox) && !boxesOverlap(snapshot.metricsContentBox, snapshot.arrowLayerBox)
+            : !boxesOverlap(snapshot.dateBox, snapshot.scoreBox) && !boxesOverlap(snapshot.dateBox, snapshot.arrowLayerBox));
+        const reducedTransitionContract = (snapshot) => [
+          [snapshot.transitionProperty, snapshot.transitionDuration],
+          [snapshot.dateTransitionProperty, snapshot.dateTransitionDuration],
+          [snapshot.metricsTransitionProperty, snapshot.metricsTransitionDuration],
+          [snapshot.scoreTransitionProperty, snapshot.scoreTransitionDuration],
+          [snapshot.arrowTransitionProperty, snapshot.arrowTransitionDuration],
+        ].every(([property, duration]) => property === 'none' && duration === '0s');
+        const recentSnapshots = [
+          recentStates.default,
+          recentStates.hover,
+          recentStates.focus,
+          recentStates.active,
+          recentStates.reverseHover,
+          ...Object.values(measurements.reducedMotionStates ?? {}),
+        ];
+        const kkStressClippingContract = descriptor.id !== 'recent-metric-stress-kk'
+          || recentSnapshots.every((snapshot) => snapshot.dateScrollWidth > snapshot.dateClientWidth
+            && snapshot.metadata?.clientWidth === snapshot.dateClientWidth
+            && snapshot.dateClientWidth === 48
+            && snapshot.dateWhiteSpace === 'nowrap'
+            && snapshot.dateTextOverflow === 'ellipsis'
+            && snapshot.dateOverflow === 'hidden');
         if (recentPanel.box.width !== 320 || recentPanel.box.height !== 242 || recentPanel.padding !== '24px 24px 32px'
           || recentPanel.gap !== '16px' || recentPanel.backgroundColor !== 'rgb(255, 255, 255)' || recentPanel.borderRadius !== '16px'
           || recentPanel.list.box.width !== 272 || recentPanel.list.box.height !== 150 || recentPanel.list.gap !== '0px'
@@ -826,8 +1009,20 @@ async function capture(page, descriptor) {
           || !detailsVisible(recentStates.focus, 'rgb(251, 251, 251)')
           || !detailsVisible(recentStates.active, 'rgb(246, 245, 247)')
           || ![recentStates.default, recentStates.hover, recentStates.focus, recentStates.active].every(transitionContract)
-          || !detailTransforms) {
-          throw new VisualContractError(`${descriptor.id}: default/hover/focus/native active state paint or layout stability failed (${JSON.stringify(recentStates)})`);
+          || !detailTransforms
+          || !sameBox(recentStates.reverseHover.box, recentStates.default.box)
+          || recentStates.reverseHover.backgroundColor !== recentStates.default.backgroundColor
+          || recentStates.reverseHover.dateOpacity !== recentStates.default.dateOpacity
+          || recentStates.reverseHover.metricsOpacity !== recentStates.default.metricsOpacity
+          || recentStates.reverseHover.arrowOpacity !== recentStates.default.arrowOpacity
+          || !recentSnapshots.every(recentLayoutSafe)
+          || !measurements.reducedMotionStates
+          || !Object.values(measurements.reducedMotionStates).every(reducedTransitionContract)
+          || !detailsVisible(measurements.reducedMotionStates.hover, 'rgb(251, 251, 251)')
+          || !detailsVisible(measurements.reducedMotionStates.focus, 'rgb(251, 251, 251)')
+          || !detailsVisible(measurements.reducedMotionStates.active, 'rgb(246, 245, 247)')
+          || !kkStressClippingContract) {
+          throw new VisualContractError(`${descriptor.id}: default/hover/focus/native active state paint or layout stability failed (${JSON.stringify({ recentStates, reducedMotionStates: measurements.reducedMotionStates })})`);
         }
         const metricGeometryMatches = (visible) => visible.metricsGap === '8px' && visible.scoreGap === '4px' && visible.arrow.box.width === 18 && visible.arrow.box.height === 18 && visible.arrow.color === 'rgb(177, 172, 185)'
           && visible.correct.gap === '4px' && visible.correct.marker.box.width === 14 && visible.correct.marker.box.height === 14 && visible.correct.marker.flexShrink === '0' && visible.correct.marker.backgroundColor === 'rgb(41, 174, 112)' && visible.correct.glyph?.box.width === 8 && visible.correct.glyph.box.height === 8 && visible.correct.glyph.flexShrink === '0' && visible.correct.count.color === 'rgb(34, 145, 93)'
@@ -1194,7 +1389,7 @@ async function main() {
         await probe.close();
       }
       for (const descriptor of activeCaptures) {
-      const page = await browser.newPage({ viewport: { width: descriptor.width, height: descriptor.height }, deviceScaleFactor: 1, locale: 'ru-RU' });
+      const page = await browser.newPage({ viewport: { width: descriptor.width, height: descriptor.height }, deviceScaleFactor: 1, locale: descriptor.locale ?? 'ru-RU' });
       try {
         measurements.push(await capture(page, descriptor));
       } finally {

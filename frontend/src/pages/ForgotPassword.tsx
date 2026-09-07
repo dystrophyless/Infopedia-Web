@@ -76,11 +76,9 @@ export function ForgotPassword() {
             disabled={loading || resendSeconds > 0}
             className="text-accent hover:underline disabled:text-muted disabled:no-underline"
           >
-            {loading
-              ? t('common.loading')
-              : resendSeconds > 0
-                ? t('auth.resendIn', { seconds: resendSeconds })
-                : t('auth.resendResetLink')}
+            {resendSeconds > 0
+              ? t('auth.resendIn', { seconds: resendSeconds })
+              : t('auth.resendResetLink')}
           </button>
         }
       >
@@ -136,7 +134,7 @@ export function ForgotPassword() {
           </p>
         )}
         <AuthSubmit loading={loading}>
-          {loading ? t('common.loading') : t('auth.sendResetLinkButton')}
+          {t('auth.sendResetLinkButton')}
         </AuthSubmit>
       </form>
     </AuthShell>

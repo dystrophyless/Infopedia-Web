@@ -43,7 +43,7 @@ try {
       timeout: 60000,
     });
     await page.locator('h1.text-left').waitFor({ state: 'visible' });
-    if (kind === 'grade') await page.getByRole('button', { name: '10 класс' }).waitFor({ state: 'visible' });
+    if (kind === 'grade') await page.getByRole('radio', { name: '10 класс' }).waitFor({ state: 'visible' });
     if (kind === 'username') await page.getByRole('textbox', { name: 'Имя пользователя' }).waitFor({ state: 'visible' });
     if (kind === 'register') await page.getByRole('textbox', { name: 'Электронная почта' }).waitFor({ state: 'visible' });
     if (kind === 'verify') await page.getByRole('textbox', { name: 'Код подтверждения: 1' }).waitFor({ state: 'visible' });
@@ -61,7 +61,7 @@ try {
       const usernameDescription = username?.getAttribute('aria-describedby');
 
       if (expectedState === 'grade-selected') {
-        return document.querySelector('button[aria-pressed="true"]') !== null;
+        return document.querySelector('input[type="radio"][name="onboarding-grade"]:checked') !== null;
       }
       if (expectedState === 'grade-error') return alerts.length === 1;
       if (expectedState === 'username-typed') {
@@ -160,14 +160,18 @@ try {
       };
 
       if (kind === 'grade') {
-        const options = [...document.querySelectorAll('button[aria-pressed]')].filter(isVisible);
+        const options = [...document.querySelectorAll('label[for^="onboarding-grade-mobile-"]')].filter(isVisible);
         const indicators = options.map((option) => option.querySelector('[data-onboarding-indicator="mobile"]'));
-        const tick = visible([...document.querySelectorAll('button[aria-pressed="true"] span')].filter((element) => element.classList.contains('size-5')));
+        const selectedInput = document.querySelector('input[type="radio"][name="onboarding-grade"]:checked');
+        const selectedOption = selectedInput
+          ? document.querySelector(`label[for="${selectedInput.id}"]`)
+          : null;
+        const tick = visible([...((selectedOption?.querySelectorAll('span') ?? []))].filter((element) => element.classList.contains('size-5')));
         const message = form?.querySelector('[role="alert"]');
         return {
           ...common,
           options: options.map(rect),
-          selected: options.find((option) => option.getAttribute('aria-pressed') === 'true')?.textContent?.trim() ?? null,
+          selected: selectedOption?.textContent?.trim() ?? null,
           optionTexts: options.map((option) => option.textContent?.trim()),
           // Count only direct leading SVG children; the selected Tick02Icon is
           // nested in the right indicator and is intentionally excluded here.
@@ -311,8 +315,8 @@ try {
         assert.ok(['1px', '1.5px'].includes(result.indicatorStyles[1].borderWidth));
         assert.equal(Math.round(result.tick.width), 20);
         assert.equal(Math.round(result.tick.height), 20);
-        await page.hover('button[aria-pressed="true"]');
-        assert.equal(await page.locator('button[aria-pressed="true"]').evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(255, 255, 255)');
+        await page.hover('label[for="onboarding-grade-mobile-10"]');
+        assert.equal(await page.locator('label[for="onboarding-grade-mobile-10"]').evaluate((label) => getComputedStyle(label).backgroundColor), 'rgb(255, 255, 255)');
       }
     } else if (kind === 'username') {
       assert.equal(result.titleText, 'Придумай себе юзернейм');
@@ -411,10 +415,10 @@ try {
         kind: 'grade',
         storyId: 'pages-onboarding--grade-unselected-430',
         run: async (page) => {
-          const option = page.getByRole('button', { name: '10 класс' });
+          const option = page.getByRole('radio', { name: '10 класс' });
           await option.waitFor({ state: 'visible' });
-          await option.click();
-          assert.equal(await option.getAttribute('aria-pressed'), 'true', `${name}: grade remains selectable`);
+          await page.getByText('10 класс').click();
+          assert.equal(await option.isChecked(), true, `${name}: grade remains selectable`);
         },
       },
       {
@@ -479,7 +483,7 @@ try {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
   });
-  await probe.getByRole('button', { name: '10 класс' }).waitFor({ state: 'visible' });
+  await probe.getByRole('radio', { name: '10 класс' }).waitFor({ state: 'visible' });
   assert.equal(await probe.evaluate((key) => window.localStorage.getItem(key), pendingDraftStorageKey), null);
   await probe.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
   assert.equal(

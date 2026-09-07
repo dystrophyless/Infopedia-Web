@@ -179,7 +179,7 @@ export function Login() {
           mobileVisual="figma-auth"
           desktopVisual="onboarding"
         >
-          {loading ? t('common.loading') : t('auth.loginButton')}
+          {t('auth.loginButton')}
         </AuthSubmit>
         <AuthDivider label={t('auth.or')} desktopVisual="onboarding" />
         <GoogleAuthButton onClick={handleGoogleAuth} desktopVisual="onboarding">

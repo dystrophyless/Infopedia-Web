@@ -32,6 +32,7 @@ export interface DesktopTestsHubViewProps {
   dashboard: TestsDashboard | null;
   status: 'loading' | 'ready' | 'error' | 'catalog';
   analyzeStatus: 'loading' | 'ready' | 'empty' | 'error';
+  weakTopicCount: number;
   onRetry?: () => void;
   questionLabel?: (count: number) => string;
 }
@@ -119,7 +120,7 @@ export function defaultQuestionLabel(count: number) {
   return `${count} ${count === 1 ? 'вопрос' : count < 5 ? 'вопроса' : 'вопросов'}`;
 }
 
-export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry, questionLabel }: DesktopTestsHubViewProps) {
+export function DesktopTestsHubView({ dashboard, status, analyzeStatus, weakTopicCount, onRetry, questionLabel }: DesktopTestsHubViewProps) {
   const { t, i18n } = useTranslation();
   const locale: 'ru' | 'kk' = i18n.resolvedLanguage?.startsWith('kk') ? 'kk' : 'ru';
   const [sort, setSort] = useState<DashboardSort>('importance');
@@ -152,7 +153,11 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
     }
     return t('tests.desktopUnavailable', { defaultValue: 'Пока недоступно' });
   };
-  const weakAvailable = modeAvailability(dashboard, 'weak')?.available === true;
+  const weakUnavailableMessage = analyzeStatus === 'ready'
+    ? t('tests.desktopWeakUnavailableNoTopics', { defaultValue: 'Слабых тем нет' })
+    : analyzeStatus === 'loading'
+      ? t('tests.desktopWeakUnavailableLoading', { defaultValue: 'Загрузка результатов анализа' })
+      : t('tests.desktopWeakUnavailableError', { defaultValue: 'Не удалось загрузить результаты анализа' });
 
   return (
     <div className="hidden min-h-[1293px] bg-[#efeaf8] px-16 py-8 md:ml-px md:block" data-tests-desktop>
@@ -169,21 +174,21 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
                 to={dashboardReady && modeAvailability(dashboard, 'random')?.available === true ? '/tests/random' : undefined}
                 unavailableMessage={modeReason('random')}
               /> : <ModeCardSkeleton />}
-              {dashboardReady ? weakAvailable ? <DesktopTestOptionCard
-                mode="weak"
-                title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
-                description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
-                icon={<HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.7} />}
-                iconTone="bg-[#f25f54] text-white"
-                to="/tests/weak"
-                unavailableMessage={modeReason('weak')}
-              /> : analyzeStatus === 'empty' ? <DesktopTestOptionCard
+              {dashboardReady ? analyzeStatus === 'empty' ? <DesktopTestOptionCard
                 mode="weak"
                 title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
                 description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
                 statusBadge={t('tests.desktopWeakBadge', { defaultValue: 'После анализа ЕНТ' })}
                 to="/analyze"
                 contract="weak-pre-analysis"
+              /> : analyzeStatus === 'ready' && weakTopicCount > 0 ? <DesktopTestOptionCard
+                mode="weak"
+                title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
+                description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
+                icon={<HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.7} />}
+                iconTone="bg-[#f25f54] text-white"
+                to="/tests/weak"
+                unavailableMessage={weakUnavailableMessage}
               /> : <DesktopTestOptionCard
                 mode="weak"
                 title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
@@ -191,7 +196,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, onRetry,
                 icon={<HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.7} />}
                 iconTone="bg-[#f25f54] text-white"
                 to={undefined}
-                unavailableMessage={modeReason('weak')}
+                unavailableMessage={weakUnavailableMessage}
               /> : <ModeCardSkeleton />}
             </div>
             <div className="h-[180px]" data-tests-mode-card="mock">{status === 'loading' ? <ModeCardSkeleton /> : <DesktopTestOptionCard

@@ -8,7 +8,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MobilePinnedAppBar, Progress } from '../../../ui';
+import { MobilePinnedAppBar, Progress, Skeleton } from '../../../ui';
 
 export type PracticeTopicStatus = 'completed' | 'active' | 'pending';
 export type PracticeByTopicState = 'loading' | 'unavailable' | 'ready';
@@ -62,21 +62,43 @@ export function PracticeByTopicView({ data, onBack, onTopicStart }: PracticeByTo
         />
 
         <main className="mt-4 px-6" aria-labelledby="practice-by-topic-title">
-          {!isReady ? (
+          {!isReady ? data.state === 'loading' ? (
+            <section
+              data-practice-by-topic-loading
+              className="flex flex-col gap-4 rounded-[8px] bg-white p-6"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <h1 id="practice-by-topic-title" className="text-[16px] font-medium leading-4 text-[#161519]">
+                {title}
+              </h1>
+              <span className="sr-only">
+                {t('practiceByTopic.loading', { defaultValue: 'Загрузка данных для практики' })}
+              </span>
+              <div aria-hidden="true" className="flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-4">
+                  <Skeleton data-practice-by-topic-skeleton-header className="h-4 w-3/5 rounded-[4px]" />
+                  <Skeleton className="h-3 w-1/4 rounded-[4px]" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton data-practice-by-topic-skeleton-summary className="h-6 w-28 rounded-[8px]" />
+                  <Skeleton className="h-6 w-36 rounded-[8px]" />
+                </div>
+                <div className="h-px w-full bg-[#f6f5f7]" />
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-4 w-2/5 rounded-[4px]" />
+                  <Skeleton data-practice-by-topic-skeleton-progress className="h-2 w-full rounded-[8px]" />
+                </div>
+              </div>
+            </section>
+          ) : (
             <section className="flex flex-col gap-2 rounded-[8px] bg-white p-6" role="status" aria-live="polite">
               <h1 id="practice-by-topic-title" className="text-[16px] font-medium leading-4 text-[#161519]">
                 {title}
               </h1>
               <p className="text-[14px] font-normal leading-[14px] text-[#8c8698]">
-                {t(
-                  data.state === 'loading' ? 'practiceByTopic.loading' : 'practiceByTopic.unavailable',
-                  {
-                    defaultValue:
-                      data.state === 'loading'
-                        ? 'Загрузка данных для практики'
-                        : 'Данные для практики недоступны',
-                  },
-                )}
+                {t('practiceByTopic.unavailable', { defaultValue: 'Данные для практики недоступны' })}
               </p>
             </section>
           ) : (

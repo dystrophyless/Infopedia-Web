@@ -13,6 +13,7 @@ import {
   ANALYZE_DESKTOP_INSTRUCTIONS,
   ANALYZE_DESKTOP_TRACK_STEPS,
 } from '../model/desktopInstructions';
+import { Button } from '../../../ui';
 
 export function AnalyzeDesktopUploadGuide({
   file,
@@ -244,14 +245,15 @@ export function AnalyzeDesktopUploadGuide({
                 </>
               )}
             </label>
-            <button
+            <Button
               type="submit"
               disabled={!file || submitting}
+              loading={submitting}
               className={`mt-6 flex h-12 w-full shrink-0 items-center justify-center rounded-[8px] px-6 text-[16px] font-medium leading-[16px] outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 md:h-10 min-[1440px]:w-[326px] ${file && !submitting ? 'bg-[#6a37c3] text-[#ffffff]' : 'bg-[#ded2f1] text-[#a585db] disabled:cursor-not-allowed md:bg-[#efeaf8] md:text-[#c5b1e7]'}`}
               data-analyze-desktop-submit
             >
-              {submitting ? t('common.loading') : `${t('analyze.submit')} →`}
-            </button>
+              {`${t('analyze.submit')} →`}
+            </Button>
           </form>
 
           <DesktopBenefits />

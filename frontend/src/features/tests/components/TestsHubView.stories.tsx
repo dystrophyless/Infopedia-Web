@@ -397,6 +397,28 @@ export const DesktopWeakPrerequisiteMouse: Story = {
   },
 };
 
+export const DesktopWeakAfterAnalysis: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'ready', weakTopics: liveTopics },
+  play: async ({ canvasElement }) => {
+    const weakCard = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/weak"]');
+    await expect(weakCard).not.toBeNull();
+    await expect(weakCard?.querySelector('[data-option-card-status-badge]')).not.toBeInTheDocument();
+  },
+};
+
+export const DesktopWeakPerfectAnalysis: Story = {
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'ready', weakTopics: [] },
+  play: async ({ canvasElement }) => {
+    const weakCard = canvasElement.querySelector<HTMLElement>('[data-testid="tests-weak-mode-card"]');
+    await expect(weakCard).not.toHaveAttribute('href');
+    await expect(weakCard).toHaveAttribute('aria-disabled', 'true');
+    await expect(weakCard).toHaveTextContent('Слабых тем нет');
+    await expect(weakCard?.querySelector('[data-option-card-status-badge]')).not.toBeInTheDocument();
+  },
+};
+
 export const DesktopLoading: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
   args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'loading' },

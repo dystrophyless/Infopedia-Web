@@ -198,7 +198,15 @@ export const MobileInputSheet: Story = {
 export const FiltersEmpty: Story = { render: () => <FilterFieldDemo /> };
 export const FiltersSelected: Story = { render: () => <FilterFieldDemo selected /> };
 export const FilterOptionsSelected: Story = { render: () => <OptionsDemo selectedIds={['10', '11']} /> };
-export const FilterOptionsLoading: Story = { render: () => <OptionsDemo options={[]} loading /> };
+export const FilterOptionsLoading: Story = {
+  render: () => <OptionsDemo options={[]} loading />,
+  play: async ({ canvasElement }) => {
+    const status = canvasElement.querySelector('[data-search-filter-options-list]');
+    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await expect(status?.querySelector('.sr-only')).toHaveTextContent('Загрузка...');
+    await expect(status?.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0);
+  },
+};
 export const FilterOptionsFallback: Story = { render: () => <OptionsDemo options={[]} error="Каталог временно недоступен" /> };
 export const NestedFilterSheet: Story = { render: () => <OptionsDemo selectedIds={['10']} /> };
 

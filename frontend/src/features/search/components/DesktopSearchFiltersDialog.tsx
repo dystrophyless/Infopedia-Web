@@ -7,7 +7,7 @@ import {
   Cancel01Icon,
   CheckIcon,
 } from '@hugeicons/core-free-icons';
-import { Dialog } from '../../../ui';
+import { Dialog, Skeleton } from '../../../ui';
 import type { BookCatalogSnapshot } from '../model/publisherBookResolver';
 import {
   createSearchFilterDraft,
@@ -219,7 +219,7 @@ export function DesktopSearchFiltersDialog({
           </button>
         </div>
 
-        {applyBlocked && (
+        {applyBlocked && !activeMenu && (
           <span id="desktop-search-filter-catalog-error" className="sr-only" role="status">
             {catalogLoading ? t('common.loading') : catalogError ?? t('searchFilters.loadOptionsFailed')}
           </span>
@@ -410,10 +410,20 @@ function DesktopFilterMenu({
       role={error && options.length === 0 ? 'region' : 'listbox'}
       aria-label={label}
       aria-multiselectable={error && options.length === 0 ? undefined : 'true'}
+      aria-busy={loading || undefined}
       className={`absolute left-8 z-10 flex w-[416px] flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain rounded-[16px] bg-[#f8f5fc] p-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${placement}`}
     >
       {loading && options.length === 0 && (
-        <p className="p-4 text-[16px] text-[#44237d]" role="status">{t('common.loading')}</p>
+        <>
+          <span className="sr-only" role="status" aria-live="polite" aria-busy="true">
+            {t('common.loading')}
+          </span>
+          <div aria-hidden="true" className="flex flex-col gap-2">
+            {Array.from({ length: filterId === 'section' ? 4 : 5 }, (_, index) => (
+              <Skeleton key={index} className="h-12 w-full rounded-[8px]" />
+            ))}
+          </div>
+        </>
       )}
       {!loading && options.length === 0 && (
         error ? (

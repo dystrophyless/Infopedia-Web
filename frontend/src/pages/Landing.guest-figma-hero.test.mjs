@@ -235,8 +235,19 @@ for (const key of [
 
 assert.match(
   featuredTermCardSource,
-  /export type FeaturedTermCardVariant = 'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop' \| 'guestLanding'/,
-  'TermCardCarousel should expose a guest variant',
+  /export type FeaturedTermCardVariant = 'guest' \| 'guestLanding'/,
+  'TermCardCarousel should expose only the two production guest variants',
+);
+
+assert.doesNotMatch(
+  `${featuredTermCardSource}\n${carouselViewFunctionSource}`,
+  /'desktop'|'mobile'|'home'|'guestDesktop'|guestDesktop|variant\s*=\s*['"]/,
+  'Retired carousel variants and implicit defaults must be absent from runtime implementation',
+);
+assert.deepEqual(
+  [...landingSource.matchAll(/<TermCardCarousel\s+variant="(guest|guestLanding)"\s*\/>/g)].map((match) => match[1]),
+  ['guestLanding', 'guest'],
+  'Landing must keep exactly one desktop and one mobile production carousel call-site',
 );
 
 assert.match(
@@ -246,28 +257,28 @@ assert.match(
 );
 assert.match(
   featuredTermCardSource,
-  /isGuestMobileVariant \? 'from-white' : isGuestDesktopVariant/,
-  'Guest mobile term card fades should match the white card surface',
+  /MeasuredTextPreview/,
+  'Guest term cards should use the shared measured preview',
 );
 assert.match(
   featuredTermCardSource,
-  /isGuestMobileVariant \? fullDefinitionText : visibleDefinition\.text/,
-  'Guest mobile term cards should pass the full definition to the measured preview',
+  /text=\{definitionText\}/,
+  'Guest term cards should pass the normalized definition to the measured preview',
 );
 assert.match(
   featuredTermCardSource,
-  /isGuestMobileVariant \? 56 :/,
-  'Guest mobile term cards should reserve exactly four 14px lines',
+  /maxHeight=\{56\}/,
+  'Guest term cards should reserve exactly four 14px lines',
 );
 assert.match(
   featuredTermCardSource,
-  /!isGuestLikeVariant && visibleDefinition\.overflowing \?/,
-  'Guest mobile cards should rely on a single measured overflow fade',
+  /data-measured-text-fade|MeasuredTextPreview/,
+  'Guest cards should rely on the shared measured overflow fade',
 );
 assert.match(
   featuredTermCardSource,
-  /isGuestDesktopVariant \? 'from-surface-subtle'/,
-  'Guest desktop term card fades should retain the subtle desktop surface',
+  /h-\[168px\] w-\[262px\][\s\S]*bg-white/,
+  'Landing guest term cards should retain the 262x168 white footprint',
 );
 
 assert.match(
@@ -305,13 +316,18 @@ assert.doesNotMatch(
 
 assert.match(
   carouselViewFunctionSource,
-  /const shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding';/,
-  'Desktop, guest, and landing carousels should use fixed-speed auto-scroll behavior',
+  /AUTO_SCROLL_PX_PER_SECOND/,
+  'Both production guest carousels should use the shared fixed-speed auto-scroll behavior',
+);
+assert.doesNotMatch(
+  carouselViewFunctionSource,
+  /shouldAutoScroll/,
+  'Carousel display terms should not retain a dead auto-scroll abstraction',
 );
 
 assert.match(
   carouselViewFunctionSource,
-  /variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding' \? 'overflow-hidden pb-0'/,
+  /overflow-hidden pb-0/,
   'Guest terms carousel should be moved by animation inside a clipped viewport',
 );
 

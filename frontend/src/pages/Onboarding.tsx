@@ -9,7 +9,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { checkUsernameAvailability, setMyGrade, setMyUsername } from '../api/users';
 import { AuthShell, AuthSubmit, AuthUsernameInput } from '../components/AuthShell';
-import { Button, Text } from '../ui';
+import { Text } from '../ui';
 import {
   applyPendingOnboardingDraft,
   clearPendingOnboardingDraft,
@@ -323,12 +323,13 @@ export function Onboarding() {
     >
       {step === 'grade' ? (
         <form onSubmit={handleGradeSubmit} noValidate>
-          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-7 max-md:text-[16px] max-md:text-[#8c8698] min-[1440px]:text-[16px] min-[1440px]:text-[#8c8698]">
+          <p className="mb-6 text-[15px] leading-none text-text-body max-md:mb-7 max-md:text-[16px] max-md:text-[#8c8698] lg:text-[16px] lg:text-[#8c8698]">
             {t('onboarding.gradeQuestionHelper')}
           </p>
-          <div className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="sr-only">{t('onboarding.gradeQuestionTitle')}</legend>
             {gradeOptions.map((option) => (
-              <GradeOptionButton
+              <GradeOptionRadio
                 key={option}
                 grade={option}
                 label={getGradeOptionTitle(option, t)}
@@ -340,7 +341,7 @@ export function Onboarding() {
                 }}
               />
             ))}
-          </div>
+          </fieldset>
           <FormError error={error} />
           <AuthSubmit
             loading={loading}
@@ -348,12 +349,12 @@ export function Onboarding() {
             mobileVisual="figma-auth"
             desktopVisual="onboarding"
           >
-            {loading ? t('common.loading') : t('common.continue')}
+            {t('common.continue')}
           </AuthSubmit>
         </form>
       ) : (
         <form onSubmit={handleUsernameSubmit} noValidate>
-          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-6 max-md:text-[16px] max-md:text-[#8c8698] min-[1440px]:mb-6 min-[1440px]:h-7 min-[1440px]:text-[16px] min-[1440px]:text-[#8c8698]">
+          <p className="mb-8 text-[15px] leading-none text-text-body max-md:mb-6 max-md:text-[16px] max-md:text-[#8c8698] lg:mb-6 lg:h-7 lg:text-[16px] lg:text-[#8c8698]">
             {t('onboarding.usernameQuestionHelper')}
           </p>
           <AuthUsernameInput
@@ -377,7 +378,7 @@ export function Onboarding() {
               setStep('grade');
               setError(null);
             }}
-            className="max-md:hidden min-[1440px]:hidden"
+            className="max-md:hidden lg:hidden"
           >
             {t('common.previous')}
           </button>
@@ -387,11 +388,7 @@ export function Onboarding() {
             mobileVisual="figma-auth"
             desktopVisual="onboarding"
           >
-            {loading
-              ? t('common.loading')
-              : token
-                ? t('onboarding.finishButton')
-                : t('common.continue')}
+            {token ? t('onboarding.finishButton') : t('common.continue')}
           </AuthSubmit>
         </form>
       )}
@@ -405,7 +402,7 @@ function getGradeOptionTitle(grade: SelectableGrade, t: (key: string) => string)
   return t('onboarding.gradeOtherTitle');
 }
 
-function GradeOptionButton({
+function GradeOptionRadio({
   grade,
   label,
   selected,
@@ -418,49 +415,94 @@ function GradeOptionButton({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const mobileId = `onboarding-grade-mobile-${grade}`;
+  const desktopId = `onboarding-grade-desktop-${grade}`;
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
   return (
-    <Button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      variant="surface"
-      fullWidth
-      className={`relative flex h-12 w-full items-center justify-start rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors disabled:cursor-wait disabled:opacity-70 min-[1440px]:justify-between min-[1440px]:bg-[#f8f5fc] ${
-        grade === '11' ? 'min-[1440px]:order-1' : grade === '10' ? 'min-[1440px]:order-2' : 'min-[1440px]:order-3'
-      } ${
-        selected
-          ? 'border-transparent text-[#44237d] hover:!bg-white min-[1440px]:text-[#161519] min-[1440px]:hover:!bg-[#f8f5fc]'
-          : 'border border-transparent text-[#161519] hover:text-[#44237d] min-[1440px]:hover:text-[#161519]'
-      }`}
-      aria-pressed={selected}
-    >
-      <span className="min-w-0 flex-1">{label}</span>
-      <span
-        aria-hidden="true"
-        data-onboarding-indicator="mobile"
-        className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-[#c5b1e7] text-white min-[1440px]:hidden ${
-          selected ? '!border-[#6a37c3] bg-[#6a37c3]' : ''
-        }`}
-      >
-        {selected && <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />}
-      </span>
-      {!selected && (
-        <span
-          aria-hidden="true"
-          data-onboarding-indicator="desktop"
-          className="hidden size-5 shrink-0 rounded-full border border-[#c5b1e7] min-[1440px]:block"
+    <div className="w-full">
+      <div className="block lg:hidden">
+        <input
+          id={mobileId}
+          type="radio"
+          name="onboarding-grade"
+          value={grade}
+          checked={selected && !isDesktop}
+          disabled={disabled}
+          onChange={onClick}
+          className="peer sr-only"
         />
-      )}
-      {selected && (
-        <span
-          aria-hidden="true"
-          data-onboarding-indicator="desktop"
-          className="hidden size-5 shrink-0 items-center justify-center rounded-full bg-[#6a37c3] text-white min-[1440px]:flex"
+        <label
+          htmlFor={mobileId}
+          className={`relative flex h-12 w-full items-center justify-start rounded-[8px] bg-white px-6 text-left text-[16px] font-normal transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#6a37c3] peer-disabled:cursor-wait peer-disabled:opacity-70 ${
+            selected
+              ? 'border-transparent text-[#44237d] hover:!bg-white'
+              : 'border border-transparent text-[#161519] hover:text-[#44237d]'
+          }`}
         >
-          <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />
-        </span>
-      )}
-    </Button>
+          <span className="min-w-0 flex-1">{label}</span>
+          <span
+            aria-hidden="true"
+            data-onboarding-indicator="mobile"
+            className={`flex size-5 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-[#c5b1e7] text-white ${
+              selected ? '!border-[#6a37c3] bg-[#6a37c3]' : ''
+            }`}
+          >
+            {selected && <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />}
+          </span>
+        </label>
+      </div>
+      <div className="hidden lg:block">
+        <input
+          id={desktopId}
+          type="radio"
+          name="onboarding-grade"
+          value={grade}
+          checked={selected && isDesktop}
+          disabled={disabled}
+          onChange={onClick}
+          className="peer sr-only"
+        />
+        <label
+          htmlFor={desktopId}
+          className={`relative flex h-12 w-full items-center rounded-[8px] px-6 text-left text-[16px] font-normal transition-colors lg:justify-between lg:bg-[#f8f5fc] peer-focus-visible:ring-2 peer-focus-visible:ring-[#6a37c3] peer-disabled:cursor-wait peer-disabled:opacity-70 ${
+            grade === '11' ? 'lg:order-1' : grade === '10' ? 'lg:order-2' : 'lg:order-3'
+          } ${
+            selected
+              ? 'border-transparent text-[#161519] hover:!bg-[#f8f5fc]'
+              : 'border border-transparent text-[#161519] hover:text-[#161519]'
+          }`}
+        >
+          <span className="min-w-0 flex-1">{label}</span>
+          {!selected && (
+            <span
+              aria-hidden="true"
+              data-onboarding-indicator="desktop"
+              className="size-5 shrink-0 rounded-full border border-[#c5b1e7]"
+            />
+          )}
+          {selected && (
+            <span
+              aria-hidden="true"
+              data-onboarding-indicator="desktop"
+              className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6a37c3] text-white"
+            >
+              <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />
+            </span>
+          )}
+        </label>
+      </div>
+    </div>
   );
 }
 

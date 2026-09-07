@@ -6,7 +6,6 @@ const frontendDir = path.resolve(import.meta.dirname, '..', '..');
 const srcDir = path.join(frontendDir, 'src');
 const tokensPath = path.join(srcDir, 'styles', 'tokens.css');
 const tailwindPath = path.join(frontendDir, 'tailwind.config.ts');
-const featuredTermCardPath = path.join(srcDir, 'features', 'terms', 'components', 'FeaturedTermCard.tsx');
 const termCardPath = path.join(srcDir, 'features', 'terms', 'components', 'TermCard.tsx');
 const termDetailViewPath = path.join(srcDir, 'features', 'terms', 'components', 'TermDetailView.tsx');
 const desktopSearchFiltersDialogPath = path.join(srcDir, 'features', 'search', 'components', 'DesktopSearchFiltersDialog.tsx');
@@ -289,87 +288,6 @@ function resolveInlineValue(value, kind) {
   return { kind: 'unresolved', value: normalized };
 }
 
-function isComputedStyleLineHeightPropagation(filePath, source, offset, value) {
-  if (path.normalize(filePath) !== path.normalize(featuredTermCardPath)) return false;
-
-  const helperStart = source.indexOf('function createDefinitionMeasureNode(');
-  const helperEnd = helperStart < 0 ? -1 : source.indexOf('\n}', helperStart);
-  if (helperStart < 0 || helperEnd < 0 || offset < helperStart || offset > helperEnd) return false;
-
-  const normalized = value.trim().replace(/[,}]$/, '');
-  const member = normalized.match(/^([A-Za-z_$][\w$]*)\.lineHeight$/);
-  if (!member) return false;
-
-  let latestBindingIsComputedStyle = false;
-  const sourceBeforeValue = source.slice(0, offset);
-  for (const binding of sourceBeforeValue.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;\r\n]+)/g)) {
-    if (binding[1] !== member[1]) continue;
-    latestBindingIsComputedStyle = /^window\.getComputedStyle\s*\(/.test(binding[2].trim());
-  }
-  return latestBindingIsComputedStyle;
-}
-
-const computedStylePropagationFixture = `function createDefinitionMeasureNode(node) {
-  const styles = window.getComputedStyle(node);
-  return { lineHeight: styles.lineHeight };
-}`;
-const computedStyleOffset = computedStylePropagationFixture.lastIndexOf('styles.lineHeight');
-assert.equal(
-  isComputedStyleLineHeightPropagation(
-    featuredTermCardPath,
-    computedStylePropagationFixture,
-    computedStyleOffset,
-    'styles.lineHeight',
-  ),
-  true,
-  'FeaturedTermCard measurement helper may copy lineHeight directly from window.getComputedStyle',
-);
-assert.equal(
-  isComputedStyleLineHeightPropagation(
-    path.join(srcDir, 'components', 'OtherCard.tsx'),
-    computedStylePropagationFixture,
-    computedStyleOffset,
-    'styles.lineHeight',
-  ),
-  false,
-  'computed-style propagation outside FeaturedTermCard must remain unresolved',
-);
-const outsideMeasurementHelperFixture = `${computedStylePropagationFixture}\nconst styles = window.getComputedStyle(node);\nconst copy = { lineHeight: styles.lineHeight };`;
-assert.equal(
-  isComputedStyleLineHeightPropagation(
-    featuredTermCardPath,
-    outsideMeasurementHelperFixture,
-    outsideMeasurementHelperFixture.lastIndexOf('styles.lineHeight'),
-    'styles.lineHeight',
-  ),
-  false,
-  'computed-style propagation outside createDefinitionMeasureNode must remain unresolved',
-);
-const dynamicStylePropagationFixture = computedStylePropagationFixture.replace(
-  'window.getComputedStyle(node)',
-  'getTypographyStyles(node)',
-);
-assert.equal(
-  isComputedStyleLineHeightPropagation(
-    featuredTermCardPath,
-    dynamicStylePropagationFixture,
-    dynamicStylePropagationFixture.lastIndexOf('styles.lineHeight'),
-    'styles.lineHeight',
-  ),
-  false,
-  'lineHeight from getTypographyStyles must remain unresolved',
-);
-assert.equal(
-  isComputedStyleLineHeightPropagation(
-    featuredTermCardPath,
-    computedStylePropagationFixture,
-    computedStyleOffset,
-    'lineHeight',
-  ),
-  false,
-  'plain dynamic lineHeight values must remain unresolved',
-);
-
 function scanStyleObject(filePath, source, body, bodyOffset, scannedLineHeightOffsets) {
   const lineHeight = body.match(/\blineHeight\s*:\s*([^,\n}]+)/);
   if (!lineHeight) return;
@@ -386,7 +304,6 @@ function scanStyleObject(filePath, source, body, bodyOffset, scannedLineHeightOf
   }
   if (
     lineValue.kind === 'unresolved'
-    && !isComputedStyleLineHeightPropagation(filePath, source, offset, lineHeight[1])
   ) {
     issue(filePath, source, offset, `cannot statically resolve inline lineHeight ${lineHeight[1].trim()}`);
     return;
@@ -437,7 +354,6 @@ function scanInlineStyles(filePath, source) {
   for (const match of source.matchAll(/\blineHeight\s*:\s*([^,\n}]+)/g)) {
     if (scannedLineHeightOffsets.has(match.index ?? 0)) continue;
     const value = match[1].trim();
-    if (isComputedStyleLineHeightPropagation(filePath, source, match.index ?? 0, value)) continue;
     if (/^styles\.lineHeight$|^[A-Za-z_$][\w$]*$/.test(value)) {
       issue(filePath, source, match.index ?? 0, `cannot statically resolve lineHeight ${value}`);
     }

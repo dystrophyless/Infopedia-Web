@@ -158,12 +158,12 @@ assert.match(
 
 assert.match(
   onboardingSource,
-  /data-onboarding-indicator="mobile"[\s\S]*min-\[1440px\]:hidden[\s\S]*!border-\[#6a37c3\]/,
+  /<div className="block lg:hidden">[\s\S]*data-onboarding-indicator="mobile"[\s\S]*!border-\[#6a37c3\]/,
   'Mobile grade indicators should expose explicit anatomy and keep the selected purple border above the base lavender border',
 );
 assert.match(
   onboardingSource,
-  /data-onboarding-indicator="desktop"[\s\S]*min-\[1440px\]:block|data-onboarding-indicator="desktop"[\s\S]*min-\[1440px\]:flex/,
+  /<div className="hidden lg:block">[\s\S]*data-onboarding-indicator="desktop"/,
   'Desktop grade indicators should expose explicit anatomy for breakpoint-specific visual checks',
 );
 
@@ -193,7 +193,7 @@ assert.match(
 
 assert.match(
   authShellSource,
-  /messageClassName=\{!error && desktopShowSuccessIcon \? 'max-lg:hidden min-\[1440px\]:hidden' : undefined\}/,
+  /messageClassName=\{!error && desktopShowSuccessIcon \? 'max-lg:hidden lg:hidden' : undefined\}/,
   'Valid username helper copy must be hidden while preserving checking and error messages',
 );
 

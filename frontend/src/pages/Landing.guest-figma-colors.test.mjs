@@ -100,8 +100,8 @@ assert.doesNotMatch(
 
 assert.match(
   termCarouselSource,
-  /variant === 'guest'[\s\S]*bg-surface-subtle/,
-  'Guest term examples should use Figma #fbfbfb cards',
+  /guest:\s*'h-\[168px\] w-\[216px\][^']*bg-white/,
+  'Guest term examples should use the white 216px production cards',
 );
 
 assert.match(

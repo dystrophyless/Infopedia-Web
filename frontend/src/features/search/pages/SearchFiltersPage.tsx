@@ -27,6 +27,7 @@ import {
   toggleSearchFilterDraftOption,
 } from '../model/searchFilterDraft';
 import { buildSearchRequestDescriptor } from '../model/searchRequestKey';
+import { Skeleton } from '../../../ui';
 
 const DRAG_CLOSE_THRESHOLD = 72;
 const DRAG_CLOSE_ANIMATION_MS = 180;
@@ -781,14 +782,25 @@ export function SearchFilterOptionsDialog({
 
         <div
           data-search-filter-options-list
+          {...(isLoading && options.length === 0
+            ? { role: 'status', 'aria-live': 'polite', 'aria-busy': true }
+            : {})}
           ref={optionsListRef}
           onScroll={(event) => setIsOptionsListScrolled(event.currentTarget.scrollTop > 0)}
           className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {isLoading && options.length === 0 && (
-            <p className="py-6 text-center text-[16px] leading-none text-[#514b5c]" role="status">
-              {t('common.loading')}
-            </p>
+            <>
+              <span className="sr-only">{t('common.loading')}</span>
+              <div aria-hidden="true" className="flex flex-col gap-2 py-2">
+                {Array.from({ length: filterId === 'section' ? 4 : 5 }, (_, index) => (
+                  <Skeleton
+                    key={index}
+                    className={filterId === 'section' ? 'min-h-12 w-full rounded-[8px]' : 'h-12 w-full rounded-[8px]'}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {!isLoading && options.length === 0 && (

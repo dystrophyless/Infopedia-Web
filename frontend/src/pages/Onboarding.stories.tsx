@@ -25,6 +25,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 const PENDING_ONBOARDING_DRAFT_STORAGE_KEY = 'infopedia_pending_onboarding_draft';
 
+function visibleGradeLabel(canvas: ReturnType<typeof within>, label: string) {
+  const candidates = canvas.getAllByText(label);
+  const visible = candidates.find((element: HTMLElement) => element.getClientRects().length > 0);
+  if (!visible) throw new Error(`Visible grade label not found: ${label}`);
+  return visible;
+}
+
 const seedPendingDraft = async () => {
   const previousDraftRaw = window.localStorage.getItem(PENDING_ONBOARDING_DRAFT_STORAGE_KEY);
   savePendingOnboardingDraft({ grade: '10', username: 'existing-user' });
@@ -109,7 +116,7 @@ export const GradeUnselected430: Story = {
   loaders: [seedPendingDraft],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: '10 класс' })).toBeVisible();
+    await expect(canvas.getByRole('radio', { name: '10 класс' })).toBeVisible();
   },
 };
 
@@ -120,11 +127,14 @@ export const Grade10Selected430: Story = {
   loaders: [seedPendingDraft],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: '10 класс' }));
-    await expect(canvas.getByRole('button', { name: '10 класс' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    const grade = canvas.getByRole('radio', { name: '10 класс' });
+    await userEvent.click(visibleGradeLabel(canvas, '10 класс'));
+    await expect(grade).toBeChecked();
+    await userEvent.keyboard('{ArrowUp}');
+    const previousGrade = canvas.getByRole('radio', { name: '11 класс' });
+    await expect(previousGrade).toBeChecked();
+    await userEvent.keyboard('{Space}');
+    await expect(previousGrade).toBeChecked();
   },
 };
 
@@ -142,7 +152,7 @@ export const GradeError430: Story = {
 };
 
 async function advanceToUsername(canvas: ReturnType<typeof within>) {
-  await userEvent.click(canvas.getByRole('button', { name: '10 класс' }));
+  await userEvent.click(visibleGradeLabel(canvas, '10 класс'));
   await userEvent.click(canvas.getByRole('button', { name: 'Продолжить' }));
   await expect(canvas.getByRole('textbox', { name: 'Имя пользователя' })).toBeVisible();
 }
@@ -228,10 +238,7 @@ export const DesktopGradeEmpty1440: Story = {
   globals: desktop1440x1080,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: '11 класс' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    await expect(canvas.getByRole('radio', { name: '11 класс' })).not.toBeChecked();
   },
 };
 
@@ -243,9 +250,9 @@ export const DesktopGradeSelected1440: Story = {
   globals: desktop1440x1080,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const grade = canvas.getByRole('button', { name: '11 класс' });
-    await userEvent.click(grade);
-    await expect(grade).toHaveAttribute('aria-pressed', 'true');
+    const grade = canvas.getByRole('radio', { name: '11 класс' });
+    await userEvent.click(visibleGradeLabel(canvas, '11 класс'));
+    await expect(grade).toBeChecked();
   },
 };
 

@@ -10,11 +10,13 @@ const analyzeSource = fs.readFileSync(path.join(root, 'pages', 'Analyze.tsx'), '
 const weightedChipSource = viewSource.slice(viewSource.indexOf('function WeightedQuestionChip'));
 
 assert.match(appSource, /path="\/practice-by-topic"[\s\S]*<PracticeByTopicPage \/>/);
-assert.match(analyzeSource, /to=\{`\/practice-by-topic\?chapterId=/);
+assert.match(analyzeSource, /practiceTo=\{`\/practice-by-topic\?chapterId=/);
 assert.match(viewSource, /Практика по разделу/);
 assert.match(viewSource, /chapterTitle/);
 assert.match(viewSource, /bg-\[#efebf6\]/);
 assert.match(viewSource, /bg-white[\s\S]*rounded-\[8px\]/);
+assert.match(viewSource, /data-practice-by-topic-loading[\s\S]*aria-busy="true"[\s\S]*<Skeleton/, 'Practice loading should use one busy status with anatomical skeletons');
+assert.match(viewSource, /data-practice-by-topic-skeleton-header[\s\S]*data-practice-by-topic-skeleton-summary[\s\S]*data-practice-by-topic-skeleton-progress/, 'Practice loading should reserve the loaded section anatomy');
 assert.match(viewSource, /CheckmarkCircle02Icon/);
 assert.match(viewSource, /PlayIcon/);
 assert.match(viewSource, /CircleIcon/);

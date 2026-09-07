@@ -224,6 +224,22 @@ export const DesktopFigma13885656: Story = {
     });
   },
 };
-export const Loading: Story = { args: { term: null, loadState: 'loading' } };
+export const Loading: Story = {
+  args: { term: null, loadState: 'loading' },
+  play: async ({ canvasElement }) => {
+    const status = canvasElement.querySelector('[role="status"]');
+    await expect(canvasElement.querySelectorAll('[role="status"]')).toHaveLength(1);
+    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await expect(status?.querySelector('.sr-only')).toHaveTextContent('Загружаем термин...');
+    await expect(status?.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0);
+    await expect(status?.querySelector('[data-term-detail-mobile-loading]')).not.toBeNull();
+    await expect(status?.querySelector('[data-term-detail-desktop-loading]')).not.toBeNull();
+    await expect(status?.querySelector('[data-term-detail-mobile-skeleton-definition]')).toHaveStyle({ backgroundColor: 'rgb(255, 255, 255)' });
+    await expect(status?.querySelector('[data-term-detail-desktop-skeleton-definition]')).toHaveStyle({ backgroundColor: 'rgb(255, 255, 255)' });
+    await expect(status?.querySelector('[data-term-detail-desktop-skeleton-test]')).toHaveStyle({ backgroundColor: 'rgb(255, 255, 255)' });
+  },
+};
+export const LoadingMobile: Story = { ...Loading, globals: { viewport: { value: 'mobile430', isRotated: false } } };
+export const LoadingDesktop: Story = { ...Loading, globals: { viewport: { value: 'desktop1440', isRotated: false } } };
 export const Error: Story = { args: { term: null, loadState: 'error' } };
 export const EmptyDefinitions: Story = { args: { term: { public_id: 'empty', name: 'Пустой термин', definitions: [] } } };

@@ -4,7 +4,7 @@ import type { FeaturedTerm } from '../../../types';
 import type { FeaturedTermCardVariant } from './FeaturedTermCard';
 import { FEATURED_TERMS_LIMIT, TermCardCarouselView } from './TermCardCarouselView';
 
-export function TermCardCarousel({ variant = 'desktop' }: { variant?: FeaturedTermCardVariant }) {
+export function TermCardCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
   const [terms, setTerms] = useState<FeaturedTerm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

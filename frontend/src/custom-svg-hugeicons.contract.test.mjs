@@ -132,9 +132,11 @@ assert.match(optionCard, /icon=\{LockKeyIcon\}[\s\S]*size=\{24\}/);
 assert.doesNotMatch(optionCard, /lock-keyhole\.svg|target-03\.svg/);
 
 const chapterCard = read('src/features/tests/components/DesktopChapterTestCard.tsx');
-assert.match(chapterCard, /ChartUpIcon/);
-assert.match(chapterCard, /icon=\{ChartUpIcon\}[\s\S]*size=\{20\}/);
-assert.match(chapterCard, /deltaPoints[^\n]+> 0 \? '-scale-x-100' : ''/);
+assert.match(chapterCard, /TrendingDownIcon/);
+assert.match(chapterCard, /TrendingUpIcon/);
+assert.match(chapterCard, /const deltaIcon = chapter\.deltaPoints === null[\s\S]*chapter\.deltaPoints > 0[\s\S]*TrendingDownIcon[\s\S]*chapter\.deltaPoints < 0[\s\S]*TrendingUpIcon/);
+assert.match(chapterCard, /icon=\{deltaIcon\}[\s\S]*size=\{20\}/);
+assert.doesNotMatch(chapterCard, /scale-x-100/);
 assert.doesNotMatch(chapterCard, /trending-up\.svg|mask-image|MaskImage/);
 
 const profile = read('src/pages/Profile.tsx');

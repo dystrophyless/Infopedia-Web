@@ -221,7 +221,7 @@ export function Register() {
             mobileVisual="figma-auth"
             desktopVisual="onboarding"
           >
-            {loading ? t('common.loading') : t('auth.sendCodeButton')}
+            {t('auth.sendCodeButton')}
           </AuthSubmit>
           <AuthDivider label={t('auth.or')} desktopVisual="onboarding" />
           <GoogleAuthButton onClick={handleGoogleAuth} desktopVisual="onboarding">
@@ -246,7 +246,7 @@ export function Register() {
             mobileVisual="figma-auth"
             desktopVisual="onboarding"
           >
-            {loading ? t('common.loading') : t('auth.verifyButton')}
+            {t('auth.verifyButton')}
           </AuthSubmit>
           <div className="mt-4 flex justify-center text-[14px]">
             <button

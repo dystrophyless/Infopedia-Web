@@ -29,6 +29,7 @@ assert.match(container, /state\?\.backTo \?\? \(isAuthenticated \? '\/search' : 
 assert.match(container, /<TermDetailView/, 'Route must delegate rendering to the feature view');
 
 assert.match(view, /max-md:bg-canvas/, 'Mobile detail must use the semantic token exactly matching the Figma canvas');
+assert.match(view, /className="min-h-full[^\"]*overflow-x-hidden/, 'Mobile detail must clip the shared 44px touch target without document overflow');
 assert.match(view, /<MobilePinnedAppBar[\s\S]*title=\{t\('termDetail\.title'\)\}[\s\S]*leading=\{[\s\S]*ArrowLeft01Icon[\s\S]*trailing=\{[\s\S]*FavoriteToggle[\s\S]*appearance="mobile-header"/, 'Mobile detail header must use the shared pinned app-bar with back and save controls');
 assert.doesNotMatch(view, /IntersectionObserver|appBarPinned|fixed inset-x-0 top-0/, 'Term detail must not own a duplicate mobile header observer or fixed clone');
 assert.match(view, /data-term-detail-desktop-header(?=[\s\S]*?<h1 className="text-\[24px\])(?=[\s\S]*?Link to=\{backTo\})(?=[\s\S]*?termDetail\.back)/, 'Desktop detail header must expose Figma back navigation and semantic page title');
@@ -62,6 +63,18 @@ assert.match(view, /function TermDetailTestCta[\s\S]*max-md:fixed[\s\S]*md:hidde
 assert.match(view, /max-md:bg-canvas max-md:px-0[\s\S]*max-md:px-6 max-md:pb-\[108px\]/, 'Mobile detail must have one explicit 24px content rail and reserve the CTA height plus its 32px separation');
 assert.match(view, /getDefinitionIndex[\s\S]*goPrevious[\s\S]*goNext/, 'Multiple-definition selection and bounded navigation must remain in the view');
 assert.doesNotMatch(view, /shadow-(?:feature|card)|hover:shadow/, 'Detail surfaces must remain flat');
+assert.match(view, /role=\{isLoading \? 'status' : undefined\}/, 'Term loading must expose one status region');
+assert.match(view, /aria-live=\{isLoading \? 'polite' : undefined\}/, 'Term loading status must be polite');
+assert.match(view, /aria-busy=\{isLoading \|\| undefined\}/, 'Term loading status must expose aria-busy');
+assert.match(view, /className="sr-only"[^>]*>\{t\('termDetail\.loading'\)\}/, 'Term loading must retain localized accessible copy');
+assert.doesNotMatch(view, /<p[^>]*>\{t\('termDetail\.loading'\)\}<\/p>/, 'Term loading must not render visible text-only loading copy');
+assert.match(view, /data-term-detail-mobile-loading[\s\S]*<Skeleton/, 'Mobile term loading must preserve skeleton geometry');
+assert.match(view, /data-term-detail-desktop-loading[\s\S]*<Skeleton/, 'Desktop term loading must preserve skeleton geometry');
+assert.match(view, /data-term-detail-mobile-skeleton-definition[^>]*className="[^"]*bg-white/, 'Mobile definition loading must use a contrasting white surface');
+assert.match(view, /data-term-detail-mobile-skeleton-stats[\s\S]*bg-white/, 'Mobile stats loading must preserve white stat surfaces');
+assert.match(view, /data-term-detail-mobile-skeleton-source[^>]*className="[^"]*bg-white/, 'Mobile source loading must preserve a white source surface');
+assert.match(view, /data-term-detail-mobile-skeleton-related[\s\S]*rounded-\[8px\]/, 'Mobile related loading must reserve chip geometry');
+assert.equal((view.match(/role=\{isLoading \? 'status' : undefined\}/g) ?? []).length, 1, 'Term loading must expose exactly one status role');
 
 const frontendRoot = path.resolve(srcDir, '..');
 const config = loadConfig(path.join(frontendRoot, 'tailwind.config.ts'));

@@ -36,6 +36,12 @@ assert.match(view, /data-term-detail-related-arrow[^>]*className="(?=[^"]*rounde
 assert.match(view, /data-term-detail-mastery[^>]*className="[^\"]*h-\[120px\]/, 'mastery panel must be fixed at 120px height');
 assert.match(view, /data-term-detail-mastery-meta[^>]*className="[^\"]*mt-4/, 'mastery metadata must use 16px top margin');
 assert.match(view, /data-term-detail-test-card[\s\S]*className="[^\"]*h-\[187px\][^\"]*[\s\S]*h-8/, 'desktop test CTA must be 32px tall');
+assert.match(view, /data-term-detail-desktop-loading[\s\S]*data-term-detail-desktop-skeleton-definition[\s\S]*data-term-detail-skeleton-header[\s\S]*data-term-detail-skeleton-actions[\s\S]*data-term-detail-skeleton-text[\s\S]*data-term-detail-skeleton-source/, 'desktop loading must reserve definition header, actions, text, and source anatomy');
+assert.match(view, /data-term-detail-desktop-skeleton-definition[^>]*className="[^"]*bg-white/, 'desktop definition loading must use a white surface');
+assert.match(view, /data-term-detail-desktop-skeleton-mastery[^>]*className="[^"]*bg-white/, 'desktop mastery loading must use a white surface');
+assert.match(view, /data-term-detail-desktop-skeleton-test[^>]*className="[^"]*bg-white/, 'desktop test loading must use a white right-column surface');
+assert.match(view, /data-term-detail-desktop-skeleton-related[^>]*className="[^"]*bg-white/, 'desktop related loading must use a white right-column surface');
+assert.equal((view.match(/aria-hidden="true"/g) ?? []).length >= 4, true, 'desktop and mobile skeleton layers must be hidden from assistive technology');
 assert.match(story, /name: 'Компьютер'[\s\S]*Офистік компьютер[\s\S]*Дербес компьютер[\s\S]*Жүйелік блок/, 'desktop Storybook fixture must reproduce node 1388:5656 content');
 assert.match(story, /data-term-detail-related-link/g, 'desktop Storybook play coverage must assert the rendered related-term collection');
 

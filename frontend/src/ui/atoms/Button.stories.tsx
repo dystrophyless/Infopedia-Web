@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { Button } from './Button';
 
 const meta = {
@@ -28,6 +28,11 @@ export const Variants: Story = {
       ))}
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const primary = canvas.getByRole('button', { name: 'primary' });
+    await expect(getComputedStyle(primary).backgroundColor).toBe('rgb(106, 55, 195)');
+  },
 };
 
 export const Sizes: Story = {

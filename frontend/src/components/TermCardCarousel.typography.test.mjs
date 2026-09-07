@@ -2,67 +2,92 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const featureDir = path.resolve(import.meta.dirname, '../features/terms/components');
-const card = readFileSync(path.resolve(featureDir, 'FeaturedTermCard.tsx'), 'utf8');
-const measuredPreview = readFileSync(path.resolve(featureDir, 'MeasuredTextPreview.tsx'), 'utf8');
-const view = readFileSync(path.resolve(featureDir, 'TermCardCarouselView.tsx'), 'utf8');
-const controller = readFileSync(path.resolve(featureDir, 'TermCardCarousel.tsx'), 'utf8');
-const facade = readFileSync(path.resolve(import.meta.dirname, 'TermCardCarousel.tsx'), 'utf8');
+const srcDir = path.resolve(import.meta.dirname, '..');
+const featureDir = path.resolve(srcDir, 'features/terms/components');
+const readFeature = (name) => readFileSync(path.join(featureDir, name), 'utf8');
+const card = readFeature('FeaturedTermCard.tsx');
+const measuredPreview = readFeature('MeasuredTextPreview.tsx');
+const view = readFeature('TermCardCarouselView.tsx');
+const controller = readFeature('TermCardCarousel.tsx');
+const featureIndex = readFeature('index.ts');
+const facade = readFileSync(path.join(srcDir, 'components/TermCardCarousel.tsx'), 'utf8');
+const carouselStories = readFeature('TermCardCarousel.stories.tsx');
+const cardStories = readFeature('TermCards.stories.tsx');
+const landing = readFileSync(path.join(srcDir, 'pages/Landing.tsx'), 'utf8');
 
-assert.match(facade, /features\/terms\/components\/TermCardCarousel/, 'Legacy import must remain a compatibility facade');
-assert.match(view, /FEATURED_TERMS_LIMIT = 10/, 'The original carousel cycle must stay capped at ten terms');
-assert.match(controller, /getFeaturedTerms\(FEATURED_TERMS_LIMIT\)/, 'Controller must request ten live backend terms');
-assert.doesNotMatch(`${card}\n${view}\n${controller}`, /GUEST_FALLBACK_TERMS|informatika-fallback/, 'Static fallback terms must not replace backend IDs');
+assert.match(facade, /^export \{ TermCardCarousel \} from '\.\.\/features\/terms\/components\/TermCardCarousel';/m);
+assert.doesNotMatch(facade, /FeaturedTermCard|TermCardCarouselView|fitTextToAvailableSpace/,
+  'The compatibility facade must expose only the production TermCardCarousel');
+assert.doesNotMatch(featureIndex, /export \* from '\.\/FeaturedTermCard'|export \* from '\.\/TermCardCarouselView'/,
+  'The terms barrel must not publish retired carousel implementation details');
 
-assert.match(card, /formatDefinitionSource\(definition, t\)/, 'Visible source must derive from definition metadata');
-assert.match(card, /text-muted/, 'Guest source copy must retain the exact semantic muted-purple color');
-assert.match(card, /'desktop' \| 'mobile' \| 'home' \| 'guest' \| 'guestDesktop' \| 'guestLanding'/, 'Existing variants plus the landing-only compact variant must remain public');
-assert.match(card, /h-\[238px\][\s\S]*w-\[76vw\][\s\S]*p-5[\s\S]*shadow-none/, 'Mobile card geometry and flat treatment must remain exact');
-assert.match(card, /h-\[168px\] w-\[216px\][\s\S]*bg-white[\s\S]*p-6/, 'Guest mobile card must keep its white accepted footprint');
-assert.match(card, /h-\[220px\] w-\[320px\][\s\S]*p-8/, 'Guest desktop card must keep its accepted footprint');
-assert.match(card, /h-\[168px\] w-\[262px\][\s\S]*p-6/, 'Landing guest cards should fit four 168px-tall cards across the 1120px rail');
-assert.match(card, /text-\[23px\][\s\S]*text-\[30px\]/, 'Mobile and desktop titles must keep compact sizes');
-assert.match(card, /ArrowUpRight01Icon/, 'Title row must keep the up-right action icon');
-assert.doesNotMatch(card, /line-clamp-\d+|WebkitLineClamp|definitionLineClamp/, 'Definition preview must use measured fitting, not line clamp');
-assert.match(card, /fitTextToAvailableSpace\(node, fullDefinitionText\)/, 'Visible definition must be measured against real available space');
-assert.match(card, /MeasuredTextPreview/, 'Featured cards must reuse the shared measured preview component');
-assert.match(card, /text=\{isGuestMobileVariant \? fullDefinitionText : visibleDefinition\.text\}/, 'Mobile guest previews must receive the complete definition text');
-assert.match(card, /maxHeight=\{isGuestMobileVariant \? 56 :/, 'Mobile guest definition viewport must be exactly four 14px lines');
-assert.match(card, /isGuestMobileVariant \? 'mt-4 h-\[56px\] flex-none' :/, 'Mobile guest definition wrapper must reserve exactly 56px after the 16px title gap');
-assert.match(card, /isGuestMobileVariant \? 'text-\[14px\] leading-\[14px\]' :/, 'Mobile guest definition typography must remain 14px with 14px line-height');
-assert.match(card, /!isGuestLikeVariant && visibleDefinition\.overflowing \?/, 'Guest fades must be owned by the measured preview without a duplicate external fade');
-assert.match(card, /isGuestMobileVariant \? 'mt-4' :/, 'Mobile guest metadata must retain a 16px gap after the description');
-assert.match(card, /isGuestMobileVariant \? 'text-\[16px\] leading-\[16px\]' :/, 'Mobile guest titles must match the landing guest title scale');
-assert.match(card, /isGuestDesktopVariant \? 'text-\[13px\] leading-\[13px\]' : 'text-\[12px\] leading-\[12px\]'/, 'Landing guest metadata must retain 12px line-height');
-assert.match(card, /words\.slice\(0, wordCount\)\.join\(' '\) \+ ELLIPSIS/, 'Measured truncation must end on a whole word');
-assert.match(card, /return \{ text: bestFitText, overflowing: true \}/, 'Measured fitting must expose overflow state');
-assert.match(card, /visibleDefinition\.overflowing \?/, 'Fade must render only for actual overflow');
-assert.match(card, /pointer-events-none absolute inset-x-0 bottom-0 h-\[1\.75em\] bg-gradient-to-t/, 'Fade must overlay the final visible line without changing geometry');
-assert.match(card, /isGuestMobileVariant \? 'from-white'[\s\S]*from-surface-subtle[\s\S]*tone\.fadeClassName[\s\S]*from-surface/, 'Fade must match mobile guest, desktop guest, colored mobile, and surface backgrounds');
-assert.match(card, /aria-hidden="true"/, 'Clones must be hidden from accessibility');
-assert.match(measuredPreview, /\{overflowing && <span[^>]*data-measured-text-fade/, 'Measured preview must render its fade only when overflow is true');
-assert.equal((measuredPreview.match(/data-measured-text-fade/g) ?? []).length, 1, 'Measured preview must render exactly one fade marker');
-assert.equal((measuredPreview.match(/bg-gradient-to-t/g) ?? []).length, 1, 'Measured preview must render exactly one fade gradient');
+const productionCalls = [...landing.matchAll(/<TermCardCarousel\s+variant="(guest|guestLanding)"\s*\/>/g)].map((match) => match[1]);
+assert.deepEqual(productionCalls, ['guestLanding', 'guest'], 'Landing must keep exactly the two production carousel call-sites');
+assert.equal((landing.match(/<TermCardCarousel\b/g) ?? []).length, 2, 'No gallery or default carousel call-sites may remain');
 
-assert.match(view, /shouldAutoScroll = variant === 'desktop' \|\| variant === 'guest' \|\| variant === 'guestDesktop' \|\| variant === 'guestLanding'/, 'Landing guest variant must auto-scroll');
-assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/, 'Auto-scroll variants must duplicate multiple items for the loop');
-assert.match(view, /clone-0[\s\S]*offsetLeft[\s\S]*orig-0[\s\S]*offsetLeft/, 'Loop distance must use measured clone and original offsets');
-assert.match(view, /AUTO_SCROLL_PX_PER_SECOND = 46/, 'Loop speed must remain the named fixed speed');
-assert.match(view, /pointerPausedRef/, 'Pointer pause state must be independent');
-assert.match(view, /focusPausedRef/, 'Focus pause state must be independent');
-assert.match(view, /onMouseEnter[\s\S]*pointerPausedRef\.current = true[\s\S]*onMouseLeave[\s\S]*pointerPausedRef\.current = false/, 'Hover must pause and resume pointer auto-scroll');
+assert.match(controller, /getFeaturedTerms\(FEATURED_TERMS_LIMIT\)/, 'The controller must request the live backend catalog');
+assert.match(controller, /variant:\s*FeaturedTermCardVariant/, 'The production variant is required at the controller boundary');
+assert.doesNotMatch(controller, /variant\?:|variant\s*=\s*['"]/,
+  'The controller must not silently select a legacy/default variant');
+assert.doesNotMatch(`${card}\n${view}\n${controller}`, /GUEST_FALLBACK_TERMS|informatika-fallback/,
+  'Static fallback terms must not replace backend IDs');
+
+assert.match(card, /export type FeaturedTermCardVariant = 'guest' \| 'guestLanding';/,
+  'Featured cards must expose only the two production variants');
+assert.match(card, /variant:\s*FeaturedTermCardVariant/, 'Featured card variants are required');
+assert.doesNotMatch(card, /variant\?:|variant\s*=\s*['"]/,
+  'Featured cards must not default to a retired visual variant');
+assert.doesNotMatch(card, /'desktop'|'mobile'|'home'|'guestDesktop'|guestDesktop|isMobileVariant|isHomeVariant|isGuestDesktopVariant/,
+  'Retired desktop/mobile/home branches must be physically absent');
+assert.doesNotMatch(card, /fitTextToAvailableSpace|createDefinitionMeasureNode|doesTextFit|useLayoutEffect|useMemo|useRef|useState|DefinitionMetadata|ArrowUpRight01Icon|MOBILE_CARD_TONES|getMobileCardToneClasses/,
+  'Legacy measurement, metadata, icon, and tone helpers must be removed');
+assert.match(card, /MeasuredTextPreview/, 'Production cards must keep the shared measured preview');
+assert.match(card, /maxHeight=\{56\}/, 'Production preview must reserve four 14px lines');
+assert.match(card, /h-\[168px\] w-\[216px\][\s\S]*bg-white[\s\S]*p-6/, 'Guest mobile geometry must remain 216x168');
+assert.match(card, /h-\[168px\] w-\[262px\][\s\S]*bg-white[\s\S]*p-6/, 'Guest landing geometry must remain 262x168');
+assert.match(card, /formatDefinitionSource\(definition, t\)/, 'Visible source copy must remain metadata-backed');
+assert.match(card, /<Link[\s\S]*to=\{`\/terms\/\$\{term\.public_id\}`\}/, 'Cards must remain full term links');
+assert.match(card, /clone[\s\S]*aria-hidden="true"/, 'Carousel clones must remain hidden from assistive technology');
+
+assert.match(view, /Record<FeaturedTermCardVariant, string>/, 'The track geometry must be total over the two variants');
+assert.match(view, /guest:/, 'Guest mobile geometry must remain explicit');
+assert.match(view, /guestLanding:/, 'Guest landing geometry must remain explicit');
+assert.match(view, /function LoadingCarousel[\s\S]*trackClasses\[variant\]/, 'Carousel loading must reuse the loaded track padding and gap');
+assert.match(view, /Array\.from\(\{ length: 4 \}/, 'Carousel loading must render four anatomical skeleton cards');
+assert.match(view, /role="status"[\s\S]*aria-busy="true"[\s\S]*className="sr-only"/, 'Carousel loading must expose one localized status while hiding skeleton paint');
+assert.match(view, /data-carousel-skeleton-title[\s\S]*data-carousel-skeleton-definition[\s\S]*data-carousel-skeleton-source/, 'Carousel loading must reserve title, definition, and source anatomy');
+assert.match(view, /loadingShellClasses[\s\S]*bg-white/, 'Carousel loading shells must remain white surfaces with contrasting inner placeholders');
+assert.doesNotMatch(view, /desktop|mobile|home|guestDesktop|snap-|touch-pan-x|scroll-smooth|variant === 'desktop'/,
+  'Carousel view must not retain legacy desktop/mobile/manual-scroll branches');
+assert.doesNotMatch(view, /shouldAutoScroll/, 'Carousel view must not retain a dead shouldAutoScroll abstraction');
+assert.match(view, /FEATURED_TERMS_LIMIT = 10/, 'The backend carousel remains capped at ten terms');
+assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/,
+  'Auto-scroll must clone multiple terms for a continuous loop');
+assert.match(view, /clone-0[\s\S]*offsetLeft[\s\S]*orig-0[\s\S]*offsetLeft/, 'Loop distance must use measured original/clone offsets');
+assert.match(view, /cancelAnimationFrame\(frameId\);\s*\}, \[carouselTerms, variant\]\);/, 'Auto-scroll geometry must recalculate when the card variant changes without remounting');
+assert.match(view, /pointerPausedRef/, 'Pointer pause state must remain independent');
+assert.match(view, /focusPausedRef/, 'Focus pause state must remain independent');
+assert.match(view, /onMouseEnter[\s\S]*pointerPausedRef\.current = true[\s\S]*onMouseLeave[\s\S]*pointerPausedRef\.current = false/,
+  'Hover must pause and resume auto-scroll');
 assert.match(view, /onFocusCapture[\s\S]*focusPausedRef\.current = true/, 'Keyboard focus must pause auto-scroll');
-assert.match(view, /onBlurCapture[\s\S]*focusPausedRef\.current = false/, 'Focus leaving carousel must resume auto-scroll');
-assert.match(view, /button === 1|buttons === 4|middle/, 'Middle-button interaction must clear only pointer pause');
-assert.match(view, /logicalScrollLeft|committedScrollLeft/, 'Auto-scroll must retain a logical fractional accumulator');
-assert.match(view, /elapsed\s*\/\s*1000\)\s*\*\s*AUTO_SCROLL_PX_PER_SECOND/, 'Auto-scroll must advance the logical accumulator at the fixed speed');
-assert.match(view, /loopDistance/, 'Logical accumulator must resync and wrap at the measured loop distance');
-assert.match(view, /touch-pan-x snap-x/, 'Finite mobile carousel must retain native horizontal panning');
-assert.match(view, /mobile: 'gap-3 pl-0 pr-\[24vw\]'/, 'Mobile track must bleed only to the right');
-assert.match(view, /guest: 'gap-4 pl-8 pr-8'/, 'Guest track must own complete-card gutters');
-assert.match(view, /guestLanding: 'gap-6 px-0'/, 'Landing compact track should fit four cards across 1120px');
-assert.match(view, /variant === 'guestLanding'[\s\S]*overflow-hidden/, 'Landing compact terms should use a clipped viewport');
-assert.doesNotMatch(view, /variant === 'guestLanding'\s*\?\s*'overflow-x-auto/, 'Landing compact terms should not use finite manual scrolling');
-assert.match(view, /requestAnimationFrame\(animate\)/, 'Landing carousel should advance through the RAF loop');
-assert.match(view, /if \(loading\)[\s\S]*if \(error\)[\s\S]*if \(carouselTerms\.length === 0\) return <EmptyCarousel/, 'View must expose loading, error, and truthful empty states');
-assert.match(view, /role="alert"[\s\S]*onRetry/, 'Error state must announce failure and expose retry');
+assert.match(view, /onBlurCapture[\s\S]*focusPausedRef\.current = false/, 'Leaving the carousel must resume auto-scroll');
+assert.match(view, /button === 1|buttons === 4|middle/, 'Middle-button interaction must clear pointer pause');
+assert.match(view, /if \(loading\)[\s\S]*if \(error\)[\s\S]*if \(carouselTerms\.length === 0\) return <EmptyCarousel/,
+  'Loading, error/retry, and truthful empty states must remain available');
+assert.match(view, /role="alert"[\s\S]*onRetry/, 'Errors must remain announced and retryable');
+
+const storyExports = [...carouselStories.matchAll(/export const (\w+): Story/g)].map((match) => match[1]);
+assert.deepEqual(storyExports, [
+  'LoadingDesktop',
+  'LoadingMobile',
+  'RequestError',
+  'Empty',
+  'GuestMobileFourLinePreview',
+  'GuestLandingFourLinePreview',
+], 'Carousel stories must expose only production states and variants');
+assert.doesNotMatch(cardStories, /FeaturedTermCard|FeaturedTermCardVariant|FiveFeaturedVariants/,
+  'TermCards must not retain the retired featured-card gallery');
+
+assert.match(measuredPreview, /data-measured-text-fade/, 'The shared measured preview must remain intact');
+
+console.log('TermCardCarousel production-variant contract passed');

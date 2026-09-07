@@ -127,3 +127,23 @@ export const Full: Story = {
   },
   play: async ({ canvasElement }) => expectCardTabOrder(canvasElement, 2),
 };
+
+export const Improvement: Story = {
+  args: {
+    chapter: { ...baseChapter, completedAttemptCount: 2, accuracy: 96, deltaPoints: 3.6 },
+  },
+  play: async ({ canvasElement }) => {
+    await expectCardTabOrder(canvasElement, 2);
+    await expect(canvasElement.querySelector('[data-chapter-delta-icon]')).not.toHaveClass('-scale-x-100');
+  },
+};
+
+export const NoDelta: Story = {
+  args: {
+    chapter: { ...baseChapter, completedAttemptCount: 2, accuracy: 96, deltaPoints: 0 },
+  },
+  play: async ({ canvasElement }) => {
+    await expectCardTabOrder(canvasElement, 2);
+    await expect(canvasElement.querySelector('[data-chapter-delta-icon]')).toBeNull();
+  },
+};

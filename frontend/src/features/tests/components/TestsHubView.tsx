@@ -151,7 +151,7 @@ export function TestsHubView({
         </section>
       </main>
     </div>
-    <DesktopTestsHubView dashboard={dashboard} status={dashboardStatus} analyzeStatus={status} onRetry={onDashboardRetry} questionLabel={desktopQuestionLabel} />
+    <DesktopTestsHubView dashboard={dashboard} status={dashboardStatus} analyzeStatus={status} weakTopicCount={weakTopics.length} onRetry={onDashboardRetry} questionLabel={desktopQuestionLabel} />
     </div>
   );
 }

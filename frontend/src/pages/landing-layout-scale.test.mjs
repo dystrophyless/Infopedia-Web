@@ -103,7 +103,8 @@ assert.match(sourceProof, /<TermCardCarousel variant="guestLanding" \/>/);
 assert.match(sourceProof, /pb-\[88px\]/);
 assert.match(termCard, /guestLanding[\s\S]*h-\[168px\][\s\S]*w-\[262px\]/);
 assert.match(termCarousel, /guestLanding: 'gap-6 px-0'/);
-assert.match(termCarousel, /variant === 'guestLanding'[\s\S]*overflow-x-auto[\s\S]*snap-x/);
+assert.match(termCarousel, /overflow-hidden pb-0/);
+assert.doesNotMatch(termCarousel, /overflow-x-auto|snap-x|touch-pan-x|scroll-smooth/);
 
 assert.match(analyze, /Проанализируйте свой ЕНТ/);
 assert.match(analyze, /data-desktop-content-rail[^>]*max-w-\[1152px\][^\"]*px-\[24px\][^\"]*min-\[1440px\]:max-w-\[1120px\][^\"]*min-\[1440px\]:px-0/);

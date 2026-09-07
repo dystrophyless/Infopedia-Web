@@ -103,11 +103,12 @@ assert.equal((page.match(/<TermCard\b/g) ?? []).length, 1, 'Favorites must rende
 assert.match(toggle, /FavoriteToggle[\s\S]*favorites\.removeTermAria[\s\S]*favorites\.saveTermAria/, 'Toggle must expose localized add/remove aria labels');
 assert.match(toggle, /aria-busy=\{pending\}[\s\S]*disabled=\{pending\}/, 'Toggle must expose pending state');
 assert.match(toggle, /favorites\.updateFailed/, 'Toggle must expose localized mutation error');
-assert.match(toggle, /appearance\?: 'default' \| 'mobile-card' \| 'mobile-header'/, 'Bookmark appearances must expose default, mobile-card, and mobile-header modes');
-assert.match(toggle, /size-11[\s\S]*compactMobileAppearance[\s\S]*border-0 bg-transparent/, 'Bookmark appearances must expose shared borderless 44px targets');
-assert.match(toggle, /size=\{inspectAppearance \|\| compactMobileAppearance \? 24[\s\S]*strokeWidth=\{inspectAppearance \|\| compactMobileAppearance \? 1\.6/, 'Compact bookmark appearances must use the 24px glyph and 1.6 stroke');
-assert.match(toggle, /positionClass = mobileCardAppearance \? 'absolute' :[\s\S]*'relative'/, 'Favorite toggle wrapper must use absolute positioning only for mobile cards and relative anchoring by default');
-assert.match(toggle, /positionClass = mobileCardAppearance \? 'absolute' : mobileHeaderAppearance \? 'relative'/, 'Mobile-header favorite wrapper must remain flow-safe and relative');
+assert.match(toggle, /appearance: 'mobile-card' \| 'mobile-header'/, 'Bookmark appearances must expose only the two live production modes');
+assert.doesNotMatch(toggle, /appearance\??\s*=\s*['"]default|['"]default['"] \|['"]mobile-card|inspectAppearance|data-favorite-visual/, 'Bookmark presentation must not retain dead default or inspect modes');
+assert.doesNotMatch(toggle, /compactMobileAppearance|border \$\{isFavorite \? 'border-accent/, 'Bookmark presentation must not retain an unreachable desktop branch');
+assert.match(toggle, /size-11[\s\S]*border-0 bg-transparent/, 'Bookmark appearances must expose shared borderless 44px targets');
+assert.match(toggle, /size=\{24\}[\s\S]*strokeWidth=\{1\.6\}/, 'Live bookmark appearances must use the 24px glyph and 1.6 stroke');
+assert.match(toggle, /positionClass = appearance === 'mobile-card' \? 'absolute' :[\s\S]*'relative'/, 'Favorite toggle wrapper must use absolute positioning only for mobile cards and relative anchoring for the header');
 assert.doesNotMatch(toggle, /className=\{`relative inline-flex \$\{className\}`\}/, 'Favorite toggle must not leave an unconditional relative class alongside caller positioning');
 assert.match(toggle, /isFavorite[\s\S]*text-\[#6a37c3\]/, 'Favorite bookmark must use exact active purple ink');
 assert.match(toggle, /className=\{isFavorite \? 'fill-current'/, 'Favorite bookmark must fill its active glyph');

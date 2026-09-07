@@ -18,7 +18,9 @@ assert.match(
 assert.match(uploadSource, /md:hidden">\{t\('analyze\.uploadTitle'\)\}<\/p>/, 'adaptive upload should render the mobile PDF subtitle');
 assert.match(uploadSource, /\{file\.name\}[\s\S]*t\('analyze\.selectedFileHint'\)/, 'selected state should render the real filename and alternate-file helper');
 assert.match(uploadSource, /href="https:\/\/app\.testcenter\.kz"[\s\S]*target="_blank"/, 'mobile help copy should expose a real external help action');
-assert.match(uploadSource, /submitting \? t\('common\.loading'\) : `\$\{t\('analyze\.submit'\)\} →`/, 'adaptive CTA should preserve loading and arrow copy');
+assert.match(uploadSource, /<Button[\s\S]*loading=\{submitting\}/, 'adaptive CTA should use the shared loading spinner');
+assert.match(uploadSource, /\{`\$\{t\('analyze\.submit'\)\} →`\}/, 'adaptive CTA should retain its stable visible action label while submitting');
+assert.doesNotMatch(uploadSource, /submitting \? t\('common\.loading'\)/, 'adaptive CTA should not replace its visible action label with generic loading copy');
 assert.match(uploadSource, /aria-busy=\{submitting\}/, 'adaptive form should expose submission state accessibly');
 assert.match(uploadSource, /focus-visible:ring-2|focus-within:ring-2/, 'upload controls and tutorial navigation should expose keyboard focus');
 assert.match(

@@ -1,7 +1,10 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ChartUpIcon } from '@hugeicons/core-free-icons';
+import {
+  TradeDownIcon as TrendingDownIcon,
+  TradeUpIcon as TrendingUpIcon,
+} from '@hugeicons/core-free-icons';
 import {
   formatDelta,
   formatPercent,
@@ -87,6 +90,13 @@ export function DesktopChapterTestCard({
     chapter.deltaPoints,
   );
   const available = isChapterLaunchAvailable(chapter);
+  const deltaIcon = chapter.deltaPoints === null
+    ? null
+    : chapter.deltaPoints > 0
+      ? TrendingDownIcon
+      : chapter.deltaPoints < 0
+        ? TrendingUpIcon
+        : null;
   const cardClassName = `flex h-[196px] min-w-0 flex-col gap-6 rounded-[16px] bg-white p-6 text-left ${available ? 'transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-within:-translate-y-0.5' : ''}`;
   return (
     <article
@@ -117,16 +127,16 @@ export function DesktopChapterTestCard({
           hint={deltaHint}
           className={`gap-1.5 text-[12px] font-medium leading-[12px] ${deltaToneClasses[deltaTone]}`}
         >
-          {chapter.deltaPoints === 0 ? null : (
+          {deltaIcon ? (
             <HugeiconsIcon
-              icon={ChartUpIcon}
+              icon={deltaIcon}
               size={20}
               strokeWidth={1.5}
-              className={`block shrink-0 ${chapter.deltaPoints !== null && chapter.deltaPoints > 0 ? '-scale-x-100' : ''}`}
+              className="block shrink-0"
               data-chapter-delta-icon
               aria-hidden="true"
             />
-          )}
+          ) : null}
           <span data-chapter-delta-value>{formatDelta(chapter.deltaPoints)}</span>
         </MetricHint> : null}
       </div>

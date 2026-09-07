@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { Button, MobilePinnedAppBar, StatusPanel } from '../../../ui';
+import { Button, MobilePinnedAppBar, Skeleton, StatusPanel } from '../../../ui';
 
 export interface TestStatusViewProps {
   title: string;
@@ -36,12 +36,29 @@ export function TestStatusView({
           )}
         />
 
-        <StatusPanel
-          title={message}
-          tone="brand"
-          announce={loading ? 'polite' : 'assertive'}
-          className="mt-8 rounded-[8px] border-0 bg-[#6a37c3] p-6 text-[#f8f5fc]"
-        />
+        {loading ? (
+          <div
+            data-test-status-loading
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="mt-8 flex flex-col gap-4 rounded-[8px] bg-[#6a37c3] p-6"
+          >
+            <span className="sr-only">{message}</span>
+            <div aria-hidden="true" className="flex flex-col gap-3">
+              <Skeleton className="h-5 w-2/3 bg-[#865bcf]" />
+              <Skeleton className="h-5 w-full bg-[#865bcf]" />
+              <Skeleton className="h-12 w-full rounded-[8px] bg-[#865bcf]" />
+            </div>
+          </div>
+        ) : (
+          <StatusPanel
+            title={message}
+            tone="brand"
+            announce="assertive"
+            className="mt-8 rounded-[8px] border-0 bg-[#6a37c3] p-6 text-[#f8f5fc]"
+          />
+        )}
 
         {actionLabel && onAction && (
           <div className="mt-auto pt-8">

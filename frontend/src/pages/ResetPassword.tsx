@@ -114,7 +114,7 @@ export function ResetPassword() {
           </p>
         )}
         <AuthSubmit loading={loading} disabled={!token}>
-          {loading ? t('common.loading') : t('auth.resetPasswordButton')}
+          {t('auth.resetPasswordButton')}
         </AuthSubmit>
       </form>
     </AuthShell>

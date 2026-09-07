@@ -10,7 +10,7 @@ export interface FavoriteToggleProps {
   termName: string;
   className?: string;
   ensureStatus?: boolean;
-  appearance?: 'default' | 'mobile-card' | 'mobile-header' | 'inspect';
+  appearance: 'mobile-card' | 'mobile-header';
 }
 
 export function FavoriteToggle({
@@ -18,7 +18,7 @@ export function FavoriteToggle({
   termName,
   className = '',
   ensureStatus = true,
-  appearance = 'default',
+  appearance,
 }: FavoriteToggleProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -49,15 +49,11 @@ export function FavoriteToggle({
         defaultValue: 'Could not update favorites. Try again.',
       })
     : null;
-  const mobileCardAppearance = appearance === 'mobile-card';
-  const mobileHeaderAppearance = appearance === 'mobile-header';
-  const compactMobileAppearance = mobileCardAppearance || mobileHeaderAppearance;
-  const inspectAppearance = appearance === 'inspect';
   const hasCallerPosition = /(?:^|\s)(?:absolute|fixed|relative|static|sticky)(?:\s|$)/.test(className);
-  const positionClass = mobileCardAppearance ? 'absolute' : mobileHeaderAppearance ? 'relative' : hasCallerPosition ? '' : 'relative';
+  const positionClass = appearance === 'mobile-card' ? 'absolute' : hasCallerPosition ? '' : 'relative';
 
   return (
-    <span className={`${positionClass} inline-flex ${inspectAppearance ? '-my-[10px]' : ''} ${className}`}>
+    <span className={`${positionClass} inline-flex ${className}`}>
       <button
         type="button"
         aria-label={label}
@@ -67,18 +63,13 @@ export function FavoriteToggle({
         onClick={() => {
           void toggleFavorite(termRef).catch(() => undefined);
         }}
-        data-favorite-visual={inspectAppearance ? '24' : undefined}
-        className={`flex size-11 items-center justify-center rounded-[8px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-wait disabled:opacity-60 ${
-          compactMobileAppearance
-            ? `border-0 bg-transparent ${isFavorite ? 'text-[#6a37c3]' : 'text-[#161519] hover:text-[#6a37c3]'}`
-            : `border ${isFavorite ? 'border-accent bg-accent text-white' : 'border-border bg-surface text-muted hover:border-accent hover:text-accent'}`
-        }`}
+        className={`flex size-11 items-center justify-center rounded-[8px] border-0 bg-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-wait disabled:opacity-60 ${isFavorite ? 'text-[#6a37c3]' : 'text-[#161519] hover:text-[#6a37c3]'}`}
       >
-        <span className={inspectAppearance ? 'flex size-6 items-center justify-center' : undefined}>
+        <span className="flex size-6 items-center justify-center">
           <HugeiconsIcon
             icon={Bookmark02Icon}
-            size={inspectAppearance || compactMobileAppearance ? 24 : 22}
-            strokeWidth={inspectAppearance || compactMobileAppearance ? 1.6 : 1.7}
+            size={24}
+            strokeWidth={1.6}
             className={isFavorite ? 'fill-current' : undefined}
           />
         </span>

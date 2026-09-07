@@ -36,17 +36,17 @@ assert.match(
 );
 assert.match(
   authShellSource,
-  /desktopOnboarding \? 'min-\[1440px\]:flex-row min-\[1440px\]:bg-\[#efebf6\]' : ''/,
-  'Fixed desktop onboarding should activate only at the 1440px Figma reference width',
+  /desktopOnboarding \? 'lg:flex-row lg:bg-\[#efebf6\]' : ''/,
+  'Desktop onboarding should use one adaptive row from the 1024px desktop breakpoint',
 );
 assert.match(
   authShellSource,
-  /data-testid="desktop-onboarding-sidebar"[\s\S]*min-\[1440px\]:min-h-screen[\s\S]*min-\[1440px\]:w-\[480px\][\s\S]*min-\[1440px\]:border-\[#ded2f1\][\s\S]*min-\[1440px\]:px-16[\s\S]*min-\[1440px\]:py-8/,
-  'Desktop onboarding sidebar should retain its 480px rail and 64x32 padding only at the 1440px desktop presentation',
+  /data-testid="desktop-onboarding-sidebar"[\s\S]*lg:min-h-screen[\s\S]*lg:w-\[clamp\(280px,33\.333vw,480px\)\][\s\S]*lg:border-\[#ded2f1\][\s\S]*lg:px-\[clamp\(32px,4\.444vw,64px\)\][\s\S]*lg:py-8/,
+  'Desktop onboarding sidebar should fluidly scale up to its 480px reference rail',
 );
 assert.match(
   authShellSource,
-  /data-testid="desktop-onboarding-logo"[\s\S]*min-\[1440px\]:h-\[44px\][\s\S]*min-\[1440px\]:w-\[171px\]/,
+  /data-testid="desktop-onboarding-logo"[\s\S]*lg:h-\[44px\][\s\S]*lg:w-\[171px\]/,
   'Desktop onboarding logo should preserve the 171x44 Figma geometry',
 );
 assert.match(
@@ -56,18 +56,18 @@ assert.match(
 );
 assert.match(
   authShellSource,
-  /'desktop-onboarding-main'[\s\S]*min-\[1440px\]:min-h-screen[\s\S]*min-\[1440px\]:w-\[960px\][\s\S]*min-\[1440px\]:bg-\[#efebf6\]/,
-  'Desktop onboarding main region should retain its 960px surface only at the 1440px desktop presentation',
+  /'desktop-onboarding-main'[\s\S]*lg:min-h-screen[\s\S]*lg:min-w-0[\s\S]*lg:flex-1[\s\S]*lg:bg-\[#efebf6\]/,
+  'Desktop onboarding main region should shrink safely beside the adaptive sidebar',
 );
 assert.match(
   authShellSource,
-  /'desktop-onboarding-card'[\s\S]*min-\[1440px\]:w-\[480px\][\s\S]*min-\[1440px\]:rounded-\[16px\][\s\S]*min-\[1440px\]:p-12/,
-  'Desktop onboarding card should match the 480px width, 16px radius, and 48px padding at the Figma reference width',
+  /'desktop-onboarding-card'[\s\S]*lg:w-\[min\(480px,100%\)\][\s\S]*lg:rounded-\[16px\][\s\S]*lg:p-\[clamp\(32px,3\.333vw,48px\)\]/,
+  'Desktop onboarding card should retain its 480px maximum while staying fluid at intermediate widths',
 );
 assert.match(
   authShellSource,
-  /desktopOnboarding \? 'hidden lg:flex min-\[1440px\]:hidden' : 'flex max-lg:hidden'/,
-  'Sub-1440 onboarding should retain the existing single-column desktop header instead of hiding all navigation',
+  /desktopOnboarding \? 'hidden' : 'flex max-lg:hidden'/,
+  'Onboarding should not retain a separate intermediate-width header fallback',
 );
 
 assert.match(onboardingSource, /desktopFlowStep=\{step === 'grade' \? 1 : 2\}/);
@@ -88,8 +88,8 @@ assert.match(loginSource, /to="\/onboarding"/, 'Login footer should navigate to 
 assert.doesNotMatch(loginSource, /to="\/register"/, 'Login should not retain the legacy registration footer route');
 assert.match(
   onboardingSource,
-  /data-onboarding-indicator="desktop"[\s\S]*hidden size-5 shrink-0 rounded-full border[\s\S]*min-\[1440px\]:block/,
-  'Desktop grade rows should expose radio circles only at the 1440px Figma reference width',
+  /<div className="hidden lg:block">[\s\S]*data-onboarding-indicator="desktop"/,
+  'Desktop grade rows should expose circular radios only in the desktop branch',
 );
 assert.doesNotMatch(
   onboardingSource,
@@ -98,24 +98,30 @@ assert.doesNotMatch(
 );
 assert.match(
   onboardingSource,
-  /data-onboarding-indicator="mobile"[\s\S]*min-\[1440px\]:hidden[\s\S]*data-onboarding-indicator="desktop"[\s\S]*min-\[1440px\]:block/,
-  'Grade indicators should expose distinct mobile and desktop anatomy for responsive visual assertions',
+  /<div className="block lg:hidden">[\s\S]*data-onboarding-indicator="mobile"[\s\S]*<div className="hidden lg:block">[\s\S]*data-onboarding-indicator="desktop"/,
+  'Grade indicators should expose breakpoint-exclusive mobile and desktop anatomy',
 );
 assert.match(
   onboardingSource,
-  /min-\[1440px\]:text-\[16px\][\s\S]*min-\[1440px\]:text-\[#8c8698\]/,
-  'Onboarding helper typography should remain in the fallback presentation below 1440px',
+  /lg:text-\[16px\][\s\S]*lg:text-\[#8c8698\]/,
+  'Onboarding helper typography should remain readable across desktop widths',
 );
 assert.match(
   onboardingSource,
-  /max-md:hidden min-\[1440px\]:hidden/,
-  'The username Back control should stay visible throughout the intermediate-width fallback',
+  /max-md:hidden lg:hidden/,
+  'The username Back control should remain breakpoint-exclusive without a fallback branch',
 );
 assert.match(
   onboardingSource,
-  /min-\[1440px\]:justify-between[\s\S]*min-\[1440px\]:bg-\[#f8f5fc\]/,
-  'Desktop grade row layout and surface should activate only at the 1440px Figma reference width',
+  /lg:justify-between[\s\S]*lg:bg-\[#f8f5fc\]/,
+  'Desktop grade row layout and surface should activate at the desktop breakpoint',
 );
+assert.doesNotMatch(authShellSource, /min-\[1440px\]|fallback/, 'AuthShell must not retain an intermediate-width fallback');
+assert.doesNotMatch(onboardingSource, /min-\[1440px\]|aria-pressed/, 'Onboarding must not retain legacy breakpoint or button-toggle branches');
+assert.match(onboardingSource, /function GradeOptionRadio\(/, 'Grade choices should be named for their native radio presentation');
+assert.doesNotMatch(onboardingSource, /GradeOptionButton/, 'Onboarding should not retain the obsolete button-named grade helper');
+assert.match(onboardingSource, /type="radio"[\s\S]*name="onboarding-grade"[\s\S]*value=\{grade\}/, 'Grade choices must use controlled native radio inputs');
+assert.match(onboardingSource, /const mobileId = `onboarding-grade-mobile-\$\{grade\}`;[\s\S]*const desktopId = `onboarding-grade-desktop-\$\{grade\}`;[\s\S]*id=\{mobileId\}[\s\S]*id=\{desktopId\}/, 'Mobile and desktop radios must have unique ids');
 assert.match(
   onboardingSource,
   /desktopShowSuccessIcon=\{usernameHelperTone === 'success'\}/,
@@ -143,9 +149,10 @@ assert.match(
 );
 assert.ok(existsSync(googleIconPath), 'The exact Figma Google icon export should be stored locally');
 assert.ok(existsSync(googleManifestPath), 'The exact Figma Google icon export should have provenance metadata');
-const googleAsset = readFileSync(googleIconPath);
+const googleAssetSource = readFileSync(googleIconPath, 'utf8');
+const googleAsset = Buffer.from(googleAssetSource.replace(/\r\n/g, '\n'), 'utf8');
 const googleManifest = JSON.parse(readFileSync(googleManifestPath, 'utf8'));
-assert.equal(googleAsset.byteLength, 1110, 'The downloaded Figma Google icon should preserve its 1110-byte export');
+assert.equal(googleAsset.byteLength, 1110, 'The canonical Figma Google icon export should contain 1110 UTF-8 bytes');
 assert.equal(
   googleManifest.source,
   'Figma file aa8qReawBBhHIXDAbS18OP, register node 865:3751, icon node 865:3831',
@@ -197,19 +204,6 @@ assert.match(
 );
 assert.match(visualHarnessSource, /desktop-onboarding-sidebar/);
 assert.match(visualHarnessSource, /desktop-onboarding-card/);
-for (const width of [1024, 1280, 1366, 1439]) {
-  assert.match(
-    visualHarnessSource,
-    new RegExp(`width: ${width}`),
-    `The desktop visual harness should probe the ${width}px sub-reference fallback`,
-  );
-}
-for (const state of ['grade-fallback', 'username-fallback', 'register-fallback']) {
-  assert.match(
-    visualHarnessSource,
-    new RegExp(`state: '${state}'`),
-    `The desktop visual harness should probe the ${state} intermediate-width state`,
-  );
-}
+assert.doesNotMatch(visualHarnessSource, /fallback|aria-pressed|responsiveProfiles|responsiveReferences/);
 
 console.log('Desktop onboarding six-state source contract passed');

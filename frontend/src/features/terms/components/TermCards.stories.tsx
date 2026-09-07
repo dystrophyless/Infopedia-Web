@@ -5,11 +5,8 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import type { Definition, Term } from '../../../types';
-import { FavoriteToggle } from '../../favorites/components';
-import { useFavoritesStore } from '../../favorites/model';
 import { useAuthStore } from '../../../stores/authStore';
 import { DefinitionMetadata } from './DefinitionMetadata';
-import { FeaturedTermCard, type FeaturedTermCardVariant } from './FeaturedTermCard';
 import { MobileSearchTermCard } from './MobileSearchTermCard';
 import { TermCard } from './TermCard';
 
@@ -52,30 +49,6 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-
-function FavoriteToggleStates() {
-  useEffect(() => {
-    useAuthStore.setState({ isAuthenticated: true, token: 'storybook-token' });
-    useFavoritesStore.setState({
-      statusByTermRef: { saved: true },
-      pendingByTermRef: { pending: true },
-      errorByTermRef: { failed: 'story-error' },
-    });
-    return () => {
-      useAuthStore.setState({ isAuthenticated: false, token: null });
-      useFavoritesStore.getState().reset();
-    };
-  }, []);
-
-  return (
-    <div className="flex flex-wrap items-center gap-4">
-      <FavoriteToggle termRef="unsaved" termName="Несохранённый термин" ensureStatus={false} />
-      <FavoriteToggle termRef="saved" termName="Сохранённый термин" ensureStatus={false} />
-      <FavoriteToggle termRef="pending" termName="Ожидающий термин" ensureStatus={false} />
-      <FavoriteToggle termRef="failed" termName="Термин с ошибкой" ensureStatus={false} />
-    </div>
-  );
-}
 
 function AuthenticatedMobileCardsStory() {
   useEffect(() => {
@@ -391,10 +364,6 @@ export const DesktopMissingMetadata: Story = {
   render: () => <TermCard term={{ ...shortTerm, definitions: [{ name: 'No source metadata.', text: 'No source metadata.', page: 0, topic: undefined }] }} selected />,
 };
 
-export const FavoriteStates: Story = {
-  render: () => <FavoriteToggleStates />,
-};
-
 export const MobilePopulatedAndLoading: Story = {
   globals: { viewport: { value: 'mobile430', isRotated: false } },
   parameters: {
@@ -486,14 +455,4 @@ export const MobileOverflowContract390: Story = {
 export const MobileOverflowContract430: Story = {
   ...MobileOverflowContract320,
   globals: { viewport: { value: 'mobile430', isRotated: false } },
-};
-
-export const FiveFeaturedVariants: Story = {
-  render: () => (
-    <div className="grid gap-8 overflow-hidden">
-      {(['desktop', 'mobile', 'home', 'guest', 'guestDesktop'] satisfies FeaturedTermCardVariant[]).map((variant) => (
-        <section key={variant} aria-label={variant}><FeaturedTermCard featuredTerm={{ term, featured_definition: longDefinition }} variant={variant} /></section>
-      ))}
-    </div>
-  ),
 };

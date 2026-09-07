@@ -10,6 +10,7 @@ const indexHtml = read('index.html');
 const seoRuntime = read('src/seo/DocumentSeo.tsx');
 const seoPolicy = read('src/seo/seoPolicy.ts');
 const seoBuild = read('scripts/seo-build.mjs');
+const routeLoading = read('src/components/RouteLoading.tsx');
 const featuredCard = read('src/features/terms/components/FeaturedTermCard.tsx');
 const termDetail = read('src/pages/TermDetail.tsx');
 const vercel = JSON.parse(read('vercel.json'));
@@ -80,11 +81,14 @@ for (const [name, modulePath] of lazyPages) {
 }
 
 assert.match(appSource, /import \{ lazy, Suspense, useEffect \} from 'react';/, 'App must import lazy and Suspense from React');
+assert.match(appSource, /import \{ RouteLoading \} from '\.\/components\/RouteLoading';/, 'App must reuse the shared route loading component');
 assert.match(
-  appSource,
-  /function RouteLoading\(\)[\s\S]*role="status"[\s\S]*t\('common\.loading'\)/,
-  'Route fallback must expose the localized loading copy through a status region',
+  routeLoading,
+  /role="status"[\s\S]*aria-live="polite"[\s\S]*aria-busy="true"[\s\S]*sr-only[\s\S]*t\('common\.loading'\)/,
+  'Route fallback must expose one localized busy status region',
 );
+assert.match(routeLoading, /<Skeleton[\s\S]*aria-hidden/, 'Route fallback must use decorative skeleton layers');
+assert.doesNotMatch(routeLoading, /className="[^"]*text-[^\"]*"[^>]*>\s*\{t\('common\.loading'\)/, 'Route fallback must not show loading copy as visible page content');
 const protectedShellSource = appSource.slice(appSource.indexOf('function Protected'), appSource.indexOf('function Public'));
 const publicShellSource = appSource.slice(appSource.indexOf('function Public'), appSource.indexOf('export default function App'));
 for (const [name, shellSource] of [['Protected', protectedShellSource], ['Public', publicShellSource]]) {

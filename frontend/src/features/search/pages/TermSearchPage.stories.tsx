@@ -995,11 +995,18 @@ export const DesktopFiltersCatalogErrorRetryContract: Story = {
     expect(applyButton).not.toBeNull();
     if (!applyButton) return;
     expect(applyButton).toBeDisabled();
+    const descriptionId = applyButton.getAttribute('aria-describedby');
+    expect(descriptionId).toBe('desktop-search-filter-catalog-error');
+    const description = descriptionId ? dialog.ownerDocument.getElementById(descriptionId) : null;
+    expect(description).not.toBeNull();
+    if (description) expect(description.textContent?.trim()).toMatch(/\S/);
     await userEvent.click(within(menu).getByRole('button', { name: /Повторить|Қайталау|Retry/i }));
     await waitFor(() => expect(requestCount()).toHaveTextContent('2'));
     await waitFor(() => expect(within(menu).getAllByRole('option').length).toBeGreaterThan(0));
     expect(within(menu).queryByRole('alert')).toBeNull();
     expect(applyButton).not.toBeDisabled();
+    await expect(applyButton).not.toHaveAttribute('aria-describedby');
+    await expect(dialog.ownerDocument.getElementById('desktop-search-filter-catalog-error')).toBeNull();
   },
 };
 

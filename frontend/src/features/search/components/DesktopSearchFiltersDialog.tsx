@@ -219,7 +219,7 @@ export function DesktopSearchFiltersDialog({
           </button>
         </div>
 
-        {applyBlocked && !activeMenu && (
+        {applyBlocked && (
           <span id="desktop-search-filter-catalog-error" className="sr-only" role="status">
             {catalogLoading ? t('common.loading') : catalogError ?? t('searchFilters.loadOptionsFailed')}
           </span>

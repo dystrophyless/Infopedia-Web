@@ -117,7 +117,7 @@ export function TermCardCarouselView({ terms, loading = false, error = false, on
     };
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
-  }, [carouselTerms]);
+  }, [carouselTerms, variant]);
 
   if (loading) return <LoadingCarousel variant={variant} />;
   if (error) return <ErrorCarousel onRetry={onRetry} />;

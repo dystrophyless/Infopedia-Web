@@ -74,7 +74,8 @@ assert.doesNotMatch(chapterCard, /scale-x-100/, 'chapter delta icons must not be
 assert.match(chapterCard, /metric="delta"[\s\S]*data-chapter-delta-icon[\s\S]*formatDelta/, 'the delta metric target must wrap both the icon and value');
 assert.doesNotMatch(chapterCard, /trending-up\.svg|mask-image|MaskImage/, 'the migrated delta glyph must not retain an SVG mask');
 assert.match(view, /weakTopicCount/, 'desktop weak-mode state must receive the latest analysis weak-topic count');
-assert.match(view, /analyzeStatus === 'ready'[\s\S]*weakTopicCount > 0[\s\S]*to="\/tests\/weak"/, 'completed analysis with weak topics must link to weak tests');
+assert.match(view, /to=\{dashboardReady && weakAvailability\?\.available === true \? '\/tests\/weak' : undefined\}/, 'weak-test navigation must follow server-authoritative availability');
+assert.match(view, /analyzeStatus === 'ready'[\s\S]*weakTopicCount > 0[\s\S]*unavailableMessage=\{modeReason\('weak'\)\}/, 'weak-test availability failures must expose the localized server reason');
 assert.match(view, /analyzeStatus === 'ready'[\s\S]*desktopWeakUnavailableNoTopics/, 'completed perfect analysis must use the localized no-weak-topics state');
 assert.match(view, /analyzeStatus === 'loading'[\s\S]*desktopWeakUnavailableLoading/, 'analysis loading must use a neutral localized unavailable state');
 assert.match(story, /questionCount: 0/);

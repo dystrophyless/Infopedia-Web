@@ -64,6 +64,7 @@ assert.match(view, /FEATURED_TERMS_LIMIT = 10/, 'The backend carousel remains ca
 assert.match(view, /carouselTerms\.length > 1 \? \[\.\.\.carouselTerms, \.\.\.carouselTerms\]/,
   'Auto-scroll must clone multiple terms for a continuous loop');
 assert.match(view, /clone-0[\s\S]*offsetLeft[\s\S]*orig-0[\s\S]*offsetLeft/, 'Loop distance must use measured original/clone offsets');
+assert.match(view, /cancelAnimationFrame\(frameId\);\s*\}, \[carouselTerms, variant\]\);/, 'Auto-scroll geometry must recalculate when the card variant changes without remounting');
 assert.match(view, /pointerPausedRef/, 'Pointer pause state must remain independent');
 assert.match(view, /focusPausedRef/, 'Focus pause state must remain independent');
 assert.match(view, /onMouseEnter[\s\S]*pointerPausedRef\.current = true[\s\S]*onMouseLeave[\s\S]*pointerPausedRef\.current = false/,

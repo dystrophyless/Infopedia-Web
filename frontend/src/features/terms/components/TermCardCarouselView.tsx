@@ -11,45 +11,48 @@ export interface TermCardCarouselViewProps {
   loading?: boolean;
   error?: boolean;
   onRetry?: () => void;
-  variant?: FeaturedTermCardVariant;
+  variant: FeaturedTermCardVariant;
 }
 
 const trackClasses: Record<FeaturedTermCardVariant, string> = {
-  home: 'gap-2.5 pl-0 pr-4',
   guest: 'gap-4 pl-8 pr-8',
-  guestDesktop: 'gap-6 px-[72px]',
   guestLanding: 'gap-6 px-0',
-  mobile: 'gap-3 pl-0 pr-[24vw]',
-  desktop: 'gap-[45px] px-[48px] max-md:gap-4 max-md:px-4',
+};
+
+const loadingShellClasses: Record<FeaturedTermCardVariant, string> = {
+  guest: 'h-[168px] w-[216px] rounded-[16px] border-0 bg-white p-6',
+  guestLanding: 'h-[168px] w-[262px] rounded-[16px] border-0 bg-white p-6',
 };
 
 function LoadingCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
-  const shell = variant === 'home'
-    ? 'h-[134px] w-[204px] rounded-[8px] border border-[#e8e1ee]'
-    : variant === 'guest'
-      ? 'h-[168px] w-[216px] rounded-[16px] border-0 bg-surface-subtle'
-      : variant === 'guestDesktop'
-        ? 'h-[220px] w-[320px] rounded-[20px] border-0 bg-surface-subtle'
-        : variant === 'guestLanding'
-          ? 'h-[168px] w-[262px] rounded-[16px] border-0 bg-white'
-        : variant === 'mobile'
-          ? 'h-[238px] w-[76vw] rounded-[22px] border-0'
-          : 'h-[325px] w-[min(612px,calc(100vw_-_96px))] rounded-[15px] border border-border/40 max-md:w-[88vw]';
-  const gap = variant === 'home' ? 'gap-2.5' : variant === 'guest' ? 'gap-4' : variant === 'guestDesktop' || variant === 'guestLanding' ? 'gap-6' : variant === 'mobile' ? 'gap-3' : 'gap-[45px]';
+  const { t } = useTranslation();
   return (
-    <div className={variant === 'desktop' ? 'overflow-hidden rounded-[16px] px-[48px] pb-6 pt-2 max-md:px-4' : 'overflow-hidden rounded-[16px]'} aria-busy="true">
-      <div className={`flex ${gap}`}>
-        {[0, 1, 2].map((key) => <div key={key} className={`flex-none animate-pulse bg-surface/70 ${shell}`} />)}
+    <div className="overflow-hidden rounded-[16px]" role="status" aria-busy="true">
+      <span className="sr-only">{t('common.loading', { defaultValue: 'Загрузка...' })}</span>
+      <div aria-hidden="true">
+        <ul className={`flex w-max ${trackClasses[variant]}`}>
+          {Array.from({ length: 4 }, (_, key) => (
+            <li key={key} className={`flex-none animate-pulse ${loadingShellClasses[variant]}`}>
+              <div className="flex h-full flex-col">
+                <span data-carousel-skeleton-title className="h-4 w-3/4 rounded-[4px] bg-action-primary/35" />
+                <span data-carousel-skeleton-definition className="mt-4 h-3 w-full rounded-[4px] bg-surface-muted" />
+                <span className="mt-2 h-3 w-5/6 rounded-[4px] bg-surface-muted" />
+                <span className="mt-2 h-3 w-2/3 rounded-[4px] bg-surface-muted" />
+                <span data-carousel-skeleton-source className="mt-auto h-3 w-1/2 rounded-[4px] bg-action-primary/20" />
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
 }
 
-function EmptyCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
+function EmptyCarousel() {
   const { t } = useTranslation();
   return (
     <div
-      className={`flex min-h-[120px] w-full items-center justify-center overflow-hidden rounded-[16px] px-6 py-8 text-center text-[14px] leading-[14px] text-muted ${variant === 'guestDesktop' ? 'min-h-[220px]' : variant === 'guestLanding' ? 'min-h-[168px]' : ''}`}
+      className="flex min-h-[168px] w-full items-center justify-center overflow-hidden rounded-[16px] px-6 py-8 text-center text-[14px] leading-[14px] text-muted"
       role="status"
     >
       {t('terms.noFeatured', { defaultValue: 'Избранных терминов пока нет' })}
@@ -57,11 +60,11 @@ function EmptyCarousel({ variant }: { variant: FeaturedTermCardVariant }) {
   );
 }
 
-function ErrorCarousel({ variant, onRetry }: { variant: FeaturedTermCardVariant; onRetry?: () => void }) {
+function ErrorCarousel({ onRetry }: { onRetry?: () => void }) {
   const { t } = useTranslation();
   return (
     <div
-      className={`flex min-h-[120px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[16px] px-6 py-8 text-center text-[14px] leading-[14px] text-muted ${variant === 'guestDesktop' ? 'min-h-[220px]' : variant === 'guestLanding' ? 'min-h-[168px]' : ''}`}
+      className="flex min-h-[168px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[16px] px-6 py-8 text-center text-[14px] leading-[14px] text-muted"
       role="alert"
     >
       <p>{t('terms.featuredError', { defaultValue: 'Не удалось загрузить термины' })}</p>
@@ -76,20 +79,19 @@ function ErrorCarousel({ variant, onRetry }: { variant: FeaturedTermCardVariant;
   );
 }
 
-export function TermCardCarouselView({ terms, loading = false, error = false, onRetry, variant = 'desktop' }: TermCardCarouselViewProps) {
+export function TermCardCarouselView({ terms, loading = false, error = false, onRetry, variant }: TermCardCarouselViewProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pointerPausedRef = useRef(false);
   const focusPausedRef = useRef(false);
   const carouselTerms = useMemo(() => terms.slice(0, FEATURED_TERMS_LIMIT), [terms]);
-  const shouldAutoScroll = variant === 'desktop' || variant === 'guest' || variant === 'guestDesktop' || variant === 'guestLanding';
   const displayTerms = useMemo(
-    () => shouldAutoScroll && carouselTerms.length > 1 ? [...carouselTerms, ...carouselTerms] : carouselTerms,
-    [carouselTerms, shouldAutoScroll],
+    () => carouselTerms.length > 1 ? [...carouselTerms, ...carouselTerms] : carouselTerms,
+    [carouselTerms],
   );
 
   useEffect(() => {
     const node = scrollerRef.current;
-    if (!shouldAutoScroll || !node || carouselTerms.length < 2) return;
+    if (!node || carouselTerms.length < 2) return;
     const loopDistance =
       (node.querySelector<HTMLElement>('[data-carousel-item="clone-0"]')?.offsetLeft ?? node.scrollWidth / 2) -
       (node.querySelector<HTMLElement>('[data-carousel-item="orig-0"]')?.offsetLeft ?? 0);
@@ -115,15 +117,15 @@ export function TermCardCarouselView({ terms, loading = false, error = false, on
     };
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
-  }, [carouselTerms, shouldAutoScroll, variant]);
+  }, [carouselTerms]);
 
   if (loading) return <LoadingCarousel variant={variant} />;
-  if (error) return <ErrorCarousel variant={variant} onRetry={onRetry} />;
-  if (carouselTerms.length === 0) return <EmptyCarousel variant={variant} />;
+  if (error) return <ErrorCarousel onRetry={onRetry} />;
+  if (carouselTerms.length === 0) return <EmptyCarousel />;
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-[16px] ${variant === 'desktop' ? 'pt-2' : 'pt-0'}`}
+      className="relative w-full overflow-hidden rounded-[16px]"
       onMouseEnter={() => { pointerPausedRef.current = true; }}
       onMouseLeave={() => { pointerPausedRef.current = false; }}
       onPointerDown={(event) => {
@@ -138,10 +140,7 @@ export function TermCardCarouselView({ terms, loading = false, error = false, on
         focusPausedRef.current = false;
       }}
     >
-      <div
-        ref={scrollerRef}
-        className={`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${variant === 'desktop' ? 'overflow-x-auto pb-6' : variant === 'guest' || variant === 'guestDesktop' || variant === 'guestLanding' ? 'overflow-hidden pb-0' : 'overflow-x-auto touch-pan-x snap-x snap-proximity overscroll-x-contain scroll-smooth pb-2'}`}
-      >
+      <div ref={scrollerRef} className="[scrollbar-width:none] overflow-hidden pb-0 [&::-webkit-scrollbar]:hidden">
         <ul className={`flex w-max ${trackClasses[variant]}`}>
           {displayTerms.map((featuredTerm, index) => {
             const clone = index >= carouselTerms.length;
@@ -149,7 +148,7 @@ export function TermCardCarouselView({ terms, loading = false, error = false, on
               <li
                 key={`${featuredTerm.term.public_id}-${featuredTerm.featured_definition.public_id}-${clone ? 'clone' : 'orig'}`}
                 data-carousel-item={clone ? `clone-${index - carouselTerms.length}` : `orig-${index}`}
-                className={`flex-none ${variant === 'mobile' || variant === 'guest' ? 'snap-start' : ''}`}
+                className="flex-none"
               >
                 <FeaturedTermCard featuredTerm={featuredTerm} clone={clone} variant={variant} />
               </li>

@@ -15,6 +15,7 @@ import { FavoriteToggle } from '../../favorites/components';
 import { useFavoritesStore } from '../../favorites/model';
 import { buildDefinitionMetadataItems, getDefinitionIndex } from '../model';
 import { MobilePinnedAppBar } from '../../../ui/patterns';
+import { Skeleton } from '../../../ui';
 import { DesktopTermFavoriteButton } from './DesktopTermFavoriteButton';
 
 export type TermDetailLoadState = 'idle' | 'loading' | 'error';
@@ -194,6 +195,64 @@ function DesktopRelatedPanel({ relatedTerms, backTo }: { relatedTerms: RelatedTe
   );
 }
 
+function TermDetailMobileLoadingSkeleton() {
+  return (
+    <div data-term-detail-mobile-loading aria-hidden="true" className="flex flex-col gap-4">
+      <Skeleton data-term-detail-mobile-skeleton-heading className="h-5 w-36" />
+      <div data-term-detail-mobile-skeleton-definition className="min-h-[124px] rounded-[8px] bg-white p-6">
+        <Skeleton className="h-5 w-3/4" />
+        <div className="mt-4 flex flex-col gap-2">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-11/12" />
+          <Skeleton className="h-3 w-4/5" />
+        </div>
+      </div>
+      <div data-term-detail-mobile-skeleton-stats className="grid grid-cols-2 gap-2">
+        <div className="flex h-12 flex-col justify-between rounded-[8px] bg-white p-3"><Skeleton className="h-4 w-10" /><Skeleton className="h-3 w-16" /></div>
+        <div className="flex h-12 flex-col justify-between rounded-[8px] bg-white p-3"><Skeleton className="h-4 w-10" /><Skeleton className="h-3 w-16" /></div>
+      </div>
+      <div className="mt-8 flex flex-col gap-4">
+        <Skeleton className="h-5 w-28" />
+        <div data-term-detail-mobile-skeleton-source className="flex h-[84px] w-full items-center gap-4 rounded-[8px] bg-white px-6 py-4">
+          <Skeleton className="size-10 rounded-[8px]" />
+          <div className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-3 w-1/3" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-3 w-1/2" /></div>
+        </div>
+      </div>
+      <div data-term-detail-mobile-skeleton-related className="mt-8 flex gap-2">
+        <Skeleton className="h-[30px] w-28 rounded-[8px] bg-white" />
+        <Skeleton className="h-[30px] w-36 rounded-[8px] bg-white" />
+      </div>
+    </div>
+  );
+}
+
+function TermDetailDesktopLoadingSkeleton() {
+  return (
+    <div data-term-detail-desktop-loading aria-hidden="true" className="flex flex-col gap-4">
+      <section data-term-detail-desktop-skeleton-definition className="flex min-h-[319px] flex-col justify-between rounded-[16px] bg-white p-6">
+        <div className="flex flex-col gap-4">
+          <div data-term-detail-skeleton-header className="flex min-h-6 items-center justify-between gap-8">
+            <Skeleton className="h-5 w-2/5" />
+            <div data-term-detail-skeleton-actions className="flex shrink-0 items-center gap-4"><Skeleton className="size-10 rounded-[8px]" /><Skeleton className="size-10 rounded-[8px]" /></div>
+          </div>
+          <div data-term-detail-skeleton-text className="flex max-w-[514px] flex-col gap-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-11/12" /><Skeleton className="h-4 w-4/5" /></div>
+        </div>
+        <div data-term-detail-skeleton-source className="flex items-center gap-4 border-t border-[#f6f5f7] pt-6"><Skeleton className="size-10 rounded-[8px]" /><div className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-3 w-3/5" /></div><Skeleton className="h-10 w-24 rounded-[8px]" /></div>
+      </section>
+      <section data-term-detail-desktop-skeleton-mastery className="h-[120px] rounded-[16px] bg-white p-6"><div className="flex items-center justify-between"><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-12" /></div><Skeleton className="mt-4 h-2 w-full rounded-[8px]" /><Skeleton className="mt-4 h-3 w-2/3" /></section>
+    </div>
+  );
+}
+
+function TermDetailDesktopSideLoadingSkeleton() {
+  return (
+    <div data-term-detail-desktop-side-loading aria-hidden="true" className="flex flex-col gap-4">
+      <section data-term-detail-desktop-skeleton-test className="flex h-[187px] flex-col justify-between rounded-[16px] bg-white p-6"><div className="flex flex-col gap-3"><Skeleton className="h-5 w-3/5" /><Skeleton className="h-4 w-4/5" /></div><Skeleton className="h-8 w-36 rounded-[8px]" /></section>
+      <section data-term-detail-desktop-skeleton-related className="min-h-[220px] rounded-[16px] bg-white p-6"><Skeleton className="h-3 w-2/5" /><div className="mt-6 flex flex-col gap-4"><Skeleton className="h-8 w-full rounded-[8px]" /><Skeleton className="h-8 w-5/6 rounded-[8px]" /><Skeleton className="h-8 w-4/5 rounded-[8px]" /></div></section>
+    </div>
+  );
+}
+
 export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId, onDefinitionChange }: TermDetailViewProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -220,11 +279,17 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
   }, [ensureStatuses, isAuthenticated, term]);
 
   return (
-    <div className="min-h-full bg-canvas max-md:bg-canvas md:max-w-[1120px]">
+    <div
+      className="min-h-full overflow-x-hidden bg-canvas max-md:bg-canvas md:max-w-[1120px]"
+      role={isLoading ? 'status' : undefined}
+      aria-live={isLoading ? 'polite' : undefined}
+      aria-busy={isLoading || undefined}
+    >
+      {isLoading && <span className="sr-only">{t('termDetail.loading')}</span>}
       <div className="mx-auto max-w-[860px] bg-canvas px-6 pb-8 max-md:bg-canvas max-md:px-0 md:hidden">
         <TermDetailHeader backTo={backTo} term={term} />
         <div className="px-0 pb-[108px] pt-[42px] max-md:px-6 max-md:pb-[108px] max-md:pt-[42px]">
-        {isLoading && <p className="py-20 text-center text-action-selected">{t('termDetail.loading')}</p>}
+        {isLoading && <TermDetailMobileLoadingSkeleton />}
         {hasError && <p className="py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
         {term && <>
           {total === 0 && <p className="py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
@@ -246,11 +311,12 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
         </header>
         <div data-term-detail-desktop-grid className="mt-8 grid grid-cols-[minmax(0,642px)_minmax(0,1fr)] items-start gap-4">
           <div className="flex flex-col gap-4">
-            {isLoading && <p className="rounded-[16px] bg-white py-20 text-center text-action-selected">{t('termDetail.loading')}</p>}
+            {isLoading && <TermDetailDesktopLoadingSkeleton />}
             {hasError && <p className="rounded-[16px] bg-white py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
             {term && total === 0 && <p className="rounded-[16px] bg-white py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
             {term && current && <><DesktopDefinitionCard term={term} definition={current} index={index} total={total} onPrevious={goPrevious} onNext={goNext} /><DesktopMasteryPanel /></>}
           </div>
+          {isLoading && <TermDetailDesktopSideLoadingSkeleton />}
           {term && current && <div className="flex flex-col gap-4"><DesktopTestCard /><DesktopRelatedPanel relatedTerms={relatedTerms} backTo={backTo} /></div>}
         </div>
       </div>

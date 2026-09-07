@@ -22,6 +22,9 @@ assert.match(source, /aria-controls=\{menuId\}/);
 assert.match(source, /aria-labelledby=\{labelId\}/);
 assert.match(source, /id=\{labelId\}/);
 assert.match(source, /aria-expanded=\{active\}/);
+assert.match(source, /aria-describedby=\{applyBlocked \? 'desktop-search-filter-catalog-error' : undefined\}/);
+assert.match(source, /\{applyBlocked && \([\s\S]*<span id="desktop-search-filter-catalog-error"/,
+  'The apply-blocking description must remain mounted while an active menu is open');
 assert.match(source, /event\.key === 'Enter' \|\| event\.key === ' '/);
 assert.match(source, /onKeyboardOpen\(event\.key === 'ArrowUp' \|\| event\.key === 'End' \? 'last' : 'first'\)/);
 assert.match(source, /role="alert"[\s\S]*onClick=\{onRetry\}[\s\S]*t\('common\.retry'\)/);

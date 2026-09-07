@@ -143,8 +143,9 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, weakTopi
   );
   const showStatisticsEmpty = status === 'ready' && dashboard !== null && statisticsVisibility.showEmpty;
   const deltaTone = delta === null ? 'text-[#8c8698]' : delta > 0 ? 'text-[#29ae70]' : delta < 0 ? 'text-[#bc251a]' : 'text-[#8c8698]';
+  const weakAvailability = modeAvailability(dashboard, 'weak');
   const modeReason = (mode: TestMode) => {
-    const reason = modeAvailability(dashboard, mode)?.disabledReason;
+    const reason = (mode === 'weak' ? weakAvailability : modeAvailability(dashboard, mode))?.disabledReason;
     if (reason?.reason === 'no_weak_chapters') {
       return t('tests.desktopWeakUnavailableNoAnalyze', { defaultValue: 'Загрузите анализ ЕНТ, чтобы открыть режим' });
     }
@@ -187,8 +188,8 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, weakTopi
                 description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}
                 icon={<HugeiconsIcon icon={Target03Icon} size={24} strokeWidth={1.7} />}
                 iconTone="bg-[#f25f54] text-white"
-                to="/tests/weak"
-                unavailableMessage={weakUnavailableMessage}
+                to={dashboardReady && weakAvailability?.available === true ? '/tests/weak' : undefined}
+                unavailableMessage={modeReason('weak')}
               /> : <DesktopTestOptionCard
                 mode="weak"
                 title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}

@@ -149,9 +149,10 @@ assert.match(
 );
 assert.ok(existsSync(googleIconPath), 'The exact Figma Google icon export should be stored locally');
 assert.ok(existsSync(googleManifestPath), 'The exact Figma Google icon export should have provenance metadata');
-const googleAsset = readFileSync(googleIconPath);
+const googleAssetSource = readFileSync(googleIconPath, 'utf8');
+const googleAsset = Buffer.from(googleAssetSource.replace(/\r\n/g, '\n'), 'utf8');
 const googleManifest = JSON.parse(readFileSync(googleManifestPath, 'utf8'));
-assert.equal(googleAsset.byteLength, 1120, 'The downloaded Figma Google icon should preserve its 1120-byte export');
+assert.equal(googleAsset.byteLength, 1110, 'The canonical Figma Google icon export should contain 1110 UTF-8 bytes');
 assert.equal(
   googleManifest.source,
   'Figma file aa8qReawBBhHIXDAbS18OP, register node 865:3751, icon node 865:3831',
@@ -162,10 +163,10 @@ assert.deepEqual(googleManifest.assets, [
     file: 'google-black-icon.svg',
     name: 'google-black-icon 1',
     nodeId: '865:3831',
-    bytes: 1120,
+    bytes: 1110,
     width: 16,
     height: 16,
-    sha256: '6ca7577dac5451e102ef2df282ecb999e55e9c4a6f3568d64b2e466b8487ed59',
+    sha256: 'a39aa1cc28763a031b3f65822ec400d736b7e19b5db8b6970c8e71c9d436e932',
   },
 ]);
 assert.equal(

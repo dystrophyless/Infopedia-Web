@@ -401,8 +401,12 @@ export const DesktopWeakAfterAnalysis: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
   args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'ready', weakTopics: liveTopics },
   play: async ({ canvasElement }) => {
-    const weakCard = canvasElement.querySelector<HTMLAnchorElement>('a[href="/tests/weak"]');
+    const weakCard = canvasElement.querySelector<HTMLElement>('[data-testid="tests-weak-mode-card"]');
     await expect(weakCard).not.toBeNull();
+    if (!weakCard) return;
+    await expect(weakCard).not.toHaveAttribute('href');
+    await expect(weakCard).toHaveAttribute('aria-disabled', 'true');
+    await expect(weakCard).toHaveTextContent('Загрузите анализ ЕНТ, чтобы открыть режим');
     await expect(weakCard?.querySelector('[data-option-card-status-badge]')).not.toBeInTheDocument();
   },
 };

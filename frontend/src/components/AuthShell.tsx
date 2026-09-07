@@ -40,14 +40,14 @@ export function AuthShell({
     <div
       data-testid={desktopOnboarding ? 'desktop-onboarding-shell' : undefined}
       className={`flex min-h-screen w-full flex-col bg-bg max-lg:mx-auto max-lg:min-h-[932px] max-lg:max-w-[430px] max-lg:bg-[#efebf6] ${
-        desktopOnboarding ? 'min-[1440px]:flex-row min-[1440px]:bg-[#efebf6]' : ''
-      } ${desktopCentered ? 'min-[1440px]:relative min-[1440px]:bg-[#efebf6]' : ''}`}
+        desktopOnboarding ? 'lg:flex-row lg:bg-[#efebf6]' : ''
+      } ${desktopCentered ? 'lg:relative lg:bg-[#efebf6]' : ''}`}
     >
       {desktopOnboarding && <DesktopOnboardingSidebar currentStep={desktopFlowStep} />}
       <header
         className={`w-full items-center justify-between px-[60px] py-6 ${
-          desktopOnboarding ? 'hidden lg:flex min-[1440px]:hidden' : 'flex max-lg:hidden'
-        } ${desktopCentered ? 'min-[1440px]:absolute min-[1440px]:left-0 min-[1440px]:top-0 min-[1440px]:z-10' : ''}`}
+          desktopOnboarding ? 'hidden' : 'flex max-lg:hidden'
+        } ${desktopCentered ? 'lg:absolute lg:left-0 lg:top-0 lg:z-10' : ''}`}
       >
         <Link to="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="Infopedia" className="h-[40px] w-auto" />
@@ -83,11 +83,11 @@ export function AuthShell({
           mobileProgress ? 'max-lg:pt-[17px]' : 'max-lg:pt-[65px]'
         } ${
           desktopOnboarding
-            ? 'min-[1440px]:min-h-screen min-[1440px]:w-[960px] min-[1440px]:flex-none min-[1440px]:bg-[#efebf6] min-[1440px]:p-12'
+            ? 'lg:min-h-screen lg:min-w-0 lg:flex-1 lg:bg-[#efebf6] lg:p-[clamp(32px,3.333vw,48px)]'
             : ''
         } ${
           desktopCentered
-            ? 'min-[1440px]:min-h-screen min-[1440px]:w-full min-[1440px]:bg-[#efebf6] min-[1440px]:p-12'
+            ? 'lg:min-h-screen lg:min-w-0 lg:flex-1 lg:w-full lg:bg-[#efebf6] lg:p-[clamp(32px,3.333vw,48px)]'
             : ''
         }`}
       >
@@ -95,19 +95,19 @@ export function AuthShell({
           data-testid={desktopOnboarding ? 'desktop-onboarding-card' : desktopCentered ? 'desktop-auth-card' : undefined}
           className={`w-full max-w-[520px] p-10 max-lg:w-full max-lg:max-w-[366px] max-lg:p-0 max-md:max-w-[366px] ${
             desktopOnboarding || desktopCentered
-              ? 'min-[1440px]:w-[480px] min-[1440px]:max-w-none min-[1440px]:rounded-[16px] min-[1440px]:bg-white min-[1440px]:p-12'
+              ? 'lg:w-[min(480px,100%)] lg:max-w-full lg:rounded-[16px] lg:bg-white lg:p-[clamp(32px,3.333vw,48px)]'
               : ''
           } ${
             desktopFlowStep === 1
-              ? 'min-[1440px]:h-[408px]'
+              ? 'lg:min-h-[408px]'
               : desktopFlowStep === 2
-                ? 'min-[1440px]:h-[308px]'
+                ? 'lg:min-h-[308px]'
                 : desktopFlowStep === 3
-                  ? 'min-[1440px]:h-[508px]'
+                  ? 'lg:min-h-[508px]'
                   : ''
           }`}
         >
-          <div className={desktopContentWidth === 'narrow' ? 'min-[1440px]:w-[366px]' : undefined}>
+          <div className={desktopContentWidth === 'narrow' ? 'lg:w-[366px]' : undefined}>
             {mobileProgress && (
               <div data-testid="mobile-onboarding-progress" className="mb-[29px] max-lg:block lg:hidden">
                 <div className="flex h-[8px] w-[366px] max-w-full gap-[4px]" aria-hidden="true">
@@ -126,7 +126,7 @@ export function AuthShell({
             <h1
               className={`mb-3 text-left text-[26px] font-medium leading-none text-text max-lg:mb-3 max-lg:text-[24px] max-lg:leading-none max-lg:text-[#161519] ${
                 desktopOnboarding
-                  ? 'min-[1440px]:mb-4 min-[1440px]:text-[24px] min-[1440px]:leading-none min-[1440px]:text-[#161519]'
+                  ? 'lg:mb-4 lg:text-[24px] lg:leading-none lg:text-[#161519]'
                   : ''
               }`}
             >
@@ -137,7 +137,7 @@ export function AuthShell({
               <div
                 className={`mt-4 text-center text-[14px] text-muted max-lg:mt-6 max-lg:text-[#c5b1e7] ${
                   desktopOnboarding
-                    ? 'min-[1440px]:mt-6 min-[1440px]:text-[12px] min-[1440px]:text-[#a585db]'
+                    ? 'lg:mt-6 lg:text-[12px] lg:text-[#a585db]'
                     : ''
                 }`}
               >
@@ -150,7 +150,6 @@ export function AuthShell({
     </div>
   );
 }
-
 function DesktopOnboardingSidebar({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   const { t } = useTranslation();
   const steps = [
@@ -171,19 +170,19 @@ function DesktopOnboardingSidebar({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   return (
     <aside
       data-testid="desktop-onboarding-sidebar"
-      className="hidden bg-white min-[1440px]:flex min-[1440px]:min-h-screen min-[1440px]:w-[480px] min-[1440px]:flex-none min-[1440px]:flex-col min-[1440px]:border-r min-[1440px]:border-[#ded2f1] min-[1440px]:px-16 min-[1440px]:py-8"
+      className="hidden bg-white lg:flex lg:min-h-screen lg:w-[clamp(280px,33.333vw,480px)] lg:flex-none lg:flex-col lg:border-r lg:border-[#ded2f1] lg:px-[clamp(32px,4.444vw,64px)] lg:py-8"
     >
       <Link to="/" className="block w-fit">
         <img
           data-testid="desktop-onboarding-logo"
           src="/logo.svg"
           alt="Infopedia"
-          className="min-[1440px]:h-[44px] min-[1440px]:w-[171px]"
+          className="lg:h-[44px] lg:w-[171px]"
         />
       </Link>
       <div
         data-testid="desktop-onboarding-stepper"
-        className="relative mt-20 flex w-[352px] flex-col gap-16"
+        className="relative mt-20 flex w-full max-w-[352px] flex-col gap-16"
       >
         <span
           aria-hidden="true"
@@ -306,6 +305,7 @@ export function AuthSubmit({
     <Button
       type="submit"
       disabled={loading || disabled}
+      loading={loading}
       aria-busy={loading || undefined}
       fullWidth
       size="lg"
@@ -318,8 +318,8 @@ export function AuthSubmit({
       } ${
         desktopVisual === 'onboarding'
           ? unavailable
-            ? 'min-[1440px]:mt-6 min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:bg-[#efeaf8] min-[1440px]:p-0 min-[1440px]:font-medium min-[1440px]:text-[#c5b1e7] min-[1440px]:hover:opacity-100 min-[1440px]:disabled:opacity-100'
-            : 'min-[1440px]:mt-6 min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:bg-[#6a37c3] min-[1440px]:p-0 min-[1440px]:font-medium min-[1440px]:text-white'
+            ? 'lg:mt-6 lg:h-12 lg:rounded-[8px] lg:bg-[#efeaf8] lg:p-0 lg:font-medium lg:text-[#c5b1e7] lg:hover:opacity-100 lg:disabled:opacity-100'
+            : 'lg:mt-6 lg:h-12 lg:rounded-[8px] lg:bg-[#6a37c3] lg:p-0 lg:font-medium lg:text-white'
           : ''
       }`}
     >
@@ -340,12 +340,12 @@ export function AuthDivider({
   return (
     <div
       className={`my-5 flex items-center gap-3 text-[13px] text-muted max-lg:text-[14px] max-lg:text-[#c5b1e7] ${mobileClassName} ${
-        desktopVisual === 'onboarding' ? 'min-[1440px]:my-6 min-[1440px]:text-[#c5b1e7]' : ''
+        desktopVisual === 'onboarding' ? 'lg:my-6 lg:text-[#c5b1e7]' : ''
       }`}
     >
       <Divider
         className={`h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7] ${
-          desktopVisual === 'onboarding' ? 'min-[1440px]:bg-[#c5b1e7]' : ''
+          desktopVisual === 'onboarding' ? 'lg:bg-[#c5b1e7]' : ''
         }`}
       />
       <Text as="span" tone="inherit" size="caption">
@@ -353,7 +353,7 @@ export function AuthDivider({
       </Text>
       <Divider
         className={`h-px flex-1 border-0 bg-border max-lg:bg-[#c5b1e7] ${
-          desktopVisual === 'onboarding' ? 'min-[1440px]:bg-[#c5b1e7]' : ''
+          desktopVisual === 'onboarding' ? 'lg:bg-[#c5b1e7]' : ''
         }`}
       />
     </div>
@@ -378,7 +378,7 @@ export function GoogleAuthButton({
       fullWidth
       className={`flex w-full items-center justify-center gap-3 rounded-[10px] border border-border bg-surface px-4 py-3 text-[16px] font-medium text-text transition-colors hover:border-accent hover:bg-bg max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:p-0 max-lg:text-[#161519] ${
         desktopVisual === 'onboarding'
-          ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:p-0 min-[1440px]:text-[#161519] min-[1440px]:hover:bg-[#f8f5fc]'
+          ? 'lg:h-12 lg:rounded-[8px] lg:border-0 lg:bg-[#f8f5fc] lg:p-0 lg:text-[#161519] lg:hover:bg-[#f8f5fc]'
           : ''
       }`}
     >
@@ -419,7 +419,7 @@ export function AuthEmailInput({
     <FormField
       error={error}
       className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
-        desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
+        desktopVisual === 'onboarding' ? 'lg:mb-0' : ''
       }`}
     >
       {(controlProps) => (
@@ -428,7 +428,7 @@ export function AuthEmailInput({
             aria-hidden="true"
             className={`pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7] ${
               hideMobileLeadingIcon ? 'max-lg:hidden' : ''
-            } ${desktopVisual === 'onboarding' ? 'min-[1440px]:left-6 min-[1440px]:size-4 min-[1440px]:text-[#c5b1e7]' : ''}`}
+            } ${desktopVisual === 'onboarding' ? 'lg:left-6 lg:size-4 lg:text-[#c5b1e7]' : ''}`}
           >
             <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.7} />
           </span>
@@ -451,8 +451,8 @@ export function AuthEmailInput({
             } ${
               desktopVisual === 'onboarding'
                 ? error || invalid
-                  ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border min-[1440px]:border-danger min-[1440px]:bg-[#fff5f5] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-6'
-                  : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-6 min-[1440px]:placeholder:text-[#c5b1e7]'
+                  ? 'lg:h-12 lg:rounded-[8px] lg:border lg:border-danger lg:bg-[#fff5f5] lg:py-0 lg:pl-14 lg:pr-6'
+                  : 'lg:h-12 lg:rounded-[8px] lg:border-0 lg:bg-[#f8f5fc] lg:py-0 lg:pl-14 lg:pr-6 lg:placeholder:text-[#c5b1e7]'
                 : ''
             }`}
           />
@@ -494,9 +494,9 @@ export function AuthUsernameInput({
       error={error}
       helperText={helperText}
       helperTone={helperTone}
-      messageClassName={!error && desktopShowSuccessIcon ? 'max-lg:hidden min-[1440px]:hidden' : undefined}
+      messageClassName={!error && desktopShowSuccessIcon ? 'max-lg:hidden lg:hidden' : undefined}
       className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
-        desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
+        desktopVisual === 'onboarding' ? 'lg:mb-0' : ''
       }`}
     >
       {(controlProps) => (
@@ -505,7 +505,7 @@ export function AuthUsernameInput({
             aria-hidden="true"
             className={`pointer-events-none absolute left-4 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center text-muted max-lg:size-4 max-lg:text-[#c5b1e7] ${
               hideMobileLeadingIcon ? 'max-lg:hidden' : ''
-            } ${desktopVisual === 'onboarding' ? 'min-[1440px]:left-6 min-[1440px]:size-4 min-[1440px]:text-[#c5b1e7]' : ''}`}
+            } ${desktopVisual === 'onboarding' ? 'lg:left-6 lg:size-4 lg:text-[#c5b1e7]' : ''}`}
           >
             <HugeiconsIcon icon={UserIcon} size={16} strokeWidth={1.7} />
           </span>
@@ -529,15 +529,15 @@ export function AuthUsernameInput({
             } ${
               desktopVisual === 'onboarding'
                 ? error
-                  ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border min-[1440px]:border-danger min-[1440px]:bg-[#fff5f5] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-10'
-                  : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-10 min-[1440px]:placeholder:text-[#c5b1e7]'
+                  ? 'lg:h-12 lg:rounded-[8px] lg:border lg:border-danger lg:bg-[#fff5f5] lg:py-0 lg:pl-14 lg:pr-10'
+                  : 'lg:h-12 lg:rounded-[8px] lg:border-0 lg:bg-[#f8f5fc] lg:py-0 lg:pl-14 lg:pr-10 lg:placeholder:text-[#c5b1e7]'
                 : ''
             }`}
           />
           {desktopShowSuccessIcon && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute right-4 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-[#19b978] min-[1440px]:right-6"
+              className="pointer-events-none absolute right-4 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-[#19b978] lg:right-6"
             >
               <HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2} />
             </span>
@@ -589,11 +589,11 @@ export function AuthPasswordInput({
       invalid={invalid}
       autoComplete={autoComplete}
       className={`${mobileFieldLayout === 'figma-auth' ? 'mb-4 max-lg:mb-0 max-lg:gap-2' : 'mb-4'} ${
-        desktopVisual === 'onboarding' ? 'min-[1440px]:mb-0' : ''
+        desktopVisual === 'onboarding' ? 'lg:mb-0' : ''
       }`}
       leadingIconClassName={`max-lg:size-4 max-lg:text-[#c5b1e7] ${
         hideMobileLeadingIcon ? 'max-lg:hidden' : ''
-      } ${desktopVisual === 'onboarding' ? 'min-[1440px]:left-6 min-[1440px]:size-4 min-[1440px]:text-[#c5b1e7]' : ''}`}
+      } ${desktopVisual === 'onboarding' ? 'lg:left-6 lg:size-4 lg:text-[#c5b1e7]' : ''}`}
       inputClassName={`auth-field w-full rounded-[10px] border py-3 pl-12 pr-12 text-[16px] text-text outline-none transition-colors placeholder:text-muted max-lg:h-12 max-lg:rounded-[8px] max-lg:border-0 max-lg:bg-white max-lg:py-0 max-lg:pr-12 max-lg:placeholder:text-[#c5b1e7] ${
         hideMobileLeadingIcon ? 'max-lg:pl-6' : 'max-lg:pl-[52px]'
       } ${
@@ -603,13 +603,13 @@ export function AuthPasswordInput({
       } ${
         desktopVisual === 'onboarding'
           ? error || invalid
-            ? 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border min-[1440px]:border-danger min-[1440px]:bg-[#fff5f5] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-12'
-            : 'min-[1440px]:h-12 min-[1440px]:rounded-[8px] min-[1440px]:border-0 min-[1440px]:bg-[#f8f5fc] min-[1440px]:py-0 min-[1440px]:pl-14 min-[1440px]:pr-12 min-[1440px]:placeholder:text-[#c5b1e7]'
+            ? 'lg:h-12 lg:rounded-[8px] lg:border lg:border-danger lg:bg-[#fff5f5] lg:py-0 lg:pl-14 lg:pr-12'
+            : 'lg:h-12 lg:rounded-[8px] lg:border-0 lg:bg-[#f8f5fc] lg:py-0 lg:pl-14 lg:pr-12 lg:placeholder:text-[#c5b1e7]'
           : ''
       }`}
       toggleClassName={`right-3 flex size-11 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-bg hover:text-accent max-lg:right-2 max-lg:size-11 max-lg:text-[#8c8698] ${
         desktopVisual === 'onboarding'
-          ? 'min-[1440px]:right-4 min-[1440px]:text-[#c5b1e7] min-[1440px]:hover:bg-transparent'
+          ? 'lg:right-4 lg:text-[#c5b1e7] lg:hover:bg-transparent'
           : ''
       }`}
     />

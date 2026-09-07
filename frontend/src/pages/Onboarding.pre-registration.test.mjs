@@ -107,6 +107,16 @@ assert.match(
   /navigate\('\/onboarding', \{ replace: true \}\);/,
   'Google OAuth should return incomplete users to onboarding so saved answers can be applied',
 );
+assert.equal(
+  (googleCallbackSource.match(/consumeGoogleAuthNext/g) ?? []).length,
+  2,
+  'Google OAuth should consume the stored destination once and reuse the resolved value for navigation and presentation',
+);
+assert.match(googleCallbackSource, /useState\(\(\) => consumeGoogleAuthNext\(\)\)/, 'Google OAuth destination must be captured through lazy state');
+assert.match(googleCallbackSource, /next === '\/onboarding'/, 'Onboarding destinations must select the responsive onboarding skeleton');
+assert.match(googleCallbackSource, /data-google-callback-onboarding-skeleton/, 'Onboarding destinations must render the responsive onboarding skeleton');
+assert.match(googleCallbackSource, /data-google-callback-app-skeleton[\s\S]*data-google-callback-sidebar[\s\S]*data-google-callback-app-surface[\s\S]*data-google-callback-mobile-nav/, 'App destinations must render desktop shell, contrasting content surfaces, and mobile navigation skeletons');
+assert.doesNotMatch(googleCallbackSource, /<AuthShell|googleCallbackTitle/, 'Google callback must not show the legacy auth heading/shell while completing OAuth');
 
 for (const key of [
   'gradeFirstHelper',
@@ -118,3 +128,8 @@ for (const key of [
   assert.ok(ruLocale.onboarding[key], `RU locale should define onboarding.${key}`);
   assert.ok(kkLocale.onboarding[key], `KK locale should define onboarding.${key}`);
 }
+
+const googleCallbackStoriesSource = readFileSync(path.resolve(pagesDir, 'GoogleCallback.stories.tsx'), 'utf8');
+assert.match(googleCallbackStoriesSource, /export const DefaultAppDestination/);
+assert.match(googleCallbackStoriesSource, /export const OnboardingDestination/);
+assert.doesNotMatch(googleCallbackStoriesSource, /<AuthShell/);

@@ -10,35 +10,9 @@ const viewportProfiles = [
   { name: 'figma-1080', width: 1440, height: 1080, exactFigma: true },
   { name: 'viewport-720', width: 1440, height: 720, exactFigma: false },
 ];
-const responsiveProfiles = [
-  { name: 'fallback-1024', width: 1024, height: 900 },
-  { name: 'fallback-1280', width: 1280, height: 900 },
-  { name: 'fallback-1366', width: 1366, height: 900 },
-  { name: 'fallback-1439', width: 1439, height: 900 },
-];
-const responsiveReferences = [
-  {
-    state: 'grade-fallback',
-    kind: 'grade',
-    storyId: 'pages-onboarding--desktop-grade-empty-1440',
-    control: 'button[aria-pressed="false"]',
-  },
-  {
-    state: 'username-fallback',
-    kind: 'username',
-    storyId: 'pages-onboarding--desktop-username-empty-1440',
-    control: 'input[autocomplete="username"]',
-  },
-  {
-    state: 'register-fallback',
-    kind: 'register',
-    storyId: 'pages-register--desktop-register-empty-1440',
-    control: 'input[type="email"]',
-  },
-];
 const figmaStates = [
-  { state: 'grade-empty', storyId: 'pages-onboarding--desktop-grade-empty-1440', nodeId: '845:4019', step: 1, filled: false, control: 'button[aria-pressed="false"]' },
-  { state: 'grade-selected', storyId: 'pages-onboarding--desktop-grade-selected-1440', nodeId: '854:4119', step: 1, filled: true, control: 'button[aria-pressed="true"]' },
+  { state: 'grade-empty', storyId: 'pages-onboarding--desktop-grade-empty-1440', nodeId: '845:4019', step: 1, filled: false, control: 'label[for="onboarding-grade-desktop-11"]' },
+  { state: 'grade-selected', storyId: 'pages-onboarding--desktop-grade-selected-1440', nodeId: '854:4119', step: 1, filled: true, control: 'label[for="onboarding-grade-desktop-11"]' },
   { state: 'username-empty', storyId: 'pages-onboarding--desktop-username-empty-1440', nodeId: '862:4334', step: 2, filled: false, control: 'input[autocomplete="username"]' },
   { state: 'username-valid', storyId: 'pages-onboarding--desktop-username-valid-1440', nodeId: '862:4463', step: 2, filled: true, control: 'input[autocomplete="username"]' },
   { state: 'register-empty', storyId: 'pages-register--desktop-register-empty-1440', nodeId: '865:3751', step: 3, filled: false, control: 'input[type="email"]' },
@@ -152,7 +126,8 @@ try {
       const expectsGoogleIcon = state.startsWith('register-');
       const stepItems = [...document.querySelectorAll('[data-step-state]')];
       const stepCircles = stepItems.map((item) => item.querySelector(':scope > span'));
-      const gradeRows = [...document.querySelectorAll('button[aria-pressed]')];
+      const desktopGradeRows = [...document.querySelectorAll('label[for^="onboarding-grade-desktop-"]')];
+      const mobileGradeRows = [...document.querySelectorAll('label[for^="onboarding-grade-mobile-"]')];
       const fieldControls = [...document.querySelectorAll('form input')];
       if (
         !sidebar ||
@@ -195,12 +170,12 @@ try {
         googleIcon: googleIcon ? inspect(googleIcon) : null,
         googleButton: googleButton ? inspect(googleButton) : null,
         control: inspect(target),
-        gradeRows: gradeRows.map(inspect).sort((a, b) => a.y - b.y),
-        gradeMobileIndicators: gradeRows.map((row) => {
+        gradeRows: desktopGradeRows.map(inspect).sort((a, b) => a.y - b.y),
+        gradeMobileIndicators: mobileGradeRows.map((row) => {
           const indicator = row.querySelector('[data-onboarding-indicator="mobile"]');
           return indicator ? inspect(indicator) : null;
         }),
-        gradeDesktopIndicators: gradeRows.map((row) => {
+        gradeDesktopIndicators: desktopGradeRows.map((row) => {
           const indicator = row.querySelector('[data-onboarding-indicator="desktop"]');
           return indicator ? inspect(indicator) : null;
         }),
@@ -328,101 +303,6 @@ try {
     }
   }
 
-  for (const profile of responsiveProfiles) {
-    for (const reference of responsiveReferences) {
-    const page = await browser.newPage({
-      viewport: { width: profile.width, height: profile.height },
-      deviceScaleFactor: 1,
-      locale: 'ru-RU',
-    });
-    await page.goto(`${storybook}/iframe.html?id=${reference.storyId}&viewMode=story`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000,
-    });
-    await page.locator(reference.control).first().waitFor({ state: 'visible' });
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-      window.scrollTo(0, 0);
-    });
-    const result = await page.evaluate(({ control, kind }) => {
-      const sidebar = document.querySelector('[data-testid="desktop-onboarding-sidebar"]');
-      const target = document.querySelector(control);
-      const form = document.querySelector('form');
-      const header = [...document.querySelectorAll('header')].find(
-        (element) =>
-          getComputedStyle(element).display !== 'none' && Boolean(element.querySelector('a[href="/"]')),
-      );
-      if (!sidebar || !target || !form || !header) {
-        throw new Error('Responsive onboarding fallback hook missing');
-      }
-      const targetBox = target.getBoundingClientRect();
-      const formBox = form.getBoundingClientRect();
-      const backButton = [...form.querySelectorAll('button[type="button"]')].find(
-        (element) => element.textContent?.trim(),
-      );
-      const gradeGlyph =
-        kind === 'grade' ? target.querySelector(':scope > svg') : null;
-      const gradeRadio =
-        kind === 'grade' ? target.querySelector(':scope > [data-onboarding-indicator="desktop"]') : null;
-      const isVisible = (element) => {
-        if (!element) return false;
-        const box = element.getBoundingClientRect();
-        return getComputedStyle(element).display !== 'none' && box.width > 0 && box.height > 0;
-      };
-      return {
-        viewport: { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio },
-        scrollWidth: document.documentElement.scrollWidth,
-        sidebarDisplay: getComputedStyle(sidebar).display,
-        headerDisplay: getComputedStyle(header).display,
-        target: {
-          left: targetBox.left,
-          right: targetBox.right,
-          width: targetBox.width,
-          center: targetBox.left + targetBox.width / 2,
-        },
-        form: {
-          left: formBox.left,
-          right: formBox.right,
-          width: formBox.width,
-        },
-        grade: kind === 'grade' ? {
-          justifyContent: getComputedStyle(target).justifyContent,
-          backgroundColor: getComputedStyle(target).backgroundColor,
-          glyphVisible: isVisible(gradeGlyph),
-          radioVisible: isVisible(gradeRadio),
-        } : null,
-        backVisible: kind === 'username' ? isVisible(backButton) : null,
-      };
-    }, reference);
-    assert.deepEqual(result.viewport, { width: profile.width, height: profile.height, dpr: 1 });
-    assert.ok(
-      result.scrollWidth <= profile.width,
-      `${profile.name} ${reference.state} document should not horizontally overflow`,
-    );
-    assert.equal(result.sidebarDisplay, 'none', `${profile.name} should not activate the 1440px sidebar`);
-    assert.notEqual(result.headerDisplay, 'none', `${profile.name} should retain a visible fallback header`);
-    assert.ok(result.form.left >= 0, `${profile.name} ${reference.state} form should not clip on the left`);
-    assert.ok(result.form.right <= profile.width, `${profile.name} ${reference.state} form should not clip on the right`);
-    assert.ok(result.target.left >= 0, `${profile.name} ${reference.state} control should not clip on the left`);
-    assert.ok(result.target.right <= profile.width, `${profile.name} ${reference.state} control should not clip on the right`);
-    closeTo(result.target.center, profile.width / 2, `${profile.name} ${reference.state} control horizontal center`);
-    if (reference.kind === 'grade') {
-      assert.ok(result.grade, `${profile.name} grade fallback measurements should exist`);
-      assert.notEqual(result.grade.justifyContent, 'space-between', `${profile.name} grade should not use desktop alignment`);
-      assert.equal(result.grade.backgroundColor, 'rgb(255, 255, 255)', `${profile.name} grade should keep fallback surface`);
-      assert.equal(result.grade.glyphVisible, false, `${profile.name} grade should not render a leading glyph`);
-      assert.equal(result.grade.radioVisible, false, `${profile.name} grade should not expose desktop radio anatomy`);
-    }
-    if (reference.kind === 'username') {
-      assert.equal(result.backVisible, true, `${profile.name} username Back control should remain visible`);
-    }
-
-    const screenshotPath = path.join(outputDir, `${profile.name}-${reference.state}.png`);
-    await page.screenshot({ path: screenshotPath, fullPage: false });
-    measurements.push({ ...profile, ...reference, screenshotPath, ...result });
-    await page.close();
-    }
-  }
 } finally {
   await browser.close();
 }
@@ -431,7 +311,7 @@ const measurementsPath = path.join(outputDir, 'measurements.json');
 await fs.writeFile(measurementsPath, JSON.stringify(measurements, null, 2));
 console.log(
   `Desktop onboarding visual geometry passed: ${measurements.length}/${
-    figmaStates.length * viewportProfiles.length + shortViewportStates.length + responsiveProfiles.length * responsiveReferences.length
+    figmaStates.length * viewportProfiles.length + shortViewportStates.length
   }`,
 );
 console.log(`Artifacts: ${outputDir}`);

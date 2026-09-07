@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { RootEntry } from './components/RootEntry';
 import { useAuthStore } from './stores/authStore';
 import { useFavoritesStore } from './features/favorites/model';
 import { DocumentSeo } from './seo/DocumentSeo';
+import { RouteLoading } from './components/RouteLoading';
 
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
 const Register = lazy(() => import('./pages/Register').then((module) => ({ default: module.Register })));
@@ -25,16 +25,6 @@ const Profile = lazy(() => import('./pages/Profile').then((module) => ({ default
 const Favorites = lazy(() => import('./pages/Favorites').then((module) => ({ default: module.Favorites })));
 const Subscription = lazy(() => import('./pages/Subscription').then((module) => ({ default: module.Subscription })));
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
-
-function RouteLoading() {
-  const { t } = useTranslation();
-
-  return (
-    <div role="status" aria-live="polite" className="flex min-h-[240px] items-center justify-center p-6 text-[16px] text-muted">
-      {t('common.loading')}
-    </div>
-  );
-}
 
 function Protected({ children }: { children: React.ReactNode }) {
   return (

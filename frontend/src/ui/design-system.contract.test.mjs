@@ -109,6 +109,7 @@ for (const tokenName of [
 }
 
 const uiIndexSource = readSource(path.join(uiDir, 'index.ts'));
+const atomIndexSource = readSource(path.join(atomsDir, 'index.ts'));
 assert.match(uiIndexSource, /export \* from '\.\/atoms';/, 'src/ui should re-export atoms');
 assert.match(uiIndexSource, /export \* from '\.\/molecules';/, 'src/ui should re-export molecules');
 assert.match(uiIndexSource, /export \* from '\.\/patterns';/, 'src/ui should re-export patterns');
@@ -122,6 +123,21 @@ assert.match(
   /from '\.\.\/ui'/,
   'Auth controls should consume design-system molecules from src/ui',
 );
+assert.match(
+  tokensSource,
+  /--color-action-primary-rgb:\s*var\(--ref-color-brand-selected-rgb\);/,
+  'Primary action should use the selected #6A37C3 channel token',
+);
+assert.match(
+  tokensSource,
+  /--color-primary-rgb:\s*var\(--color-action-primary-rgb\);/,
+  'Legacy primary alias should stay wired to the semantic action token',
+);
+assert.doesNotMatch(atomIndexSource, /Checkbox|Radio/, 'Unused Checkbox and Radio atoms must not be exported');
+for (const atomName of ['Checkbox', 'Radio']) {
+  assert.equal(existsSync(path.join(atomsDir, `${atomName}.tsx`)), false, `${atomName} atom implementation should be removed`);
+  assert.equal(existsSync(path.join(atomsDir, `${atomName}.stories.tsx`)), false, `${atomName} atom story should be removed`);
+}
 
 assertComponentLibraryContract('atoms', atomsDir);
 assertComponentLibraryContract('molecules', moleculesDir);

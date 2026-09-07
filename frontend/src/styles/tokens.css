@@ -65,7 +65,7 @@
   --color-border-subtle-rgb: var(--ref-color-brand-400-rgb);
   --color-border-strong-rgb: var(--ref-color-brand-700-rgb);
   --color-border-interactive-rgb: var(--ref-color-brand-interactive-border-rgb);
-  --color-action-primary-rgb: var(--ref-color-brand-950-rgb);
+  --color-action-primary-rgb: var(--ref-color-brand-selected-rgb);
   --color-action-primary-hover-rgb: var(--ref-color-brand-900-rgb);
   --color-action-secondary-rgb: var(--ref-color-brand-700-rgb);
   --color-action-selected-rgb: var(--ref-color-brand-selected-rgb);

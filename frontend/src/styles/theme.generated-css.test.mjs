@@ -1,10 +1,22 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import postcss from 'postcss';
 import tailwindcss from 'tailwindcss';
 import loadConfig from 'tailwindcss/loadConfig.js';
 
 const frontendRoot = path.resolve(import.meta.dirname, '..', '..');
+const tokensSource = readFileSync(path.join(frontendRoot, 'src', 'styles', 'tokens.css'), 'utf8');
+assert.match(
+  tokensSource,
+  /--color-action-primary-rgb:\s*var\(--ref-color-brand-selected-rgb\);/,
+  'Theme tokens should resolve the primary action to #6A37C3 channels',
+);
+assert.match(
+  tokensSource,
+  /--color-primary-rgb:\s*var\(--color-action-primary-rgb\);/,
+  'Theme tokens should preserve the legacy primary alias',
+);
 const config = loadConfig(path.join(frontendRoot, 'tailwind.config.ts'));
 const representativeClasses = [
   'bg-primary/12',

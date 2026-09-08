@@ -116,8 +116,8 @@ class TermsCatalogV2Tests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "duplicate JSON object key"):
                 load_terms_catalog(path)
 
-    def test_rejects_source_name_owned_by_multiple_canonical_terms(self):
-        ambiguous = {
+    def test_allows_source_name_for_multiple_canonical_terms(self):
+        shared_source_name = {
             "schema_version": 2,
             "terms": {
                 "Canonical A": {
@@ -140,5 +140,6 @@ class TermsCatalogV2Tests(unittest.TestCase):
                 },
             },
         }
-        with self.assertRaisesRegex(ValueError, "multiple canonical terms"):
-            parse_terms_catalog_v2(ambiguous)
+        catalog = parse_terms_catalog_v2(shared_source_name)
+        self.assertEqual(len(catalog.canonical_names), 2)
+        self.assertEqual(len(catalog.definitions), 2)

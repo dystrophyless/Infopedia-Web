@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi import FastAPI, HTTPException
 from httpx import ASGITransport, AsyncClient
+from pydantic import ValidationError
 
 from src.auth.dependencies import get_current_user
 from src.database import get_async_session
@@ -19,6 +20,7 @@ from src.terms.repository import (
     SearchTermsRepositoryPage,
     SearchTopicDTO,
 )
+from src.terms.schemas import DefinitionCreate
 
 
 def repository_page() -> SearchTermsRepositoryPage:
@@ -133,6 +135,61 @@ class SearchTermsRouterTests(unittest.IsolatedAsyncioTestCase):
         call = search.await_args
         self.assertEqual(call.kwargs["filters"].query, "")
         self.assertEqual(call.kwargs["filters"].grades, (10,))
+
+    async def test_terms_route_accepts_source_pages_above_250(self):
+        book = SearchBookDTO(id=2, publisher="Atamura", grade=10)
+        topic = SearchTopicDTO(
+            id=3,
+            name="Glossary",
+            page_start=247,
+            page_end=251,
+            book=book,
+        )
+        page = SearchTermsRepositoryPage(
+            terms=[
+                SearchTermDTO(
+                    id=9,
+                    name="Algorithm",
+                    definitions=[
+                        SearchDefinitionDTO(
+                            id=12,
+                            name="Algorithm",
+                            text="First",
+                            page=251,
+                            topic=topic,
+                        ),
+                    ],
+                ),
+            ],
+            total=1,
+            mode="prefix",
+        )
+
+        with (
+            patch("src.search.router.enforce_anti_scrape", new=AsyncMock()),
+            patch("src.search.router.search_filtered_terms", new=AsyncMock(return_value=page)),
+        ):
+            response = await self.client.get("/api/search/terms")
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["terms"][0]["definitions"][0]["page"], 251)
+
+    async def test_definition_page_is_bounded_at_300(self):
+        valid_definition = DefinitionCreate(
+            name="Source",
+            text="definition",
+            topic="Glossary",
+            page=300,
+        )
+        self.assertEqual(valid_definition.page, 300)
+
+        with self.assertRaises(ValidationError):  # noqa: PT027
+            DefinitionCreate(
+                name="Source",
+                text="definition",
+                topic="Glossary",
+                page=301,
+            )
 
     async def test_malformed_and_wrong_namespace_refs_are_generic_422(self):
         invalid_refs = ("not-a-ref", encode_public_ref("chapter", 2))

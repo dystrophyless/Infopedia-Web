@@ -57,21 +57,21 @@ class DefinitionBase(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     text: str = Field(min_length=1)
     topic: TopicResponse
-    page: int = Field(ge=1, le=250)
+    page: int = Field(ge=1, le=300)
 
 
 class DefinitionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     text: str = Field(min_length=1)
     topic: str = Field(min_length=1, max_length=255)
-    page: int = Field(ge=1, le=250)
+    page: int = Field(ge=1, le=300)
 
 
 class DefinitionUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     text: str | None = Field(default=None, min_length=1)
     topic: TopicResponse | None = Field(default=None)
-    page: int | None = Field(default=None, ge=1, le=250)
+    page: int | None = Field(default=None, ge=1, le=300)
 
 
 class DefinitionResponse(DefinitionBase):

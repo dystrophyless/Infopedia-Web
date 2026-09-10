@@ -351,7 +351,9 @@
     "desktopBookMeta": "{{publisher}}, {{grade}}-класс",
     "desktopPageMeta": "Страница {{page}}",
     "desktopRelatedTerms": "Связанные термины",
-    "back": "Назад"
+    "back": "Назад",
+    "showFullDefinition": "Показать полностью",
+    "collapseDefinition": "Свернуть"
   },
   "analyze": {
     "eyebrow": "ЕНТ по информатике",

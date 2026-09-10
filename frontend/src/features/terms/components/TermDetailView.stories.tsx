@@ -28,6 +28,22 @@ const sourceNamedTerm: Term = {
   ],
 };
 
+const longDefinitionTerm: Term = {
+  public_id: 'long-definition',
+  name: 'Компьютер',
+  definitions: [{
+    public_id: 'long-definition-1',
+    name: 'Компьютер',
+    text: [
+      'Индекс — бұл негізгі кестедегі іздеуді тездету үшін көмектесетін көмекші кесте.',
+      '',
+      'Жазбаларды іздеуді тездету үшін көптеген кітаптарға индексті қосады (сурет 5.2.2). Мұндағы индекс — жазбаларда кездесетін беттері көрсетілген кілттік сөздер тізімі. Деректер қорында арнайы іздеу үшін қосымша кестелер құрылады және оларды индекстер деп атайды.',
+    ].join('\n'),
+    page: 56,
+    topic: { name: '2.3. Компьютер құнын есептеу', book: { publisher: 'Атамұра', grade: 9 } },
+  }],
+};
+
 function RussianLocale({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
@@ -187,6 +203,7 @@ export const DesktopFigma13885656: Story = {
     expect(testTitle).not.toBeNull();
     expect(testMeta).not.toBeNull();
     expect(relatedLinks).toHaveLength(3);
+    expect(desktop!.querySelector('[data-term-detail-definition-toggle]')).toBeNull();
     expect(getComputedStyle(testTitle!).fontSize).toBe('18px');
     expect(getComputedStyle(testTitle!).fontWeight).toBe('400');
     expect(testMeta!.getBoundingClientRect().top - testTitle!.getBoundingClientRect().bottom).toBe(8);
@@ -224,6 +241,48 @@ export const DesktopFigma13885656: Story = {
     });
   },
 };
+
+export const DesktopLongDefinition: Story = {
+  args: {
+    term: longDefinitionTerm,
+    relatedTerms: [
+      { public_id: 'office-computer', name: 'Офистік компьютер' },
+      { public_id: 'personal-computer', name: 'Дербес компьютер' },
+      { public_id: 'system-unit', name: 'Жүйелік блок' },
+    ],
+  },
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  render: (args) => <DesktopStoryShell><TermDetailView {...args} /></DesktopStoryShell>,
+  play: async ({ canvasElement }) => {
+    const card = canvasElement.querySelector<HTMLElement>('[data-term-detail-definition-card]');
+    await waitFor(() => expect(card).not.toBeNull());
+
+    await waitFor(() => expect(canvasElement.querySelector('[data-term-detail-definition-toggle]')).not.toBeNull());
+    const toggle = canvasElement.querySelector<HTMLButtonElement>('[data-term-detail-definition-toggle]');
+    const fade = canvasElement.querySelector<HTMLElement>('[data-term-detail-definition-fade]');
+    expect(toggle).not.toBeNull();
+    expect(fade).not.toBeNull();
+    expect(toggle).toHaveTextContent('Показать полностью');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    const collapsedHeight = card!.getBoundingClientRect().height;
+
+    await userEvent.click(toggle!);
+    await waitFor(() => {
+      expect(toggle).toHaveTextContent('Свернуть');
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(canvasElement.querySelector('[data-term-detail-definition-fade]')).toBeNull();
+    });
+    expect(card!.getBoundingClientRect().height).toBeGreaterThan(collapsedHeight);
+
+    await userEvent.click(toggle!);
+    await waitFor(() => {
+      expect(toggle).toHaveTextContent('Показать полностью');
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    });
+    await waitFor(() => expect(card!.getBoundingClientRect().height).toBe(collapsedHeight));
+  },
+};
+
 export const Loading: Story = {
   args: { term: null, loadState: 'loading' },
   play: async ({ canvasElement }) => {

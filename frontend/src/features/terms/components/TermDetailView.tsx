@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon, ArrowRight01Icon, ArrowRight02Icon, Bookmark02Icon,
+  ArrowDown01Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowRight02Icon, ArrowUp01Icon, Bookmark02Icon,
   BookOpen02Icon, Flag02Icon, NotebookText, SearchList01Icon, UserCheck01Icon,
   UserMultiple03Icon,
 } from '@hugeicons/core-free-icons';
@@ -115,6 +115,9 @@ function TermDetailTestCta({ bottomNavVisible }: { bottomNavVisible: boolean }) 
 
 function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onNext }: { term: Term; definition: Definition; index: number; total: number; onPrevious: () => void; onNext: () => void }) {
   const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const definitionTextRef = useRef<HTMLParagraphElement>(null);
   const rows = getSourceRows(definition, t);
   const book = rows.find((row) => row.key === 'book');
   const topic = rows.find((row) => row.key === 'topic');
@@ -125,8 +128,32 @@ function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onN
   const desktopPageMeta = definition.page != null
     ? t('termDetail.desktopPageMeta', { page: definition.page })
     : page?.value;
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [definition.public_id]);
+  useEffect(() => {
+    if (isExpanded) return undefined;
+    const element = definitionTextRef.current;
+    if (!element) return undefined;
+    const measureOverflow = () => {
+      setHasOverflow(element.scrollHeight > element.clientHeight + 1);
+    };
+    const frame = window.requestAnimationFrame(measureOverflow);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measureOverflow);
+    observer?.observe(element);
+    window.addEventListener('resize', measureOverflow);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener('resize', measureOverflow);
+    };
+  }, [definition.public_id, definition.text, isExpanded]);
   return (
-    <section data-term-detail-definition-card className="flex min-h-[319px] flex-col justify-between rounded-[16px] bg-white p-6">
+    <section
+      data-term-detail-definition-card
+      data-expanded={isExpanded}
+      className="flex min-h-[319px] flex-col justify-between rounded-[16px] bg-white p-6 data-[expanded=true]:min-h-0 data-[expanded=true]:justify-start data-[expanded=true]:gap-6"
+    >
       <div className="flex flex-col gap-4">
         <div className="flex min-h-6 items-center justify-between gap-8">
           <h2 className="truncate text-[22px] font-medium leading-[22px] text-[#161519]">{definition.name}</h2>
@@ -135,7 +162,30 @@ function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onN
             <DesktopTermFavoriteButton termRef={term.public_id} termName={term.name} />
           </div>
         </div>
-        <p className="max-w-[514px] whitespace-pre-line text-[18px] leading-6 text-[#6e6779]">{definition.text}</p>
+        <div className={`flex max-w-[514px] flex-col ${isExpanded ? 'gap-4' : 'gap-1'}`}>
+          <div className="relative">
+            <p
+              id="term-detail-definition-text"
+              data-term-detail-definition-text
+              ref={definitionTextRef}
+              className={`whitespace-pre-line text-[18px] leading-6 text-[#6e6779] ${isExpanded ? '' : 'max-h-[120px] overflow-hidden'}`}
+            >
+              {definition.text}
+            </p>
+            {!isExpanded && hasOverflow && <div data-term-detail-definition-fade aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-b from-transparent via-white/80 to-white" />}
+          </div>
+          {hasOverflow && <button
+            type="button"
+            data-term-detail-definition-toggle
+            aria-controls="term-detail-definition-text"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            className="flex w-fit items-center gap-1 text-[14px] font-medium leading-[14px] text-[#6a37c3]"
+          >
+            {isExpanded ? t('termDetail.collapseDefinition') : t('termDetail.showFullDefinition')}
+            <HugeiconsIcon icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon} size={16} strokeWidth={1.5} />
+          </button>}
+        </div>
       </div>
       <div className="flex flex-col gap-6 border-t border-[#f6f5f7] pt-6">
         <div className="flex items-center justify-between gap-6">
@@ -314,7 +364,7 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
             {isLoading && <TermDetailDesktopLoadingSkeleton />}
             {hasError && <p className="rounded-[16px] bg-white py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
             {term && total === 0 && <p className="rounded-[16px] bg-white py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
-            {term && current && <><DesktopDefinitionCard term={term} definition={current} index={index} total={total} onPrevious={goPrevious} onNext={goNext} /><DesktopMasteryPanel /></>}
+            {term && current && <><DesktopDefinitionCard key={current.public_id} term={term} definition={current} index={index} total={total} onPrevious={goPrevious} onNext={goNext} /><DesktopMasteryPanel /></>}
           </div>
           {isLoading && <TermDetailDesktopSideLoadingSkeleton />}
           {term && current && <div className="flex flex-col gap-4"><DesktopTestCard /><DesktopRelatedPanel relatedTerms={relatedTerms} backTo={backTo} /></div>}

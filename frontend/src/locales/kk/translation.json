@@ -351,7 +351,9 @@
     "desktopBookMeta": "{{publisher}}, {{grade}}-сынып",
     "desktopPageMeta": "{{page}}-бет",
     "desktopRelatedTerms": "Байланысты терминдер",
-    "back": "Артқа"
+    "back": "Артқа",
+    "showFullDefinition": "Толығымен көрсету",
+    "collapseDefinition": "Жию"
   },
   "analyze": {
     "eyebrow": "Информатикадан ҰБТ",

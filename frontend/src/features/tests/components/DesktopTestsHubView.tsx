@@ -159,6 +159,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, weakTopi
     : analyzeStatus === 'loading'
       ? t('tests.desktopWeakUnavailableLoading', { defaultValue: 'Загрузка результатов анализа' })
       : t('tests.desktopWeakUnavailableError', { defaultValue: 'Не удалось загрузить результаты анализа' });
+  const showWeakPrerequisite = analyzeStatus === 'empty' && weakTopicCount === 0;
 
   return (
     <div className="hidden min-h-[1293px] bg-[#efeaf8] px-16 py-8 md:ml-px md:block" data-tests-desktop>
@@ -175,7 +176,7 @@ export function DesktopTestsHubView({ dashboard, status, analyzeStatus, weakTopi
                 to={dashboardReady && modeAvailability(dashboard, 'random')?.available === true ? '/tests/random' : undefined}
                 unavailableMessage={modeReason('random')}
               /> : <ModeCardSkeleton />}
-              {dashboardReady ? analyzeStatus === 'empty' ? <DesktopTestOptionCard
+              {dashboardReady ? showWeakPrerequisite ? <DesktopTestOptionCard
                 mode="weak"
                 title={t('tests.desktopWeakTitle', { defaultValue: 'Слабые темы' })}
                 description={t('tests.desktopWeakDescription', { defaultValue: 'Подборка вопросов по разделам, где вы теряете баллы' })}

@@ -370,7 +370,7 @@ export const DesktopShowMoreHover: Story = {
 
 export const DesktopWeakPrerequisite: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty', weakTopics: [] },
   play: async ({ canvasElement }) => {
     const weakCard = canvasElement.querySelector<HTMLAnchorElement>('[data-option-card-contract="weak-pre-analysis"]')!;
     await expect(weakCard).toHaveTextContent('После анализа ЕНТ');
@@ -388,7 +388,7 @@ export const DesktopWeakPrerequisite: Story = {
 
 export const DesktopWeakPrerequisiteMouse: Story = {
   globals: { viewport: { value: 'desktop1024', isRotated: false } },
-  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty' },
+  args: { dashboard: desktopWeakUnavailableDashboard, dashboardStatus: 'ready', status: 'empty', weakTopics: [] },
   play: async ({ canvasElement }) => {
     const weakCard = canvasElement.querySelector<HTMLAnchorElement>('[data-option-card-contract="weak-pre-analysis"]')!;
     await expect(weakCard).toHaveAttribute('href', '/analyze');

@@ -100,11 +100,14 @@ export function UntAnalysisPage({
   }
 
   return (
-    <div className="min-h-[1080px] bg-[#efeaf8] px-6 py-6 md:ml-px md:px-16 md:py-8" data-unt-analysis-page>
+    <div
+      className="min-h-screen min-w-0 overflow-x-clip bg-[#efeaf8] px-6 py-6 max-[359px]:px-4 max-[359px]:py-4 md:ml-px md:min-h-[1080px] md:overflow-x-visible md:px-16 md:py-8"
+      data-unt-analysis-page
+    >
       <main className="w-full">
         <section
           aria-labelledby="unt-analysis-title"
-          className="flex w-full max-w-[800px] flex-col gap-8 rounded-[16px] bg-white p-6"
+          className="flex min-w-0 w-full max-w-[800px] flex-col gap-6 rounded-[16px] bg-white p-4 md:gap-8 md:p-6"
           aria-busy={loading}
           data-unt-analysis-card
           data-unt-analysis-load-state={loading ? 'loading' : loadError ? 'error' : 'ready'}
@@ -141,27 +144,27 @@ export function UntAnalysisPage({
                 <div key={option.id}>
                   <label
                     htmlFor={`unt-analysis-${option.id}`}
-                    className={`flex min-h-[96px] w-full items-center justify-between gap-6 rounded-[8px] px-8 py-6 text-left outline-none transition-colors has-[:disabled]:cursor-not-allowed has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#6a37c3] has-[:focus-visible]:ring-inset ${selected ? 'bg-[#f8f5fc]' : 'bg-white'} ${active ? 'cursor-pointer hover:bg-[#f8f5fc]' : ''}`}
+                    className={`flex min-h-[96px] w-full items-start justify-between gap-3 rounded-[8px] px-4 py-4 text-left outline-none transition-colors has-[:disabled]:cursor-not-allowed has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#6a37c3] has-[:focus-visible]:ring-inset md:items-center md:gap-6 md:px-8 md:py-6 ${selected ? 'bg-[#f8f5fc]' : 'bg-white'} ${active ? 'cursor-pointer hover:bg-[#f8f5fc]' : ''}`}
                     data-unt-analysis-option={option.id}
                     data-unt-analysis-available={active}
                     data-unt-analysis-selected={selected}
                     data-testid={`unt-analysis-option-${option.id}`}
                   >
-                    <span className="flex min-w-0 items-center gap-6">
+                    <span className="flex min-w-0 flex-1 items-start gap-3 md:items-center md:gap-6">
                       <span className={`flex size-12 shrink-0 items-center justify-center rounded-[8px] ${iconClass}`}>
                         <HugeiconsIcon icon={icon} size={24} strokeWidth={1.5} aria-hidden="true" />
                       </span>
-                      <span className="flex min-w-0 flex-col items-start gap-2">
-                        <span className={`text-[18px] font-medium leading-[18px] ${titleClass}`}>
+                      <span className="flex min-w-0 flex-1 flex-col items-start gap-2">
+                        <span className={`break-words text-[18px] font-medium leading-[18px] ${titleClass}`}>
                           {t(option.titleKey)}
                         </span>
-                        <span className={`text-[16px] leading-[16px] ${descriptionClass}`}>
+                        <span className={`break-words text-[16px] leading-[16px] ${descriptionClass}`}>
                           {t(option.descriptionKey)}
                         </span>
                       </span>
                     </span>
 
-                    <span className="relative flex size-5 shrink-0 items-center justify-center">
+                    <span className="relative mt-1 flex size-5 shrink-0 items-center justify-center md:mt-0">
                       <input
                         id={`unt-analysis-${option.id}`}
                         type="radio"
@@ -193,7 +196,7 @@ export function UntAnalysisPage({
               disabled={!canContinue}
               onClick={handleContinue}
               size="sm"
-              className={`h-10 min-h-10 rounded-[8px] px-6 py-3 text-[16px] font-medium leading-4 disabled:opacity-100 ${canContinue ? 'bg-[#6a37c3] text-white' : 'bg-[#efeaf8] text-[#a585db]'}`}
+              className={`h-12 min-h-12 w-full rounded-[8px] px-6 py-3 text-[16px] font-medium leading-4 disabled:opacity-100 md:h-10 md:min-h-10 md:w-auto ${canContinue ? 'bg-[#6a37c3] text-white' : 'bg-[#efeaf8] text-[#a585db]'}`}
               data-unt-analysis-continue
             >
               {t('untAnalysis.continue')}

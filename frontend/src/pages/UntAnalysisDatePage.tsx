@@ -106,11 +106,14 @@ export function UntAnalysisDatePage({
   }
 
   return (
-    <div className="min-h-[1080px] bg-[#efeaf8] px-6 py-6 md:ml-px md:px-16 md:py-8" data-unt-analysis-date-page>
+    <div
+      className="min-h-screen min-w-0 overflow-x-clip bg-[#efeaf8] px-6 py-6 max-[359px]:px-4 max-[359px]:py-4 md:ml-px md:min-h-[1080px] md:overflow-x-visible md:px-16 md:py-8"
+      data-unt-analysis-date-page
+    >
       <main className="w-full">
         <section
           aria-labelledby="unt-analysis-date-title"
-          className="flex w-full max-w-[800px] flex-col gap-8 rounded-[16px] bg-white p-6"
+          className="flex min-w-0 w-full max-w-[800px] flex-col gap-6 rounded-[16px] bg-white p-4 md:gap-8 md:p-6"
           data-unt-analysis-date-card
         >
           <header className="flex w-full flex-col items-start gap-4">
@@ -123,13 +126,13 @@ export function UntAnalysisDatePage({
           </header>
 
           <div className="flex w-full flex-col gap-4" data-unt-analysis-date-content>
-            <div className="flex min-h-12 w-full items-center justify-between rounded-[8px] border border-solid border-[#eae9ec] px-6 py-4" data-unt-analysis-date-attempt>
-              <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-h-12 w-full flex-wrap items-start justify-between gap-3 rounded-[8px] border border-solid border-[#eae9ec] px-4 py-3 md:flex-nowrap md:items-center md:gap-4 md:px-6 md:py-4" data-unt-analysis-date-attempt>
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="shrink-0 text-[16px] font-medium leading-4 text-[#161519]">
                   {attemptTitle}
                 </span>
                 {dateRange && (
-                  <span className="truncate text-[14px] leading-[14px] text-[#6e6779]">
+                  <span className="min-w-0 truncate text-[14px] leading-[14px] text-[#6e6779]">
                     {dateRange}
                   </span>
                 )}
@@ -144,8 +147,8 @@ export function UntAnalysisDatePage({
               </button>
             </div>
 
-            <div className="flex w-full items-start gap-4" data-unt-analysis-date-panels>
-              <div className="flex w-[373px] shrink-0 flex-col gap-6 rounded-[8px] border border-solid border-[#eae9ec] p-6" data-unt-analysis-calendar>
+            <div className="flex w-full flex-col items-stretch gap-4 xl:flex-row xl:items-start" data-unt-analysis-date-panels>
+              <div className="flex w-full min-w-0 flex-col gap-6 rounded-[8px] border border-solid border-[#eae9ec] p-3 xl:w-[373px] xl:shrink-0 xl:p-6" data-unt-analysis-calendar>
                 <div className="flex w-full items-center justify-between" data-unt-analysis-calendar-header>
                   <button
                     type="button"
@@ -172,9 +175,9 @@ export function UntAnalysisDatePage({
                   </button>
                 </div>
 
-                <div className="grid w-full grid-cols-7 gap-x-[7.5px] gap-y-2" data-unt-analysis-calendar-grid>
+                <div className="grid w-full grid-cols-7 gap-x-1 gap-y-2 md:max-w-[373px] md:self-center xl:max-w-none xl:gap-x-[7.5px]" data-unt-analysis-calendar-grid>
                   {weekdays.slice(0, 7).map((weekday) => (
-                    <div key={weekday} className="flex h-8 w-10 items-center justify-center text-[14px] font-medium leading-[14px] text-[#6e6779]">
+                    <div key={weekday} className="flex h-8 w-full items-center justify-center text-[14px] font-medium leading-[14px] text-[#6e6779]">
                       {weekday}
                     </div>
                   ))}
@@ -187,7 +190,7 @@ export function UntAnalysisDatePage({
                         : 'text-[#b1acb9]';
 
                     if (!day.date) {
-                      return <div key={`empty-${index}`} className="h-8 w-10" aria-hidden="true" />;
+                      return <div key={`empty-${index}`} className="h-8 w-full" aria-hidden="true" />;
                     }
 
                     return (
@@ -196,7 +199,7 @@ export function UntAnalysisDatePage({
                         type="button"
                         disabled={!day.available}
                         aria-label={formatUntAnalysisAccessibleDate(day.date, locale)}
-                        className={`flex h-8 w-10 items-center justify-center rounded-[8px] text-[16px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${dayClass}`}
+                        className={`flex h-8 w-full items-center justify-center rounded-[8px] text-[16px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${dayClass}`}
                         onClick={() => handleDateChange(day.date as string, day.available)}
                         data-unt-analysis-date={day.date}
                         data-unt-analysis-date-available={day.available}
@@ -209,8 +212,8 @@ export function UntAnalysisDatePage({
                 </div>
               </div>
 
-              <aside className="flex min-w-0 flex-1 flex-col gap-4 self-stretch" data-unt-analysis-date-side-panel>
-                <div className="flex shrink-0 items-center gap-4 rounded-[8px] border border-solid border-[#eae9ec] p-6" data-unt-analysis-date-summary>
+              <aside className="flex w-full min-w-0 flex-col gap-4 self-stretch xl:flex-1" data-unt-analysis-date-side-panel>
+                <div className="flex min-w-0 shrink-0 items-center gap-4 rounded-[8px] border border-solid border-[#eae9ec] p-4 xl:p-6" data-unt-analysis-date-summary>
                   <div className="flex size-12 shrink-0 flex-col" aria-hidden="true">
                     <span className="flex h-4 w-full items-center justify-center rounded-tl-[8px] rounded-tr-[8px] bg-[#6a37c3] px-3 py-[2px] text-[12px] font-medium leading-3 text-white">
                       {monthShortLabel}
@@ -225,7 +228,7 @@ export function UntAnalysisDatePage({
                   </div>
                 </div>
 
-                <div className="flex h-[220px] shrink-0 flex-col gap-6 rounded-[8px] border border-solid border-[#eae9ec] p-6" data-unt-analysis-date-why>
+                <div className="flex h-auto min-h-[220px] shrink-0 flex-col gap-4 rounded-[8px] border border-solid border-[#eae9ec] p-4 xl:h-[220px] xl:gap-6 xl:p-6" data-unt-analysis-date-why>
                   <div className="flex w-full items-center gap-4">
                     <HugeiconsIcon icon={Idea01Icon} size={24} strokeWidth={1.5} className="shrink-0 text-[#6a37c3]" aria-hidden="true" />
                     <p className="text-[16px] font-medium leading-4 text-[#6a37c3]">{t('untAnalysis.date.whyTitle')}</p>
@@ -236,10 +239,10 @@ export function UntAnalysisDatePage({
             </div>
           </div>
 
-          <div className="flex w-full items-start justify-between" data-unt-analysis-date-actions>
+          <div className="flex w-full flex-wrap items-start justify-between gap-3" data-unt-analysis-date-actions>
             <button
               type="button"
-              className="inline-flex h-10 min-h-10 items-center justify-center rounded-[8px] bg-[#f6f5f7] px-6 py-3 text-[16px] font-medium leading-4 text-[#161519] outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2"
+              className="inline-flex h-12 min-h-12 flex-1 items-center justify-center rounded-[8px] bg-[#f6f5f7] px-6 py-3 text-[16px] font-medium leading-4 text-[#161519] outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 sm:flex-none md:h-10 md:min-h-10"
               onClick={onBack}
               data-unt-analysis-date-back
             >
@@ -248,7 +251,7 @@ export function UntAnalysisDatePage({
             <button
               type="button"
               disabled={!currentSelectedDate}
-              className={`inline-flex h-10 min-h-10 items-center justify-center rounded-[8px] px-6 py-3 text-[16px] font-medium leading-4 outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 disabled:cursor-not-allowed ${currentSelectedDate ? 'bg-[#6a37c3] text-white' : 'bg-[#efeaf8] text-[#a585db]'}`}
+              className={`inline-flex h-12 min-h-12 flex-1 items-center justify-center rounded-[8px] px-6 py-3 text-[16px] font-medium leading-4 outline-none focus-visible:ring-2 focus-visible:ring-[#6a37c3] focus-visible:ring-offset-2 disabled:cursor-not-allowed sm:flex-none md:h-10 md:min-h-10 ${currentSelectedDate ? 'bg-[#6a37c3] text-white' : 'bg-[#efeaf8] text-[#a585db]'}`}
               onClick={handleContinue}
               data-unt-analysis-date-continue
             >

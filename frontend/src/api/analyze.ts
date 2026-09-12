@@ -1,6 +1,12 @@
 import { API_URL, apiClient } from './client';
 import { normalizeTopicLocale } from './topicLocale';
 import type { AnalyzeChapterResult, AnalyzeTask } from '../types';
+import type { UntAnalysisAttemptAvailability } from '../features/unt-analysis/model/attempts';
+
+export interface UntAnalysisAttemptsResponse {
+  reference_date: string;
+  attempts: UntAnalysisAttemptAvailability[];
+}
 
 export async function createAnalyzeTask(file: File, locale: string = 'kk'): Promise<AnalyzeTask> {
   const form = new FormData();
@@ -20,6 +26,11 @@ export async function getLatestAnalyzeResult(locale: string = 'kk'): Promise<Ana
   const { data } = await apiClient.get<AnalyzeChapterResult[]>('/api/analyze/latest', {
     params: { locale: normalizeTopicLocale(locale) },
   });
+  return data;
+}
+
+export async function getUntAnalysisAttempts(): Promise<UntAnalysisAttemptsResponse> {
+  const { data } = await apiClient.get<UntAnalysisAttemptsResponse>('/api/analyze/attempts');
   return data;
 }
 

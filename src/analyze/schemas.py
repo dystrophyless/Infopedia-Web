@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -43,3 +44,15 @@ class AnalyzeTaskResponse(BaseModel):
     stage: str | None = None
     result: list[AnalyzeChapterResult] | None = None
     error: AnalyzeTaskError | None = None
+
+
+class UntAnalysisAttemptOptionResponse(BaseModel):
+    id: Literal["january", "march", "grant-1", "grant-2"]
+    start_date: date | None
+    end_date: date | None
+    available: bool
+
+
+class UntAnalysisAttemptsResponse(BaseModel):
+    reference_date: date
+    attempts: list[UntAnalysisAttemptOptionResponse] = Field(min_length=4, max_length=4)

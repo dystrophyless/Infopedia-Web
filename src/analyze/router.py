@@ -8,6 +8,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.analyze.attempts import (
+    get_unt_analysis_attempt_options,
+    get_unt_analysis_reference_date,
+)
 from src.analyze.exceptions import InvalidAnalyzeDocumentError
 from src.analyze.locale import normalize_analyze_locale
 from src.analyze.projection import select_free_chapter_id
@@ -16,7 +20,12 @@ from src.analyze.repository import (
     get_topic_material_summaries_by_chapter_ids,
     get_topic_codes_by_chapter_ids,
 )
-from src.analyze.schemas import AnalyzeChapterResult, AnalyzeTaskResponse
+from src.analyze.schemas import (
+    AnalyzeChapterResult,
+    AnalyzeTaskResponse,
+    UntAnalysisAttemptOptionResponse,
+    UntAnalysisAttemptsResponse,
+)
 from src.analyze.serialization import encode_file_content
 from src.analyze.utils import (
     TERMINAL_TASK_STATUSES,
@@ -41,6 +50,26 @@ logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
+
+
+@router.get("/attempts", response_model=UntAnalysisAttemptsResponse)
+async def get_unt_analysis_attempts(
+    _: Annotated[User, Depends(get_current_user)],
+):
+    reference_date = get_unt_analysis_reference_date()
+    options = get_unt_analysis_attempt_options(reference_date)
+    return UntAnalysisAttemptsResponse(
+        reference_date=reference_date,
+        attempts=[
+            UntAnalysisAttemptOptionResponse(
+                id=option.id,
+                start_date=option.start_date,
+                end_date=option.end_date,
+                available=option.available,
+            )
+            for option in options
+        ],
+    )
 
 
 @router.post(

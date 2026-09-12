@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { DesktopSidebar } from '../components/DesktopSidebar';
+import { MobileBottomNav } from '../components/MobileBottomNav';
 import type { UntAnalysisAttemptAvailability } from '../features/unt-analysis/model/attempts';
 import { UntAnalysisDatePage } from './UntAnalysisDatePage';
 import { UntAnalysisPage } from './UntAnalysisPage';
@@ -21,13 +22,19 @@ const desktopSeptemberAttempts: UntAnalysisAttemptAvailability[] = [
   { id: 'grant-2', available: false, start_date: '2026-08-01', end_date: '2026-08-31' },
 ];
 
+async function assertNoHorizontalOverflow(canvasElement: HTMLElement) {
+  const documentElement = canvasElement.ownerDocument.documentElement;
+  await expect(documentElement.scrollWidth).toBeLessThanOrEqual(documentElement.clientWidth + 1);
+  await expect(canvasElement.ownerDocument.body.scrollWidth).toBeLessThanOrEqual(documentElement.clientWidth + 1);
+}
+
 const meta = {
   title: 'Pages/UNT Analysis',
   component: UntAnalysisPage,
   decorators: [
     (Story) => (
       <MemoryRouter initialEntries={['/analyze/unt']}>
-        <div data-unt-analysis-story-shell className="md:flex md:min-h-screen">
+        <div data-unt-analysis-story-shell className="min-h-screen md:flex">
           <style>{'@media (min-width: 768px) { [data-unt-analysis-story-shell] [data-desktop-sidebar] { height: 1080px; } }'}</style>
           <DesktopSidebar
             activeItem="analyze"
@@ -42,6 +49,7 @@ const meta = {
             }}
           />
           <div className="min-w-0 flex-1"><Story /></div>
+          <MobileBottomNav activeItem="analyze" />
         </div>
       </MemoryRouter>
     ),
@@ -166,5 +174,52 @@ export const DesktopJanuaryCalendar24thSelected: Story = {
     await expect(backButton).toBeVisible();
     expect(window.getComputedStyle(backButton).backgroundColor).toBe('rgb(246, 245, 247)');
     expect(window.getComputedStyle(backButton).color).toBe('rgb(22, 21, 25)');
+  },
+};
+
+export const MobileDefault: Story = {
+  ...DesktopDefault,
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'Выберите попытку ЕНТ' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Далее' })).toBeDisabled();
+    await assertNoHorizontalOverflow(canvasElement);
+  },
+};
+
+export const MobileJanuaryCalendar: Story = {
+  ...DesktopJanuaryCalendar,
+  globals: { viewport: { value: 'mobile320', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'Укажите дату сдачи' })).toBeVisible();
+    await expect(canvas.getByTestId('unt-analysis-calendar-month')).toHaveTextContent('Январь, 2026');
+    await expect(canvas.getByRole('button', { name: 'Далее' })).toBeDisabled();
+    await assertNoHorizontalOverflow(canvasElement);
+  },
+};
+
+export const MobileJanuaryCalendar24thSelected: Story = {
+  ...DesktopJanuaryCalendar24thSelected,
+  globals: { viewport: { value: 'mobile430', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: /24 января 2026/ })).toHaveAttribute(
+      'data-unt-analysis-date-selected',
+      'true',
+    );
+    await expect(canvas.getByRole('button', { name: 'Далее' })).toBeEnabled();
+    await assertNoHorizontalOverflow(canvasElement);
+  },
+};
+
+export const DesktopNarrow: Story = {
+  ...DesktopJanuaryCalendar,
+  globals: { viewport: { value: 'desktop1024', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'Укажите дату сдачи' })).toBeVisible();
+    await assertNoHorizontalOverflow(canvasElement);
   },
 };

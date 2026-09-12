@@ -8,11 +8,6 @@ const favoritesSource = readFileSync(
   'utf8',
 );
 
-const desktopShell = profileSource.slice(
-  profileSource.indexOf('max-w-[1040px]'),
-  profileSource.indexOf('function MobileProfileDashboard'),
-);
-
 assert.match(
   profileSource,
   /const \[searchParams, setSearchParams\] = useSearchParams\(\)/,
@@ -30,15 +25,10 @@ assert.doesNotMatch(
   'Profile must not keep a second tab source of truth outside the URL',
 );
 
-assert.match(
-  desktopShell,
-  /role="tablist"[\s\S]*profileNavItems\.map[\s\S]*role="tab"/,
-  'Desktop Profile must expose page-local accessible tabs',
-);
-assert.match(desktopShell, /activeTab === 'favorites'[\s\S]*<FavoritesContent embedded[\s\S]*detailBackTo="\/profile" \/>/);
-assert.doesNotMatch(desktopShell, /activeTab === 'favorites'[\s\S]*navigate\('\/favorites'\)/);
-assert.doesNotMatch(desktopShell, /grid-cols-\[300px_minmax\(0,1fr\)\]/);
-assert.doesNotMatch(desktopShell, /<aside[\s\S]*FigmaProfileIcon/);
+assert.doesNotMatch(profileSource, /role="tablist"|role="tab"|profileNavItems\.map|<FavoritesContent embedded/);
+assert.match(profileSource, /activeTab === 'profile'[\s\S]*<ProfileOverview profile=\{profile\}/);
+assert.match(profileSource, /requestedTab === 'favorites'[\s\S]*navigate\('\/favorites'/);
+assert.match(profileSource, /requestedTab === 'progress'[\s\S]*navigate\('\/analyze\?view=latest'/);
 assert.match(profileSource, /type SettingsView = 'home' \| 'account' \| 'email' \| 'username' \| 'password' \| 'subscription' \| 'about' \| 'delete'/);
 assert.match(profileSource, /<DesktopSettingsPanel[\s\S]*profile=\{profile\}[\s\S]*onProfileUpdated=/);
 const settingsPanel = profileSource.slice(profileSource.indexOf('function DesktopSettingsPanel('), profileSource.indexOf('function SettingsActionButton('));

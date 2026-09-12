@@ -1,5 +1,5 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -32,7 +32,6 @@ import { useLangStore, type Language } from '../stores/langStore';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { getLatestAnalyzeResult } from '../api/analyze';
 import { getFavorites } from '../features/favorites/api/favorites';
-import { FavoritesContent } from '../features/favorites/pages/FavoritesPage';
 import {
   createMyPassword,
   changeMyPassword,
@@ -42,7 +41,7 @@ import {
   updateMyUsername,
   verifyMyCurrentPassword,
 } from '../api/users';
-import type { AnalyzeChapterResult, User } from '../types';
+import type { User } from '../types';
 import { FigmaProfileIcon } from '../components/FigmaIcons';
 import mobileProfileAsset from '../assets/figma-profile/profile-1.svg';
 import mobilePremiumAsset from '../assets/figma-profile/ai-co-editing.svg';
@@ -52,7 +51,6 @@ import { SkeletonCard } from '../components/SkeletonCard';
 import {
   parseProfileTab,
   setProfileTab,
-  shouldShowProfileLogout,
   type ProfileTabId,
 } from '../utils/profileTabs';
 import { BottomSheet } from '../ui/molecules/BottomSheet';
@@ -69,24 +67,7 @@ import {
   type MobilePasswordAction,
   type MobilePasswordState,
 } from '../features/users/model/passwordChange';
-import { AnalyzeChapterCard } from '../features/analyze/components/AnalyzeChapterCard';
-import { selectAnalyzeResultAccess } from '../features/analyze/model/resultAccess';
 import { useMobileBottomNavOverride } from '../features/navigation';
-
-const WEAK_TOPICS_PANEL_SECTION_CLASS = 'px-8 py-12 max-md:px-5';
-const WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS = 'grid gap-4 lg:h-[416px] lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]';
-
-const profileNavItems: Array<{
-  id: ProfileTabId;
-  labelKey: string;
-  icon: typeof Profile02Icon;
-}> = [
-  { id: 'profile', labelKey: 'profile.navProfile', icon: Profile02Icon },
-  { id: 'progress', labelKey: 'profile.navProgress', icon: ChartColumnIcon },
-  { id: 'weakTopics', labelKey: 'profile.navWeakTopics', icon: AlertCircleIcon },
-  { id: 'favorites', labelKey: 'profile.navFavorites', icon: StarIcon },
-  { id: 'settings', labelKey: 'profile.navSettings', icon: Settings01Icon },
-];
 
 const learningStats = [
   {
@@ -115,10 +96,22 @@ export function Profile() {
   const [fetchError, setFetchError] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = parseProfileTab(searchParams);
+  const requestedTab = searchParams.get('tab');
 
   function setActiveTab(nextTab: ProfileTabId) {
     setSearchParams(setProfileTab(searchParams, nextTab));
   }
+
+  useEffect(() => {
+    if (requestedTab === 'weakTopics' || requestedTab === 'progress') {
+      navigate('/analyze?view=latest', { replace: true });
+      return;
+    }
+
+    if (requestedTab === 'favorites') {
+      navigate('/favorites', { replace: true });
+    }
+  }, [navigate, requestedTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,7 +180,7 @@ export function Profile() {
           }}
         />
       ) : (
-      <main className="mx-auto w-full max-w-[1040px] rounded-[8px] border border-border/45 bg-surface max-md:hidden">
+        <main className="mx-auto w-full max-w-[1040px] max-md:hidden">
           {loading && !profile && (
             <div className="p-8">
               <SkeletonCard />
@@ -198,61 +191,7 @@ export function Profile() {
             <p className="p-8 text-[16px] leading-none text-danger">{t('common.error')}</p>
           )}
 
-          {profile && (
-            <>
-              <div
-                role="tablist"
-                aria-label={t('profile.title')}
-                className="flex gap-2 overflow-x-auto border-b border-border/55 px-7 py-3 max-md:px-5"
-              >
-                {profileNavItems.map((item) => {
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] px-4 text-[15px] leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                        isActive ? 'bg-bg text-primary' : 'text-muted hover:bg-bg/70 hover:text-primary'
-                      }`}
-                    >
-                      <HugeiconsIcon icon={item.icon} size={18} strokeWidth={1.7} aria-hidden="true" />
-                      {t(item.labelKey)}
-                    </button>
-                  );
-                })}
-              </div>
-              <header className="border-b border-border/55 px-7 py-5 max-md:px-5">
-                <div className="flex flex-wrap items-start justify-between gap-5">
-                  <div>
-                    <p className="text-[14px] font-medium uppercase leading-none tracking-[0.12em] text-muted">
-                      {activeTab === 'weakTopics' ? t('profile.weakTopicsEyebrow') : t('profile.accountArea')}
-                    </p>
-                    <h1 className="mt-2 text-[38px] font-medium leading-none text-text max-md:text-[32px] max-md:leading-none">
-                      {getTabTitle(activeTab, t)}
-                    </h1>
-                  </div>
-                  {shouldShowProfileLogout(activeTab) && (
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[8px] border border-border/55 bg-surface px-5 text-[17px] leading-none text-text-body transition-colors hover:bg-bg hover:text-primary max-sm:w-full"
-                    >
-                      <HugeiconsIcon icon={Logout01Icon} size={18} strokeWidth={1.7} />
-                      {t('profile.logout')}
-                    </button>
-                  )}
-                </div>
-              </header>
-
-              {activeTab === 'profile' && <ProfileOverview profile={profile} />}
-              {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
-              {activeTab === 'weakTopics' && <WeakTopicsPanel />}
-              {activeTab === 'favorites' && <FavoritesContent embedded detailBackTo="/profile" />}
-            </>
-          )}
+          {profile && activeTab === 'profile' && <ProfileOverview profile={profile} />}
         </main>
       )}
     </div>
@@ -352,9 +291,7 @@ function MobileProfileDashboard({
     );
   }
 
-  return (
-    <MobileProfileDetail activeTab={activeTab} onBack={() => onSelectTab('profile')} profile={profile} />
-  );
+  return null;
 }
 
 function MobileProfileHome({
@@ -1443,50 +1380,6 @@ function getMobileUsernameValidationMessage(
   return t(keys[code]);
 }
 
-function MobileProfileDetail({
-  activeTab,
-  onBack,
-  profile,
-}: {
-  activeTab: Exclude<ProfileTabId, 'profile'>;
-  onBack: () => void;
-  profile: User;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <section
-      aria-labelledby="mobile-profile-detail-title"
-      className="min-h-screen bg-[#efebf6] pb-8"
-    >
-      <MobilePinnedAppBar
-        title={getTabTitle(activeTab, t)}
-        titleId="mobile-profile-detail-title"
-        headingLevel={1}
-        titleAlign="start"
-        compactLayout="leading-only"
-        leading={(
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label={t('profile.mobileBackToProfile')}
-            className="flex size-11 items-center justify-center text-[#252329] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a37c3]"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.8} />
-          </button>
-        )}
-      />
-      <div className="mt-4 px-[24px]">
-        <div className="overflow-hidden rounded-[8px] bg-white">
-          {activeTab === 'progress' && <PlaceholderPanel type="progress" />}
-          {activeTab === 'weakTopics' && <WeakTopicsPanel />}
-          {activeTab === 'settings' && <DesktopSettingsPanel profile={profile} />}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ProfileOverview({
   profile,
 }: {
@@ -1589,340 +1482,6 @@ function SubscriptionPromo() {
         <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.8} />
       </button>
     </section>
-  );
-}
-
-function PlaceholderPanel({ type }: { type: Exclude<ProfileTabId, 'profile' | 'settings'> }) {
-  const { t } = useTranslation();
-  const content = {
-    progress: {
-      icon: ChartColumnIcon,
-      titleKey: 'profile.progressEmptyTitle',
-      bodyKey: 'profile.progressEmptyBody',
-    },
-    weakTopics: {
-      icon: AlertCircleIcon,
-      titleKey: 'profile.weakTopicsEmptyTitle',
-      bodyKey: 'profile.weakTopicsEmptyBody',
-      actionTo: '/analyze',
-      actionLabelKey: 'profile.weakTopicsAnalyzeButton',
-    },
-    favorites: {
-      icon: StarIcon,
-      titleKey: 'profile.favoritesEmptyTitle',
-      bodyKey: 'profile.favoritesEmptyBody',
-    },
-  }[type];
-
-  return (
-    <section className="px-8 py-12 max-md:px-5">
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[8px] border border-dashed border-border bg-bg px-6 text-center">
-        <span className="flex size-14 items-center justify-center rounded-full bg-surface text-primary">
-          <HugeiconsIcon icon={content.icon} size={28} strokeWidth={1.7} />
-        </span>
-        <h2 className="mt-5 text-[28px] font-medium leading-none text-text max-md:text-[24px] max-md:leading-none">
-          {t(content.titleKey)}
-        </h2>
-        <p className="mt-3 max-w-[520px] text-[17px] leading-none text-text-body">
-          {t(content.bodyKey)}
-        </p>
-        {'actionTo' in content && content.actionTo && (
-          <Link
-            to={content.actionTo}
-            className="mt-6 inline-flex h-[44px] items-center justify-center rounded-[8px] bg-primary px-5 text-[15px] font-medium leading-none text-surface transition-opacity hover:opacity-90"
-          >
-            {t(content.actionLabelKey)}
-          </Link>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function WeakTopicsPanel() {
-  const { i18n, t } = useTranslation();
-  const [results, setResults] = useState<AnalyzeChapterResult[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    setLoading(true);
-    setError(null);
-
-    getLatestAnalyzeResult(i18n.language)
-      .then((data) => {
-        if (!cancelled) setResults(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(getApiErrorMessage(err, t('common.error')));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [i18n.language, retryKey, t]);
-
-  const access = useMemo(() => selectAnalyzeResultAccess(results ?? []), [results]);
-  const weakTopics = access.orderedChapters;
-
-  useEffect(() => {
-    if (weakTopics.length === 0) {
-      setSelectedChapter(null);
-      return;
-    }
-
-    if (!selectedChapter || !weakTopics.some((topic) => topic.chapter_id === selectedChapter)) {
-      setSelectedChapter(weakTopics[0].chapter_id);
-    }
-  }, [selectedChapter, weakTopics]);
-
-  if (loading) {
-    return <WeakTopicsLoadingState />;
-  }
-
-  if (error) {
-    return (
-      <section className="px-8 py-12 max-md:px-5">
-        <div className="rounded-[8px] border border-danger/35 bg-[#fff5f5] p-5">
-          <p className="text-[22px] font-medium leading-none text-danger">
-            {t('profile.weakTopicsErrorTitle')}
-          </p>
-          <p className="mt-2 text-[15px] leading-none text-danger">{error}</p>
-          <Button className="mt-5" variant="secondary" onClick={() => setRetryKey((value) => value + 1)}>
-            {t('common.retry', { defaultValue: 'Retry' })}
-          </Button>
-        </div>
-      </section>
-    );
-  }
-
-  if (!results || results.length === 0) {
-    return <PlaceholderPanel type="weakTopics" />;
-  }
-
-  if (access.orderedChapters.length === 0) {
-    return <WeakTopicsPerfectState />;
-  }
-
-  return (
-    <section className={WEAK_TOPICS_PANEL_SECTION_CLASS}>
-      <WeakTopicsMasterDetail
-        selectedChapter={selectedChapter}
-        weakTopics={weakTopics}
-        freeChapterId={access.freeChapter?.chapter_id ?? null}
-        onSelectChapter={setSelectedChapter}
-      />
-    </section>
-  );
-}
-
-function WeakTopicsPerfectState() {
-  const { t } = useTranslation();
-
-  return (
-    <section className={WEAK_TOPICS_PANEL_SECTION_CLASS}>
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[8px] border border-border/35 bg-bg px-6 text-center">
-        <h2 className="text-[24px] font-medium leading-none text-text">
-          {t('profile.weakTopicsPerfectTitle', { defaultValue: 'Perfect result' })}
-        </h2>
-        <p className="mt-3 max-w-[520px] text-[16px] leading-none text-text-body">
-          {t('profile.weakTopicsPerfectBody', { defaultValue: 'This analysis has no lost points to review.' })}
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function WeakTopicsLoadingState() {
-  const { t } = useTranslation();
-
-  return (
-    <section
-      className={WEAK_TOPICS_PANEL_SECTION_CLASS}
-      role="status"
-      aria-busy="true"
-      aria-live="polite"
-    >
-      <span className="sr-only">{t('common.loading')}</span>
-      <div aria-hidden="true" className={`${WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS} animate-pulse`}>
-        <div className="flex h-full min-h-0 flex-col rounded-[8px] border border-border/30 bg-bg/55 p-3">
-          <div>
-            <div className="h-3 w-28 rounded-full bg-primary/12" />
-            <div className="mt-1.5 h-5 w-24 rounded-[6px] bg-primary/12" />
-            <div className="mt-1.5 h-3 w-32 rounded-full bg-border/40" />
-          </div>
-          <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pr-2">
-            {Array.from({ length: 5 }).map((_, item) => (
-              <div key={item} className="rounded-[8px] bg-surface/70 p-4">
-                <span className="block h-4 w-full max-w-[180px] rounded-[6px] bg-primary/12" />
-                <span className="mt-2 block h-3 w-28 rounded-full bg-border/40" />
-              </div>
-            ))}
-          </div>
-        </div>
-        <article className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4">
-          <div className="h-3 w-36 rounded-full bg-primary/12" />
-          <div className="mt-2 h-8 w-[420px] max-w-full rounded-[8px] bg-primary/12" />
-          <div className="mt-4 flex gap-2">
-            <div className="h-8 w-28 rounded-full bg-bg" />
-            <div className="h-8 w-24 rounded-full bg-bg" />
-          </div>
-          <div className="mt-6 h-10 w-full rounded-[8px] bg-primary/12" />
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function WeakTopicsMasterDetail({
-  weakTopics,
-  selectedChapter,
-  freeChapterId,
-  onSelectChapter,
-}: {
-  weakTopics: AnalyzeChapterResult[];
-  selectedChapter: number | null;
-  freeChapterId: number | null;
-  onSelectChapter: (chapterId: number) => void;
-}) {
-  const selectedTopic =
-    weakTopics.find((topic) => topic.chapter_id === selectedChapter) ?? weakTopics[0];
-
-  return (
-    <div className={WEAK_TOPICS_MASTER_DETAIL_GRID_CLASS}>
-      <WeakTopicList
-        selectedChapter={selectedTopic.chapter_id}
-        weakTopics={weakTopics}
-        freeChapterId={freeChapterId}
-        onSelectChapter={onSelectChapter}
-      />
-      {selectedTopic.chapter_id === freeChapterId ? (
-        <div className="min-h-0">
-          <AnalyzeChapterCard
-            key={selectedTopic.chapter_id}
-            chapter={selectedTopic}
-            locked={false}
-            mode="detail"
-            practiceTo={`/practice-by-topic?chapterId=${encodeURIComponent(String(selectedTopic.chapter_id))}`}
-          />
-          <WeakTopicQuestionMeta topic={selectedTopic} />
-        </div>
-      ) : (
-        <LockedWeakTopicDetail key={selectedTopic.chapter_id} topic={selectedTopic} />
-      )}
-    </div>
-  );
-}
-
-function WeakTopicList({
-  weakTopics,
-  selectedChapter,
-  freeChapterId,
-  onSelectChapter,
-}: {
-  weakTopics: AnalyzeChapterResult[];
-  selectedChapter: number | null;
-  freeChapterId: number | null;
-  onSelectChapter: (chapterId: number) => void;
-}) {
-  const { t } = useTranslation();
-  const lostPoints = weakTopics.reduce((sum, topic) => sum + Math.max(0, topic.max_score - topic.score), 0);
-
-  return (
-    <aside className="flex h-full min-h-0 flex-col rounded-[8px] border border-border/30 bg-bg/55 p-3">
-      <div>
-        <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
-          {t('profile.weakTopicsListEyebrow')}
-        </p>
-        <h2 className="mt-1.5 text-[17px] font-medium leading-none text-text">
-          {t('profile.weakTopicsListTitle')}
-        </h2>
-        <p className="mt-1.5 text-[12px] leading-none text-muted">
-          {t('profile.weakTopicsLostPointsInline', {
-            count: lostPoints,
-          })}
-        </p>
-      </div>
-
-      <div
-        className="weak-topic-list-scroll mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-2"
-        role="listbox"
-        aria-label={t('profile.weakTopicsListAriaLabel')}
-      >
-        {weakTopics.map((topic) => {
-          const isSelected = selectedChapter === topic.chapter_id;
-
-          return (
-            <div key={topic.chapter_id} role="option" aria-selected={isSelected}>
-              <AnalyzeChapterCard
-                chapter={topic}
-                locked={topic.chapter_id !== freeChapterId}
-                mode="summary"
-                selected={isSelected}
-                onSelect={onSelectChapter}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </aside>
-  );
-}
-
-function LockedWeakTopicDetail({ topic }: { topic: AnalyzeChapterResult }) {
-  const { t } = useTranslation();
-  const lostPoints = Math.max(0, topic.max_score - topic.score);
-
-  return (
-    <article
-      className="h-full min-h-0 overflow-hidden rounded-[8px] border border-border/35 bg-surface p-4"
-      aria-live="polite"
-      aria-label={t('profile.weakTopicsDetailLabel', { chapter: topic.title })}
-    >
-      <p className="text-[12px] font-medium uppercase leading-none tracking-[0.1em] text-muted">
-        {t('profile.weakTopicsSelectedLabel')}
-      </p>
-      <h3 className="mt-2 break-words text-[22px] font-medium leading-none text-text">
-        {topic.title}
-      </h3>
-      <div className="mt-4 flex flex-wrap gap-2 text-[13px] leading-none text-text-body">
-        <span className="rounded-full bg-bg px-3 py-2">
-          {t('analyze.mobileChapterScoreSummary', {
-            score: topic.score,
-            maxScore: topic.max_score,
-            percentage: topic.percentage,
-          })}
-        </span>
-        <span className="rounded-full bg-bg px-3 py-2 text-danger">
-          {t('analyze.mobileChapterLost', { count: lostPoints })}
-        </span>
-      </div>
-      <div className="mt-5 border-t border-border/30 pt-4 text-[14px] leading-[14px] text-muted">
-        {t('profile.weakTopicsLockedDetail', { defaultValue: 'Topic details are available through the free chapter.' })}
-      </div>
-      <WeakTopicQuestionMeta topic={topic} />
-    </article>
-  );
-}
-
-function WeakTopicQuestionMeta({ topic }: { topic: AnalyzeChapterResult }) {
-  const { t } = useTranslation();
-
-  return (
-    <p className="mt-3 text-[13px] leading-[13px] text-muted">
-      {t('profile.weakTopicsQuestionMax', {
-        defaultValue: '{{questions}} questions, maximum {{maxScore}} points',
-        questions: topic.question_count,
-        maxScore: topic.max_score,
-      })}
-    </p>
   );
 }
 
@@ -2290,16 +1849,4 @@ function ProfileField({ label, value }: { label: string; value: string }) {
       </span>
     </div>
   );
-}
-
-function getTabTitle(tab: ProfileTabId, t: (key: string) => string) {
-  const titleKeys: Record<ProfileTabId, string> = {
-    profile: 'profile.navProfile',
-    progress: 'profile.navProgress',
-    weakTopics: 'profile.navWeakTopics',
-    favorites: 'profile.navFavorites',
-    settings: 'profile.navSettings',
-  };
-
-  return t(titleKeys[tab]);
 }

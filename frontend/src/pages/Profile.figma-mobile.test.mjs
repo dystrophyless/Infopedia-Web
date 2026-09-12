@@ -21,10 +21,6 @@ const statSource = profileSource.slice(
 );
 const actionSource = profileSource.slice(
   profileSource.indexOf('function MobileProfileAction('),
-  profileSource.indexOf('function MobileProfileDetail('),
-);
-const mobileDetailSource = profileSource.slice(
-  profileSource.indexOf('function MobileProfileDetail('),
   profileSource.indexOf('function ProfileOverview('),
 );
 const mobileSettingsSource = profileSource.slice(
@@ -475,10 +471,6 @@ assert.match(mobileHomeSource, /aria-label=\{t\('profile\.mobileSettingsAriaLabe
 assert.match(mobileHomeSource, /<button[^>]*onClick=\{\(\) => navigate\('\/subscription'\)\}/);
 assert.match(profileSource, /navigate\('\/subscription'\)/);
 assert.match(mobileHomeSource, /focus-visible:outline-2/);
-assert.match(profileSource, /aria-label=\{t\('profile\.mobileBackToProfile'\)\}/);
-assert.match(mobileDetailSource, /<section[^>]*aria-labelledby="mobile-profile-detail-title"/);
-assert.match(mobileDetailSource, /<MobilePinnedAppBar[\s\S]*title=\{getTabTitle\(activeTab, t\)\}[\s\S]*compactLayout="leading-only"/);
-assert.doesNotMatch(mobileDetailSource, /pt-\[80px\]|<header|mobileBackToProfile<\/span>/);
-assert.match(mobileDetailSource, /leading=\{[\s\S]*aria-label=\{t\('profile\.mobileBackToProfile'\)\}[\s\S]*size-11/);
+assert.doesNotMatch(profileSource, /MobileProfileDetail|getTabTitle/);
 
 console.log('Profile mobile Figma contract passed');

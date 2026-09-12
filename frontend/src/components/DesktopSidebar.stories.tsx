@@ -100,7 +100,7 @@ export const ProfileClicked: Story = {
     await expect(profileButton).toHaveClass('bg-[#f8f5fc]');
     await expect(favorites).toHaveFocus();
     await expect(favorites).toHaveAttribute('href', '/favorites');
-    await expect(canvas.getByRole('link', { name: 'Слабые темы' })).toHaveAttribute('href', '/profile?tab=weakTopics');
+    await expect(canvas.getByRole('link', { name: 'Слабые темы' })).toHaveAttribute('href', '/analyze?view=latest');
     await expect(canvas.getByRole('link', { name: 'Купить подписку' })).toHaveAttribute('href', '/subscription');
     await expect(canvas.getByRole('link', { name: 'Настройки' })).toHaveAttribute('href', '/profile?tab=settings');
     await expect(canvas.getByRole('button', { name: 'Справка' })).toBeDisabled();

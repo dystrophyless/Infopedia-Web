@@ -8,6 +8,7 @@ const tokensPath = path.join(srcDir, 'styles', 'tokens.css');
 const tailwindPath = path.join(frontendDir, 'tailwind.config.ts');
 const termCardPath = path.join(srcDir, 'features', 'terms', 'components', 'TermCard.tsx');
 const termDetailViewPath = path.join(srcDir, 'features', 'terms', 'components', 'TermDetailView.tsx');
+const favoritesPagePath = path.join(srcDir, 'features', 'favorites', 'pages', 'FavoritesPage.tsx');
 const desktopSearchFiltersDialogPath = path.join(srcDir, 'features', 'search', 'components', 'DesktopSearchFiltersDialog.tsx');
 
 const typeRoles = ['screen-title', 'section-title', 'card-title', 'body', 'helper', 'caption'];
@@ -172,14 +173,31 @@ function isReferenceTypographyPair(filePath, content, scope, sizeEntry, lineEntr
     && lineEntry.resolved.kind === 'length'
     && lineEntry.resolved.value === 24;
   const termDetailReference = path.normalize(filePath) === path.normalize(termDetailViewPath)
-    && content.includes('max-w-[514px] whitespace-pre-line text-[18px] leading-6 text-[#6e6779]')
+    && content.includes('whitespace-pre-line text-[18px] leading-6 text-[#6e6779]')
     && scope === 'base'
     && sizeEntry.token === 'text-[18px]'
     && sizeEntry.size === 18
     && lineEntry.token === 'leading-6'
     && lineEntry.resolved.kind === 'length'
     && lineEntry.resolved.value === 24;
-  return termCardReference || termDetailReference;
+  // These pairs are explicit Figma line boxes for the desktop empty Favorites state.
+  const favoritesTitleReference = path.normalize(filePath) === path.normalize(favoritesPagePath)
+    && content.includes('font-medium text-[20px] leading-[24px] text-[#161519]')
+    && scope === 'base'
+    && sizeEntry.token === 'text-[20px]'
+    && sizeEntry.size === 20
+    && lineEntry.token === 'leading-[24px]'
+    && lineEntry.resolved.kind === 'length'
+    && lineEntry.resolved.value === 24;
+  const favoritesBodyReference = path.normalize(filePath) === path.normalize(favoritesPagePath)
+    && content.includes('font-normal text-[16px] leading-[20px] text-[#6e6779]')
+    && scope === 'base'
+    && sizeEntry.token === 'text-[16px]'
+    && sizeEntry.size === 16
+    && lineEntry.token === 'leading-[20px]'
+    && lineEntry.resolved.kind === 'length'
+    && lineEntry.resolved.value === 20;
+  return termCardReference || termDetailReference || favoritesTitleReference || favoritesBodyReference;
 }
 
 // Task-5 filter controls intentionally preserve source-backed Figma typography:

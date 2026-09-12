@@ -134,7 +134,7 @@ export function FavoritesContent({
             >
               <HugeiconsIcon icon={AllBookmarkIcon} size={24} strokeWidth={1.5} className="size-[24px] shrink-0" aria-hidden="true" />
             </div>
-            <div data-figma-node="1531:2352" className="flex w-full flex-col items-start gap-4 leading-[normal]">
+            <div data-figma-node="1531:2352" className="flex w-full flex-col items-start gap-4">
               <h2
                 id="favorites-desktop-empty-title"
                 data-figma-node="1531:2353"

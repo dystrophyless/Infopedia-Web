@@ -125,7 +125,7 @@ export function FavoritesContent({
             aria-labelledby="favorites-desktop-empty-title"
             data-favorites-desktop-empty
             data-figma-node="1531:2343"
-            className="hidden md:flex w-[684px] shrink-0 flex-col gap-6 rounded-[16px] bg-white pb-8 pt-6 px-6"
+            className="hidden md:flex w-full max-w-[684px] shrink-0 flex-col gap-6 rounded-[16px] bg-white pb-8 pt-6 px-6"
           >
             <div
               data-favorites-desktop-empty-icon

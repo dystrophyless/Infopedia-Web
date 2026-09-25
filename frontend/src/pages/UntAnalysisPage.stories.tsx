@@ -1,26 +1,82 @@
 import '../i18n';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { DesktopSidebar } from '../components/DesktopSidebar';
 import { MobileBottomNav } from '../components/MobileBottomNav';
+import { Analyze } from './Analyze';
 import type { UntAnalysisAttemptAvailability } from '../features/unt-analysis/model/attempts';
 import { UntAnalysisDatePage } from './UntAnalysisDatePage';
 import { UntAnalysisPage } from './UntAnalysisPage';
 
 const desktopDefaultAttempts: UntAnalysisAttemptAvailability[] = [
-  { id: 'january', available: true, start_date: '2026-01-10', end_date: '2026-02-10' },
-  { id: 'march', available: false, start_date: '2026-03-01', end_date: '2026-04-30' },
-  { id: 'grant-1', available: false, start_date: null, end_date: null },
-  { id: 'grant-2', available: false, start_date: null, end_date: null },
+  { id: 'january', available: true, upcoming: false, start_date: '2026-01-10', end_date: '2026-02-10' },
+  { id: 'march', available: false, upcoming: true, start_date: '2026-03-01', end_date: null },
+  { id: 'grant-1', available: false, upcoming: false, start_date: null, end_date: null },
+  { id: 'grant-2', available: false, upcoming: false, start_date: null, end_date: null },
 ];
 
 const desktopSeptemberAttempts: UntAnalysisAttemptAvailability[] = [
-  { id: 'january', available: false, start_date: '2026-01-10', end_date: '2026-02-10' },
-  { id: 'march', available: false, start_date: '2026-03-01', end_date: '2026-04-30' },
-  { id: 'grant-1', available: false, start_date: '2026-05-01', end_date: '2026-07-31' },
-  { id: 'grant-2', available: false, start_date: '2026-08-01', end_date: '2026-08-31' },
+  { id: 'january', available: false, upcoming: false, start_date: '2026-01-10', end_date: '2026-02-10' },
+  { id: 'march', available: false, upcoming: false, start_date: '2026-03-01', end_date: '2026-04-30' },
+  { id: 'grant-1', available: false, upcoming: false, start_date: '2026-05-01', end_date: '2026-07-31' },
+  { id: 'grant-2', available: false, upcoming: false, start_date: '2026-08-01', end_date: '2026-08-31' },
 ];
+
+const desktopFebruary20Attempts: UntAnalysisAttemptAvailability[] = [
+  { id: 'january', available: true, upcoming: false, start_date: '2026-01-10', end_date: '2026-02-21' },
+  { id: 'march', available: false, upcoming: true, start_date: '2026-03-01', end_date: null },
+  { id: 'grant-1', available: false, upcoming: true, start_date: '2026-05-01', end_date: null },
+  { id: 'grant-2', available: false, upcoming: true, start_date: '2026-08-01', end_date: null },
+];
+
+const desktopFebruary20MarchDatesKnownAttempts: UntAnalysisAttemptAvailability[] = [
+  { id: 'january', available: true, upcoming: false, start_date: '2026-01-10', end_date: '2026-02-21' },
+  { id: 'march', available: false, upcoming: true, start_date: '2026-03-10', end_date: '2026-04-03' },
+  { id: 'grant-1', available: false, upcoming: true, start_date: '2026-05-01', end_date: null },
+  { id: 'grant-2', available: false, upcoming: true, start_date: '2026-08-01', end_date: null },
+];
+
+const desktopApril20Attempts: UntAnalysisAttemptAvailability[] = [
+  { id: 'january', available: false, upcoming: false, start_date: '2026-01-10', end_date: '2026-02-10' },
+  { id: 'march', available: true, upcoming: false, start_date: '2026-03-10', end_date: '2026-04-30' },
+  { id: 'grant-1', available: false, upcoming: true, start_date: '2026-05-01', end_date: null },
+  { id: 'grant-2', available: false, upcoming: true, start_date: '2026-08-01', end_date: null },
+];
+
+const desktopApril2JanuaryAnalyzedAttempts: UntAnalysisAttemptAvailability[] = [
+  { id: 'january', available: false, upcoming: false, analyzed: true, start_date: '2026-01-10', end_date: '2026-02-10' },
+  { id: 'march', available: true, upcoming: false, start_date: '2026-03-01', end_date: '2026-04-30' },
+  { id: 'grant-1', available: false, upcoming: true, start_date: '2026-05-01', end_date: null },
+  { id: 'grant-2', available: false, upcoming: true, start_date: '2026-08-01', end_date: null },
+];
+
+function StorybookAnalyzeUploadRoute() {
+  const [searchParams] = useSearchParams();
+  const attemptId = searchParams.get('untAttemptId') ?? '';
+  const attemptDate = searchParams.get('untAttemptDate') ?? '';
+
+  return (
+    <>
+      <span className="sr-only" data-testid="unt-analysis-flow-context">
+        {`${attemptId}:${attemptDate}`}
+      </span>
+      <Analyze />
+    </>
+  );
+}
+
+function StorybookUntAnalysisFlow() {
+  return (
+    <Routes>
+      <Route
+        path="/analyze/unt"
+        element={<UntAnalysisPage initialAttempts={desktopApril2JanuaryAnalyzedAttempts} />}
+      />
+      <Route path="/analyze" element={<StorybookAnalyzeUploadRoute />} />
+    </Routes>
+  );
+}
 
 async function assertNoHorizontalOverflow(canvasElement: HTMLElement) {
   const documentElement = canvasElement.ownerDocument.documentElement;
@@ -81,6 +137,60 @@ export const DesktopDefault: Story = {
     await expect(january).toBeChecked();
     await expect(canvas.getByTestId('unt-analysis-option-january')).toHaveAttribute('data-unt-analysis-selected', 'true');
     await expect(canvas.getByRole('button', { name: 'Далее' })).toBeEnabled();
+  },
+};
+
+export const DesktopFebruary20JanuaryAvailable: Story = {
+  args: { initialAttempts: desktopFebruary20Attempts },
+};
+
+export const DesktopFebruary20MarchDatesKnown: Story = {
+  args: { initialAttempts: desktopFebruary20MarchDatesKnownAttempts },
+};
+
+export const DesktopApril20JanuarySelected: Story = {
+  args: {
+    initialAttempts: desktopApril20Attempts,
+    defaultSelectedAttempt: 'january',
+  },
+};
+
+export const DesktopApril2JanuaryAnalyzed: Story = {
+  args: { initialAttempts: desktopApril2JanuaryAnalyzedAttempts },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const january = canvas.getByRole('radio', { name: /Январский/ });
+    const januaryRow = canvas.getByTestId('unt-analysis-option-january');
+
+    await expect(january).toBeDisabled();
+    await expect(january).not.toBeChecked();
+    await expect(januaryRow).toHaveAttribute('data-unt-analysis-analyzed', 'true');
+    await expect(januaryRow).toHaveAttribute('data-unt-analysis-selectable', 'false');
+    await expect(canvas.getByText('Проанализировано')).toBeVisible();
+    await expect(canvas.getByRole('radio', { name: /Мартовский/ })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: 'Далее' })).toBeDisabled();
+  },
+};
+
+export const DesktopEndToEndAnalysisFlow: Story = {
+  render: () => <StorybookUntAnalysisFlow />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const january = canvas.getByRole('radio', { name: /Январский/ });
+    const march = canvas.getByRole('radio', { name: /Мартовский/ });
+
+    await expect(january).toBeDisabled();
+    await expect(canvas.getByText('Проанализировано')).toBeVisible();
+    await userEvent.click(march);
+    await userEvent.click(canvas.getByRole('button', { name: 'Далее' }));
+    await expect(canvas.getByTestId('unt-analysis-calendar-month')).toHaveTextContent('Март, 2026');
+    await userEvent.click(canvas.getByRole('button', { name: /14 марта 2026/ }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Далее' }));
+
+    await expect(canvasElement.querySelector('[data-analyze-desktop-upload]')).toBeVisible();
+    await expect(canvas.getByTestId('unt-analysis-flow-context')).toHaveTextContent(
+      'march:2026-03-14',
+    );
   },
 };
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
@@ -52,6 +53,8 @@ class UntAnalysisAttemptOption:
     start_date: date | None
     end_date: date | None
     available: bool
+    upcoming: bool = False
+    analyzed: bool = False
 
 
 def _parse_configured_date(value: str, *, setting_name: str) -> date | None:
@@ -120,6 +123,7 @@ def get_unt_analysis_attempt_options(
     reference_date: date | None = None,
     *,
     app_settings: Settings = settings,
+    analyzed_attempt_ids: Collection[UntAnalysisAttemptId] = (),
 ) -> tuple[UntAnalysisAttemptOption, ...]:
     resolved_date = (
         reference_date
@@ -137,6 +141,36 @@ def get_unt_analysis_attempt_options(
                 and window.end_date is not None
                 and window.start_date <= resolved_date <= window.end_date
             ),
+            upcoming=(
+                window.start_date is not None
+                and resolved_date < window.start_date
+            ),
+            analyzed=window.id in analyzed_attempt_ids,
         )
         for window in get_unt_analysis_attempt_windows(app_settings)
     )
+
+
+def validate_unt_analysis_submission(
+    attempt_id: UntAnalysisAttemptId | None,
+    attempt_date: date | None,
+    options: Collection[UntAnalysisAttemptOption],
+) -> UntAnalysisAttemptOption | None:
+    if attempt_id is None and attempt_date is None:
+        return None
+    if attempt_id is None or attempt_date is None:
+        raise ValueError("unt_attempt_context_incomplete")
+
+    option = next((item for item in options if item.id == attempt_id), None)
+    if option is None or not option.available:
+        raise ValueError("unt_attempt_unavailable")
+    if option.analyzed:
+        raise ValueError("unt_attempt_already_analyzed")
+    if (
+        option.start_date is None
+        or option.end_date is None
+        or not option.start_date <= attempt_date <= option.end_date
+    ):
+        raise ValueError("unt_attempt_date_outside_window")
+
+    return option

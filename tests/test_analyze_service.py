@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -38,6 +39,10 @@ class AnalyzeServiceTests(unittest.TestCase):
         observed = {}
 
         async def create_result(current_session, **kwargs):
+            observed["unt_attempt"] = (
+                kwargs.get("unt_attempt_id"),
+                kwargs.get("unt_attempt_date"),
+            )
             result = _ExpiringResult(result_id=42)
             current_session.result = result
             return result
@@ -60,11 +65,20 @@ class AnalyzeServiceTests(unittest.TestCase):
                     user_id=7,
                     parsed_data=[],
                     locale="ru",
+                    unt_attempt_id="january",
+                    unt_attempt_date=date(2026, 1, 11),
                 ),
             )
 
         self.assertIs(actual, loaded_result)
-        self.assertEqual(observed, {"result_id": 42, "locale": "ru"})
+        self.assertEqual(
+            observed,
+            {
+                "result_id": 42,
+                "locale": "ru",
+                "unt_attempt": ("january", date(2026, 1, 11)),
+            },
+        )
 
     def test_missing_result_after_commit_logs_without_result_identifier(self):
         class _Result:

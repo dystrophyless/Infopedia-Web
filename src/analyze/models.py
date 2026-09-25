@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, text
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -23,11 +23,23 @@ class AnalyzeResult(Base):
         nullable=False,
         server_default=text("TIMEZONE('utc', now())"),
     )
+    unt_attempt_id: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    unt_attempt_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     items: Mapped[list["AnalyzeResultItem"]] = relationship(
         back_populates="result",
         cascade="all, delete-orphan",
     )
+
+
+Index(
+    "uq_analyze_results_user_unt_attempt",
+    AnalyzeResult.user_id,
+    AnalyzeResult.unt_attempt_id,
+    unique=True,
+    postgresql_where=AnalyzeResult.unt_attempt_id.is_not(None),
+    sqlite_where=AnalyzeResult.unt_attempt_id.is_not(None),
+)
 
 
 class AnalyzeResultItem(Base):

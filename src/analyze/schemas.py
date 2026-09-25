@@ -51,6 +51,8 @@ class UntAnalysisAttemptOptionResponse(BaseModel):
     start_date: date | None
     end_date: date | None
     available: bool
+    upcoming: bool = False
+    analyzed: bool = False
 
 
 class UntAnalysisAttemptsResponse(BaseModel):

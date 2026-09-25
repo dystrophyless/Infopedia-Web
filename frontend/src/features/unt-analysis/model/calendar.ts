@@ -150,6 +150,7 @@ export function formatUntAnalysisDateRange(
   startDate: string | null | undefined,
   endDate: string | null | undefined,
   locale: string,
+  separator = ' — ',
 ): string {
   const start = parseIsoDate(startDate);
   const end = parseIsoDate(endDate);
@@ -160,7 +161,7 @@ export function formatUntAnalysisDateRange(
     month: 'long',
     timeZone: 'UTC',
   });
-  return `${formatter.format(dateFromParsed(start))} — ${formatter.format(dateFromParsed(end))}`;
+  return `${formatter.format(dateFromParsed(start))}${separator}${formatter.format(dateFromParsed(end))}`;
 }
 
 export function formatUntAnalysisSelectedDate(date: string, locale: string): string {

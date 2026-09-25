@@ -61,6 +61,11 @@ export function Analyze() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isLatestView = searchParams.get('view') === 'latest';
+  const untAttemptId = searchParams.get('untAttemptId');
+  const untAttemptDate = searchParams.get('untAttemptDate');
+  const untAnalysisContext = untAttemptId || untAttemptDate
+    ? { attemptId: untAttemptId ?? undefined, attemptDate: untAttemptDate ?? undefined }
+    : undefined;
   const [file, setFile] = useState<File | null>(null);
   const [createdTaskState, setCreatedTask] = useState<AnalyzeTask | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -224,7 +229,7 @@ export function Analyze() {
     setSubmitting(true);
 
     try {
-      const task = await createAnalyzeTask(file as File, i18n.language);
+      const task = await createAnalyzeTask(file as File, i18n.language, untAnalysisContext);
       setCreatedTask(task);
       setTaskId(task.task_id);
     } catch (err) {

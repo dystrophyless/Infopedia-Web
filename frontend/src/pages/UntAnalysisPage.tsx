@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { CalendarBlock01Icon, CalendarCheckIcon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { getUntAnalysisAttempts } from '../api/analyze';
 import { Button } from '../ui/atoms';
+import { formatUntAnalysisDateRange } from '../features/unt-analysis/model/calendar';
 import {
   decorateUntAnalysisAttemptOptions,
   type UntAnalysisAttemptAvailability,
@@ -32,7 +34,8 @@ export function UntAnalysisPage({
   onDateChange,
   onDateContinue,
 }: UntAnalysisPageProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [internalSelectedAttempt, setInternalSelectedAttempt] = useState<UntAnalysisAttemptId | null>(defaultSelectedAttempt);
   const [serverAttempts, setServerAttempts] = useState<readonly UntAnalysisAttemptAvailability[] | null>(initialAttempts ?? null);
   const [loading, setLoading] = useState(initialAttempts === undefined);
@@ -41,7 +44,7 @@ export function UntAnalysisPage({
   const options = decorateUntAnalysisAttemptOptions(serverAttempts ?? []);
   const currentSelectedAttempt = selectedAttempt === undefined ? internalSelectedAttempt : selectedAttempt;
   const selectedOption = options.find((option) => option.id === currentSelectedAttempt);
-  const canContinue = !loading && Boolean(selectedOption?.available);
+  const canContinue = !loading && Boolean(selectedOption?.available && !selectedOption.analyzed);
 
   useEffect(() => {
     if (initialAttempts !== undefined) {
@@ -74,7 +77,7 @@ export function UntAnalysisPage({
   }, [initialAttempts]);
 
   function handleAttemptChange(attempt: UntAnalysisAttemptId) {
-    if (!options.some((option) => option.id === attempt && option.available)) return;
+    if (!options.some((option) => option.id === attempt && option.available && !option.analyzed)) return;
     if (selectedAttempt === undefined) setInternalSelectedAttempt(attempt);
     onAttemptChange?.(attempt);
   }
@@ -85,7 +88,21 @@ export function UntAnalysisPage({
     setStep('date');
   }
 
-  if (step === 'date' && selectedOption?.available) {
+  function handleDateContinue(date: string) {
+    if (!selectedOption?.available || selectedOption.analyzed) return;
+    if (onDateContinue) {
+      onDateContinue(date);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      untAttemptId: selectedOption.id,
+      untAttemptDate: date,
+    });
+    navigate({ pathname: '/analyze', search: `?${params.toString()}` });
+  }
+
+  if (step === 'date' && selectedOption?.available && !selectedOption.analyzed) {
     return (
       <UntAnalysisDatePage
         attemptId={selectedOption.id}
@@ -94,7 +111,7 @@ export function UntAnalysisPage({
         onAttemptChange={() => setStep('attempt')}
         onDateChange={onDateChange}
         onBack={() => setStep('attempt')}
-        onContinue={onDateContinue}
+        onContinue={handleDateContinue}
       />
     );
   }
@@ -133,20 +150,50 @@ export function UntAnalysisPage({
           >
             <legend className="sr-only">{t('untAnalysis.attemptSelectionLabel')}</legend>
             {options.map((option, index) => {
-              const active = option.available;
-              const selected = currentSelectedAttempt === option.id;
-              const titleClass = active ? 'text-[#161519]' : 'text-[#524d5b]';
-              const descriptionClass = active ? 'text-[#6e6779]' : 'text-[#8c8698]';
-              const iconClass = selected ? 'bg-[#6a37c3] text-white' : active ? 'bg-[#f6f5f7] text-[#865bcf]' : 'bg-[#f6f5f7] text-[#c5b1e7]';
-              const icon = active ? CalendarCheckIcon : CalendarBlock01Icon;
+              const active = option.available && !option.analyzed;
+              const selected = currentSelectedAttempt === option.id && !option.analyzed;
+              const isGrantAttempt = option.id === 'grant-1' || option.id === 'grant-2';
+              const titleClass = option.analyzed
+                ? 'text-[#6e6779]'
+                : selected
+                ? 'text-[#161519]'
+                : active
+                  ? 'text-[#161519] md:text-[#524d5b]'
+                  : isGrantAttempt
+                    ? 'text-[#524d5b] md:text-[#6e6779]'
+                    : 'text-[#524d5b]';
+              const descriptionClass = option.analyzed
+                ? 'text-[#b1acb9]'
+                : selected
+                ? 'text-[#6e6779]'
+                : active
+                  ? 'text-[#6e6779] md:text-[#8c8698]'
+                  : isGrantAttempt
+                    ? 'text-[#8c8698] md:text-[#b1acb9]'
+                    : 'text-[#8c8698]';
+              const iconClass = selected ? 'bg-[#6a37c3] text-white' : option.analyzed ? 'bg-[#efeaf8] text-[#865bcf]' : active ? 'bg-[#f6f5f7] text-[#865bcf]' : 'bg-[#f6f5f7] text-[#c5b1e7]';
+              const icon = active || selected || option.analyzed ? CalendarCheckIcon : CalendarBlock01Icon;
+              const rowSurfaceClass = option.analyzed
+                ? 'bg-[#f6f5f7]'
+                : selected
+                ? 'bg-[#f8f5fc]'
+                : active
+                  ? 'bg-white'
+                  : 'bg-white md:bg-[#f6f5f7] md:opacity-[0.65]';
+              const upcomingLabel = option.startDate && option.endDate
+                ? formatUntAnalysisDateRange(option.startDate, option.endDate, i18n.language, ' - ')
+                : t('untAnalysis.attempts.notYetHeld');
 
               return (
                 <div key={option.id}>
                   <label
                     htmlFor={`unt-analysis-${option.id}`}
-                    className={`flex min-h-[96px] w-full items-start justify-between gap-3 rounded-[8px] px-4 py-4 text-left outline-none transition-colors has-[:disabled]:cursor-not-allowed has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#6a37c3] has-[:focus-visible]:ring-inset md:items-center md:gap-6 md:px-8 md:py-6 ${selected ? 'bg-[#f8f5fc]' : 'bg-white'} ${active ? 'cursor-pointer hover:bg-[#f8f5fc]' : ''}`}
+                    className={`flex min-h-[96px] w-full items-start justify-between gap-3 rounded-[8px] px-4 py-4 text-left outline-none transition-colors has-[:disabled]:cursor-not-allowed has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#6a37c3] has-[:focus-visible]:ring-inset md:items-center md:gap-6 md:px-8 md:py-6 ${rowSurfaceClass} ${active ? 'cursor-pointer hover:bg-[#f8f5fc]' : ''}`}
                     data-unt-analysis-option={option.id}
-                    data-unt-analysis-available={active}
+                    data-unt-analysis-available={option.available}
+                    data-unt-analysis-selectable={active}
+                    data-unt-analysis-upcoming={option.upcoming}
+                    data-unt-analysis-analyzed={option.analyzed}
                     data-unt-analysis-selected={selected}
                     data-testid={`unt-analysis-option-${option.id}`}
                   >
@@ -164,24 +211,38 @@ export function UntAnalysisPage({
                       </span>
                     </span>
 
-                    <span className="relative mt-1 flex size-5 shrink-0 items-center justify-center md:mt-0">
-                      <input
-                        id={`unt-analysis-${option.id}`}
-                        type="radio"
-                        name="unt-analysis-attempt"
-                        value={option.id}
-                        checked={currentSelectedAttempt === option.id}
-                        disabled={!option.available}
-                        onChange={() => handleAttemptChange(option.id)}
-                        className="peer sr-only"
-                      />
-                      <span
-                        aria-hidden="true"
-                        data-unt-analysis-selection-indicator
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#6a37c3] peer-focus-visible:ring-offset-2 ${selected ? 'bg-[#6a37c3] text-white' : 'border border-[#c5b1e7]'}`}
-                      >
-                        {selected && <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} aria-hidden="true" />}
+                    <span className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="relative mt-1 flex size-5 shrink-0 items-center justify-center md:mt-0">
+                        <input
+                          id={`unt-analysis-${option.id}`}
+                          type="radio"
+                          name="unt-analysis-attempt"
+                          value={option.id}
+                          checked={selected}
+                          disabled={!active}
+                          onChange={() => handleAttemptChange(option.id)}
+                          className="peer sr-only"
+                        />
+                        <span
+                          aria-hidden="true"
+                          data-unt-analysis-selection-indicator
+                          className={`flex size-5 shrink-0 items-center justify-center rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#6a37c3] peer-focus-visible:ring-offset-2 ${selected ? 'bg-[#6a37c3] text-white' : 'border border-[#c5b1e7]'}`}
+                        >
+                          {selected && <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} aria-hidden="true" />}
+                        </span>
                       </span>
+                      {option.analyzed ? (
+                        <span
+                          className="hidden items-center justify-center rounded-full bg-[#ded2f1] px-2 py-1 text-[12px] font-medium leading-[12px] text-[#865bcf] md:flex"
+                          data-unt-analysis-analyzed-badge
+                        >
+                          {t('untAnalysis.attempts.analyzed')}
+                        </span>
+                      ) : option.upcoming && (
+                        <span className="hidden items-center justify-center rounded-full bg-[#eae9ec] px-2 py-1 text-[12px] font-medium leading-[12px] text-[#6e6779] md:flex">
+                          {upcomingLabel}
+                        </span>
+                      )}
                     </span>
                   </label>
                   {index < options.length - 1 && <div className="h-px w-full bg-[#f6f5f7]" aria-hidden="true" />}

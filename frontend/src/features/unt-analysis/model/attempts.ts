@@ -5,6 +5,8 @@ export interface UntAnalysisAttemptAvailability {
   start_date: string | null;
   end_date: string | null;
   available: boolean;
+  upcoming?: boolean;
+  analyzed?: boolean;
 }
 
 export interface UntAnalysisAttemptOption {
@@ -14,6 +16,8 @@ export interface UntAnalysisAttemptOption {
   startDate: string | null;
   endDate: string | null;
   available: boolean;
+  upcoming: boolean;
+  analyzed: boolean;
 }
 
 const ATTEMPT_DEFINITIONS: ReadonlyArray<
@@ -54,6 +58,8 @@ export function decorateUntAnalysisAttemptOptions(
       startDate: serverOption?.start_date ?? null,
       endDate: serverOption?.end_date ?? null,
       available: serverOption?.available ?? false,
+      upcoming: serverOption?.upcoming ?? false,
+      analyzed: serverOption?.analyzed ?? false,
     };
   });
 }

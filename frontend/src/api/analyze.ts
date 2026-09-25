@@ -8,10 +8,21 @@ export interface UntAnalysisAttemptsResponse {
   attempts: UntAnalysisAttemptAvailability[];
 }
 
-export async function createAnalyzeTask(file: File, locale: string = 'kk'): Promise<AnalyzeTask> {
+export interface UntAnalysisSubmissionContext {
+  attemptId?: string;
+  attemptDate?: string;
+}
+
+export async function createAnalyzeTask(
+  file: File,
+  locale: string = 'kk',
+  untAttempt?: UntAnalysisSubmissionContext,
+): Promise<AnalyzeTask> {
   const form = new FormData();
   form.append('file', file);
   form.append('locale', normalizeTopicLocale(locale));
+  if (untAttempt?.attemptId) form.append('unt_attempt_id', untAttempt.attemptId);
+  if (untAttempt?.attemptDate) form.append('unt_attempt_date', untAttempt.attemptDate);
 
   const { data } = await apiClient.post<AnalyzeTask>('/api/analyze', form);
   return data;

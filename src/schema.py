@@ -182,6 +182,20 @@ async def initialize_schema(engine: AsyncEngine) -> None:
         if connection.dialect.name == "postgresql":
             await connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             await connection.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+            await connection.execute(
+                text(
+                    "ALTER TABLE IF EXISTS analyze_results "
+                    "ADD COLUMN IF NOT EXISTS unt_attempt_id VARCHAR(16), "
+                    "ADD COLUMN IF NOT EXISTS unt_attempt_date DATE",
+                ),
+            )
         await connection.run_sync(Base.metadata.create_all)
         if connection.dialect.name == "postgresql":
+            await connection.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_analyze_results_user_unt_attempt "
+                    "ON analyze_results (user_id, unt_attempt_id) "
+                    "WHERE unt_attempt_id IS NOT NULL",
+                ),
+            )
             await _verify_postgres_contract(connection)

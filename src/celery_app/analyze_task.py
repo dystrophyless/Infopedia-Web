@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import date
 
 from asgiref.sync import async_to_sync
 
@@ -58,6 +59,8 @@ async def run_analyze_task(
     user_id: int,
     file_content_b64: str,
     locale: str = "kk",
+    unt_attempt_id: str | None = None,
+    unt_attempt_date: str | None = None,
 ) -> dict:
     try:
         file_content = decode_file_content(file_content_b64)
@@ -74,6 +77,12 @@ async def run_analyze_task(
                 file_content=file_content,
                 emit_progress=emit_progress,
                 locale=normalize_analyze_locale(locale),
+                unt_attempt_id=unt_attempt_id,
+                unt_attempt_date=(
+                    date.fromisoformat(unt_attempt_date)
+                    if unt_attempt_date is not None
+                    else None
+                ),
             )
 
         logger.info(
@@ -133,6 +142,8 @@ def process_document(
     user_id: int,
     file_content_b64: str,
     locale: str = "kk",
+    unt_attempt_id: str | None = None,
+    unt_attempt_date: str | None = None,
 ) -> dict:
     logger.info("Celery принял задачу task_id=%s", self.request.id)
     return async_to_sync(run_analyze_task)(
@@ -140,4 +151,6 @@ def process_document(
         user_id=user_id,
         file_content_b64=file_content_b64,
         locale=locale,
+        unt_attempt_id=unt_attempt_id,
+        unt_attempt_date=unt_attempt_date,
     )

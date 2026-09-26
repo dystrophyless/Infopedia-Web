@@ -139,9 +139,16 @@ export const AuthenticatedMobilePager: Story = {
     await userEvent.click(canvas.getAllByRole('button', { name: /Далее/i })[0]);
     await waitFor(() => expect(resolveA2Related).not.toBeNull());
     await expect(canvas.queryByRole('link', { name: 'A1 связанный 1' })).not.toBeInTheDocument();
+    const relatedPanel = canvasElement.querySelector('[data-term-detail-related-panel]');
+    await expect(relatedPanel).toBeInTheDocument();
+    await expect(relatedPanel).toHaveAttribute('aria-busy', 'true');
+    await expect(relatedPanel?.querySelectorAll('[data-term-detail-related-skeleton-row]')).toHaveLength(3);
+
     resolveA2Related?.();
     await expect(canvas.findByRole('link', { name: 'A2 связанный 1' })).resolves.toBeVisible();
     await expect(canvas.getAllByRole('link', { name: /A2 связанный/ })).toHaveLength(3);
+    await expect(relatedPanel).not.toHaveAttribute('aria-busy', 'true');
+    await expect(relatedPanel?.querySelectorAll('[data-term-detail-related-skeleton-row]')).toHaveLength(0);
   },
 };
 
@@ -152,6 +159,28 @@ export const AuthenticatedDesktopThreeServerTerms: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.findByRole('link', { name: 'A1 связанный 1' })).resolves.toBeVisible();
     await expect(canvas.getAllByRole('link', { name: /A1 связанный/ })).toHaveLength(3);
+  },
+};
+
+export const AuthenticatedDesktopRelatedTermsStayVisibleWhileLoading: Story = {
+  globals: { viewport: { value: 'desktop1440', isRotated: false } },
+  render: () => <TermDetailHarness authenticated />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.findByRole('link', { name: 'A1 связанный 1' })).resolves.toBeVisible();
+
+    await userEvent.click(canvas.getByRole('button', { name: /Следующ|Далее/i }));
+    await waitFor(() => expect(resolveA2Related).not.toBeNull());
+
+    const relatedPanel = canvasElement.querySelector('[data-term-detail-desktop] [data-term-detail-related-panel]');
+    await expect(relatedPanel).toBeInTheDocument();
+    await expect(relatedPanel).toHaveAttribute('aria-busy', 'true');
+    await expect(relatedPanel?.querySelectorAll('[data-term-detail-related-skeleton-row]')).toHaveLength(3);
+
+    resolveA2Related?.();
+    await expect(canvas.findByRole('link', { name: 'A2 связанный 1' })).resolves.toBeVisible();
+    await expect(relatedPanel).not.toHaveAttribute('aria-busy', 'true');
+    await expect(relatedPanel?.querySelectorAll('[data-term-detail-related-skeleton-row]')).toHaveLength(0);
   },
 };
 

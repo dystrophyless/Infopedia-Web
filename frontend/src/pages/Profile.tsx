@@ -67,6 +67,7 @@ import {
   type MobilePasswordAction,
   type MobilePasswordState,
 } from '../features/users/model/passwordChange';
+import { DesktopBillingPage } from './DesktopBillingPage';
 import { useMobileBottomNavOverride } from '../features/navigation';
 
 const learningStats = [
@@ -1510,7 +1511,9 @@ function DesktopSettingsPanel({
   }
 
   if (view === 'subscription') {
-    return <SettingsDetail title={t('profile.mobileSettingsSubscriptionTitle')} body={t('profile.subscriptionBody')} onBack={() => setView('home')}><p className="rounded-[8px] bg-bg px-4 py-3 text-sm leading-none text-text-body">{t('profile.mobileSubscriptionUnavailable')}</p></SettingsDetail>;
+    return (
+      <DesktopBillingPage onBack={() => setView('home')} />
+    );
   }
 
   if (view === 'about') {

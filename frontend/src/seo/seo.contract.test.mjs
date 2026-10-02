@@ -143,6 +143,7 @@ assert.match(wildcardRoute, /<Suspense fallback=\{<RouteLoading \/>\}>[\s\S]*<No
 
 assert.deepEqual([...appRoutes].filter((route) => knownRoutes.includes(route)).sort(), [...knownRoutes].sort(), 'App route matrix must cover every known route');
 assert.deepEqual([...rewriteSources].sort(), [...nonRootRoutes].sort(), 'Vercel rewrites must cover every non-root SPA route exactly');
+assert.ok(rewrites.every((entry) => entry.destination === '/spa.html'), 'Non-root routes must use the isolated private shell');
 assert.deepEqual([...headerSources].sort(), [...nonRootRoutes].sort(), 'Vercel headers must cover every non-root SPA route exactly');
 assert.equal(rewrites.some((entry) => /\*|\(\.\*\)|:\w+\*/.test(entry.source)), false, 'Vercel must not retain a catch-all rewrite');
 assert.equal(headerSources.includes('/'), false, 'Root must not receive a noindex header rule');

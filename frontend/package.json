@@ -16,6 +16,7 @@
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:seo": "vitest run --config vitest.unit.config.ts src/seo/seoPolicy.test.ts src/features/terms/model/termRouteAccess.test.ts && node scripts/seo-build.test.mjs && node src/seo/seo.contract.test.mjs",
     "test:seo:dist": "node scripts/seo-dist.contract.mjs",
+    "test:seo:browser": "node scripts/seo-browser.test.mjs",
     "test:design-system": "node src/ui/design-system.contract.test.mjs",
     "test:ui": "npm run test:design-system && npm run test-storybook",
     "test-storybook": "vitest run --project=storybook"

@@ -41,7 +41,7 @@ assert.match(componentSource, /disabled \? '[^']*cursor-not-allowed[^']*' : 'hov
 for (const label of ['Избранное', 'Слабые темы', 'Купить подписку', 'Настройки', 'Справка', 'Выйти']) {
   assert.match(componentSource, new RegExp(label), `Disclosure should include ${label}`);
 }
-for (const destination of ['/favorites', '/profile?tab=weakTopics', '/subscription', '/profile?tab=settings']) {
+for (const destination of ['/favorites', '/analyze?view=latest', '/subscription', '/profile?tab=settings']) {
   assert.match(componentSource, new RegExp(destination.replace(/[?]/g, '\\?')), `Disclosure should route to ${destination}`);
 }
 assert.match(

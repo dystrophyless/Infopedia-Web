@@ -168,24 +168,36 @@ export const Desktop: Story = {
   render: () => <FavoritesStory language="ru" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const alert = await canvas.findByRole('region', { name: 'В избранном пока ничего нет' });
-    const emptyStateWrapper = alert.closest<HTMLElement>('[data-between-blocks]');
-    expect(emptyStateWrapper).not.toBeNull();
-    if (emptyStateWrapper) {
-      await waitFor(() => {
-        const wrapperStyle = getComputedStyle(emptyStateWrapper);
-        expect(wrapperStyle.position).toBe('static');
-        expect(wrapperStyle.top).toBe('auto');
-        expect(wrapperStyle.left).toBe('auto');
-        expect(wrapperStyle.right).toBe('auto');
-        expect(wrapperStyle.display).toBe('flex');
-        expect(wrapperStyle.flexGrow).toBe('1');
-        expect(wrapperStyle.alignItems).toBe('center');
-        expect(wrapperStyle.justifyContent).toBe('center');
-        expect(wrapperStyle.paddingLeft).toBe('24px');
-        expect(wrapperStyle.paddingRight).toBe('24px');
-        expect(wrapperStyle.transform).toBe('none');
+    const card = await canvas.findByRole('region', { name: 'Здесь пока ничего нет' });
+    await waitFor(() => {
+      const rect = card.getBoundingClientRect();
+      expect(rect.width).toBe(684);
+      expect(rect.y).toBe(88);
+      expect(getComputedStyle(card)).toMatchObject({
+        backgroundColor: 'rgb(255, 255, 255)',
+        borderRadius: '16px',
+        padding: '24px 24px 32px',
+        gap: '24px',
       });
+    });
+    const heading = canvas.getByRole('heading', { name: 'Избранное', level: 1 });
+    await expect(heading).toHaveStyle({ fontSize: '24px', lineHeight: '24px' });
+    const iconTile = card.querySelector<HTMLElement>('[data-favorites-desktop-empty-icon]');
+    expect(iconTile).not.toBeNull();
+    if (iconTile) {
+      expect(iconTile.getBoundingClientRect().width).toBe(48);
+      expect(iconTile.getBoundingClientRect().height).toBe(48);
+      await expect(iconTile).toHaveStyle({ backgroundColor: 'rgb(239, 234, 248)', borderRadius: '8px', padding: '16px' });
+      const iconGlyph = iconTile.querySelector<SVGSVGElement>('svg');
+      expect(iconGlyph).not.toBeNull();
+      if (iconGlyph) {
+        expect(iconGlyph.getBoundingClientRect().width).toBe(24);
+        expect(iconGlyph.getBoundingClientRect().height).toBe(24);
+      }
     }
+    await expect(canvas.getByText('Сохраняйте понравившиеся термины, чтобы быстро возвращаться к ним.')).toHaveStyle({
+      fontSize: '16px',
+      color: 'rgb(110, 103, 121)',
+    });
   },
 };

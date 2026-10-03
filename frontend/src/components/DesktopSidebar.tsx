@@ -177,7 +177,7 @@ export function DesktopSidebar({
                 <ProfileMenuIcon icon={AllBookmarkIcon} />
                 <span>Избранное</span>
               </Link>
-              <Link to="/profile?tab=weakTopics" onClick={closeProfileMenu} className={profileActionClass()}>
+              <Link to="/analyze?view=latest" onClick={closeProfileMenu} className={profileActionClass()}>
                 <ProfileMenuIcon icon={Target03Icon} />
                 <span>Слабые темы</span>
               </Link>

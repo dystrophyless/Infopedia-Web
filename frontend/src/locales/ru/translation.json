@@ -351,7 +351,53 @@
     "desktopBookMeta": "{{publisher}}, {{grade}}-класс",
     "desktopPageMeta": "Страница {{page}}",
     "desktopRelatedTerms": "Связанные термины",
-    "back": "Назад"
+    "back": "Назад",
+    "showFullDefinition": "Показать полностью",
+    "collapseDefinition": "Свернуть"
+  },
+  "untAnalysis": {
+    "title": "Выберите попытку ЕНТ",
+    "description": "Загрузи PDF со статистикой своей попытки — покажем, на каких темах ты теряешь баллы больше всего, и дадим план, что подтянуть перед следующим ЕНТ.",
+    "attemptSelectionLabel": "Попытка ЕНТ",
+    "continue": "Далее",
+    "loadError": "Не удалось загрузить доступные попытки. Попробуйте ещё раз.",
+    "attempts": {
+      "notYetHeld": "Ещё не состоялся",
+      "analyzed": "Проанализировано",
+      "january": {
+        "title": "Январский",
+        "description": "Первая платная попытка"
+      },
+      "march": {
+        "title": "Мартовский",
+        "description": "Вторая платная попытка"
+      },
+      "grant-1": {
+        "title": "Грантовский №1",
+        "description": "Первая попытка для гранта"
+      },
+      "grant-2": {
+        "title": "Грантовский №2",
+        "description": "Вторая попытка для гранта"
+      }
+    },
+    "date": {
+    "title": "Укажите дату сдачи",
+    "description": "Выберите день экзамена. Даты вне периода этой попытки недоступны.",
+    "attemptSuffix": "ЕНТ",
+      "changeAttempt": "Изменить",
+      "selectDate": "Выберите дату",
+      "selectDateHint": "Нажмите на день в календаре.",
+      "selectedDate": "Выбранная дата",
+      "whyTitle": "Зачем это нужно",
+      "whyBody": "Дата сдачи помогает находить закономерности между попытками ЕНТ и делать сервис точнее для всех пользователей.",
+      "back": "Назад",
+    "continue": "Далее",
+    "range": "—",
+    "previousMonth": "Предыдущий месяц",
+    "nextMonth": "Следующий месяц",
+    "weekdays": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    }
   },
   "analyze": {
     "eyebrow": "ЕНТ по информатике",
@@ -632,6 +678,28 @@
     "desktopSettingsAboutSection": "О приложении",
     "desktopSettingsServiceRules": "Правила сервиса",
     "desktopSettingsPrivacyPolicy": "Политика конфиденциальности",
+    "desktopBillingBack": "Назад",
+    "desktopBillingTitle": "Подписка",
+    "desktopBillingCurrentPlan": "Текущий план",
+    "desktopBillingFree": "Бесплатный план",
+    "desktopBillingPlanDescription": "Разблокируйте все функции с помощью подписки",
+    "desktopBillingUpgrade": "Улучшить план",
+    "desktopBillingUsageTitle": "Использование",
+    "desktopBillingSampleNotice": "Демо-значения — не данные вашего аккаунта",
+    "desktopBillingTests": "Тесты",
+    "desktopBillingAnalyze": "Анализ ЕНТ",
+    "desktopBillingAlgosha": "Algosha AI запросы",
+    "desktopBillingMonthlyUnit": "в месяц",
+    "desktopBillingDailyUnit": "в день",
+    "desktopBillingUsageCount": "{{used}} из {{limit}} {{unit}}",
+    "desktopBillingLimitsNote": "Лимиты обновляются каждый месяц. Обновитесь до Plus для снятия ограничений.",
+    "desktopBillingHistoryTitle": "История платежей",
+    "desktopBillingHistoryDate": "Дата",
+    "desktopBillingHistoryAmount": "Сумма",
+    "desktopBillingHistoryStatus": "Статус",
+    "desktopBillingHistoryEmptyTitle": "История платежей недоступна",
+    "desktopBillingHistoryEmptyDescriptionFirst": "Данные о платежах сейчас недоступны.",
+    "desktopBillingHistoryEmptyDescriptionSecond": "Показать записи вашего аккаунта пока невозможно.",
     "mobileSettingsListLabel": "Разделы настроек",
     "mobileSettingsBackAriaLabel": "Назад в профиль",
     "mobileSettingsAccountTitle": "Аккаунт",
@@ -827,6 +895,8 @@
     "loading": "Загрузка избранного",
     "emptyTitle": "В избранном пока ничего нет",
     "emptyBody": "Сохраняйте термины во время просмотра, чтобы найти их здесь.",
+    "desktopEmptyTitle": "Здесь пока ничего нет",
+    "desktopEmptyBody": "Сохраняйте понравившиеся термины, чтобы быстро возвращаться к ним.",
     "searchCta": "Искать термины",
     "loadError": "Не удалось загрузить избранное.",
     "retry": "Повторить",

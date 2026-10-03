@@ -60,14 +60,14 @@ assert.match(mobilePinnedAppBar, /IntersectionObserver/, 'Pinned app-bar pattern
 assert.equal(80 + 24 + 32, 136, 'Favorites first content child must use the canonical 80px offset, 24px row, and 32px gap');
 assert.match(mobilePageFrame, /\{legacyAppBar\}[\s\S]*<main/, 'MobilePageFrame must place legacy app-bar nodes before the main content during migration');
 assert.doesNotMatch(page, /MobileAppBar|pt-\[80px\]|safeArea=|min-h-\[calc\(100vh-80px\)\]|(?:min-)?h-14|56px|168px/, 'Favorites must delegate canonical compact header geometry and reject legacy 56px/168px assumptions');
-for (const key of ['title', 'subtitle', 'loading', 'emptyTitle', 'emptyBody', 'searchCta', 'loadError', 'retry', 'loadMore', 'listLabel', 'count', 'addAria', 'removeAria', 'saveTermAria', 'removeTermAria', 'pending', 'actionError', 'updateFailed']) {
+for (const key of ['title', 'subtitle', 'loading', 'emptyTitle', 'emptyBody', 'desktopEmptyTitle', 'desktopEmptyBody', 'searchCta', 'loadError', 'retry', 'loadMore', 'listLabel', 'count', 'addAria', 'removeAria', 'saveTermAria', 'removeTermAria', 'pending', 'actionError', 'updateFailed']) {
   assert.equal(typeof ru.favorites?.[key], 'string', `RU must define favorites.${key}`);
   assert.equal(typeof kk.favorites?.[key], 'string', `KK must define favorites.${key}`);
 }
 assert.match(page, /<EmptyState[\s\S]*variant="outcome"[\s\S]*data-mobile-outcome-paint[\s\S]*AllBookmarkIcon[\s\S]*className="size-full"/, 'Favorites must pass the bookmark glyph through the shared outcome anatomy');
 assert.match(page, /partProps=\{\{[\s\S]*shrink-0 !bg-\[#ded2f1\] !text-\[#6a37c3\][\s\S]*text-\[#161519\][\s\S]*!text-\[#6e6779\]/, 'Favorites must retain its exact paint colors through shared part hooks with precedence over semantic defaults');
 assert.match(page, /<BetweenBlocks[\s\S]*data-mobile-outcome-slot[\s\S]*className="min-h-0 flex-1 px-6 md:flex md:items-center md:justify-center md:px-6"[\s\S]*outcomeClassName="flex justify-center"/, 'Favorites must delegate intrinsic centering to BetweenBlocks and preserve desktop centering');
-assert.match(page, /contentClassName=\{showEmptyState[\s\S]*max-md:pt-0[\s\S]*flex flex-col bg-\[#efebf6\]/, 'Favorites empty state must let its outcome slot span from the actual app-bar rail while preserving the populated branch frame gap');
+assert.match(page, /contentClassName=\{showEmptyState[\s\S]*max-md:pt-0[\s\S]*flex flex-col[^']*bg-\[#efebf6\]/, 'Favorites empty state must let its outcome slot span from the actual app-bar rail while preserving the populated branch frame gap');
 const favoritesEmptySource = page.slice(page.indexOf('{showEmptyState && ('), page.indexOf('{list.length > 0'));
 assert.doesNotMatch(favoritesEmptySource, /fixed|top-\[366px\]|50vh|translate|--shell-mobile-bottom-nav-height|100dvh\s*-\s*88px/, 'Favorites empty state must reject viewport-fixed coordinates, transforms, and duplicate navigation math');
 assert.match(page, /size="sm"[\s\S]*fullWidth[\s\S]*onClick=\{\(\) => navigate\('\/search'\)\}[\s\S]*h-10 min-h-10[\s\S]*bg-\[#6a37c3\][\s\S]*text-\[16px\][\s\S]*leading-\[16px\][\s\S]*→/, 'Favorites empty CTA must preserve geometry, navigation, and the literal arrow');
@@ -75,7 +75,7 @@ assert.doesNotMatch(favoritesEmptySource, /Search01Icon|ArrowRight01Icon/, 'Favo
 assert.match(page, /size="sm"[\s\S]*fullWidth[\s\S]*!bg-\[#6a37c3\][\s\S]*!text-white[\s\S]*!opacity-100[\s\S]*hover:!bg-\[#6a37c3\][\s\S]*hover:!opacity-100[\s\S]*focus:!bg-\[#6a37c3\][\s\S]*focus:!opacity-100[\s\S]*focus-visible:!bg-\[#6a37c3\][\s\S]*focus-visible:!opacity-100[\s\S]*active:!bg-\[#6a37c3\][\s\S]*active:!opacity-100/, 'Favorites empty CTA must keep the Search purple and full opacity in every interactive state');
 assert.match(page, /favorites\.emptyTitle[\s\S]*favorites\.emptyBody/, 'Favorites must expose localized empty state');
 assert.doesNotMatch(page, /max-md:!min-h-\[calc\(100dvh-var\(--shell-mobile-bottom-nav-height\)\)\]/, 'Favorites must not double-subtract the authenticated mobile bottom navigation from the shared frame height');
-assert.match(page, /contentClassName=\{showEmptyState[\s\S]*flex flex-col bg-\[#efebf6\]/, 'Favorites must make every frame branch a flex column on the lavender canvas');
+assert.match(page, /contentClassName=\{showEmptyState[\s\S]*flex flex-col[^']*bg-\[#efebf6\]/, 'Favorites must make every frame branch a flex column on the lavender canvas');
 assert.match(page, /favorites\.loadError[\s\S]*common\.retry[\s\S]*favorites\.loadMore/, 'Favorites must expose localized load/retry/more states');
 assert.match(page, /serverConsumed/, 'Favorites load-more must use the server-consumed cursor');
 assert.doesNotMatch(page, /skip \+ limit/, 'Favorites load-more must not derive its cursor from the mutable visible-page offset');
@@ -129,7 +129,13 @@ assert.match(story, /useAuthStore\.setState\(\{ isAuthenticated: true[\s\S]*user
 assert.match(story, /useFavoritesStore\.setState\(\{[\s\S]*ownerUserId: storyUser\.id[\s\S]*list: \[\][\s\S]*error: null[\s\S]*loadFavorites: async \(\) => undefined/, 'Favorites stories must seed an empty successful no-network favorites store');
 assert.match(story, /data-between-blocks-boundary[\s\S]*previous[\s\S]*next[\s\S]*paintMidpoint[\s\S]*idealMidpoint[\s\S]*toBeLessThanOrEqual\(2\)/, 'Favorites stories must measure the outcome midpoint from generic surrounding blocks');
 assert.match(story, /actionRect\.bottom\)\.toBeLessThanOrEqual\(next\.getBoundingClientRect\(\)\.top\)/, 'Favorites stories must keep the CTA above the measured following block');
-assert.match(story, /export const Desktop[\s\S]*desktop1440[\s\S]*wrapperStyle\.position\)\.toBe\('static'\)[\s\S]*wrapperStyle\.top\)\.toBe\('auto'\)[\s\S]*wrapperStyle\.display\)\.toBe\('flex'\)[\s\S]*wrapperStyle\.flexGrow\)\.toBe\('1'\)[\s\S]*wrapperStyle\.alignItems\)\.toBe\('center'\)[\s\S]*wrapperStyle\.justifyContent\)\.toBe\('center'\)[\s\S]*wrapperStyle\.paddingLeft\)\.toBe\('24px'\)[\s\S]*wrapperStyle\.paddingRight\)\.toBe\('24px'\)/, 'Favorites desktop story must assert static centered flex resets');
+assert.match(page, /data-favorites-desktop-empty[\s\S]*className=\"hidden md:flex[^\"]*w-full[^\"]*max-w-\[684px\][^\"]*rounded-\[16px\][^\"]*bg-white[^\"]*\"/, 'Favorites desktop empty state must expose an adaptive card capped at the 684px Figma width');
+assert.match(page, /data-favorites-desktop-empty-icon[\s\S]*size-\[48px\][\s\S]*rounded-\[8px\][\s\S]*bg-\[#efeaf8\][\s\S]*p-4[\s\S]*AllBookmarkIcon[\s\S]*className=\"size-\[24px\] shrink-0\"/, 'Favorites desktop empty state must preserve the 48px bookmark tile and a non-shrinking 24px glyph');
+assert.match(page, /favorites\.desktopEmptyTitle[\s\S]*favorites\.desktopEmptyBody/, 'Favorites desktop empty state must expose dedicated localized copy');
+assert.match(story, /export const Desktop[\s\S]*desktop1440[\s\S]*data-favorites-desktop-empty/, 'Favorites desktop story must target the Figma empty card');
+assert.match(story, /rect\.width\)\.toBe\(684\)/, 'Favorites desktop story must assert the 684px card width');
+assert.match(story, /rect\.y\)\.toBe\(88\)/, 'Favorites desktop story must assert the 88px card offset');
+assert.match(story, /fontSize: '24px',[\s\S]*lineHeight: '24px'/, 'Favorites desktop story must assert the 24px page heading');
 assert.match(story, /getBoundingClientRect\(\)\.width\)\.toBe\(32\)/, 'Favorites stories must assert a 32px bookmark glyph');
 assert.match(story, /button\.querySelector\('svg'\)\)\.toBeNull\(\)/, 'Favorites stories must assert the CTA has no arrow SVG');
 assert.match(story, /favorites-story-location[\s\S]*\/search/, 'Favorites stories must assert CTA navigation to search');

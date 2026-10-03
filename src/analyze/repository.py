@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import date
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -108,8 +109,17 @@ async def create_analyze_result(
     *,
     user_id: int,
     parsed_data: list[dict],
+    unt_attempt_id: str | None = None,
+    unt_attempt_date: date | None = None,
 ) -> AnalyzeResult:
-    result = AnalyzeResult(user_id=user_id)
+    if (unt_attempt_id is None) != (unt_attempt_date is None):
+        raise ValueError("UNT attempt id and date must be provided together")
+
+    result = AnalyzeResult(
+        user_id=user_id,
+        unt_attempt_id=unt_attempt_id,
+        unt_attempt_date=unt_attempt_date,
+    )
 
     for row_index, row in enumerate(parsed_data):
         value = str(row["topic"])
@@ -165,6 +175,23 @@ async def create_analyze_result(
     session.add(result)
     await session.flush()
     return result
+
+
+async def get_analyzed_unt_attempt_ids(
+    session: AsyncSession,
+    *,
+    user_id: int,
+) -> set[str]:
+    query = (
+        select(AnalyzeResult.unt_attempt_id)
+        .where(
+            AnalyzeResult.user_id == user_id,
+            AnalyzeResult.unt_attempt_id.is_not(None),
+        )
+        .distinct()
+    )
+    result = await session.execute(query)
+    return {str(attempt_id) for attempt_id in result.scalars().all()}
 
 
 def _analyze_result_options():

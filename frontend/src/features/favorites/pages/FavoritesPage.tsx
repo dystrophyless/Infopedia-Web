@@ -72,16 +72,16 @@ export function FavoritesContent({
       className={embedded
         ? 'flex h-[416px] min-h-[416px] max-h-[416px] w-full flex-col overflow-hidden'
         : showEmptyState
-          ? 'flex w-full flex-1 flex-col md:mx-auto md:max-w-[760px] md:px-8 md:pb-16 md:pt-12'
+          ? 'flex w-full flex-1 flex-col md:mx-0 md:max-w-none md:px-16 md:pb-16 md:pt-8'
           : 'mx-auto w-full max-w-[760px] px-4 pb-8 md:px-8 md:pb-16 md:pt-12'}
     >
-      {!embedded && <header className="mb-6 hidden md:block">
-        <h1 className="text-[38px] font-medium leading-none text-text">
+      {!embedded && <header className={showEmptyState ? 'mb-8 hidden md:block' : 'mb-6 hidden md:block'}>
+        <h1 className={showEmptyState ? 'text-[24px] font-medium leading-[24px] text-black' : 'text-[38px] font-medium leading-none text-text'}>
           {t('favorites.title', { defaultValue: 'Favorites' })}
         </h1>
-        <p className="mt-3 text-[16px] text-muted">
+        {!showEmptyState && <p className="mt-3 text-[16px] text-muted">
           {t('favorites.subtitle', { defaultValue: 'Terms you saved for later' })}
-        </p>
+        </p>}
       </header>}
 
       {isLoading && list.length === 0 && (
@@ -120,37 +120,67 @@ export function FavoritesContent({
       )}
 
       {showEmptyState && (
-        <BetweenBlocks
-          data-mobile-outcome-slot
-          className="min-h-0 flex-1 px-6 md:flex md:items-center md:justify-center md:px-6"
-          outcomeClassName="flex justify-center"
-        >
-          <EmptyState
-            variant="outcome"
-            data-mobile-outcome-paint
-            title={t('favorites.emptyTitle', { defaultValue: 'No favorites yet' })}
-            description={t('favorites.emptyBody', { defaultValue: 'Save terms while browsing to find them here.' })}
-            icon={<HugeiconsIcon icon={AllBookmarkIcon} className="size-full" aria-hidden="true" />}
-            partProps={{
-              icon: { className: 'shrink-0 !bg-[#ded2f1] !text-[#6a37c3]' },
-              title: { className: 'text-[#161519]' },
-              description: { className: '!text-[#6e6779]' },
-            }}
-            action={(
-              <Button
-                data-mobile-outcome-action
-                type="button"
-                size="sm"
-                fullWidth
-                onClick={() => navigate('/search')}
-                className="h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] px-4 !text-white text-[16px] font-medium leading-[16px] !opacity-100 hover:!bg-[#6a37c3] hover:!opacity-100 focus:!bg-[#6a37c3] focus:!opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:!opacity-100 active:!bg-[#6a37c3] active:!opacity-100"
+        <>
+          <section
+            aria-labelledby="favorites-desktop-empty-title"
+            data-favorites-desktop-empty
+            data-figma-node="1531:2343"
+            className="hidden md:flex w-full max-w-[684px] shrink-0 flex-col gap-6 rounded-[16px] bg-white pb-8 pt-6 px-6"
+          >
+            <div
+              data-favorites-desktop-empty-icon
+              data-figma-node="1531:2356"
+              className="flex size-[48px] shrink-0 items-center justify-center rounded-[8px] bg-[#efeaf8] p-4 text-[#6a37c3]"
+            >
+              <HugeiconsIcon icon={AllBookmarkIcon} size={24} strokeWidth={1.5} className="size-[24px] shrink-0" aria-hidden="true" />
+            </div>
+            <div data-figma-node="1531:2352" className="flex w-full flex-col items-start gap-4">
+              <h2
+                id="favorites-desktop-empty-title"
+                data-figma-node="1531:2353"
+                className="font-medium text-[20px] leading-[24px] text-[#161519]"
               >
-                {t('favorites.searchCta', { defaultValue: 'Искать термины' })}{' '}
-                <span aria-hidden="true">→</span>
-              </Button>
-            )}
-          />
-        </BetweenBlocks>
+                {t('favorites.desktopEmptyTitle', { defaultValue: 'Здесь пока ничего нет' })}
+              </h2>
+              <p data-figma-node="1531:2354" className="font-normal text-[16px] leading-[20px] text-[#6e6779]">
+                {t('favorites.desktopEmptyBody', { defaultValue: 'Сохраняйте понравившиеся термины, чтобы быстро возвращаться к ним.' })}
+              </p>
+            </div>
+          </section>
+          <div className="md:hidden">
+            <BetweenBlocks
+              data-mobile-outcome-slot
+              className="min-h-0 flex-1 px-6 md:flex md:items-center md:justify-center md:px-6"
+              outcomeClassName="flex justify-center"
+            >
+              <EmptyState
+                variant="outcome"
+                data-mobile-outcome-paint
+                title={t('favorites.emptyTitle', { defaultValue: 'No favorites yet' })}
+                description={t('favorites.emptyBody', { defaultValue: 'Save terms while browsing to find them here.' })}
+                icon={<HugeiconsIcon icon={AllBookmarkIcon} className="size-full" aria-hidden="true" />}
+                partProps={{
+                  icon: { className: 'shrink-0 !bg-[#ded2f1] !text-[#6a37c3]' },
+                  title: { className: 'text-[#161519]' },
+                  description: { className: '!text-[#6e6779]' },
+                }}
+                action={(
+                  <Button
+                    data-mobile-outcome-action
+                    type="button"
+                    size="sm"
+                    fullWidth
+                    onClick={() => navigate('/search')}
+                    className="h-10 min-h-10 rounded-[8px] !bg-[#6a37c3] px-4 !text-white text-[16px] font-medium leading-[16px] !opacity-100 hover:!bg-[#6a37c3] hover:!opacity-100 focus:!bg-[#6a37c3] focus:!opacity-100 focus-visible:!bg-[#6a37c3] focus-visible:!opacity-100 active:!bg-[#6a37c3] active:!opacity-100"
+                  >
+                    {t('favorites.searchCta', { defaultValue: 'Искать термины' })}{' '}
+                    <span aria-hidden="true">→</span>
+                  </Button>
+                )}
+              />
+            </BetweenBlocks>
+          </div>
+        </>
       )}
 
       {(list.length > 0 || (error && list.length > 0) || hasMore) && (
@@ -218,7 +248,7 @@ export function FavoritesContent({
       contentLabel={t('favorites.title', { defaultValue: 'Favorites' })}
       contentEndInset={!showEmptyState}
       contentClassName={showEmptyState
-        ? 'flex flex-col bg-[#efebf6] max-md:pt-0'
+        ? 'flex flex-col md:min-h-screen bg-[#efebf6] md:bg-[#efeaf8] max-md:pt-0'
         : 'flex flex-col bg-[#efebf6]'}
     >
       {content}

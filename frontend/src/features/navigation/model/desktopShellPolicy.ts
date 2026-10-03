@@ -27,8 +27,8 @@ function activeItemForPath(pathname: string): DesktopShellItem | null {
   ) {
     return 'search';
   }
-  if (pathname === '/analyze') return 'analyze';
-  if (pathname === '/profile') return 'profile';
+  if (pathname === '/analyze' || pathname.startsWith('/analyze/')) return 'analyze';
+  if (pathname === '/profile' || pathname === '/favorites') return 'profile';
   return null;
 }
 

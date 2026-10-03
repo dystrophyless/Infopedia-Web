@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 from collections.abc import Awaitable, Callable
+from datetime import date
 
 import pdfplumber
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -173,11 +174,15 @@ class AnalyzeService:
         user_id: int,
         parsed_data: list[dict],
         locale: str = "kk",
+        unt_attempt_id: str | None = None,
+        unt_attempt_date: date | None = None,
     ):
         result = await create_analyze_result(
             session,
             user_id=user_id,
             parsed_data=parsed_data,
+            unt_attempt_id=unt_attempt_id,
+            unt_attempt_date=unt_attempt_date,
         )
         result_id = result.id
 
@@ -204,6 +209,8 @@ class AnalyzeService:
         file_content: bytes,
         emit_progress: ProgressEmitter | None = None,
         locale: str = "kk",
+        unt_attempt_id: str | None = None,
+        unt_attempt_date: date | None = None,
     ):
         if emit_progress is not None:
             await emit_progress("extracting")
@@ -220,6 +227,8 @@ class AnalyzeService:
             user_id=user_id,
             parsed_data=parsed_data,
             locale=locale,
+            unt_attempt_id=unt_attempt_id,
+            unt_attempt_date=unt_attempt_date,
         )
 
         if emit_progress is not None:
@@ -285,6 +294,8 @@ async def get_analyze_result(
     file_content: bytes,
     emit_progress: ProgressEmitter | None = None,
     locale: str = "kk",
+    unt_attempt_id: str | None = None,
+    unt_attempt_date: date | None = None,
 ) -> list[dict]:
     llmwhisperer_client = get_llmwhisperer_client()
 
@@ -296,4 +307,6 @@ async def get_analyze_result(
         file_content=file_content,
         emit_progress=emit_progress,
         locale=locale,
+        unt_attempt_id=unt_attempt_id,
+        unt_attempt_date=unt_attempt_date,
     )

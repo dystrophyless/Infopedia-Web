@@ -3,19 +3,16 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const profileSource = readFileSync(path.resolve(import.meta.dirname, 'Profile.tsx'), 'utf8');
-const desktopSource = profileSource.slice(
-  profileSource.indexOf('max-w-[1040px]'),
+const profileShellSource = profileSource.slice(
+  profileSource.indexOf('export function Profile()'),
   profileSource.indexOf('function MobileProfileDashboard'),
 );
 
-assert.doesNotMatch(desktopSource, /grid-cols-\[300px_minmax\(0,1fr\)\]/);
-assert.doesNotMatch(desktopSource, /<aside[\s\S]*FigmaProfileIcon/);
-assert.doesNotMatch(desktopSource, /<nav[\s\S]*profileNavItems/);
-assert.match(desktopSource, /role="tablist"/);
-assert.match(desktopSource, /role="tab"/);
-assert.match(desktopSource, /aria-selected=\{isActive\}/);
-assert.match(desktopSource, /profileNavItems\.map/);
-assert.match(desktopSource, /activeTab === 'favorites'[\s\S]*<FavoritesContent embedded[\s\S]*detailBackTo="\/profile"/);
-assert.match(profileSource, /activeTab === 'settings'[\s\S]*DesktopSettingsPanel/);
+assert.doesNotMatch(profileShellSource, /role="tablist"|role="tab"|aria-selected=\{isActive\}/);
+assert.doesNotMatch(profileSource, /profileNavItems\.map|const profileNavItems/);
+assert.doesNotMatch(profileSource, /<FavoritesContent embedded|<WeakTopicsPanel/);
+assert.match(profileShellSource, /activeTab === 'profile'[\s\S]*<ProfileOverview profile=\{profile\}/);
+assert.match(profileShellSource, /activeTab === 'settings'[\s\S]*<DesktopSettingsPanel/);
+assert.match(profileSource, /requestedTab === 'weakTopics'[\s\S]*navigate\('\/analyze\?view=latest'/);
 
 console.log('Profile desktop workspace contract passed');

@@ -32,6 +32,10 @@ assert.match(view, /data-term-detail-flag[\s\S]*strokeWidth=\{2\}/, 'flag icon m
 assert.match(view, /data-term-detail-definition-nav[\s\S]*strokeWidth=\{1\.5\}/, 'desktop pager icons must use 1.5px stroke');
 assert.match(view, /data-term-detail-source-row[\s\S]*strokeWidth=\{1\.5\}/, 'desktop source icon must use 1.5px stroke');
 assert.match(view, /data-term-detail-test-card[\s\S]*strokeWidth=\{1\.5\}/, 'desktop test arrow must use 1.5px stroke');
+assert.match(view, /data-term-detail-definition-text[^>]*[\s\S]*max-h-\[120px\][\s\S]*overflow-hidden/, 'long desktop definitions must be clamped to five 24px lines');
+assert.match(view, /data-term-detail-definition-fade[^>]*className="[^"]*h-6[^"]*bg-gradient-to-b/, 'collapsed long definitions must use a 24px bottom fade');
+assert.match(view, /data-term-detail-definition-toggle[\s\S]*aria-expanded=\{isExpanded\}[\s\S]*(?:ArrowDown01Icon[\s\S]*ArrowUp01Icon|ArrowUp01Icon[\s\S]*ArrowDown01Icon)/, 'definition toggle must expose expanded state and matching direction icons');
+assert.match(view, /(?:termDetail\.showFullDefinition[\s\S]*termDetail\.collapseDefinition|termDetail\.collapseDefinition[\s\S]*termDetail\.showFullDefinition)/, 'definition toggle copy must be localized for both states');
 assert.match(view, /data-term-detail-related-arrow[^>]*className="(?=[^"]*rounded-\[8px\])(?=[^"]*size-\[34px\])(?=[^"]*p-2)[^"]*"[\s\S]*ArrowRight02Icon/, 'related arrows must have 34px white containers');
 assert.match(view, /data-term-detail-mastery[^>]*className="[^\"]*h-\[120px\]/, 'mastery panel must be fixed at 120px height');
 assert.match(view, /data-term-detail-mastery-meta[^>]*className="[^\"]*mt-4/, 'mastery metadata must use 16px top margin');
@@ -44,5 +48,6 @@ assert.match(view, /data-term-detail-desktop-skeleton-related[^>]*className="[^"
 assert.equal((view.match(/aria-hidden="true"/g) ?? []).length >= 4, true, 'desktop and mobile skeleton layers must be hidden from assistive technology');
 assert.match(story, /name: 'Компьютер'[\s\S]*Офистік компьютер[\s\S]*Дербес компьютер[\s\S]*Жүйелік блок/, 'desktop Storybook fixture must reproduce node 1388:5656 content');
 assert.match(story, /data-term-detail-related-link/g, 'desktop Storybook play coverage must assert the rendered related-term collection');
+assert.match(story, /Показать полностью[\s\S]*Свернуть[\s\S]*data-term-detail-definition-fade/, 'Storybook must cover collapsed and expanded long-definition states');
 
 console.log('Desktop TermDetail Figma contract passed');

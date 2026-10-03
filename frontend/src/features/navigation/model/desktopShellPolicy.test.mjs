@@ -23,6 +23,10 @@ assert.deepEqual(resolveDesktopShell({ pathname: '/profile', search: '?tab=setti
   visible: true,
   activeItem: 'profile',
 });
+assert.deepEqual(resolveDesktopShell({ pathname: '/favorites' }, true, true), {
+  visible: true,
+  activeItem: 'profile',
+});
 assert.deepEqual(resolveDesktopShell({ pathname: '/algosha' }, true, true), {
   visible: true,
   activeItem: null,

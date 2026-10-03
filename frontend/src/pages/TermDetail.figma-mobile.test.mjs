@@ -104,7 +104,7 @@ assert.match(container, /fetchedTerm\?\.public_id === termRef \? fetchedTerm : n
 assert.match(container, /term\?\.public_id !== termRef/, 'Related loading must reject a displayed term from another URL before issuing a request');
 
 for (const translations of [ru, kk]) {
-  for (const key of ['title', 'definition', 'source', 'relatedTerms', 'knownStatValue', 'knownStatLabel', 'testedStatValue', 'testedStatLabel', 'testCta', 'testMeta', 'loading', 'loadFailed', 'saveAria', 'moreAria']) {
+  for (const key of ['title', 'definition', 'source', 'relatedTerms', 'knownStatValue', 'knownStatLabel', 'testedStatValue', 'testedStatLabel', 'testCta', 'testMeta', 'loading', 'loadFailed', 'saveAria', 'moreAria', 'showFullDefinition', 'collapseDefinition']) {
     assert.equal(typeof translations.termDetail[key], 'string', `Locale should define termDetail.${key}`);
   }
 }

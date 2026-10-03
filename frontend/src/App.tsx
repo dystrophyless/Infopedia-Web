@@ -21,6 +21,7 @@ const Tests = lazy(() => import('./pages/Tests').then((module) => ({ default: mo
 const TestQuestionPage = lazy(() => import('./pages/TestQuestionPage').then((module) => ({ default: module.TestQuestionPage })));
 const PracticeByTopicPage = lazy(() => import('./pages/PracticeByTopicPage').then((module) => ({ default: module.PracticeByTopicPage })));
 const Analyze = lazy(() => import('./pages/Analyze').then((module) => ({ default: module.Analyze })));
+const UntAnalysisPage = lazy(() => import('./pages/UntAnalysisPage').then((module) => ({ default: module.UntAnalysisPage })));
 const Profile = lazy(() => import('./pages/Profile').then((module) => ({ default: module.Profile })));
 const Favorites = lazy(() => import('./pages/Favorites').then((module) => ({ default: module.Favorites })));
 const Subscription = lazy(() => import('./pages/Subscription').then((module) => ({ default: module.Subscription })));
@@ -132,6 +133,14 @@ export default function App() {
           element={
             <Protected>
               <Analyze />
+            </Protected>
+          }
+        />
+        <Route
+          path="/analyze/unt"
+          element={
+            <Protected>
+              <UntAnalysisPage />
             </Protected>
           }
         />

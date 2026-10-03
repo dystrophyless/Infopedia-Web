@@ -27,7 +27,7 @@ export function Landing() {
 
   return (
     <div className="w-full">
-      <div className="md:hidden">
+      <div data-nosnippet className="md:hidden">
         <MobileHome />
       </div>
 
@@ -46,7 +46,7 @@ function DesktopGuestLanding({ isAuthenticated = false }: { isAuthenticated?: bo
   return (
     <>
       <DesktopGuestHero isAuthenticated={isAuthenticated} />
-      <DesktopGuestSections isAuthenticated={isAuthenticated} />
+      <div data-nosnippet><DesktopGuestSections isAuthenticated={isAuthenticated} /></div>
     </>
   );
 }
@@ -58,7 +58,7 @@ function DesktopGuestHero({ isAuthenticated = false }: { isAuthenticated?: boole
     <section className="box-border min-h-[656px] overflow-hidden bg-[#efebf6] pb-[168px] pt-[124px] text-center">
       <div data-desktop-content-rail className="mx-auto flex w-full max-w-[1152px] flex-col items-center px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <p className="text-[16px] font-medium uppercase leading-none tracking-[0.02em] text-[#6e6779]">
-          {t('landing.desktopEyebrow', { defaultValue: 'ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ' })}
+          <span data-nosnippet>{t('landing.desktopEyebrow', { defaultValue: 'ЕДИНЫЙ ИСТОЧНИК ДЛЯ ПОДГОТОВКИ' })}</span>
         </p>
         <h1 className="mt-6 text-[72px] font-medium leading-[72px] text-[#161519] max-lg:text-[60px] max-lg:leading-[60px]">
           {t('landing.desktopHeroLine1', { defaultValue: 'Знания всех книг' })}
@@ -76,7 +76,7 @@ function DesktopGuestHero({ isAuthenticated = false }: { isAuthenticated?: boole
               'Мы собрали все 15 книг, по которым приходят вопросы ЕНТ, в одну базу. У каждого ответа — цитата, страница и название книги.',
           })}
         </p>
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div data-nosnippet className="mt-8 flex items-center justify-center gap-4">
           <Link
             to={landingCtaTarget('/search', isAuthenticated)}
             className="flex h-[48px] w-[200px] items-center justify-center rounded-[16px] bg-[#6a37c3] px-4 text-[14px] font-medium leading-[14px] text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6a37c3]"

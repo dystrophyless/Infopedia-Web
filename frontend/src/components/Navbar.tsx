@@ -60,7 +60,7 @@ export function Navbar() {
 
   return (
     <header ref={headerRef} data-desktop-guest-navbar className="sticky top-0 z-40 flex h-[64px] w-full items-start bg-white py-[15px] max-md:hidden">
-      <div data-desktop-content-rail className="mx-auto flex h-[34px] w-full max-w-[1152px] items-center justify-between px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
+      <div data-nosnippet data-desktop-content-rail className="mx-auto flex h-[34px] w-full max-w-[1152px] items-center justify-between px-[24px] min-[1440px]:max-w-[1120px] min-[1440px]:px-0">
         <div className="flex h-[32px] w-[732px] shrink-0 items-center justify-between">
           <Link to="/" className="flex h-[32px] w-[124px] shrink-0 items-center" aria-label="Infopedia">
             <img src={guestHeaderLogoAsset} alt="Infopedia" className="h-[32px] w-[124px]" />

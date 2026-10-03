@@ -33,6 +33,8 @@ jobs:
           SEO_RELEASE: '1'
           VITE_SITE_ORIGIN: https://seo-fixture.example.test
       - run: npm run test:seo:dist -- --profile=release --origin=https://seo-fixture.example.test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:seo:browser
 
   frontend-ui:
     name: Frontend UI

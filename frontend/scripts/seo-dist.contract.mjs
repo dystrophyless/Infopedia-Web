@@ -100,4 +100,9 @@ function collectHtmlFiles(directory, prefix = '') {
 }
 assert.deepEqual(collectHtmlFiles(distDir).sort(), ['index.html', 'spa.html'], 'build must emit exactly the public root and private shell');
 
+assert.match(indexHtml, /type="image\/png" sizes="96x96" href="\/favicon.png"/);
+const favicon = readFileSync(path.join(distDir, 'favicon.png'));
+assert.equal(favicon.readUInt32BE(16), 96);
+assert.equal(favicon.readUInt32BE(20), 96);
+assert.ok(existsSync(path.join(distDir, 'favicon.ico')));
 console.log(`seo dist contract passed (${profile})`);

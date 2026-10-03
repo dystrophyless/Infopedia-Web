@@ -44,6 +44,7 @@ try {
     assert.equal(await page.locator('link[rel="canonical"]').count(), 1);
     assert.equal(await page.locator('h1:visible').count(), 1, 'Responsive landing must be readable without JS');
     assert.ok(await page.locator('a[href="/onboarding"]:visible').count());
+    assert.equal(await page.locator('a[href="/onboarding"]:visible').evaluateAll((links) => links.every((link) => Boolean(link.closest('[data-nosnippet]')))), true, 'Preparation CTAs must be excluded from snippets');
     const broken = await page.locator('img:visible').evaluateAll((images) => images.filter((image) => image.complete && image.naturalWidth === 0).map((image) => image.src));
     assert.deepEqual(broken, [], 'Prerender images must load from built assets');
     if (proofDir) await page.screenshot({ path: path.join(proofDir, `seo-no-js-${viewport.width}.png`) });

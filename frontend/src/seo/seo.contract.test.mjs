@@ -143,6 +143,7 @@ assert.match(wildcardRoute, /<Suspense fallback=\{<RouteLoading \/>\}>[\s\S]*<No
 
 assert.deepEqual([...appRoutes].filter((route) => knownRoutes.includes(route)).sort(), [...knownRoutes].sort(), 'App route matrix must cover every known route');
 assert.deepEqual([...rewriteSources].sort(), [...nonRootRoutes].sort(), 'Vercel rewrites must cover every non-root SPA route exactly');
+assert.ok(rewrites.every((entry) => entry.destination === '/spa.html'), 'Non-root routes must use the isolated private shell');
 assert.deepEqual([...headerSources].sort(), [...nonRootRoutes].sort(), 'Vercel headers must cover every non-root SPA route exactly');
 assert.equal(rewrites.some((entry) => /\*|\(\.\*\)|:\w+\*/.test(entry.source)), false, 'Vercel must not retain a catch-all rewrite');
 assert.equal(headerSources.includes('/'), false, 'Root must not receive a noindex header rule');
@@ -167,8 +168,8 @@ const expectedLocales = {
   ru: {
     seo: {
       defaultTitle: 'Infopedia',
-      homeTitle: 'Infopedia — подготовка к ЕНТ по информатике',
-      homeDescription: 'Термины и определения из 15 учебников по информатике с указанием книги, темы и страницы для подготовки к ЕНТ.',
+      homeTitle: 'Infopedia — информатика ЕНТ: подготовка, термины и тесты',
+      homeDescription: 'Infopedia — подготовка к ЕНТ по информатике: термины и определения из 15 учебников с указанием источников, тесты по темам и анализ результатов ЕНТ.',
     },
     notFound: {
       title: 'Страница не найдена',
@@ -179,8 +180,8 @@ const expectedLocales = {
   kk: {
     seo: {
       defaultTitle: 'Infopedia',
-      homeTitle: 'Infopedia — информатикадан ҰБТ-ға дайындық',
-      homeDescription: 'ҰБТ-ға дайындалуға арналған 15 информатика оқулығындағы терминдер мен анықтамалар, кітап, тақырып және бет деректерімен.',
+      homeTitle: 'Infopedia — информатика ҰБТ: дайындық, терминдер және тесттер',
+      homeDescription: 'Infopedia — информатикадан ҰБТ-ға дайындық: 15 оқулықтағы терминдер мен анықтамалар, дереккөздер, тақырыптық тесттер және ҰБТ нәтижелерін талдау.',
     },
     notFound: {
       title: 'Бет табылмады',
@@ -191,6 +192,9 @@ const expectedLocales = {
 };
 assert.deepEqual(ru.seo, expectedLocales.ru.seo, 'RU SEO copy must remain exact');
 assert.deepEqual(kk.seo, expectedLocales.kk.seo, 'KK SEO copy must remain exact');
+assert.ok(indexHtml.includes(`<title>${ru.seo.homeTitle}</title>`), 'Source title must describe Informatics ENT preparation');
+assert.ok(indexHtml.includes(`content="${ru.seo.homeDescription}"`), 'Source description must match the public Russian description');
+assert.doesNotMatch(indexHtml, /name="keywords"/, 'Do not add an ignored keyword meta tag');
 assert.deepEqual(ru.notFound, expectedLocales.ru.notFound, 'RU NotFound copy must remain exact');
 assert.deepEqual(kk.notFound, expectedLocales.kk.notFound, 'KK NotFound copy must remain exact');
 

@@ -13,7 +13,7 @@ const config = JSON.parse(await readFile(path.join(root, 'vercel.json'), 'utf8')
 const { seo: ru } = JSON.parse(await readFile(path.join(root, 'src/locales/ru/translation.json'), 'utf8'));
 const { seo: kk } = JSON.parse(await readFile(path.join(root, 'src/locales/kk/translation.json'), 'utf8'));
 const matches = (pattern, pathname) => new RegExp(`^${pattern.replace(/:[a-zA-Z]+/g, '[^/]+')}$`).test(pathname);
-const mime = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.svg': 'image/svg+xml', '.xml': 'application/xml', '.txt': 'text/plain' };
+const mime = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.ico': 'image/x-icon', '.svg': 'image/svg+xml', '.xml': 'application/xml', '.txt': 'text/plain' };
 const server = createServer(async (request, response) => {
   try {
     const pathname = new URL(request.url, 'http://localhost').pathname;
@@ -44,6 +44,7 @@ try {
     assert.equal(await page.locator('link[rel="canonical"]').count(), 1);
     assert.equal(await page.locator('h1:visible').count(), 1, 'Responsive landing must be readable without JS');
     assert.ok(await page.locator('a[href="/onboarding"]:visible').count());
+    assert.equal(await page.locator('a[href="/onboarding"]:visible').evaluateAll((links) => links.every((link) => Boolean(link.closest('[data-nosnippet]')))), true, 'Preparation CTAs must be excluded from snippets');
     const broken = await page.locator('img:visible').evaluateAll((images) => images.filter((image) => image.complete && image.naturalWidth === 0).map((image) => image.src));
     assert.deepEqual(broken, [], 'Prerender images must load from built assets');
     if (proofDir) await page.screenshot({ path: path.join(proofDir, `seo-no-js-${viewport.width}.png`) });
@@ -53,6 +54,10 @@ try {
     assert.equal(await page.locator('#root').innerHTML(), '');
     await context.close();
   }
+  const iconResponse = await fetch(`${origin}/favicon.png`);
+  assert.equal(iconResponse.status, 200);
+  assert.match(iconResponse.headers.get('content-type'), /image\/png/);
+  assert.equal((await fetch(`${origin}/favicon.ico`)).status, 200);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   // Do not call production APIs while checking the build.
   await context.route('**/*', (route) => route.request().url().startsWith(origin) ? route.continue() : route.abort());

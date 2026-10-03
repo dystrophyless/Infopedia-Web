@@ -15,7 +15,26 @@ const indexPath = path.join(distDir, 'index.html');
 assert.ok(existsSync(indexPath), `release build must emit ${indexPath}`);
 const indexHtml = readFileSync(indexPath, 'utf8');
 assert.match(indexHtml, new RegExp(`<meta name="robots" content="${release ? 'index, follow' : 'noindex, nofollow'}" data-seo-default\\s*/>`), 'dist index must contain the profile robots default');
-assert.doesNotMatch(indexHtml, /rel=["']canonical["']|hreflang|application\/ld\+json|og:url/i, 'dist index must not carry a static canonical/social/JSON-LD tag');
+const spaHtml = readFileSync(path.join(distDir, 'spa.html'), 'utf8');
+assert.match(spaHtml, /<meta name="robots" content="noindex, nofollow"/, 'private shell must always be noindex');
+assert.match(spaHtml, /<div id="root"><\/div>/, 'private shell must not expose guest landing content');
+assert.doesNotMatch(spaHtml, /rel=["']canonical["']|application\/ld\+json|og:url/i, 'private shell must not inherit root metadata');
+if (release) {
+  const { seo } = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../src/locales/ru/translation.json'), 'utf8'));
+  assert.ok(indexHtml.includes(`<title>${seo.homeTitle}</title>`), 'release title must match the runtime title');
+  assert.ok(indexHtml.includes(`name="description" content="${seo.homeDescription}"`), 'release description must match the runtime description');
+  assert.ok(indexHtml.includes(`rel="canonical" href="${origin}/"`), 'release root must own its canonical before JavaScript');
+  assert.match(indexHtml, /<script type="application\/ld\+json" data-seo-owned="json-ld">/, 'release root must identify the website before JavaScript');
+  assert.match(indexHtml, /<h1\b/, 'release HTML must contain crawlable landing content');
+  assert.match(indexHtml, /href="\/onboarding"/, 'release HTML must contain real preparation links');
+  assert.doesNotMatch(indexHtml, /(?:src|href)="\/src\//, 'release HTML assets must resolve without the dev server');
+  for (const [, assetUrl] of indexHtml.matchAll(/(?:src|href)="(\/assets\/[^"?]+)"/g)) {
+    assert.ok(existsSync(path.join(distDir, assetUrl.slice(1))), `prerender asset must exist: ${assetUrl}`);
+  }
+} else {
+  assert.doesNotMatch(indexHtml, /rel=["']canonical["']|hreflang|application\/ld\+json|og:url/i, 'non-release index must not carry absolute SEO metadata');
+  assert.match(indexHtml, /<div id="root"><\/div>/, 'non-release build must retain the plain SPA shell');
+}
 
 const robotsPath = path.join(distDir, 'robots.txt');
 assert.ok(existsSync(robotsPath), 'every build must emit robots.txt');
@@ -79,6 +98,6 @@ function collectHtmlFiles(directory, prefix = '') {
     return entry.name.endsWith('.html') ? [relativePath] : [];
   });
 }
-assert.deepEqual(collectHtmlFiles(distDir).sort(), ['index.html'], 'release output must not emit route-specific HTML files');
+assert.deepEqual(collectHtmlFiles(distDir).sort(), ['index.html', 'spa.html'], 'build must emit exactly the public root and private shell');
 
 console.log(`seo dist contract passed (${profile})`);

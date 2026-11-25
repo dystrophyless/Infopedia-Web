@@ -1,22 +1,45 @@
 import json
 import logging
+from datetime import date
 from typing import Annotated, Literal
 from uuid import uuid4
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.analyze.attempts import (
+    UntAnalysisAttemptId,
+    get_unt_analysis_attempt_options,
+    get_unt_analysis_reference_date,
+    validate_unt_analysis_submission,
+)
 from src.analyze.exceptions import InvalidAnalyzeDocumentError
 from src.analyze.locale import normalize_analyze_locale
 from src.analyze.projection import select_free_chapter_id
 from src.analyze.repository import (
     get_analyze_result_by_user_id,
-    get_topic_material_summaries_by_chapter_ids,
+    get_analyzed_unt_attempt_ids,
     get_topic_codes_by_chapter_ids,
+    get_topic_material_summaries_by_chapter_ids,
 )
-from src.analyze.schemas import AnalyzeChapterResult, AnalyzeTaskResponse
+from src.analyze.schemas import (
+    AnalyzeChapterResult,
+    AnalyzeTaskResponse,
+    UntAnalysisAttemptOptionResponse,
+    UntAnalysisAttemptsResponse,
+)
 from src.analyze.serialization import encode_file_content
 from src.analyze.utils import (
     TERMINAL_TASK_STATUSES,
@@ -43,6 +66,36 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/attempts", response_model=UntAnalysisAttemptsResponse)
+async def get_unt_analysis_attempts(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    reference_date = get_unt_analysis_reference_date()
+    analyzed_attempt_ids = await get_analyzed_unt_attempt_ids(
+        session,
+        user_id=current_user.id,
+    )
+    options = get_unt_analysis_attempt_options(
+        reference_date,
+        analyzed_attempt_ids=analyzed_attempt_ids,
+    )
+    return UntAnalysisAttemptsResponse(
+        reference_date=reference_date,
+        attempts=[
+            UntAnalysisAttemptOptionResponse(
+                id=option.id,
+                start_date=option.start_date,
+                end_date=option.end_date,
+                available=option.available,
+                upcoming=option.upcoming,
+                analyzed=option.analyzed,
+            )
+            for option in options
+        ],
+    )
+
+
 @router.post(
     "", response_model=AnalyzeTaskResponse, status_code=status.HTTP_202_ACCEPTED
 )
@@ -51,12 +104,41 @@ async def create_analyze_task(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     locale: Annotated[Literal["kk", "ru"], Form()] = "kk",
+    unt_attempt_id: Annotated[UntAnalysisAttemptId | None, Form()] = None,
+    unt_attempt_date: Annotated[date | None, Form()] = None,
 ):
     user_id = current_user.id
     logger.info(
         "Получен запрос на задачу анализа документа от user_id=%s",
         user_id,
     )
+
+    if unt_attempt_id is not None or unt_attempt_date is not None:
+        analyzed_attempt_ids = await get_analyzed_unt_attempt_ids(
+            session,
+            user_id=user_id,
+        )
+        options = get_unt_analysis_attempt_options(
+            get_unt_analysis_reference_date(),
+            analyzed_attempt_ids=analyzed_attempt_ids,
+        )
+        try:
+            validate_unt_analysis_submission(
+                unt_attempt_id,
+                unt_attempt_date,
+                options,
+            )
+        except ValueError as exc:
+            code = str(exc)
+            response_status = (
+                status.HTTP_409_CONFLICT
+                if code in {"unt_attempt_already_analyzed", "unt_attempt_unavailable"}
+                else status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+            raise HTTPException(
+                status_code=response_status,
+                detail={"code": code},
+            ) from exc
 
     content = await file.read()
 
@@ -102,6 +184,8 @@ async def create_analyze_task(
                 "user_id": user_id,
                 "file_content_b64": encode_file_content(content),
                 "locale": normalize_analyze_locale(locale),
+                "unt_attempt_id": unt_attempt_id,
+                "unt_attempt_date": unt_attempt_date.isoformat() if unt_attempt_date else None,
             },
             task_id=task_id,
         )

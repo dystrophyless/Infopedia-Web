@@ -18,7 +18,7 @@ function sliceBetween(source, start, end) {
 const subscriptionPromoSource = sliceBetween(
   profileSource,
   'function SubscriptionPromo()',
-  'function WeakTopicsPanel()',
+  'function DesktopSettingsPanel(',
 );
 
 assert.doesNotMatch(

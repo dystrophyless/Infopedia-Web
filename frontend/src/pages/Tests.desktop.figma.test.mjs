@@ -74,6 +74,8 @@ assert.doesNotMatch(chapterCard, /scale-x-100/, 'chapter delta icons must not be
 assert.match(chapterCard, /metric="delta"[\s\S]*data-chapter-delta-icon[\s\S]*formatDelta/, 'the delta metric target must wrap both the icon and value');
 assert.doesNotMatch(chapterCard, /trending-up\.svg|mask-image|MaskImage/, 'the migrated delta glyph must not retain an SVG mask');
 assert.match(view, /weakTopicCount/, 'desktop weak-mode state must receive the latest analysis weak-topic count');
+assert.match(view, /const showWeakPrerequisite = analyzeStatus === 'empty' && weakTopicCount === 0/, 'the pre-analysis badge must require an actually empty analysis result');
+assert.match(view, /showWeakPrerequisite \? <DesktopTestOptionCard/, 'the pre-analysis card must be gated by the explicit weak prerequisite state');
 assert.match(view, /to=\{dashboardReady && weakAvailability\?\.available === true \? '\/tests\/weak' : undefined\}/, 'weak-test navigation must follow server-authoritative availability');
 assert.match(view, /analyzeStatus === 'ready'[\s\S]*weakTopicCount > 0[\s\S]*unavailableMessage=\{modeReason\('weak'\)\}/, 'weak-test availability failures must expose the localized server reason');
 assert.match(view, /analyzeStatus === 'ready'[\s\S]*desktopWeakUnavailableNoTopics/, 'completed perfect analysis must use the localized no-weak-topics state');
@@ -102,6 +104,7 @@ assert.match(optionCard, /data-option-card-contract=\{contract\}/);
 assert.match(optionStory, /contract: 'weak-pre-analysis'/);
 assert.match(optionStory, /contract: 'mock-inactive'/);
 assert.match(optionCard, /size-12[\s\S]*rounded-\[8px\]/);
+assert.match(optionCard, /statusBadge \? \(/, 'contract cards must omit the badge surface when no status is supplied');
 assert.match(optionCard, /gap-6[\s\S]*px-6[\s\S]*pb-8[\s\S]*pt-6/);
 assert.doesNotMatch(optionCard, /unavailableAction/);
 assert.match(view, /analyzeStatus === 'empty'/);

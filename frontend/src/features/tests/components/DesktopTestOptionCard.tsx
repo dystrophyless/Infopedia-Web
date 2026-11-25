@@ -54,12 +54,14 @@ export function DesktopTestOptionCard({
       {isContractCard ? (
         <span className="flex w-full items-start justify-between">
           <ContractIcon contract={contract} />
-          <span
-            className={`flex ${statusBadgeWidth} items-center justify-center rounded-[8px] bg-[#f8f5fc] px-4 py-2 text-[12px] font-medium leading-3 text-[#a585db]`}
-            data-option-card-status-badge
-          >
-            {statusBadge}
-          </span>
+          {statusBadge ? (
+            <span
+              className={`flex ${statusBadgeWidth} items-center justify-center rounded-[8px] bg-[#f8f5fc] px-4 py-2 text-[12px] font-medium leading-3 text-[#a585db]`}
+              data-option-card-status-badge
+            >
+              {statusBadge}
+            </span>
+          ) : null}
         </span>
       ) : (
         <span className={`flex size-12 shrink-0 items-center justify-center rounded-[8px] ${iconTone}`} aria-hidden>

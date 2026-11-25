@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon, ArrowRight01Icon, ArrowRight02Icon, Bookmark02Icon,
+  ArrowDown01Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowRight02Icon, ArrowUp01Icon, Bookmark02Icon,
   BookOpen02Icon, Flag02Icon, NotebookText, SearchList01Icon, UserCheck01Icon,
   UserMultiple03Icon,
 } from '@hugeicons/core-free-icons';
@@ -26,6 +26,7 @@ export interface TermDetailViewProps {
   backTo: string;
   bottomNavVisible?: boolean;
   relatedTerms?: RelatedTerm[];
+  relatedTermsLoading?: boolean;
   selectedDefinitionPublicId?: string;
   onDefinitionChange?: (definitionPublicId: string) => void;
 }
@@ -90,14 +91,16 @@ export function TermDetailSourcePanel({ definition }: { definition: Definition }
   );
 }
 
-export function TermDetailRelatedPanel({ relatedTerms, backTo }: { relatedTerms: RelatedTerm[]; backTo: string }) {
+export function TermDetailRelatedPanel({ relatedTerms, relatedTermsLoading = false, backTo }: { relatedTerms: RelatedTerm[]; relatedTermsLoading?: boolean; backTo: string }) {
   const { t } = useTranslation();
-  if (relatedTerms.length === 0) return null;
+  if (relatedTerms.length === 0 && !relatedTermsLoading) return null;
   return (
-    <section className="mt-12">
+    <section data-term-detail-related-panel aria-busy={relatedTermsLoading || undefined} className="mt-12">
       <h2 className="text-[20px] font-medium leading-5 text-action-selected">{t('termDetail.relatedTerms')}</h2>
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {relatedTerms.map((term) => <Link key={term.public_id} to={`/terms/${term.public_id}`} state={{ backTo }} data-term-related-chip className="flex h-[30px] shrink-0 items-center rounded-[8px] bg-surface px-4 text-[14px] leading-[14px] text-[#39363f]">{term.name}</Link>)}
+        {relatedTermsLoading
+          ? ['w-28', 'w-24', 'w-36'].map((width, index) => <div key={index} data-term-detail-related-skeleton-row aria-hidden="true" className="shrink-0"><Skeleton className={`h-[30px] ${width} rounded-[8px] bg-white`} /></div>)
+          : relatedTerms.map((term) => <Link key={term.public_id} to={`/terms/${term.public_id}`} state={{ backTo }} data-term-related-chip className="flex h-[30px] shrink-0 items-center rounded-[8px] bg-surface px-4 text-[14px] leading-[14px] text-[#39363f]">{term.name}</Link>)}
       </div>
     </section>
   );
@@ -115,6 +118,9 @@ function TermDetailTestCta({ bottomNavVisible }: { bottomNavVisible: boolean }) 
 
 function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onNext }: { term: Term; definition: Definition; index: number; total: number; onPrevious: () => void; onNext: () => void }) {
   const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const definitionTextRef = useRef<HTMLParagraphElement>(null);
   const rows = getSourceRows(definition, t);
   const book = rows.find((row) => row.key === 'book');
   const topic = rows.find((row) => row.key === 'topic');
@@ -125,8 +131,32 @@ function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onN
   const desktopPageMeta = definition.page != null
     ? t('termDetail.desktopPageMeta', { page: definition.page })
     : page?.value;
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [definition.public_id]);
+  useEffect(() => {
+    if (isExpanded) return undefined;
+    const element = definitionTextRef.current;
+    if (!element) return undefined;
+    const measureOverflow = () => {
+      setHasOverflow(element.scrollHeight > element.clientHeight + 1);
+    };
+    const frame = window.requestAnimationFrame(measureOverflow);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measureOverflow);
+    observer?.observe(element);
+    window.addEventListener('resize', measureOverflow);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener('resize', measureOverflow);
+    };
+  }, [definition.public_id, definition.text, isExpanded]);
   return (
-    <section data-term-detail-definition-card className="flex min-h-[319px] flex-col justify-between rounded-[16px] bg-white p-6">
+    <section
+      data-term-detail-definition-card
+      data-expanded={isExpanded}
+      className="flex min-h-[319px] flex-col justify-between rounded-[16px] bg-white p-6 data-[expanded=true]:min-h-0 data-[expanded=true]:justify-start data-[expanded=true]:gap-6"
+    >
       <div className="flex flex-col gap-4">
         <div className="flex min-h-6 items-center justify-between gap-8">
           <h2 className="truncate text-[22px] font-medium leading-[22px] text-[#161519]">{definition.name}</h2>
@@ -135,7 +165,30 @@ function DesktopDefinitionCard({ term, definition, index, total, onPrevious, onN
             <DesktopTermFavoriteButton termRef={term.public_id} termName={term.name} />
           </div>
         </div>
-        <p className="max-w-[514px] whitespace-pre-line text-[18px] leading-6 text-[#6e6779]">{definition.text}</p>
+        <div className={`flex max-w-[514px] flex-col ${isExpanded ? 'gap-4' : 'gap-1'}`}>
+          <div className="relative">
+            <p
+              id="term-detail-definition-text"
+              data-term-detail-definition-text
+              ref={definitionTextRef}
+              className={`whitespace-pre-line text-[18px] leading-6 text-[#6e6779] ${isExpanded ? '' : 'max-h-[120px] overflow-hidden'}`}
+            >
+              {definition.text}
+            </p>
+            {!isExpanded && hasOverflow && <div data-term-detail-definition-fade aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-b from-transparent via-white/80 to-white" />}
+          </div>
+          {hasOverflow && <button
+            type="button"
+            data-term-detail-definition-toggle
+            aria-controls="term-detail-definition-text"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            className="flex w-fit items-center gap-1 text-[14px] font-medium leading-[14px] text-[#6a37c3]"
+          >
+            {isExpanded ? t('termDetail.collapseDefinition') : t('termDetail.showFullDefinition')}
+            <HugeiconsIcon icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon} size={16} strokeWidth={1.5} />
+          </button>}
+        </div>
       </div>
       <div className="flex flex-col gap-6 border-t border-[#f6f5f7] pt-6">
         <div className="flex items-center justify-between gap-6">
@@ -182,14 +235,16 @@ function DesktopTestCard() {
   );
 }
 
-function DesktopRelatedPanel({ relatedTerms, backTo }: { relatedTerms: RelatedTerm[]; backTo: string }) {
+function DesktopRelatedPanel({ relatedTerms, relatedTermsLoading, backTo }: { relatedTerms: RelatedTerm[]; relatedTermsLoading: boolean; backTo: string }) {
   const { t } = useTranslation();
-  if (relatedTerms.length === 0) return null;
+  if (relatedTerms.length === 0 && !relatedTermsLoading) return null;
   return (
-    <section data-term-detail-related-panel className="rounded-[16px] bg-white p-6">
+    <section data-term-detail-related-panel aria-busy={relatedTermsLoading || undefined} className="rounded-[16px] bg-white p-6">
       <h2 className="text-[12px] font-medium leading-3 text-[#6e6779]">{t('termDetail.desktopRelatedTerms').toUpperCase()}</h2>
       <div className="mt-6 flex flex-col">
-        {relatedTerms.map((item, itemIndex) => <div key={item.public_id}>{itemIndex > 0 && <div className="my-4 h-px bg-[#f6f5f7]" />}<Link data-term-detail-related-link to={`/terms/${item.public_id}`} state={{ backTo }} className="group flex items-center justify-between gap-4"><span data-term-detail-related-leading className="flex min-w-0 items-center gap-4 transition-transform duration-[160ms] [transition-timing-function:ease] group-hover:translate-x-[3px]"><span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-[#efeaf8] text-[#6a37c3]"><HugeiconsIcon icon={NotebookText} size={16} strokeWidth={1.5} /></span><span data-term-detail-related-title className="truncate text-[14px] font-normal leading-[14px] text-[#161519]">{item.name}</span></span><span data-term-detail-related-arrow className="flex size-[34px] shrink-0 items-center justify-center rounded-[8px] bg-white p-2"><HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} className="text-[#b1acb9]" /></span></Link></div>)}
+        {relatedTermsLoading
+          ? ['w-32', 'w-28', 'w-36'].map((width, index) => <div key={index} data-term-detail-related-skeleton-row aria-hidden="true" className={index > 0 ? 'mt-4 border-t border-[#f6f5f7] pt-4' : ''}><div className="flex h-[34px] items-center justify-between gap-4"><span className="flex min-w-0 items-center gap-4"><Skeleton className="size-8 shrink-0 rounded-[8px]" /><Skeleton className={`h-3 ${width}`} /></span><Skeleton className="size-[34px] shrink-0 rounded-[8px]" /></div></div>)
+          : relatedTerms.map((item, itemIndex) => <div key={item.public_id}>{itemIndex > 0 && <div className="my-4 h-px bg-[#f6f5f7]" />}<Link data-term-detail-related-link to={`/terms/${item.public_id}`} state={{ backTo }} className="group flex items-center justify-between gap-4"><span data-term-detail-related-leading className="flex min-w-0 items-center gap-4 transition-transform duration-[160ms] [transition-timing-function:ease] group-hover:translate-x-[3px]"><span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-[#efeaf8] text-[#6a37c3]"><HugeiconsIcon icon={NotebookText} size={16} strokeWidth={1.5} /></span><span data-term-detail-related-title className="truncate text-[14px] font-normal leading-[14px] text-[#161519]">{item.name}</span></span><span data-term-detail-related-arrow className="flex size-[34px] shrink-0 items-center justify-center rounded-[8px] bg-white p-2"><HugeiconsIcon icon={ArrowRight02Icon} size={18} strokeWidth={1.5} className="text-[#b1acb9]" /></span></Link></div>)}
       </div>
     </section>
   );
@@ -253,7 +308,7 @@ function TermDetailDesktopSideLoadingSkeleton() {
   );
 }
 
-export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], selectedDefinitionPublicId, onDefinitionChange }: TermDetailViewProps) {
+export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisible = false, relatedTerms = [], relatedTermsLoading = false, selectedDefinitionPublicId, onDefinitionChange }: TermDetailViewProps) {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const ensureStatuses = useFavoritesStore((state) => state.ensureStatuses);
@@ -298,7 +353,7 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
             <TermDetailStatPanel />
             {total > 1 && <div className="mt-4 flex items-center justify-between text-[14px] leading-[14px] text-[#524d5b]"><button type="button" onClick={goPrevious} disabled={index === 0} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.previous')}</button><span>{t('termDetail.counter', { current: index + 1, total })}</span><button type="button" onClick={goNext} disabled={index === total - 1} className="rounded-[8px] bg-surface-subtle px-3 py-2 disabled:opacity-40">{t('common.next')}</button></div>}
             <TermDetailSourcePanel definition={current} />
-            <TermDetailRelatedPanel relatedTerms={relatedTerms} backTo={backTo} />
+            <TermDetailRelatedPanel relatedTerms={relatedTerms} relatedTermsLoading={relatedTermsLoading} backTo={backTo} />
             <TermDetailTestCta bottomNavVisible={bottomNavVisible} />
           </>}
         </>}
@@ -314,10 +369,10 @@ export function TermDetailView({ term, loadState = 'idle', backTo, bottomNavVisi
             {isLoading && <TermDetailDesktopLoadingSkeleton />}
             {hasError && <p className="rounded-[16px] bg-white py-20 text-center text-action-selected">{t('termDetail.loadFailed')}</p>}
             {term && total === 0 && <p className="rounded-[16px] bg-white py-12 text-center text-[16px] leading-4 text-[#524d5b]">{t('termDetail.noDefinitions')}</p>}
-            {term && current && <><DesktopDefinitionCard term={term} definition={current} index={index} total={total} onPrevious={goPrevious} onNext={goNext} /><DesktopMasteryPanel /></>}
+            {term && current && <><DesktopDefinitionCard key={current.public_id} term={term} definition={current} index={index} total={total} onPrevious={goPrevious} onNext={goNext} /><DesktopMasteryPanel /></>}
           </div>
           {isLoading && <TermDetailDesktopSideLoadingSkeleton />}
-          {term && current && <div className="flex flex-col gap-4"><DesktopTestCard /><DesktopRelatedPanel relatedTerms={relatedTerms} backTo={backTo} /></div>}
+          {term && current && <div className="flex flex-col gap-4"><DesktopTestCard /><DesktopRelatedPanel relatedTerms={relatedTerms} relatedTermsLoading={relatedTermsLoading} backTo={backTo} /></div>}
         </div>
       </div>
     </div>
